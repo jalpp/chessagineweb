@@ -31,7 +31,7 @@ import { LANGUAGES, PROVIDERS } from '@/libs/docs/helper';
 
 
 export interface ApiSettings {
-  provider: 'openai' | 'anthropic' | 'google' | 'ollama';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama' | 'aginecloud';
   model: string;
   apiKey: string;
   language: string;
@@ -43,8 +43,8 @@ export interface ApiSettings {
 const ModelSetting: React.FC = () => {
   
   const defaultSettings: ApiSettings = {
-    provider: 'ollama',
-    model: 'gpt-oss:20b-cloud',
+    provider: 'aginecloud',
+    model: 'openai/gpt-oss-20b',
     apiKey: '',
     isRouted: false,
     language: 'English',
@@ -459,7 +459,7 @@ const ModelSetting: React.FC = () => {
         </CardContent>
       </Card>
 
-      {tempSettings.provider && currentProviderConfig && !tempSettings.provider.toLowerCase().includes("ollama") && !tempSettings.isRouted && (
+      {tempSettings.provider && currentProviderConfig && !tempSettings.provider.toLowerCase().includes("ollama") && !tempSettings.provider.toLocaleLowerCase().includes("aginecloud") && !tempSettings.isRouted && (
         <Card 
           variant="outlined" 
           sx={{ 

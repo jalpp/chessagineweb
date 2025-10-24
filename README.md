@@ -40,9 +40,10 @@ ChessAgine works with multiple AI providers:
 | Anthropic  | ✅ Yes          | claude-sonnet-4, claude-3.5-haiku                |
 | Google     | ✅ Yes          | gemini-1.5-pro, gemini-2.5-flash                 |
 | Ollama     | ❌ No           | qwen3:8b, gpt-oss:120b, deepseek-v3.1:671b-cloud |
+| ChessAgine Cloud |  ❌ No |    google/gemini-2.0-flash-exp,openai/gpt-oss-20b,nvidia/nemotron-nano-9b-v2 |
 
 > ✅ Use Ollama for free, local, and open source AI integration without needing API keys.
-
+> ✅ Use ChessAgineCloud for free cloud based open source models
 
 
 | Router   | API Key Required | Example Models                                   |

@@ -30,7 +30,30 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
         {provider.name} Setup Guide
       </Typography>
 
-      {provider.name === "Ollama" ? (
+    
+    {provider.name === "aginecloud" ? (
+        <Box sx={{ 
+          p: 3, 
+          textAlign: 'center',
+          backgroundColor: purpleTheme.background?.paper || 'rgba(255,255,255,0.05)',
+          borderRadius: 2,
+          border: `2px solid ${purpleTheme.success}`
+        }}>
+          <CheckCircleIcon sx={{ 
+            fontSize: 48, 
+            color: purpleTheme.success,
+            mb: 2
+          }} />
+          <Typography variant="h6" sx={{ color: purpleTheme.text.primary, mb: 1 }}>
+            No Setup Required!
+          </Typography>
+          <Typography variant="body2" sx={{ color: purpleTheme.text.secondary }}>
+            AgineCloud models are completely free and ready to use immediately.
+            Just select a model and start analyzing your chess games.
+            AgineCloud is in beta, so you might experiece few delays
+          </Typography>
+        </Box>
+      ) : provider.name === "Ollama" ? (
         <List dense>
           <ListItem>
             <ListItemIcon>

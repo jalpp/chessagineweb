@@ -4,11 +4,11 @@ export const BOARD_CENTRE: Square[] = ["c4","c5","d4","d5","e4","e5","f4","f5"];
 export const BOARD_FLANK: Square[] = ["a4", "a5", "b4", "b5", "h4", "h5", "g4", "g5"];
 
 export const PIECE_VALUES = {
-  [PAWN]: 100,
-  [KNIGHT]: 300,
-  [BISHOP]: 300,
-  [ROOK]: 500,
-  [QUEEN]: 900,
+  [PAWN]: 1,
+  [KNIGHT]: 3,
+  [BISHOP]: 3,
+  [ROOK]: 5,
+  [QUEEN]: 9,
   [KING]: 0
 };
 

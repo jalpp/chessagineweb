@@ -28,7 +28,7 @@ import SecurityIcon from "@mui/icons-material/Security";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { FaPuzzlePiece, FaQuestion } from "react-icons/fa6";
-import { SwapCallsOutlined } from "@mui/icons-material";
+import { Cloud, SwapCallsOutlined } from "@mui/icons-material";
 
 export default function HomePage() {
   const { isSignedIn, isLoaded, user } = useUser();
@@ -244,11 +244,8 @@ export default function HomePage() {
                 }}
               >
                 Plug-and-play chess training with your choice of AI provider.
-                Convert any LLM model into chess-aware Chessbuddy and get
-                personalized live chat training. ChessAgine integrates with
-                Stockfish 17.1 engine and chess databases to better align with
-                position context, making LLMs chess aware. Start using
-                ChessAgine for 100% using local LLms via Ollama
+                Convert any LLM model into chess-aware Chessbuddy, get started with ChessAgine for
+                FREE using ChessAgine Cloud.
               </Typography>
             </Stack>
 
@@ -478,13 +475,20 @@ export default function HomePage() {
                 color="#5b21b6"
                 sx={{ opacity: 0.8, fontSize: { xs: "1.2rem", md: "1.5rem" } }}
               >
-                Use your own API key, or go free with Ollama local/cloud models
+                Use your own API key, or go free with ChessAgine Cloud models or Ollama local/cloud models
                 (no key required!)
               </Typography>
             </Box>
 
             <Grid container spacing={4} justifyContent="center">
               {[
+                {
+                  icon: <Cloud sx={{ fontSize: 48, color: "#7c3aed" }} />,
+                  title: "ChessAgine Cloud",
+                  description:
+                    "Start using ChessAgine with open source models run by ChessAgine for you to use it for 100% free.",
+                  color: "#e0f7fa",
+                },
                 {
                   icon: <StorageIcon sx={{ fontSize: 48, color: "#7c3aed" }} />,
                   title: "Ollama Support",
@@ -594,6 +598,16 @@ export default function HomePage() {
 
             <Grid container spacing={6}>
               {[
+                 {
+                  icon: (
+                    <ChatIcon
+                      sx={{ fontSize: 64, color: "#7c3aed", mb: 3 }}
+                    />
+                  ),
+                  title: "Q/A Interactive Mode",
+                  description:
+                    "Just like a chess buddy, ChessAgine can ask interactive questions to make you think about chess",
+                },
                 {
                   icon: (
                     <SearchIcon
@@ -841,7 +855,7 @@ export default function HomePage() {
               <Typography
                 variant="h5"
                 color="#5b21b6"
-                sx={{ opacity: 0.8, fontSize: { xs: "1.2rem", md: "1.5rem" } }}
+               
               >
                 Experience chess training that feels natural and intuitive
               </Typography>
@@ -850,8 +864,7 @@ export default function HomePage() {
             <Stack
               direction={{ xs: "column", md: "row" }}
               spacing={6}
-              alignItems="stretch"
-              justifyContent="center"
+
             >
               {[
                 {
@@ -862,7 +875,7 @@ export default function HomePage() {
                   ),
                   title: "Interactive Training",
                   description:
-                    "Ask for puzzle hints, generate annotation boilerplate",
+                    "Ask for puzzle hints, answer various questions Agine asks you live",
                 },
                 {
                   icon: (
@@ -880,7 +893,7 @@ export default function HomePage() {
                   ),
                   title: "Cost Effective",
                   description:
-                    "Pay only for the AI you use with your own API key. No subscription fees or hidden costs, complete transparency.",
+                    "Use ChessAgine Cloud for free. No subscription fees or hidden costs, complete transparency.",
                 },
               ].map((card) => (
                 <Paper
@@ -917,7 +930,7 @@ export default function HomePage() {
                   <Typography
                     variant="h6"
                     color="text.secondary"
-                    sx={{ lineHeight: 1.6, flexGrow: 1 }}
+                 
                   >
                     {card.description}
                   </Typography>
@@ -948,8 +961,7 @@ export default function HomePage() {
                   fontSize: { xs: "1.3rem", md: "1.5rem" },
                 }}
               >
-                Join players who are training smarter with ChessAgine
-                plug-and-play AI
+                Join players who are training smarter with ChessAgine AI
               </Typography>
             </Box>
 

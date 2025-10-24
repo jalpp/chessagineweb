@@ -6,13 +6,14 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOllama } from "ollama-ai-provider-v2";
 import { RuntimeContext } from "@mastra/core/di";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {
   aginePuzzleSystemPrompt,
+  agineQuestionMode,
   agineSystemPrompt,
   chessAgineAnnoPrompt,
 } from "./prompt";
-import { OpenAIModel, GoogleModel, AnthropicModel, OllamaModel } from "./types";
+import { OpenAIModel, GoogleModel, AnthropicModel, OllamaModel, AgineCloudModel } from "./types";
 import { AgineTools } from "../tools";
 
 function createModelFromRouter(runtimeContext: RuntimeContext) {
@@ -27,6 +28,18 @@ function createModelFromRouter(runtimeContext: RuntimeContext) {
   return openRouter(`${provider}/${modelName}`);
 }
 
+function createAgineCloudModel(runtimeContext: RuntimeContext) {
+  const modelName = runtimeContext.get("model") as string;
+
+  const apiKey = process.env.AGINE_KEY;
+
+  const agineCloudRouter = createOpenRouter({
+    apiKey: apiKey
+  })
+
+  return agineCloudRouter(`${modelName}:free` as AgineCloudModel);
+}
+
 function createAgentInstruction(runtimeContext: RuntimeContext) {
   const lang = (runtimeContext.get("lang") as string) || "English";
   const mode = (runtimeContext.get("mode") as string) || "position";
@@ -38,6 +51,8 @@ function createAgentInstruction(runtimeContext: RuntimeContext) {
       return aginePuzzleSystemPrompt.replace("ENGLISH", lang);
     case "annotation":
       return chessAgineAnnoPrompt.replace("ENGLISH", lang);
+    case "question":
+      return agineQuestionMode.replace("ENGLISH", lang);
     default:
       return agineSystemPrompt.replace("ENGLISH", lang);
   }
@@ -80,7 +95,8 @@ function createModelFromContext(runtimeContext: RuntimeContext) {
         baseURL: ollamaBaseUrl || "http://localhost:11434/api",
       });
       return ollama(modelName as OllamaModel);
-    
+    case "agineCloud": 
+      return createAgineCloudModel(runtimeContext);
 
     default:
       return openai("gpt-4o-mini");
