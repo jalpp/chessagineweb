@@ -19,7 +19,7 @@ function getFlankSpaceControl(chess: Chess, side: Color): number {
 
 export function getSideSpaceControl(chess: Chess, side: Color): SpaceControl {
     const centre = getSpaceControl(chess, side);
-    const flank = getSpaceControl(chess, side);
+    const flank = getFlankSpaceControl(chess, side);
     return {
         centerspacecontrolscore: centre,
         flankspacecontrolscore: flank,

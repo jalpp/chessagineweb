@@ -594,6 +594,7 @@ ${board.toString()}
       puzzleMode?: boolean,
       puzzleQuery?: string,
       playMode?: boolean,
+      questionMode?: boolean,
     ): Promise<void> => {
       if (!state.chatInput.trim()) return;
       const userMessage = createChatMessage("user", fen, state.chatInput);
@@ -619,11 +620,16 @@ ${board.toString()}
           puzzleQuery,
           playMode
         );
-        const mode = puzzleMode === true || puzzleQuery
+
+        let mode = "position";
+
+        if(questionMode){
+          mode = "question"
+        }else{
+           mode = puzzleMode === true || puzzleQuery
           ? "puzzle"
-          : playMode
-          ? "play"
           : "position";
+        }
          
         const result = await makeApiRequest(currentFen, query, mode);
         const assistantMessage = createChatMessage("assistant", fen,result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());

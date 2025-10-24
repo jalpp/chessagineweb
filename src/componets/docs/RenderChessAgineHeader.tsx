@@ -16,8 +16,10 @@ import {
   Psychology as IntelligenceIcon,
   CheckCircle as CheckCircleIcon,
   SwapHorizontalCircleOutlined,
+  
 } from "@mui/icons-material";
 import { purpleTheme } from "@/theme/theme";
+import ConstructionIcon from '@mui/icons-material/Construction';
 
 
 export const renderHeader = () => (
@@ -55,6 +57,12 @@ export const renderHeader = () => (
         users.
       </Typography>
     </Alert>
+    <Alert severity="warning" sx={{ mb: 4 }}>
+      <AlertTitle>ChessAgine Cloud Beta</AlertTitle>
+      <Typography variant="body2">
+        <strong>ChessAgine Cloud is in Beta, if you experiece rate limits please try again at later time.</strong>{" "}
+      </Typography>
+    </Alert>
 
     <Card sx={{ mb: 4 }}>
       <CardContent>
@@ -62,6 +70,15 @@ export const renderHeader = () => (
           ChessAgine Settings
         </Typography>
         <List>
+          <ListItem>
+            <ListItemIcon>
+              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Agine Cloud (beta)"
+              secondary="Pick a open source model and start using ChessAgine for free! No API or local setup required!"
+            />
+          </ListItem>
           <ListItem>
             <ListItemIcon>
               <CheckCircleIcon sx={{ color: purpleTheme.success }} />

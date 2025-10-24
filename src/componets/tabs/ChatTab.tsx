@@ -62,6 +62,7 @@ export interface ChatTabProps {
     puzzleMode?: boolean,
     puzzleQuery?: string,
     playMode?: boolean,
+    questionMode?: boolean
   ) => void;
   abortChatMessage?: () => void;
 }
@@ -163,6 +164,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     "agine_position_library",
     []
   );
+  const [questionMode, setQuestionMode] = useLocalStorage<boolean>(
+    "agine_question_mode",
+    false
+  )
  
   const [libraryOpen, setLibraryOpen] = useState(false);
 
@@ -873,6 +878,25 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             <Typography variant="caption" sx={{ color: "grey.400", fontSize: '11px' }}>
               {sessionMode ? "Looking at the board together" : "General chess chat"}
             </Typography>
+            <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
+              Interactive Q/A
+            </Typography>
+            <Switch
+              checked={questionMode}
+              onChange={(e) => setQuestionMode(e.target.checked)}
+              size="small"
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: '#9c27b0',
+                },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                  backgroundColor: '#9c27b0',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: "grey.400", fontSize: '11px' }}>
+              {questionMode ? "Interactive question mode" : "Positional Analysis"}
+            </Typography>
             <Box sx={{ flexGrow: 1 }} />
             {chatMessages.length > 0 && (
               <Button
@@ -1405,7 +1429,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           <Button
             variant="contained"
             size="small"
-            onClick={() => sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode)}
+            onClick={() => sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode, questionMode)}
             disabled={chatLoading || !chatInput.trim()}
             sx={{
               minWidth: "auto",

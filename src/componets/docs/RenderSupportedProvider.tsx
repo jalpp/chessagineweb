@@ -45,7 +45,7 @@ export const renderSupportedProvider = () => (
                   : "No OpenRouter Support"}
               </Typography>
               <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                {provider.name != "Ollama" && (
+                {provider.name !== "Ollama" && provider.name !== "aginecloud"&& (
                   <Button
                     size="small"
                     variant="outlined"

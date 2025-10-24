@@ -42,12 +42,22 @@ export type OllamaModel =
   | "gpt-oss:120b"
   | "deepseek-v3.1:671b-cloud"
   | "gpt-oss:120b-cloud"
-  | "gpt-oss:20b-cloud"
-  | "";
+  | "gpt-oss:20b-cloud";
 
-export type LanguageModel = OpenAIModel | AnthropicModel | GoogleModel | OllamaModel;
 
-export type Provider = "openai" | "anthropic" | "google" | "ollama"
+export type AgineCloudModel = 
+  | "deepseek/deepseek-chat-v3.1:free"
+  | "google/gemini-2.0-flash-exp:free"
+  | "openai/gpt-oss-20b:free"
+  | "nvidia/nemotron-nano-9b-v2:free"
+  | "mistralai/mistral-small-3.1-24b-instruct:free"
+  | "meta-llama/llama-3.3-70b-instruct:free"
+  | "meta-llama/llama-4-maverick:free"
+
+
+export type LanguageModel = OpenAIModel | AnthropicModel | GoogleModel | OllamaModel | AgineCloudModel;
+
+export type Provider = "openai" | "anthropic" | "google" | "ollama" | "aginecloud"
 
 export type ApiSetting = {
   provider: Provider;
