@@ -181,6 +181,12 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     docsUrl: 'https://docs.ollama.com/',
     supportsRouting: false,
   },
+  // agineCloud: {
+  //   name: 'aginecloud',
+  //   models: [
+  //     ''
+  //   ]
+  // }
 };
 
 export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [

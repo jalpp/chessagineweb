@@ -36,6 +36,7 @@ export interface ApiSettings {
   apiKey: string;
   language: string;
   isRouted: boolean;
+  isCloud: boolean;
   ollamaBaseUrl?: string;
 }
 
@@ -46,6 +47,7 @@ const ModelSetting: React.FC = () => {
     provider: 'ollama',
     model: 'gpt-oss:20b-cloud',
     apiKey: '',
+    isCloud: true,
     isRouted: false,
     language: 'English',
   };

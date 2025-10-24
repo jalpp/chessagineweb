@@ -1028,6 +1028,7 @@ ${board.toString()}
       }
     },
     [
+      fen,
       state.llmLoading, 
       state.chatLoading, 
       state.chatMessages, 
