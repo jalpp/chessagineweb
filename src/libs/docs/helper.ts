@@ -114,7 +114,6 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   agineCloud: {
     name: 'aginecloud',
     models: [
-      'google/gemini-2.0-flash-exp',
       'openai/gpt-oss-20b',
       'nvidia/nemotron-nano-9b-v2',
       'mistralai/mistral-small-3.1-24b-instruct',
