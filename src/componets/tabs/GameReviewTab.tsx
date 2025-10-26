@@ -456,7 +456,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         )}
 
         <EvalGraph moves={gameReview}/>
-        <GameReviewDialog gameReview={gameReviewTheme} />
+        <GameReviewDialog gameReview={gameReviewTheme} currentMoveIndex={currentMoveIndex} moveAnalysis={gameReview}/>
       </Stack>
     </Box>
   );

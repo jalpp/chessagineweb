@@ -26,8 +26,17 @@ import {
   Warning,
   Flag,
   Analytics,
+  MonetizationOn,
+  DirectionsRun,
+  GridOn,
+  Place,
+  Shield,
+  Bolt,
 } from "@mui/icons-material";
-import { BarChart, LineChart } from "@mui/x-charts";
+import { BarChart, LineChart, RadarChart } from "@mui/x-charts";
+import { MoveAnalysis } from "@/hooks/useGameReview";
+import { PositionRadarAnalysis } from "./PositionRadarAnalysis";
+import { darkGreyTheme } from "@/theme/theme";
 
 interface ThemeScore {
   material: number;
@@ -35,6 +44,7 @@ interface ThemeScore {
   space: number;
   positional: number;
   kingSafety: number;
+  tactical: number;
 }
 
 interface ThemeChange {
@@ -61,12 +71,20 @@ export interface GameReviewTheme {
   };
   whiteAnalysis: {
     overallThemes: VariationAnalysis;
-    criticalMoments: Array<{ moveIndex: number; move: string; themeChanges: ThemeChange[] }>;
+    criticalMoments: Array<{
+      moveIndex: number;
+      move: string;
+      themeChanges: ThemeChange[];
+    }>;
     averageThemeScores: ThemeScore;
   };
   blackAnalysis: {
     overallThemes: VariationAnalysis;
-    criticalMoments: Array<{ moveIndex: number; move: string; themeChanges: ThemeChange[] }>;
+    criticalMoments: Array<{
+      moveIndex: number;
+      move: string;
+      themeChanges: ThemeChange[];
+    }>;
     averageThemeScores: ThemeScore;
   };
   insights: {
@@ -85,31 +103,17 @@ export interface GameReviewTheme {
 
 interface GameReviewDialogProps {
   gameReview: GameReviewTheme | null;
+  currentMoveIndex: number;
+  moveAnalysis: MoveAnalysis[];
 }
 
-const darkGreyTheme = createTheme({
-  palette: {
-    mode: "dark",
-    background: {
-      default: "#121212",
-      paper: "#1E1E1E",
-    },
-    text: {
-      primary: "#E0E0E0",
-      secondary: "#B0B0B0",
-    },
-    primary: { main: "#bb86fc" },
-    success: { main: "#81c784" },
-    error: { main: "#e57373" },
-    divider: "#333",
-  },
-  components: {
-    MuiCard: { styleOverrides: { root: { backgroundColor: "#1E1E1E" } } },
-    MuiDialog: { styleOverrides: { paper: { backgroundColor: "#1E1E1E" } } },
-  },
-});
 
-export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }) => {
+
+export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
+  gameReview,
+  currentMoveIndex,
+  moveAnalysis,
+}) => {
   const [open, setOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
 
@@ -117,13 +121,16 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => setTabValue(newValue);
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) =>
+    setTabValue(newValue);
 
   const formatThemeName = (theme: string) =>
     theme
       .split(/(?=[A-Z])/)
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
+
+  
 
   const getThemeColor = (value: number) =>
     value > 0 ? "success" : value < 0 ? "error" : "default";
@@ -147,14 +154,31 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }
   };
 
   const renderMoveByMoveChart = (scores: ThemeScore[]) => {
-    const moveNumbers = scores.map((_, i) => i + 1);
-    const themes = Object.keys(scores[0]);
+    // Group scores by full moves (White + Black = 1 move)
+    const fullMoveScores: ThemeScore[] = [];
+    for (let i = 0; i < scores.length; i += 2) {
+      if (i + 1 < scores.length) {
+        // Average White and Black scores for this move
+        const themes = Object.keys(scores[i]) as (keyof ThemeScore)[];
+        const avgScore = {} as ThemeScore;
+        themes.forEach((theme) => {
+          avgScore[theme] = (scores[i][theme] + scores[i + 1][theme]) / 2;
+        });
+        fullMoveScores.push(avgScore);
+      } else {
+        // Odd number of half-moves, include the last one
+        fullMoveScores.push(scores[i]);
+      }
+    }
+
+    const moveNumbers = fullMoveScores.map((_, i) => i + 1);
+    const themes = Object.keys(fullMoveScores[0]);
 
     return (
       <LineChart
         xAxis={[{ data: moveNumbers, label: "Move Number" }]}
         series={themes.map((t) => ({
-          data: scores.map((s) => s[t as keyof ThemeScore]),
+          data: fullMoveScores.map((s) => s[t as keyof ThemeScore]),
           label: formatThemeName(t),
         }))}
         height={300}
@@ -164,15 +188,71 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }
     );
   };
 
+  const renderRadarComparison = (
+    whiteScores: ThemeScore,
+    blackScores: ThemeScore
+  ) => {
+    const themes = Object.keys(whiteScores) as (keyof ThemeScore)[];
+    const whiteData = themes.map((theme) => whiteScores[theme]);
+    const blackData = themes.map((theme) => blackScores[theme]);
+
+    // Find the max and min values for each theme
+    const metrics = themes.map((theme, index) => {
+      const maxVal = Math.max(whiteData[index], blackData[index]);
+      const minVal = Math.min(whiteData[index], blackData[index]);
+      const range = maxVal - minVal;
+      const padding = range * 0.2;
+
+      return {
+        name: formatThemeName(theme),
+        max: Math.ceil(maxVal + padding),
+        min: Math.floor(minVal - padding),
+      };
+    });
+
+    return (
+      <RadarChart
+        height={400}
+        series={[
+          {
+            label: "White",
+            data: whiteData,
+            color: "#adeaf9ff",
+            fillArea: true
+          },
+          {
+            label: "Black",
+            data: blackData,
+            color: "#f4aff2ff",
+            fillArea: true
+          },
+        ]}
+        radar={{
+          metrics: metrics,
+        }}
+      />
+    );
+  };
+
   const renderPlayerAnalysis = (
-    analysis: GameReviewTheme["whiteAnalysis"] | GameReviewTheme["blackAnalysis"],
+    analysis:
+      | GameReviewTheme["whiteAnalysis"]
+      | GameReviewTheme["blackAnalysis"],
     bestTheme: string,
     worstTheme: string
   ) => (
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-        <Chip icon={<EmojiEvents />} label={`Best: ${formatThemeName(bestTheme)}`} color="success" />
-        <Chip icon={<Warning />} label={`Worst: ${formatThemeName(worstTheme)}`} color="error" />
+        <Chip
+          icon={<EmojiEvents />}
+          label={`Best: ${formatThemeName(bestTheme)}`}
+          color="success"
+        />
+        <Chip
+          icon={<Warning />}
+          label={`Worst: ${formatThemeName(worstTheme)}`}
+          color="error"
+        />
       </Stack>
 
       <Card sx={{ mb: 3 }}>
@@ -193,48 +273,62 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }
         </CardContent>
       </Card>
 
-      
-        <Grid >
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Theme Changes
-              </Typography>
-              {analysis.overallThemes.themeChanges.map((change, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body2">{formatThemeName(change.theme)}</Typography>
-                  <Chip
-                    size="small"
-                    icon={change.change > 0 ? <TrendingUp /> : <TrendingDown />}
-                    label={`${change.change > 0 ? "+" : ""}${change.change.toFixed(2)} (${change.percentChange.toFixed(1)}%)`}
-                    color={getThemeColor(change.change)}
-                  />
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
-      
+      <Grid>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Theme Changes
+            </Typography>
+            {analysis.overallThemes.themeChanges.map((change, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 1,
+                }}
+              >
+                <Typography variant="body2">
+                  {formatThemeName(change.theme)}
+                </Typography>
+                <Chip
+                  size="small"
+                  icon={change.change > 0 ? <TrendingUp /> : <TrendingDown />}
+                  label={`${
+                    change.change > 0 ? "+" : ""
+                  }${change.change.toFixed(2)} (${change.percentChange.toFixed(
+                    1
+                  )}%)`}
+                  color={getThemeColor(change.change)}
+                />
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+      </Grid>
     </Box>
   );
 
   return (
     <ThemeProvider theme={darkGreyTheme}>
-      <Button variant="contained" startIcon={<Analytics />} onClick={handleOpen}>
+      <Button
+        variant="contained"
+        startIcon={<Analytics />}
+        onClick={handleOpen}
+      >
         Game Theme Analysis
       </Button>
 
       <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
         <DialogTitle>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
             <Typography variant="h5">Game Theme Analysis</Typography>
             <IconButton onClick={handleClose}>
               <CloseIcon />
@@ -252,30 +346,57 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }
           </Alert>
 
           <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
+            <Tab label="Current Position" />
             <Tab label="White Analysis" />
             <Tab label="Black Analysis" />
             <Tab label="Game Insights" />
           </Tabs>
 
-          {tabValue === 0 &&
+          {tabValue === 0 && (
+            <PositionRadarAnalysis
+              gameReview={gameReview}
+              currentMoveIndex={currentMoveIndex}
+              moveAnalysis={moveAnalysis}
+            />
+          )}
+
+          {tabValue === 1 &&
             renderPlayerAnalysis(
               gameReview.whiteAnalysis,
               gameReview.insights.whiteBestTheme,
               gameReview.insights.whiteWorstTheme
             )}
 
-          {tabValue === 1 &&
+          {tabValue === 2 &&
             renderPlayerAnalysis(
               gameReview.blackAnalysis,
               gameReview.insights.blackBestTheme,
               gameReview.insights.blackWorstTheme
             )}
 
-          {tabValue === 2 && (
+          {tabValue === 3 && (
             <Box>
               <Card sx={{ mb: 3 }}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="h6" gutterBottom>
+                    White vs Black Theme Comparison
+                  </Typography>
+                  <Box sx={{ display: "flex", justifyContent: "center" }}>
+                    {renderRadarComparison(
+                      gameReview.whiteAnalysis.averageThemeScores,
+                      gameReview.blackAnalysis.averageThemeScores
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
                     <Flag /> Turning Points
                   </Typography>
                   {gameReview.insights.turningPoints.map((tp, idx) => (
@@ -287,7 +408,10 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({ gameReview }
                         borderRadius: 1,
                         backgroundColor: "#2A2A2A",
                         borderLeft: 4,
-                        borderColor: tp.player === "White" ? "primary.main" : "secondary.main",
+                        borderColor:
+                          tp.player === "White"
+                            ? "primary.main"
+                            : "secondary.main",
                       }}
                     >
                       <Typography variant="body1" fontWeight="bold">

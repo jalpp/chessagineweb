@@ -13,7 +13,6 @@ import { Chess } from "chess.js";
 import { CandidateMove, getChessDBSpeech, useChessDB } from "../componets/tabs/Chessdb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
-import { Board } from "../libs/tacticalboard/board";
 import { ApiSettings } from "../componets/tabs/ModelSetting";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
 
@@ -572,13 +571,8 @@ ${candidateMoves}
 </database_analysis>`;
       }
 
-      // Add visual board representation
-      const board = new Board(currentFen);
+     
       query += `
-
-<board_tactics>
-${board.toString()}
-</board_tactics>
 
 </chess_coaching_request>`;
 
@@ -953,14 +947,8 @@ ${customQuery}
 </additional_considerations>`;
         }
 
-        // Add visual board representation
-        const board = new Board(currentFen);
+      
         query += `
-
-<board_tactics>
-${board.toString()}
-</board_tactics>
-
 </chess_analysis_request>`;
 
         if (analysisType === "annotation") {

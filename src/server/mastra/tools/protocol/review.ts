@@ -16,6 +16,7 @@ interface GameReview {
             space: number;
             positional: number;
             kingSafety: number;
+            tactical: number;
         };
     };
     blackAnalysis: {
@@ -27,6 +28,7 @@ interface GameReview {
             space: number;
             positional: number;
             kingSafety: number;
+            tactical: number;
         };
     };
     insights: {
@@ -108,14 +110,16 @@ function calculateAverageScores(scores: Array<{
     space: number;
     positional: number;
     kingSafety: number;
+    tactical: number;
 }>) {
     const sum = scores.reduce((acc, score) => ({
         material: acc.material + score.material,
         mobility: acc.mobility + score.mobility,
         space: acc.space + score.space,
         positional: acc.positional + score.positional,
-        kingSafety: acc.kingSafety + score.kingSafety
-    }), { material: 0, mobility: 0, space: 0, positional: 0, kingSafety: 0 });
+        kingSafety: acc.kingSafety + score.kingSafety,
+        tactical: acc.tactical + score.tactical
+    }), { material: 0, mobility: 0, space: 0, positional: 0, kingSafety: 0, tactical: 0 });
     
     const count = scores.length;
     return {
@@ -123,7 +127,8 @@ function calculateAverageScores(scores: Array<{
         mobility: sum.mobility / count,
         space: sum.space / count,
         positional: sum.positional / count,
-        kingSafety: sum.kingSafety / count
+        kingSafety: sum.kingSafety / count,
+        tactical: sum.tactical / count
     };
 }
 

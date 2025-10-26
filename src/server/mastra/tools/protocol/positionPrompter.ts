@@ -1,3 +1,4 @@
+import { TacticlBoard } from "../themes/tacticalBoard";
 import {
   BoardState,
   KingSafety,
@@ -13,9 +14,11 @@ import {
 export class PositionPrompter {
   private state: BoardState;
   private sections: string[];
+  private tactical: TacticlBoard;
 
   constructor(state: BoardState) {
     this.state = state;
+    this.tactical = new TacticlBoard(state.fen);
     this.sections = [];
   }
 
@@ -36,6 +39,7 @@ export class PositionPrompter {
     this.addSpaceControl();
     this.addSquareColorControl();
     this.addPawnStructureAnalysis();
+    this.addTacticalAnalysis();
     this.addAttackDefenseDetails();
 
     this.sections.push("</detailed_board_analysis>");
@@ -96,18 +100,18 @@ export class PositionPrompter {
     this.sections.push("\nMATERIAL BALANCE:");
     if (materialDiff > 0) {
       this.sections.push(
-        `  White has a material advantage of +${materialDiff} centipawns`
+        `  White has a material advantage of +${materialDiff} points`
       );
       this.addMaterialAdvantageDescription(materialDiff);
     } else if (materialDiff < 0) {
       const absMatDiff = Math.abs(materialDiff);
       this.sections.push(
-        `  Black has a material advantage of +${absMatDiff} centipawns`
+        `  Black has a material advantage of +${absMatDiff} points`
       );
       this.addMaterialAdvantageDescription(absMatDiff);
     } else {
       this.sections.push(
-        `  Material is EQUAL - both sides have ${this.state.white.materialScore.materialvalue} centipawns`
+        `  Material is EQUAL - both sides have ${this.state.white.materialScore.materialvalue} points`
       );
     }
     this.sections.push("</material_analysis>");
@@ -116,55 +120,55 @@ export class PositionPrompter {
   private addPlayerMaterial(color: string, materialScore: MaterialInfo): void {
     this.sections.push(`${color} PIECES:`);
     this.sections.push(
-      `  Total Material Value: ${materialScore.materialvalue} centipawns`
+      `  Total Material Value: ${materialScore.materialvalue} points`
     );
     this.sections.push(
       `  Queens: ${materialScore.piececount.queens} (${
-        materialScore.piececount.queens * 900
+        materialScore.piececount.queens * 9
       } points)`
     );
     this.sections.push(
       `  Rooks: ${materialScore.piececount.rooks} (${
-        materialScore.piececount.rooks * 500
+        materialScore.piececount.rooks * 5
       } points)`
     );
     this.sections.push(
       `  Bishops: ${materialScore.piececount.bishops} (${
-        materialScore.piececount.bishops * 300
+        materialScore.piececount.bishops * 3
       } points)`
     );
     this.sections.push(
       `  Knights: ${materialScore.piececount.knights} (${
-        materialScore.piececount.knights * 300
+        materialScore.piececount.knights * 3
       } points)`
     );
     this.sections.push(
       `  Pawns: ${materialScore.piececount.pawns} (${
-        materialScore.piececount.pawns * 100
+        materialScore.piececount.pawns * 1
       } points)`
     );
     this.sections.push(
       `  Bishop Pair Bonus: ${
-        materialScore.bishoppair ? "YES (+50 points strategic value)" : "NO"
+        materialScore.bishoppair ? "YES (+0.5 points strategic value)" : "NO"
       }`
     );
     if (color === "WHITE") this.sections.push(""); // Add spacing between white and black
   }
 
   private addMaterialAdvantageDescription(advantage: number): void {
-    if (advantage >= 900) {
+    if (advantage >= 9) {
       this.sections.push(
         `  This is equivalent to approximately a QUEEN advantage`
       );
-    } else if (advantage >= 500) {
+    } else if (advantage >= 5) {
       this.sections.push(
         `  This is equivalent to approximately a ROOK advantage`
       );
-    } else if (advantage >= 300) {
+    } else if (advantage >= 3) {
       this.sections.push(
         `  This is equivalent to approximately a MINOR PIECE advantage`
       );
-    } else if (advantage >= 100) {
+    } else if (advantage >= 1) {
       this.sections.push(
         `  This is equivalent to approximately a PAWN advantage`
       );
@@ -233,13 +237,13 @@ export class PositionPrompter {
       `  Enemy Attackers on King: ${kingSafety.attackerscount} pieces attacking the king`
     );
     this.sections.push(
-      `  Friendly Defenders of King: ${kingSafety.defenderscount} pieces defending the king`
+      `  Friendly Defenders of King: ${kingSafety.defenderscount} (higher = better) pieces defending the king`
     );
     this.sections.push(
       `  Pawn Shield Strength: ${kingSafety.pawnshield} (higher is better protection)`
     );
     this.sections.push(
-      `  King Safety Score: ${kingSafety.kingsafetyscore} (lower is safer)`
+      `  King Safety Advantage: ${kingSafety.kingsafetysadvantage} (higher is safer, negative means danger)`
     );
     this.sections.push(
       `  Castling Status: ${
@@ -254,17 +258,9 @@ export class PositionPrompter {
       }`
     );
 
-    const safetyLevel = this.getKingSafetyLevel(kingSafety.kingsafetyscore);
-    this.sections.push(`  Overall King Safety: ${safetyLevel}`);
     if (color === "WHITE") this.sections.push(""); // Add spacing
   }
 
-  private getKingSafetyLevel(safetyScore: number): string {
-    if (safetyScore <= 0) return "VERY SAFE";
-    if (safetyScore <= 5) return "SAFE";
-    if (safetyScore <= 15) return "SOMEWHAT UNSAFE";
-    return "VERY DANGEROUS";
-  }
 
   private addCastlingRights(): void {
     this.sections.push("\n<castling_rights>");
@@ -302,15 +298,19 @@ export class PositionPrompter {
     const mobilityDiff =
       this.state.white.pieceMobilityScore.totalmobility -
       this.state.black.pieceMobilityScore.totalmobility;
-    if (mobilityDiff > 0) {
+    if (mobilityDiff > 5) {
       this.sections.push(
-        `\nMOBILITY ADVANTAGE: White has ${mobilityDiff} more squares of mobility (more active pieces)`
+        `\nMOBILITY ADVANTAGE: White has ${mobilityDiff} more squares of mobility (significantly more active pieces)`
       );
-    } else if (mobilityDiff < 0) {
+    } else if (mobilityDiff < -5) {
       this.sections.push(
         `\nMOBILITY ADVANTAGE: Black has ${Math.abs(
           mobilityDiff
-        )} more squares of mobility (more active pieces)`
+        )} more squares of mobility (significantly more active pieces)`
+      );
+    } else if (mobilityDiff !== 0) {
+      this.sections.push(
+        `\nMOBILITY: ${mobilityDiff > 0 ? 'White' : 'Black'} has a slight mobility advantage (${Math.abs(mobilityDiff)} squares)`
       );
     } else {
       this.sections.push(
@@ -346,15 +346,19 @@ export class PositionPrompter {
       this.state.white.spaceScore.totalspacecontrolscore -
       this.state.black.spaceScore.totalspacecontrolscore;
 
-    if (centerControlDiff > 0) {
+    if (centerControlDiff > 3) {
       this.sections.push(
-        `\nCENTER CONTROL: White controls the center better (+${centerControlDiff} advantage)`
+        `\nCENTER CONTROL: White dominates the center (+${centerControlDiff} advantage)`
       );
-    } else if (centerControlDiff < 0) {
+    } else if (centerControlDiff < -3) {
       this.sections.push(
-        `\nCENTER CONTROL: Black controls the center better (+${Math.abs(
+        `\nCENTER CONTROL: Black dominates the center (+${Math.abs(
           centerControlDiff
         )} advantage)`
+      );
+    } else if (centerControlDiff !== 0) {
+      this.sections.push(
+        `\nCENTER CONTROL: ${centerControlDiff > 0 ? 'White' : 'Black'} has slight center advantage (+${Math.abs(centerControlDiff)})`
       );
     } else {
       this.sections.push(
@@ -362,15 +366,19 @@ export class PositionPrompter {
       );
     }
 
-    if (totalSpaceDiff > 0) {
+    if (totalSpaceDiff > 5) {
       this.sections.push(
-        `OVERALL SPACE: White has more space (+${totalSpaceDiff} total advantage)`
+        `OVERALL SPACE: White has significantly more space (+${totalSpaceDiff} total advantage)`
       );
-    } else if (totalSpaceDiff < 0) {
+    } else if (totalSpaceDiff < -5) {
       this.sections.push(
-        `OVERALL SPACE: Black has more space (+${Math.abs(
+        `OVERALL SPACE: Black has significantly more space (+${Math.abs(
           totalSpaceDiff
         )} total advantage)`
+      );
+    } else if (totalSpaceDiff !== 0) {
+      this.sections.push(
+        `OVERALL SPACE: ${totalSpaceDiff > 0 ? 'White' : 'Black'} has slight space advantage (+${Math.abs(totalSpaceDiff)})`
       );
     } else {
       this.sections.push(`OVERALL SPACE: Both sides control equal space`);
@@ -387,7 +395,7 @@ export class PositionPrompter {
       `  Flank Control Score: ${spaceScore.flankspacecontrolscore} (attacks on flank squares a4,a5,b4,b5,g4,g5,h4,h5)`
     );
     this.sections.push(
-      `  Total Space Control: ${spaceScore.totalspacecontrolscore}`
+      `  Total Space Control: ${spaceScore.totalspacecontrolscore} (higher is better)`
     );
     if (color === "WHITE") this.sections.push(""); // Add spacing
   }
@@ -426,32 +434,6 @@ export class PositionPrompter {
     this.addPlayerPawnStructure("WHITE", this.state.white.positionalScore);
     this.addPlayerPawnStructure("BLACK", this.state.black.positionalScore);
 
-    const whitePawnWeaknesses =
-      this.state.white.positionalScore.doublepawncount +
-      this.state.white.positionalScore.isolatedpawncount +
-      this.state.white.positionalScore.backwardpawncount;
-    const blackPawnWeaknesses =
-      this.state.black.positionalScore.doublepawncount +
-      this.state.black.positionalScore.isolatedpawncount +
-      this.state.black.positionalScore.backwardpawncount;
-
-    if (whitePawnWeaknesses > blackPawnWeaknesses) {
-      this.sections.push(
-        `\nPAWN STRUCTURE EVALUATION: Black has better pawn structure (White has ${
-          whitePawnWeaknesses - blackPawnWeaknesses
-        } more pawn weaknesses)`
-      );
-    } else if (blackPawnWeaknesses > whitePawnWeaknesses) {
-      this.sections.push(
-        `\nPAWN STRUCTURE EVALUATION: White has better pawn structure (Black has ${
-          blackPawnWeaknesses - whitePawnWeaknesses
-        } more pawn weaknesses)`
-      );
-    } else {
-      this.sections.push(
-        `\nPAWN STRUCTURE EVALUATION: Both sides have similar pawn structure quality`
-      );
-    }
     this.sections.push("</pawn_structure_analysis>");
   }
 
@@ -470,9 +452,27 @@ export class PositionPrompter {
       `  Backward Pawns: ${positional.backwardpawncount} (weakness - pawns that cannot advance safely)`
     );
     this.sections.push(
-      `  Pawn Weakness Score: ${positional.weaknessscore}% (percentage of pawns with structural weaknesses)`
+      `  Passed Pawns: ${positional.passedpawncount} (strength - no enemy pawns blocking path to promotion)`
+    );
+    this.sections.push(
+      `  Pawn Structure Advantage Score: ${positional.positionalAdvatange} (higher is better - considers weaknesses and passed pawns)`
     );
     if (color === "WHITE") this.sections.push(""); // Add spacing
+  }
+
+  private addTacticalAnalysis(): void {
+    this.sections.push("\n<tactical_analysis>");
+    
+    // Get the full tactical summary
+    const tacticalSummary = this.tactical.toString();
+    
+    // Split into lines and add each line to sections
+    const lines = tacticalSummary.split('\n');
+    for (const line of lines) {
+      this.sections.push(line);
+    }
+    
+    this.sections.push("</tactical_analysis>");
   }
 
   private addAttackDefenseDetails(): void {
