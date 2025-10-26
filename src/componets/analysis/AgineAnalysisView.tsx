@@ -33,7 +33,7 @@ import { CandidateMove, } from "../tabs/Chessdb";
 import { ChatMessage } from "@/hooks/useAgine";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { GameReviewTheme } from "../tabs/GameReviewDialog";
+import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 
