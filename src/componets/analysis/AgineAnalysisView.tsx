@@ -9,6 +9,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Typography,
+  Divider,
+  ThemeProvider,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -16,7 +18,7 @@ import {
   Chat as ChatIcon,
 } from "@mui/icons-material";
 
-import { purpleTheme } from "@/theme/theme";
+import { darkGreyTheme, purpleTheme } from "@/theme/theme";
 import StockfishAnalysisTab from "../tabs/StockfishTab";
 import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
@@ -32,6 +34,9 @@ import { ChatMessage } from "@/hooks/useAgine";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme } from "../tabs/GameReviewDialog";
+import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
+import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
+
 
 // Base interface for common analysis view props
 interface BaseAnalysisViewProps {
@@ -47,6 +52,7 @@ interface BaseAnalysisViewProps {
   formatPrincipalVariation: (pv: string[], startFen: string) => string;
   setEngineDepth: (depth: number) => void;
   setEngineLines: (lines: number) => void;
+  fen?: string;
 
   // Opening Explorer props
   openingLoading: boolean;
@@ -130,6 +136,7 @@ function AgineAnalysisView({
   formatPrincipalVariation,
   setEngineDepth,
   setEngineLines,
+  fen,
 
   // Opening Explorer props
   openingLoading,
@@ -301,9 +308,86 @@ function AgineAnalysisView({
                     chatLoading={chatLoading}
                     gameReview={gameReview!}
                   />
+                  <Divider/>
                 </AccordionDetails>
               </Accordion>
             )}
+
+            {isGameReviewMode ? (
+              <Accordion
+                expanded={activeAnalysisTab === 1}
+                onChange={() =>
+                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
+                }
+                sx={{
+                  backgroundColor: purpleTheme.background.card,
+                  "&:before": { display: "none" },
+                  borderRadius: 2,
+                  overflow: "hidden",
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: purpleTheme.text.primary,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Position Theme Analysis
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {gameReviewTheme !== null &&
+                    gameReview !== undefined &&
+                    currentMoveIndex !== undefined && (
+                      <ThemeProvider theme={darkGreyTheme}>
+                        <PositionRadarAnalysis
+                          moveAnalysis={gameReview}
+                          currentMoveIndex={currentMoveIndex}
+                          gameReview={gameReviewTheme}
+                        />
+                      </ThemeProvider>
+                    )}
+                </AccordionDetails>
+              </Accordion>
+            ) : (
+              <Accordion
+                expanded={activeAnalysisTab === 1}
+                onChange={() =>
+                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
+                }
+                sx={{
+                  backgroundColor: purpleTheme.background.card,
+                  "&:before": { display: "none" },
+                  borderRadius: 2,
+                  overflow: "hidden",
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: purpleTheme.text.primary,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Position Theme Analysis
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {/* Replace with your actual FEN value */}
+                  <ThemeProvider theme={darkGreyTheme}>
+                    <PositionFenThemeAnalysis fen={fen ?? ""} />
+                  </ThemeProvider>
+                </AccordionDetails>
+              </Accordion>
+            )}
+
 
             {/* Stockfish Analysis */}
             <Accordion

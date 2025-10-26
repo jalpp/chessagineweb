@@ -94,3 +94,25 @@ export const agineTheme = createTheme({
     },
   },
 });
+
+export const darkGreyTheme = createTheme({
+  palette: {
+    mode: "dark",
+    background: {
+      default: "#121212",
+      paper: "#1E1E1E",
+    },
+    text: {
+      primary: "#E0E0E0",
+      secondary: "#B0B0B0",
+    },
+    primary: { main: "#bb86fc" },
+    success: { main: "#81c784" },
+    error: { main: "#e57373" },
+    divider: "#333",
+  },
+  components: {
+    MuiCard: { styleOverrides: { root: { backgroundColor: "#1E1E1E" } } },
+    MuiDialog: { styleOverrides: { paper: { backgroundColor: "#1E1E1E" } } },
+  },
+});
