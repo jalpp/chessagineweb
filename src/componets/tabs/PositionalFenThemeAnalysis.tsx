@@ -18,19 +18,12 @@ import {
   Shield,
   Bolt,
   Refresh,
+  Square,
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 import { useThemeScore } from "@/hooks/useThemeScore";
 import { Color } from "chess.js";
-
-interface ThemeScore {
-  material: number;
-  mobility: number;
-  space: number;
-  positional: number;
-  kingSafety: number;
-  tactical: number;
-}
+import { getThemeLabelColor, ThemeScore } from "@/libs/themes/helper";
 
 interface PositionFenThemeAnalysisProps {
   fen: string;
@@ -38,14 +31,6 @@ interface PositionFenThemeAnalysisProps {
   title?: string; // Optional: custom title for the analysis
 }
 
-const themeColors = {
-  material: '#bb86fc',
-  mobility: '#81c784',
-  space: '#64b5f6',
-  positional: '#ffb74d',
-  kingSafety: '#e57373',
-  tactical: '#ffd54f'
-};
 
 const formatThemeName = (theme: string) =>
   theme
@@ -61,6 +46,8 @@ const getThemeIcon = (theme: keyof ThemeScore) => {
     case 'positional': return <Place />;
     case 'kingSafety': return <Shield />;
     case 'tactical': return <Bolt />;
+    case 'darksqaureControl': return <Square/>
+    case 'lightsqaureControl': return <Square/>
     default: return null;
   }
 };
@@ -120,7 +107,7 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
       label: formatThemeName(theme),
       data: data,
       valueFormatter: (v: number | null) => v !== null ? v.toFixed(2) : 'N/A',
-      color: themeColors[theme],
+      color: getThemeLabelColor(theme),
       fillArea: true,
       hideMark: true
     };
@@ -140,15 +127,7 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
     };
   });
 
-  // Calculate overall theme strength
-  const totalScore = themes.reduce((sum, theme) => sum + scores[theme], 0);
-  const averageScore = totalScore / themes.length;
-  const strongestTheme = themes.reduce((strongest, theme) => 
-    scores[theme] > scores[strongest] ? theme : strongest
-  );
-  const weakestTheme = themes.reduce((weakest, theme) => 
-    scores[theme] < scores[weakest] ? theme : weakest
-  );
+  
 
   return (
     <Box>
@@ -184,20 +163,20 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
           <Grid  sx={{xs: 12, sm: 6, md: 4}} key={theme}>
             <Card sx={{ 
               borderLeft: 4, 
-              borderColor: themeColors[theme],
+              borderColor: getThemeLabelColor(theme),
               transition: 'transform 0.2s',
               '&:hover': { transform: 'translateY(-4px)' }
             }}>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                  <Box sx={{ color: themeColors[theme] }}>
+                  <Box sx={{ color: getThemeLabelColor(theme)}}>
                     {getThemeIcon(theme)}
                   </Box>
                   <Typography variant="subtitle2" color="textSecondary">
                     {formatThemeName(theme)}
                   </Typography>
                 </Stack>
-                <Typography variant="h5" sx={{ color: themeColors[theme] }}>
+                <Typography variant="h5" sx={{ color: getThemeLabelColor(theme)}}>
                   {scores[theme].toFixed(2)}
                 </Typography>
               </CardContent>

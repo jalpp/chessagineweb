@@ -242,9 +242,15 @@ export class PositionPrompter {
     this.sections.push(
       `  Pawn Shield Strength: ${kingSafety.pawnshield} (higher is better protection)`
     );
-    this.sections.push(
+    if(color === "WHITE"){
+      this.sections.push(
       `  King Safety Advantage: ${kingSafety.kingsafetysadvantage} (higher is safer, negative means danger)`
     );
+    }else{
+      this.sections.push(
+      `  King Safety Advantage: ${kingSafety.kingsafetysadvantage} (higher is danger, negative means safer)`
+    );
+    }
     this.sections.push(
       `  Castling Status: ${
         kingSafety.hascastled
@@ -454,9 +460,15 @@ export class PositionPrompter {
     this.sections.push(
       `  Passed Pawns: ${positional.passedpawncount} (strength - no enemy pawns blocking path to promotion)`
     );
-    this.sections.push(
-      `  Pawn Structure Advantage Score: ${positional.positionalAdvatange} (higher is better - considers weaknesses and passed pawns)`
+    if(color === "WHITE"){
+      this.sections.push(
+      `  Pawn Structure Advantage Score: ${positional.positionalAdvatange} (higher is better - negative is worse pawn structure)`
     );
+    }else {
+      this.sections.push(
+      `  Pawn Structure Advantage Score: ${positional.positionalAdvatange} (negative is better - positive is worse pawn strucutre)`
+    );
+    }
     if (color === "WHITE") this.sections.push(""); // Add spacing
   }
 

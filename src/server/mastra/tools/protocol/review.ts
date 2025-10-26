@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import { analyzeVariationThemes, findCriticalMoments, VariationAnalysis, ThemeChange } from "./ovp";
+import { analyzeVariationThemes, findCriticalMoments, VariationAnalysis, ThemeChange, ThemeScore } from "./ovp";
 
 interface GameReview {
     gameInfo: {
@@ -10,26 +10,12 @@ interface GameReview {
     whiteAnalysis: {
         overallThemes: VariationAnalysis;
         criticalMoments: Array<{moveIndex: number, move: string, themeChanges: ThemeChange[]}>;
-        averageThemeScores: {
-            material: number;
-            mobility: number;
-            space: number;
-            positional: number;
-            kingSafety: number;
-            tactical: number;
-        };
+        averageThemeScores: ThemeScore
     };
     blackAnalysis: {
         overallThemes: VariationAnalysis;
         criticalMoments: Array<{moveIndex: number, move: string, themeChanges: ThemeChange[]}>;
-        averageThemeScores: {
-            material: number;
-            mobility: number;
-            space: number;
-            positional: number;
-            kingSafety: number;
-            tactical: number;
-        };
+        averageThemeScores: ThemeScore
     };
     insights: {
         whiteBestTheme: string;
@@ -104,31 +90,30 @@ export function generateGameReview(pgn: string, criticalMomentThreshold: number 
     };
 }
 
-function calculateAverageScores(scores: Array<{
-    material: number;
-    mobility: number;
-    space: number;
-    positional: number;
-    kingSafety: number;
-    tactical: number;
-}>) {
+function calculateAverageScores(scores: Array<ThemeScore>) {
     const sum = scores.reduce((acc, score) => ({
         material: acc.material + score.material,
         mobility: acc.mobility + score.mobility,
         space: acc.space + score.space,
         positional: acc.positional + score.positional,
         kingSafety: acc.kingSafety + score.kingSafety,
-        tactical: acc.tactical + score.tactical
-    }), { material: 0, mobility: 0, space: 0, positional: 0, kingSafety: 0, tactical: 0 });
+        tactical: acc.tactical + score.tactical,
+        darksqaureControl: acc.darksqaureControl + score.darksqaureControl,
+        lightsqaureControl: acc.lightsqaureControl + score.lightsqaureControl
+
+    }), { material: 0, mobility: 0, space: 0, positional: 0, kingSafety: 0, tactical: 0, darksqaureControl: 0, lightsqaureControl: 0 });
     
     const count = scores.length;
     return {
-        material: sum.material / count,
-        mobility: sum.mobility / count,
-        space: sum.space / count,
-        positional: sum.positional / count,
-        kingSafety: sum.kingSafety / count,
-        tactical: sum.tactical / count
+        material: parseFloat((sum.material / count).toFixed(2)),
+        mobility: parseFloat((sum.mobility / count).toFixed(2)),
+        space: parseFloat((sum.space / count).toFixed(2)),
+        positional: parseFloat((sum.positional / count).toFixed(2)),
+        kingSafety: parseFloat((sum.kingSafety / count).toFixed(2)),
+        tactical: parseFloat((sum.tactical / count).toFixed(2)),
+        darksqaureControl: parseFloat((sum.darksqaureControl / count).toFixed(2)),
+        lightsqaureControl: parseFloat((sum.lightsqaureControl / count).toFixed(2))
+
     };
 }
 

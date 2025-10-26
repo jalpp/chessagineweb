@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Color } from 'chess.js';
-
-interface ThemeScore {
-    material: number;
-    mobility: number;
-    space: number;
-    positional: number;
-    kingSafety: number;
-    tactical: number;
-}
+import { ThemeScore } from '@/libs/themes/helper';
 
 interface UseThemeScoreResult {
     scores: ThemeScore | null;

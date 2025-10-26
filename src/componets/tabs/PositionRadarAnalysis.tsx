@@ -20,48 +20,8 @@ import {
 import { RadarChart } from "@mui/x-charts";
 import { MoveAnalysis, MoveQuality } from "@/hooks/useGameReview";
 import { getMoveClassificationStyle } from "./GameReviewTab";
+import { ThemeScore, GameReviewTheme, getThemeLabelColor } from "@/libs/themes/helper";
 
-interface ThemeScore {
-  material: number;
-  mobility: number;
-  space: number;
-  positional: number;
-  kingSafety: number;
-  tactical: number;
-}
-
-interface VariationAnalysis {
-  themeChanges: Array<any>;
-  overallChange: number;
-  strongestImprovement: any;
-  biggestDecline: any;
-  moveByMoveScores: ThemeScore[];
-}
-
-interface GameReviewTheme {
-  gameInfo: {
-    white: string;
-    black: string;
-    result: string;
-  };
-  whiteAnalysis: {
-    overallThemes: VariationAnalysis;
-    criticalMoments: Array<any>;
-    averageThemeScores: ThemeScore;
-  };
-  blackAnalysis: {
-    overallThemes: VariationAnalysis;
-    criticalMoments: Array<any>;
-    averageThemeScores: ThemeScore;
-  };
-  insights: {
-    whiteBestTheme: string;
-    whiteWorstTheme: string;
-    blackBestTheme: string;
-    blackWorstTheme: string;
-    turningPoints: Array<any>;
-  };
-}
 
 interface CurrentPositionAnalysisProps {
   gameReview: GameReviewTheme;
@@ -142,7 +102,7 @@ export const PositionRadarAnalysis: React.FC<CurrentPositionAnalysisProps> = ({
       label: formatThemeName(theme),
       data: data,
       valueFormatter: (v: number | null) => v !== null ? v.toFixed(2) : 'N/A',
-      color: themeColors[theme],
+      color: getThemeLabelColor(theme),
       fillArea: true,
       hideMark: true
     };
@@ -219,20 +179,20 @@ export const PositionRadarAnalysis: React.FC<CurrentPositionAnalysisProps> = ({
           <Grid sx={{xs: 12, sm: 6, md: 4}} key={theme}>
             <Card sx={{ 
               borderLeft: 4, 
-              borderColor: themeColors[theme],
+              borderColor: getThemeLabelColor(theme),
               transition: 'transform 0.2s',
               '&:hover': { transform: 'translateY(-4px)' }
             }}>
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                  <Box sx={{ color: themeColors[theme] }}>
+                  <Box sx={{ color: getThemeLabelColor(theme) }}>
                     {getThemeIcon(theme)}
                   </Box>
                   <Typography variant="subtitle2" color="textSecondary">
                     {formatThemeName(theme)}
                   </Typography>
                 </Stack>
-                <Typography variant="h5" sx={{ color: themeColors[theme] }}>
+                <Typography variant="h5" sx={{ color: getThemeLabelColor(theme) }}>
                   {currentThemeScores[theme].toFixed(2)}
                 </Typography>
               </CardContent>
