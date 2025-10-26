@@ -35,6 +35,7 @@ import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme } from "../tabs/GameReviewDialog";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
+import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 
 
 // Base interface for common analysis view props
@@ -51,6 +52,7 @@ interface BaseAnalysisViewProps {
   formatPrincipalVariation: (pv: string[], startFen: string) => string;
   setEngineDepth: (depth: number) => void;
   setEngineLines: (lines: number) => void;
+  fen?: string;
 
   // Opening Explorer props
   openingLoading: boolean;
@@ -134,6 +136,7 @@ function AgineAnalysisView({
   formatPrincipalVariation,
   setEngineDepth,
   setEngineLines,
+  fen,
 
   // Opening Explorer props
   openingLoading,
@@ -310,7 +313,7 @@ function AgineAnalysisView({
               </Accordion>
             )}
 
-            {isGameReviewMode && (
+            {isGameReviewMode ? (
               <Accordion
                 expanded={activeAnalysisTab === 1}
                 onChange={() =>
@@ -324,10 +327,7 @@ function AgineAnalysisView({
                 }}
               >
                 <AccordionSummary
-                  expandIcon={
-                    <ExpandMoreIcon  />
-                  }
-
+                  expandIcon={<ExpandMoreIcon />}
                 >
                   <Typography
                     variant="h6"
@@ -339,21 +339,55 @@ function AgineAnalysisView({
                     Position Theme Analysis
                   </Typography>
                 </AccordionSummary>
-                <AccordionDetails >
+                <AccordionDetails>
                   {gameReviewTheme !== null &&
                     gameReview !== undefined &&
                     currentMoveIndex !== undefined && (
                       <ThemeProvider theme={darkGreyTheme}>
                         <PositionRadarAnalysis
-                        moveAnalysis={gameReview}
-                        currentMoveIndex={currentMoveIndex}
-                        gameReview={gameReviewTheme}
-                      />
+                          moveAnalysis={gameReview}
+                          currentMoveIndex={currentMoveIndex}
+                          gameReview={gameReviewTheme}
+                        />
                       </ThemeProvider>
                     )}
                 </AccordionDetails>
               </Accordion>
+            ) : (
+              <Accordion
+                expanded={activeAnalysisTab === 1}
+                onChange={() =>
+                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
+                }
+                sx={{
+                  backgroundColor: purpleTheme.background.card,
+                  "&:before": { display: "none" },
+                  borderRadius: 2,
+                  overflow: "hidden",
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: purpleTheme.text.primary,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Position Theme Analysis
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  {/* Replace with your actual FEN value */}
+                  <ThemeProvider theme={darkGreyTheme}>
+                    <PositionFenThemeAnalysis fen={fen ?? ""} />
+                  </ThemeProvider>
+                </AccordionDetails>
+              </Accordion>
             )}
+
 
             {/* Stockfish Analysis */}
             <Accordion

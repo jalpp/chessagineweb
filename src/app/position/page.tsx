@@ -107,6 +107,7 @@ export default function PositionPage() {
             stockfishLoading={stockfishLoading}
             handleEngineLineClick={handleEngineLineClick}
             engineDepth={engineDepth}
+            fen={fen}
             engineLines={engineLines}
             engine={engine}
             analyzeWithStockfish={analyzeWithStockfish}
