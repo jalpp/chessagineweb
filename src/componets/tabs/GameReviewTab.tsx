@@ -27,8 +27,8 @@ import {
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
 import EvalGraph from "./EvalGraph";
-import { GameReviewDialog, GameReviewTheme } from "./GameReviewDialog";
-
+import { GameReviewDialog} from "./GameReviewDialog";
+import { GameReviewTheme } from "@/libs/themes/helper";
 export interface MoveStats {
   Best: number;
   "Very Good": number;

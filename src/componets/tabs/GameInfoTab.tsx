@@ -15,7 +15,7 @@ import {
 import { User, Clock, Calendar, Trophy, Info } from "lucide-react";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/hooks/useGameReview";
-import { GameReviewTheme } from "./GameReviewDialog";
+import { GameReviewTheme } from "@/libs/themes/helper";
 
 export interface GameInfoTabProp {
   moves: string[];

@@ -19,6 +19,12 @@ export class PositionScorer {
   }
 
   public getThemeScore(theme: STATE_THEMES): number {
+    if(this.side === "w") return this.getSideThemeScore(theme);
+
+    return - (this.getSideThemeScore(theme))
+  }
+
+  private getSideThemeScore(theme: STATE_THEMES): number {
     const currentSideState: SideStateScores = this.getSideScorer;
     switch (theme) {
       case STATE_THEMES.KING_SAFETY:
@@ -33,6 +39,10 @@ export class PositionScorer {
         return currentSideState.spaceScore.spaceadvantage;
       case STATE_THEMES.TACTICAL:
         return this.tacticalScorer.calculateTacticalScore(this.side);
+      case STATE_THEMES.SQAURE_CONTROL_LIGHT:
+        return currentSideState.squareControlScore.lightSquareAdvantage;
+      case STATE_THEMES.SQAURE_CONTROL_DARK:
+        return currentSideState.squareControlScore.darkSqaureAdvantage;    
     }
 
     return 0;

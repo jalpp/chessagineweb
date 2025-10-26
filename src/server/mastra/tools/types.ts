@@ -82,6 +82,9 @@ export interface SideSquareControl{
   darkSquares: string[],
   lightSquareControl: number,
   darkSqaureControl: number
+  lightSquareAdvantage: number,
+  darkSqaureAdvantage: number,
+  totalSqaureAdvantage: number;
 }
 
 export interface MaterialInfo {
@@ -104,7 +107,8 @@ export enum STATE_THEMES {
     SPACE,
     PLACEMENT,
     POSITIONAL,
-    SQAURE_CONTROL,
+    SQAURE_CONTROL_LIGHT,
+    SQAURE_CONTROL_DARK,
     KING_SAFETY,
     MOBILITY,
     TACTICAL

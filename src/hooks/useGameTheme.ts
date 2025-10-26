@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { GameReviewTheme } from '@/componets/tabs/GameReviewDialog';
+import { GameReviewTheme } from '@/libs/themes/helper';
 
 interface UseGameThemeReturn {
   gameReviewTheme: GameReviewTheme | null;
