@@ -216,9 +216,32 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   
   // Resize functionality
   const [dimensions, setDimensions] = useLocalStorage<{width: number, height: number}>(
-    "chat_ui_chat_dimensions",
-    DEFAULT_CHAT_DIMENSIONS
-  )
+  "chat_ui_chat_dimensions",
+  {
+    width: typeof window !== 'undefined' && window.innerWidth < 768 
+      ? window.innerWidth - 32 
+      : DEFAULT_CHAT_DIMENSIONS.width,
+    height: typeof window !== 'undefined' && window.innerWidth < 768 
+      ? window.innerHeight - 100 
+      : DEFAULT_CHAT_DIMENSIONS.height,
+  }
+);
+
+// Add window resize listener
+useEffect(() => {
+  const handleResize = () => {
+    if (window.innerWidth < 768) {
+      setDimensions({
+        width: window.innerWidth - 32,
+        height: window.innerHeight - 100,
+      });
+    }
+  };
+  
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
@@ -739,6 +762,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       sx={{
         width: `${dimensions.width}px`,
         height: `${dimensions.height}px`,
+         maxWidth: '100vw',
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#1a1a1a",

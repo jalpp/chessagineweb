@@ -80,7 +80,7 @@ const ModelSetting: React.FC = () => {
     if (!config) return false;
     
     
-    if (provider === 'ollama') return true;
+    if (provider === 'ollama' || provider === 'aginecloud') return true;
     
    
     if (!config.keyPrefix) return true;
@@ -119,7 +119,7 @@ const ModelSetting: React.FC = () => {
     }
     
     
-    if (tempSettings.provider !== 'ollama') {
+    if (tempSettings.provider !== 'ollama' && tempSettings.provider !== 'aginecloud') {
       if (!tempSettings.apiKey) {
         setValidationError('Please enter an API key');
         return;
