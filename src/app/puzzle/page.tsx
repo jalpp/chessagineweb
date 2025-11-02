@@ -195,7 +195,6 @@ export default function PuzzlePage() {
         setMoveSquares({});
         setSelectedSquare(null);
         setLegalMoves([]);
-        showSnackbar("New puzzle loaded!", "success");
       } catch (err) {
         console.error("Error fetching puzzle:", err);
         setError("Failed to load puzzle. Please try again.");

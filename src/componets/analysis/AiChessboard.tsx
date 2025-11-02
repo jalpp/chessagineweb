@@ -1224,22 +1224,6 @@ useEffect(() => {
         <DialogTitle>Chessboard Settings</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
-            <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-                Board Size: {boardSize}px
-              </Typography>
-              <Slider
-                value={boardSize}
-                onChange={handleBoardSizeChange}
-                min={300}
-                max={800}
-                step={25}
-                sx={{
-                  color: "#9c27b0",
-                }}
-              />
-            </Box>
-
             {/* Board Theme Selection */}
             <Box>
               <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
