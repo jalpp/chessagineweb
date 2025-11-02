@@ -18,6 +18,7 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import HistoryIcon from "@mui/icons-material/History";
 import CasinoIcon from "@mui/icons-material/Casino";
 import { purpleTheme } from "@/theme/theme";
+import {useTheme} from "@mui/material";
 
 interface UserGameProp {
   loadPGN: (pgn: string) => void;
@@ -31,6 +32,8 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
     ""
   );
   const [games, setGames] = useState<UserGame[]>([]);
+
+  const theme = useTheme();
 
   useEffect(() => {
     if (!lichessUsername) {
@@ -69,10 +72,15 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
         p: 3,
         backgroundColor: purpleTheme.background.paper,
         color: purpleTheme.text.primary,
+        maxWidth: "100%",
+        mx: "auto",
+        [theme.breakpoints.down("sm")]: {
+          p: 2,
+        },
       }}
     >
       <Box display="flex" justifyContent="center" mb={2}>
-        <FormControl>
+        <FormControl fullWidth>
           <TextField
             label="Lichess Username"
             variant="outlined"
@@ -113,7 +121,7 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
           <CircularProgress sx={{ color: purpleTheme.primary }} />
         </Box>
       ) : (
-        <List sx={{ maxHeight: 400, overflowY: "auto" }}>
+        <List sx={{ maxHeight: 400, overflowY: "auto", px: 1 }}>
           {games.map((game) => (
             <ListItemButton
               key={game.id}
@@ -129,11 +137,15 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
                 "&:hover": {
                   backgroundColor: purpleTheme.primaryDark,
                 },
+                [theme.breakpoints.down("sm")]: {
+                  mb: 0.5,
+                  p: 1,
+                },
               }}
             >
               <ListItemText
                 primary={
-                  <Box display="flex" alignItems="center">
+                  <Box display="flex" alignItems="center" flexWrap="wrap">
                     {getSpeedIcon(game.speed)}
                     {`${game.players.white.user?.name || "white"} (${
                       game.players.white.rating || "?"
@@ -149,10 +161,12 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
                   fontWeight: "bold",
                   noWrap: true,
                   color: purpleTheme.text.primary,
+                  fontSize: "0.9rem",
                 }}
                 secondaryTypographyProps={{
                   noWrap: true,
                   color: purpleTheme.text.secondary,
+                  fontSize: "0.8rem",
                 }}
               />
             </ListItemButton>

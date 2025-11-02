@@ -11,6 +11,8 @@ import {
   Typography,
   Divider,
   ThemeProvider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -28,8 +30,7 @@ import LegalMoveTab from "../tabs/LegalMoveTab";
 import ChatTab from "../tabs/ChatTab";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
-import { CandidateMove, } from "../tabs/Chessdb";
-
+import { CandidateMove } from "../tabs/Chessdb";
 import { ChatMessage } from "@/hooks/useAgine";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
@@ -37,10 +38,8 @@ import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 
-
 // Base interface for common analysis view props
 interface BaseAnalysisViewProps {
-  // Stockfish props
   stockfishAnalysisResult: PositionEval | null;
   stockfishLoading: boolean;
   handleEngineLineClick: (line: LineEval, lineIndex: number) => void;
@@ -53,15 +52,11 @@ interface BaseAnalysisViewProps {
   setEngineDepth: (depth: number) => void;
   setEngineLines: (lines: number) => void;
   fen?: string;
-
-  // Opening Explorer props
   openingLoading: boolean;
   openingData: MasterGames | null;
   lichessOpeningData: MasterGames | null;
   lichessOpeningLoading: boolean;
   handleOpeningMoveClick: (move: Moves) => void;
-
-  // ChessDB props
   chessdbdata: CandidateMove[] | null;
   handleMoveClick: (move: CandidateMove) => void;
   queueing: boolean;
@@ -69,12 +64,8 @@ interface BaseAnalysisViewProps {
   loading: boolean;
   refetch: () => void;
   requestAnalysis: () => void;
-
-  // Legal Moves props
   legalMoves: string[];
   handleFutureMoveLegalClick: (move: string) => Promise<void>;
-
-  // Chat props
   chatMessages: ChatMessage[];
   chatInput: string;
   setChatInput: (input: string) => void;
@@ -91,8 +82,6 @@ interface BaseAnalysisViewProps {
   clearChatHistory: () => void;
   sessionMode: boolean;
   setSessionMode: (mode: boolean) => void;
-
-  // Common props
   llmLoading: boolean;
 }
 
@@ -115,16 +104,12 @@ interface GameReviewProps {
   currentMove?: string;
 }
 
-// Conditional type: if isGameReviewMode is true, require GameReviewProps
-
-
 // Main interface that combines all props
 interface AgineAnalysisViewProps extends GameReviewProps, BaseAnalysisViewProps {
-    isGameReviewMode: boolean;
+  isGameReviewMode: boolean;
 }
 
 function AgineAnalysisView({
-  // Stockfish props
   stockfishAnalysisResult,
   stockfishLoading,
   handleEngineLineClick,
@@ -137,15 +122,11 @@ function AgineAnalysisView({
   setEngineDepth,
   setEngineLines,
   fen,
-
-  // Opening Explorer props
   openingLoading,
   openingData,
   lichessOpeningData,
   lichessOpeningLoading,
   handleOpeningMoveClick,
-
-  // ChessDB props
   chessdbdata,
   handleMoveClick,
   queueing,
@@ -153,12 +134,8 @@ function AgineAnalysisView({
   loading,
   refetch,
   requestAnalysis,
-
-  // Legal Moves props
   legalMoves,
   handleFutureMoveLegalClick,
-
-  // Chat props
   chatMessages,
   chatInput,
   setChatInput,
@@ -169,11 +146,7 @@ function AgineAnalysisView({
   clearChatHistory,
   sessionMode,
   setSessionMode,
-
-  // Common props
   llmLoading,
-
-  // Game Review props (optional - only for game page)
   isGameReviewMode = false,
   moves,
   currentMoveIndex,
@@ -193,37 +166,46 @@ function AgineAnalysisView({
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useState<number>(0);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<number>(0);
+  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <Card
       sx={{
         backgroundColor: purpleTheme.background.paper,
-        borderRadius: 3,
+        borderRadius: { xs: 2, md: 3 },
         boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
-        minHeight: isGameReviewMode ? 500 : 600,
-        maxHeight: isGameReviewMode ? "none" : "80vh",
+        minHeight: isGameReviewMode ? 500 : { xs: 'auto', md: 600 },
+        maxHeight: isGameReviewMode ? "none" : { xs: 'none', md: "80vh" },
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
+        width: '100%',
       }}
     >
       <Box
         sx={{
           borderBottom: `1px solid ${purpleTheme.secondary}40`,
-          px: 3,
-          pt: 2,
+          px: { xs: 1, sm: 2, md: 3 },
+          pt: { xs: 1, md: 2 },
         }}
       >
         <Tabs
           value={analysisTab}
           onChange={(_, newValue: number) => setAnalysisTab(newValue)}
+          variant={isMobile ? "fullWidth" : "standard"}
           sx={{
+            minHeight: { xs: 48, md: 56 },
             "& .MuiTab-root": {
               color: purpleTheme.text.secondary,
               textTransform: "none",
-              fontSize: "1rem",
+              fontSize: { xs: "0.875rem", md: "1rem" },
               fontWeight: 500,
-              minHeight: 48,
+              minHeight: { xs: 48, md: 56 },
+              minWidth: { xs: 'auto', md: 90 },
+              px: { xs: 1, sm: 2 },
             },
             "& .Mui-selected": {
               color: `${purpleTheme.accent} !important`,
@@ -237,23 +219,28 @@ function AgineAnalysisView({
           }}
         >
           <Tab
-            icon={<AnalyticsIcon />}
-            iconPosition="start"
-            label="Analysis"
+            icon={<AnalyticsIcon sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />}
+            iconPosition={isSmallMobile ? "top" : "start"}
+            label={isSmallMobile ? "Analysis" : "Analysis"}
           />
-          <Tab icon={<ChatIcon />} iconPosition="start" label="AI Chat" />
+          <Tab
+            icon={<ChatIcon sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />}
+            iconPosition={isSmallMobile ? "top" : "start"}
+            label={isSmallMobile ? "Chat" : "AI Chat"}
+          />
         </Tabs>
       </Box>
 
       <Box
         sx={{
-          p: 3,
+          p: { xs: 1.5, sm: 2, md: 3 },
           flex: 1,
           overflow: "auto",
+          WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
         }}
       >
         <TabPanel value={analysisTab} index={0}>
-          <Stack spacing={3}>
+          <Stack spacing={{ xs: 2, md: 3 }}>
             {/* Game Review Section (only for game page) */}
             {isGameReviewMode && (
               <Accordion
@@ -264,7 +251,7 @@ function AgineAnalysisView({
                 sx={{
                   backgroundColor: purpleTheme.background.card,
                   "&:before": { display: "none" },
-                  borderRadius: 2,
+                  borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
                 }}
               >
@@ -274,8 +261,12 @@ function AgineAnalysisView({
                   }
                   sx={{
                     backgroundColor: purpleTheme.background.card,
+                    minHeight: { xs: 48, md: 56 },
                     "&:hover": {
                       backgroundColor: `${purpleTheme.secondary}20`,
+                    },
+                    "& .MuiAccordionSummary-content": {
+                      margin: { xs: '12px 0', md: '16px 0' },
                     },
                   }}
                 >
@@ -284,13 +275,17 @@ function AgineAnalysisView({
                     sx={{
                       color: purpleTheme.text.primary,
                       fontWeight: 600,
+                      fontSize: { xs: '1rem', md: '1.25rem' },
                     }}
                   >
                     Game Review
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails
-                  sx={{ backgroundColor: purpleTheme.background.paper }}
+                  sx={{
+                    backgroundColor: purpleTheme.background.paper,
+                    p: { xs: 1.5, md: 2 },
+                  }}
                 >
                   <GameInfoTab
                     moves={moves!}
@@ -308,11 +303,12 @@ function AgineAnalysisView({
                     chatLoading={chatLoading}
                     gameReview={gameReview!}
                   />
-                  <Divider/>
+                  <Divider />
                 </AccordionDetails>
               </Accordion>
             )}
 
+            {/* Position Theme Analysis */}
             {isGameReviewMode ? (
               <Accordion
                 expanded={activeAnalysisTab === 1}
@@ -322,24 +318,31 @@ function AgineAnalysisView({
                 sx={{
                   backgroundColor: purpleTheme.background.card,
                   "&:before": { display: "none" },
-                  borderRadius: 2,
+                  borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
                 }}
               >
                 <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                  sx={{
+                    minHeight: { xs: 48, md: 56 },
+                    "& .MuiAccordionSummary-content": {
+                      margin: { xs: '12px 0', md: '16px 0' },
+                    },
+                  }}
                 >
                   <Typography
                     variant="h6"
                     sx={{
                       color: purpleTheme.text.primary,
                       fontWeight: 600,
+                      fontSize: { xs: '1rem', md: '1.25rem' },
                     }}
                   >
                     Position Theme Analysis
                   </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
+                <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
                   {gameReviewTheme !== null &&
                     gameReview !== undefined &&
                     currentMoveIndex !== undefined && (
@@ -357,37 +360,42 @@ function AgineAnalysisView({
               <Accordion
                 expanded={activeAnalysisTab === 1}
                 onChange={() =>
-                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
+                  setActiveAnalysisTab(activeAnalysisTab === 1 ? 0 : 1)
                 }
                 sx={{
                   backgroundColor: purpleTheme.background.card,
                   "&:before": { display: "none" },
-                  borderRadius: 2,
+                  borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
                 }}
               >
                 <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                  sx={{
+                    minHeight: { xs: 48, md: 56 },
+                    "& .MuiAccordionSummary-content": {
+                      margin: { xs: '12px 0', md: '16px 0' },
+                    },
+                  }}
                 >
                   <Typography
                     variant="h6"
                     sx={{
                       color: purpleTheme.text.primary,
                       fontWeight: 600,
+                      fontSize: { xs: '1rem', md: '1.25rem' },
                     }}
                   >
                     Position Theme Analysis
                   </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
-                  {/* Replace with your actual FEN value */}
+                <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
                   <ThemeProvider theme={darkGreyTheme}>
                     <PositionFenThemeAnalysis fen={fen ?? ""} />
                   </ThemeProvider>
                 </AccordionDetails>
               </Accordion>
             )}
-
 
             {/* Stockfish Analysis */}
             <Accordion
@@ -404,7 +412,7 @@ function AgineAnalysisView({
               sx={{
                 backgroundColor: purpleTheme.background.card,
                 "&:before": { display: "none" },
-                borderRadius: 2,
+                borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
@@ -414,25 +422,31 @@ function AgineAnalysisView({
                 }
                 sx={{
                   backgroundColor: purpleTheme.background.card,
+                  minHeight: { xs: 48, md: 56 },
                   "&:hover": {
                     backgroundColor: `${purpleTheme.secondary}20`,
                   },
+                  "& .MuiAccordionSummary-content": {
+                    margin: { xs: '12px 0', md: '16px 0' },
+                  },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: purpleTheme.text.primary,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Stockfish Analysis
-                  </Typography>
-                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.primary,
+                    fontWeight: 600,
+                    fontSize: { xs: '1rem', md: '1.25rem' },
+                  }}
+                >
+                  Stockfish Analysis
+                </Typography>
               </AccordionSummary>
               <AccordionDetails
-                sx={{ backgroundColor: purpleTheme.background.paper }}
+                sx={{
+                  backgroundColor: purpleTheme.background.paper,
+                  p: { xs: 1.5, md: 2 },
+                }}
               >
                 <StockfishAnalysisTab
                   stockfishAnalysisResult={stockfishAnalysisResult}
@@ -453,20 +467,20 @@ function AgineAnalysisView({
 
             {/* Opening Explorer */}
             <Accordion
-              expanded={activeAnalysisTab === (isGameReviewMode ? 2 : 1)}
+              expanded={activeAnalysisTab === (isGameReviewMode ? 2 : 0)}
               onChange={() =>
                 setActiveAnalysisTab(
-                  activeAnalysisTab === (isGameReviewMode ? 2 : 1)
+                  activeAnalysisTab === (isGameReviewMode ? 2 : 0)
                     ? -1
                     : isGameReviewMode
                     ? 2
-                    : 1
+                    : 0
                 )
               }
               sx={{
                 backgroundColor: purpleTheme.background.card,
                 "&:before": { display: "none" },
-                borderRadius: 2,
+                borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
@@ -476,25 +490,31 @@ function AgineAnalysisView({
                 }
                 sx={{
                   backgroundColor: purpleTheme.background.card,
+                  minHeight: { xs: 48, md: 56 },
                   "&:hover": {
                     backgroundColor: `${purpleTheme.secondary}20`,
                   },
+                  "& .MuiAccordionSummary-content": {
+                    margin: { xs: '12px 0', md: '16px 0' },
+                  },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: purpleTheme.text.primary,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Opening Explorer
-                  </Typography>
-                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.primary,
+                    fontWeight: 600,
+                    fontSize: { xs: '1rem', md: '1.25rem' },
+                  }}
+                >
+                  Opening Explorer
+                </Typography>
               </AccordionSummary>
               <AccordionDetails
-                sx={{ backgroundColor: purpleTheme.background.paper }}
+                sx={{
+                  backgroundColor: purpleTheme.background.paper,
+                  p: { xs: 1.5, md: 2 },
+                }}
               >
                 <OpeningExplorer
                   openingLoading={openingLoading}
@@ -522,7 +542,7 @@ function AgineAnalysisView({
               sx={{
                 backgroundColor: purpleTheme.background.card,
                 "&:before": { display: "none" },
-                borderRadius: 2,
+                borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
@@ -532,25 +552,31 @@ function AgineAnalysisView({
                 }
                 sx={{
                   backgroundColor: purpleTheme.background.card,
+                  minHeight: { xs: 48, md: 56 },
                   "&:hover": {
                     backgroundColor: `${purpleTheme.secondary}20`,
                   },
+                  "& .MuiAccordionSummary-content": {
+                    margin: { xs: '12px 0', md: '16px 0' },
+                  },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: purpleTheme.text.primary,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Chess Database
-                  </Typography>
-                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.primary,
+                    fontWeight: 600,
+                    fontSize: { xs: '1rem', md: '1.25rem' },
+                  }}
+                >
+                  Chess Database
+                </Typography>
               </AccordionSummary>
               <AccordionDetails
-                sx={{ backgroundColor: purpleTheme.background.paper }}
+                sx={{
+                  backgroundColor: purpleTheme.background.paper,
+                  p: { xs: 1.5, md: 2 },
+                }}
               >
                 <ChessDBDisplay
                   data={chessdbdata}
@@ -579,7 +605,7 @@ function AgineAnalysisView({
               sx={{
                 backgroundColor: purpleTheme.background.card,
                 "&:before": { display: "none" },
-                borderRadius: 2,
+                borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
@@ -589,25 +615,31 @@ function AgineAnalysisView({
                 }
                 sx={{
                   backgroundColor: purpleTheme.background.card,
+                  minHeight: { xs: 48, md: 56 },
                   "&:hover": {
                     backgroundColor: `${purpleTheme.secondary}20`,
                   },
+                  "& .MuiAccordionSummary-content": {
+                    margin: { xs: '12px 0', md: '16px 0' },
+                  },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      color: purpleTheme.text.primary,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Legal Move Analysis
-                  </Typography>
-                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: purpleTheme.text.primary,
+                    fontWeight: 600,
+                    fontSize: { xs: '1rem', md: '1.25rem' },
+                  }}
+                >
+                  Legal Move Analysis
+                </Typography>
               </AccordionSummary>
               <AccordionDetails
-                sx={{ backgroundColor: purpleTheme.background.paper }}
+                sx={{
+                  backgroundColor: purpleTheme.background.paper,
+                  p: { xs: 1.5, md: 2 },
+                }}
               >
                 <LegalMoveTab
                   legalMoves={legalMoves}

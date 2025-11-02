@@ -8,6 +8,7 @@ export interface ThemeScore {
     tactical: number;
     darksqaureControl: number;
     lightsqaureControl: number;
+    tempo: number;
 }
 
 
@@ -73,7 +74,8 @@ export const themeColors = {
   kingSafety: '#ef6f6fff',
   tactical: '#6f1becff',
   darksqaureControl: '#764c04ff',
-  lightsqaureControl: '#e08f03ff'
+  lightsqaureControl: '#e08f03ff',
+  tempo: '#c70958ff',
 };
 
 export function getThemeLabelColor(theme: keyof ThemeScore): string {

@@ -352,7 +352,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             color: '#888',
             mr: 0.3,
             fontFamily: 'monospace',
-            fontSize: '12px',
+            fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
             flexShrink: 0
           }}
         >
@@ -382,7 +382,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             margin: '0 1px',
             textTransform: 'none',
             fontFamily: 'monospace',
-            fontSize: '12px',
+            fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
             height: '20px',
             backgroundColor: isWhiteSelected ? '#555' : 'transparent',
             color: isWhiteSelected ? '#fff' : '#ccc',
@@ -424,7 +424,7 @@ const PGNView: React.FC<PGNViewProps> = ({
               margin: '0 1px',
               textTransform: 'none',
               fontFamily: 'monospace',
-              fontSize: '12px',
+              fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
               height: '20px',
               backgroundColor: isBlackSelected ? '#555' : 'transparent',
               color: isBlackSelected ? '#fff' : '#ccc',
@@ -458,7 +458,7 @@ const PGNView: React.FC<PGNViewProps> = ({
           sx={{ 
             color: '#FFD700',
             fontFamily: 'monospace',
-            fontSize: '12px',
+            fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
             fontWeight: 'bold',
             ml: 1,
             px: 1,
@@ -514,6 +514,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             '&:last-child': {
               borderBottom: 'none',
             },
+            flexWrap: 'wrap', // Allow wrapping for smaller screens
           }}
         >
           {/* Move number */}
@@ -521,7 +522,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             sx={{
               color: '#888',
               fontFamily: 'monospace',
-              fontSize: '12px',
+              fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
               width: '32px',
               textAlign: 'right',
               mr: 1,
@@ -540,13 +541,13 @@ const PGNView: React.FC<PGNViewProps> = ({
             startIcon={showWhiteClassification ? whiteStyle?.icon : undefined}
             sx={{
               minWidth: 'auto',
-              width: '80px',
+              width: { xs: '70px', sm: '80px' }, // Adjust width for mobile
               height: '24px',
               padding: '2px 6px',
               margin: '0 2px',
               textTransform: 'none',
               fontFamily: 'monospace',
-              fontSize: '12px',
+              fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
               backgroundColor: isWhiteSelected ? '#555' : 'transparent',
               color: isWhiteSelected ? '#fff' : '#ccc',
               border: hasWhiteComment ? '1px solid #4FC3F7' : '1px solid transparent',
@@ -574,13 +575,13 @@ const PGNView: React.FC<PGNViewProps> = ({
               startIcon={showBlackClassification ? blackStyle?.icon : undefined}
               sx={{
                 minWidth: 'auto',
-                width: '80px',
+                width: { xs: '70px', sm: '80px' }, // Adjust width for mobile
                 height: '24px',
                 padding: '2px 6px',
                 margin: '0 2px',
                 textTransform: 'none',
                 fontFamily: 'monospace',
-                fontSize: '12px',
+                fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
                 backgroundColor: isBlackSelected ? '#555' : 'transparent',
                 color: isBlackSelected ? '#fff' : '#ccc',
                 border: hasBlackComment ? '1px solid #4FC3F7' : '1px solid transparent',
@@ -598,16 +599,16 @@ const PGNView: React.FC<PGNViewProps> = ({
               {blackMove}
             </Button>
           ) : (
-            <Box sx={{ width: '84px', mr: '4px' }} />
+            <Box sx={{ width: { xs: '74px', sm: '84px' }, mr: '4px' }} />
           )}
           
           {/* Comments indicator */}
           <Box sx={{ display: 'flex', gap: 0.5, ml: 1 }}>
             {hasWhiteComment && (
-              <CommentIcon sx={{ fontSize: '12px', color: '#4FC3F7' }} />
+              <CommentIcon sx={{ fontSize: { xs: '10px', sm: '12px' }, color: '#4FC3F7' }} />
             )}
             {hasBlackComment && (
-              <CommentIcon sx={{ fontSize: '12px', color: '#4FC3F7' }} />
+              <CommentIcon sx={{ fontSize: { xs: '10px', sm: '12px' }, color: '#4FC3F7' }} />
             )}
           </Box>
         </Box>
@@ -631,7 +632,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             sx={{ 
               color: '#FFD700',
               fontFamily: 'monospace',
-              fontSize: '14px',
+              fontSize: { xs: '12px', sm: '14px' }, // Adjust font size for mobile
               fontWeight: 'bold',
               px: 2,
               py: 0.5,
@@ -717,30 +718,31 @@ const PGNView: React.FC<PGNViewProps> = ({
       <Box 
         ref={containerRef}
         sx={{ 
-          width: `${dimensions.width}px`,
-          height: `${dimensions.height}px`,
+          width: { xs: '100%', sm: `${dimensions.width}px` }, // Full width on mobile, fixed on desktop
+          height: { xs: 'auto', sm: `${dimensions.height}px` }, // Auto height on mobile, fixed on desktop
+          maxHeight: { xs: '300px', sm: `${dimensions.height}px` }, // Limit height on mobile
           overflowY: 'auto',
           overflowX: 'hidden',
           backgroundColor: '#2a2a2a',
           borderRadius: 1,
           border: '1px solid #444',
-          px: 1,
-          py: 0.5,
+          px: { xs: 0.5, sm: 1 }, // Adjust padding for mobile
+          py: { xs: 0.5, sm: 0.5 },
           position: 'relative',
           userSelect: isResizing ? 'none' : 'auto',
           '&::-webkit-scrollbar': {
-            width: '6px',
+        width: '6px',
           },
           '&::-webkit-scrollbar-track': {
-            background: '#1a1a1a',
-            borderRadius: '3px',
+        background: '#1a1a1a',
+        borderRadius: '3px',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: '#555',
-            borderRadius: '3px',
-            '&:hover': {
-              background: '#666',
-            },
+        background: '#555',
+        borderRadius: '3px',
+        '&:hover': {
+          background: '#666',
+        },
           },
         }}
       >

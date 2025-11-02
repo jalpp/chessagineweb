@@ -11,6 +11,7 @@ export interface ThemeScore {
     tactical: number;
     darksqaureControl: number;
     lightsqaureControl: number;
+    tempo: number;
 }
 
 export interface ThemeChange {
@@ -57,7 +58,8 @@ export function getThemeScores(fen: string, color: Color): ThemeScore {
         kingSafety: scorer.getThemeScore(STATE_THEMES.KING_SAFETY),
         tactical: scorer.getThemeScore(STATE_THEMES.TACTICAL),
         darksqaureControl: scorer.getThemeScore(STATE_THEMES.SQAURE_CONTROL_DARK),
-        lightsqaureControl: scorer.getThemeScore(STATE_THEMES.SQAURE_CONTROL_LIGHT)
+        lightsqaureControl: scorer.getThemeScore(STATE_THEMES.SQAURE_CONTROL_LIGHT),
+        tempo: scorer.getThemeScore(STATE_THEMES.TEMPO)
         
     };
 }
@@ -80,7 +82,7 @@ export function analyzeVariationThemes(rootFen: string, moves: string[], color: 
     const initialScores = moveByMoveScores[0];
     const finalScores = moveByMoveScores[moveByMoveScores.length - 1];
     
-    const themeNames: (keyof ThemeScore)[] = ['material', 'mobility', 'space', 'positional', 'kingSafety', 'tactical', 'darksqaureControl', 'lightsqaureControl'];
+    const themeNames: (keyof ThemeScore)[] = ['material', 'mobility', 'space', 'positional', 'kingSafety', 'tactical', 'darksqaureControl', 'lightsqaureControl', 'tempo'];
     const themeChanges: ThemeChange[] = themeNames.map(theme => {
         const initial = initialScores[theme];
         const final = finalScores[theme];
@@ -142,7 +144,7 @@ export function findCriticalMoments(rootFen: string, moves: string[], color: Col
         const previousScores = getThemeScores(fens[i - 1], color);
         const currentScores = getThemeScores(fens[i], color);
         
-        const themeNames: (keyof ThemeScore)[] = ['material', 'mobility', 'space', 'positional', 'kingSafety', 'tactical', 'tactical', 'darksqaureControl', 'lightsqaureControl'];
+        const themeNames: (keyof ThemeScore)[] = ['material', 'mobility', 'space', 'positional', 'kingSafety', 'tactical', 'darksqaureControl', 'lightsqaureControl', 'tempo'];
         const moveThemeChanges: ThemeChange[] = themeNames.map(theme => {
             const initial = previousScores[theme];
             const final = currentScores[theme];

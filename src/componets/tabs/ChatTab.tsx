@@ -216,9 +216,32 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   
   // Resize functionality
   const [dimensions, setDimensions] = useLocalStorage<{width: number, height: number}>(
-    "chat_ui_chat_dimensions",
-    DEFAULT_CHAT_DIMENSIONS
-  )
+  "chat_ui_chat_dimensions",
+  {
+    width: typeof window !== 'undefined' && window.innerWidth < 768 
+      ? window.innerWidth - 32 
+      : DEFAULT_CHAT_DIMENSIONS.width,
+    height: typeof window !== 'undefined' && window.innerWidth < 768 
+      ? window.innerHeight - 100 
+      : DEFAULT_CHAT_DIMENSIONS.height,
+  }
+);
+
+// Add window resize listener
+useEffect(() => {
+  const handleResize = () => {
+    if (window.innerWidth < 768) {
+      setDimensions({
+        width: window.innerWidth - 32,
+        height: window.innerHeight - 100,
+      });
+    }
+  };
+  
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
@@ -739,6 +762,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       sx={{
         width: `${dimensions.width}px`,
         height: `${dimensions.height}px`,
+         maxWidth: '100vw',
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#1a1a1a",
@@ -758,205 +782,248 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1.5 }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          spacing={2}
+          sx={{ mb: 1.5 }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Avatar
-              src="/static/images/agineowl.png"
-              sx={{
-                width: 20,
-                height: 20,
-              }}
-            />
-            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
-              Agine - Your Chess Buddy
-            </Typography>
+        <Avatar
+          src="/static/images/agineowl.png"
+          sx={{
+            width: 20,
+            height: 20,
+          }}
+        />
+        <Typography
+          variant="subtitle2"
+          sx={{ color: "white", fontWeight: 600 }}
+        >
+          Agine - Your Chess Buddy
+        </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
-          
+
           {/* Action Buttons */}
           <Stack direction="row" spacing={0.5}>
-            <Tooltip title="Conversation starters" arrow>
-              <IconButton
-                onClick={() => setDrawerOpen(true)}
-                sx={{ color: "white", p: 0.5 }}
-                size="small"
-              >
-                <MenuBook fontSize="small" />
-              </IconButton>
-            </Tooltip>
+        <Tooltip title="Conversation starters" arrow>
+          <IconButton
+            onClick={() => setDrawerOpen(true)}
+            sx={{ color: "white", p: 0.5 }}
+            size="small"
+          >
+            <MenuBook fontSize="small" />
+          </IconButton>
+        </Tooltip>
 
-            <Tooltip title="Position Library" arrow>
-              <IconButton
-                onClick={openLibraryModal}
-                sx={{ 
-                  color: savedPositions.length > 0 ? "#9c27b0" : "white", 
-                  p: 0.5,
-                  position: "relative"
-                }}
-                size="small"
-              >
-                <Bookmark fontSize="small" />
-                {savedPositions.length > 0 && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: -2,
-                      right: -2,
-                      width: 12,
-                      height: 12,
-                      backgroundColor: "#9c27b0",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "8px",
-                      fontWeight: "bold",
-                      color: "white"
-                    }}
-                  >
-                    {savedPositions.length > 9 ? "9+" : savedPositions.length}
-                  </Box>
-                )}
-              </IconButton>
-            </Tooltip>
-
-            {chatMessages.length > 0 && (
-              <Tooltip title="Chat History" arrow>
-                <IconButton
-                  onClick={handleCopyMenuClick}
-                  sx={{ color: "white", p: 0.5 }}
-                  size="small"
-                >
-                  <History fontSize="small" />
-                </IconButton>
-              </Tooltip>
+        <Tooltip title="Position Library" arrow>
+          <IconButton
+            onClick={openLibraryModal}
+            sx={{
+          color: savedPositions.length > 0 ? "#9c27b0" : "white",
+          p: 0.5,
+          position: "relative",
+            }}
+            size="small"
+          >
+            <Bookmark fontSize="small" />
+            {savedPositions.length > 0 && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: -2,
+              right: -2,
+              width: 12,
+              height: 12,
+              backgroundColor: "#9c27b0",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "8px",
+              fontWeight: "bold",
+              color: "white",
+            }}
+          >
+            {savedPositions.length > 9 ? "9+" : savedPositions.length}
+          </Box>
             )}
+          </IconButton>
+        </Tooltip>
 
-            {speechEnabled && isSpeaking && (
-              <Tooltip title="Stop speaking" arrow>
-                <IconButton
-                  onClick={stopSpeaking}
-                  sx={{ color: "#ff6b6b", p: 0.5 }}
-                  size="small"
-                >
-                  <VolumeOff fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
+        {chatMessages.length > 0 && (
+          <Tooltip title="Chat History" arrow>
+            <IconButton
+          onClick={handleCopyMenuClick}
+          sx={{ color: "white", p: 0.5 }}
+          size="small"
+            >
+          <History fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
 
-            <Tooltip title="Settings" arrow>
-              <IconButton
-                onClick={() => setSettingsOpen(true)}
-                sx={{ color: "white", p: 0.5 }}
-                size="small"
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+        {speechEnabled && isSpeaking && (
+          <Tooltip title="Stop speaking" arrow>
+            <IconButton
+          onClick={stopSpeaking}
+          sx={{ color: "#ff6b6b", p: 0.5 }}
+          size="small"
+            >
+          <VolumeOff fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        <Tooltip title="Settings" arrow>
+          <IconButton
+            onClick={() => setSettingsOpen(true)}
+            sx={{ color: "white", p: 0.5 }}
+            size="small"
+          >
+            <SettingsIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
           </Stack>
         </Stack>
 
         {/* Mode Controls */}
         {!puzzleMode && !playMode && (
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
-              Position Context
-            </Typography>
-            <Switch
-              checked={sessionMode}
-              onChange={(e) => setSessionMode(e.target.checked)}
-              size="small"
-              sx={{
-                '& .MuiSwitch-switchBase.Mui-checked': {
-                  color: '#9c27b0',
-                },
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                  backgroundColor: '#9c27b0',
-                },
-              }}
-            />
-            <Typography variant="caption" sx={{ color: "grey.400", fontSize: '11px' }}>
-              {sessionMode ? "Looking at the board together" : "General chess chat"}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
-              Interactive Q/A
-            </Typography>
-            <Switch
-              checked={questionMode}
-              onChange={(e) => setQuestionMode(e.target.checked)}
-              size="small"
-              sx={{
-                '& .MuiSwitch-switchBase.Mui-checked': {
-                  color: '#9c27b0',
-                },
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                  backgroundColor: '#9c27b0',
-                },
-              }}
-            />
-            <Typography variant="caption" sx={{ color: "grey.400", fontSize: '11px' }}>
-              {questionMode ? "Interactive question mode" : "Positional Analysis"}
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            {chatMessages.length > 0 && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={clearChatHistory}
-                sx={{ 
-                  color: "white",
-                  borderColor: "rgba(255,255,255,0.3)",
-                  fontSize: '11px',
-                  py: 0.5,
-                  px: 1,
-                  "&:hover": {
-                    borderColor: "#9c27b0",
-                    backgroundColor: "rgba(156, 39, 176, 0.1)",
-                  }
-                }}
-              >
-                Clear
-              </Button>
-            )}
+          <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={1.5}
+          >
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ flexWrap: "wrap" }}
+        >
+          <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
+            Position Context
+          </Typography>
+          <Switch
+            checked={sessionMode}
+            onChange={(e) => setSessionMode(e.target.checked)}
+            size="small"
+            sx={{
+          "& .MuiSwitch-switchBase.Mui-checked": {
+            color: "#9c27b0",
+          },
+          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+            backgroundColor: "#9c27b0",
+          },
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{ color: "grey.400", fontSize: "11px" }}
+          >
+            {sessionMode
+          ? "Looking at the board together"
+          : "General chess chat"}
+          </Typography>
+        </Stack>
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ flexWrap: "wrap" }}
+        >
+          <Typography variant="caption" sx={{ color: "white", fontWeight: 500 }}>
+            Interactive Q/A
+          </Typography>
+          <Switch
+            checked={questionMode}
+            onChange={(e) => setQuestionMode(e.target.checked)}
+            size="small"
+            sx={{
+          "& .MuiSwitch-switchBase.Mui-checked": {
+            color: "#9c27b0",
+          },
+          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+            backgroundColor: "#9c27b0",
+          },
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{ color: "grey.400", fontSize: "11px" }}
+          >
+            {questionMode
+          ? "Interactive question mode"
+          : "Positional Analysis"}
+          </Typography>
+        </Stack>
+        <Box sx={{ flexGrow: 1 }} />
+        {chatMessages.length > 0 && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={clearChatHistory}
+            sx={{
+          color: "white",
+          borderColor: "rgba(255,255,255,0.3)",
+          fontSize: "11px",
+          py: 0.5,
+          px: 1,
+          "&:hover": {
+            borderColor: "#9c27b0",
+            backgroundColor: "rgba(156, 39, 176, 0.1)",
+          },
+            }}
+          >
+            Clear
+          </Button>
+        )}
           </Stack>
         )}
 
         {(puzzleMode || playMode) && (
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <Chip 
-              label={modeTitle}
-              size="small"
-              sx={{ 
-                backgroundColor: "#9c27b0", 
-                color: "white",
-                fontWeight: 500,
-                fontSize: '11px'
-              }} 
-            />
-            <Typography variant="caption" sx={{ color: "grey.400", fontSize: '10px' }}>
-              {modeDescription}
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            {chatMessages.length > 0 && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={clearChatHistory}
-                sx={{ 
-                  color: "white",
-                  borderColor: "rgba(255,255,255,0.3)",
-                  fontSize: '11px',
-                  py: 0.5,
-                  px: 1,
-                  "&:hover": {
-                    borderColor: "#9c27b0",
-                    backgroundColor: "rgba(156, 39, 176, 0.1)",
-                  }
-                }}
-              >
-                Clear
-              </Button>
-            )}
+          <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={1.5}
+          >
+        <Chip
+          label={modeTitle}
+          size="small"
+          sx={{
+            backgroundColor: "#9c27b0",
+            color: "white",
+            fontWeight: 500,
+            fontSize: "11px",
+          }}
+        />
+        <Typography
+          variant="caption"
+          sx={{ color: "grey.400", fontSize: "10px" }}
+        >
+          {modeDescription}
+        </Typography>
+        <Box sx={{ flexGrow: 1 }} />
+        {chatMessages.length > 0 && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={clearChatHistory}
+            sx={{
+          color: "white",
+          borderColor: "rgba(255,255,255,0.3)",
+          fontSize: "11px",
+          py: 0.5,
+          px: 1,
+          "&:hover": {
+            borderColor: "#9c27b0",
+            backgroundColor: "rgba(156, 39, 176, 0.1)",
+          },
+            }}
+          >
+            Clear
+          </Button>
+        )}
           </Stack>
         )}
       </Paper>
@@ -988,7 +1055,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         }}
       >
         {chatMessages.length === 0 ? (
-          <Box
+            <Box
             sx={{
               display: "flex",
               flexDirection: "column",
@@ -996,110 +1063,106 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               justifyContent: "center",
               height: "100%",
               color: "white",
-              p: 2,
+              p: { xs: 1, sm: 2 },
             }}
-          >
+            >
             <Avatar
               src="/static/images/agineowl.png"
               sx={{
-                width: 50,
-                height: 50,
-                mb: 2,
+              width: { xs: 40, sm: 50 },
+              height: { xs: 40, sm: 50 },
+              mb: 2,
               }}
             />
-            <Typography variant="subtitle1" sx={{ mb: 1, textAlign: "center", fontWeight: 500 }}>
-              {playMode 
-                ? "Hey! Let's figure out some good moves together" 
-                : puzzleMode 
-                ? "Ready to tackle this puzzle with you!"
-                : "Hey there, chess friend!"
-              }
-            </Typography>
-            <Typography variant="caption" sx={{ mb: 2, textAlign: "center", color: "grey.300", maxWidth: 320 }}>
-              {playMode 
-                ? "I'll share my thoughts on moves and positions."
-                : puzzleMode 
-                ? "Let's work on this puzzle together! I might not get it right the first time, but that's part of the fun."
-                : sessionMode
-                ? "I'll take a look at your position and share what I'm thinking."
-                : "Let's chat about chess! I'm just a fellow chess enthusiast."
-              }
-            </Typography>
             
             {/* Disclaimer */}
             <Paper
               sx={{
-                p: 1.5,
-                mb: 3,
-                backgroundColor: "rgba(156, 39, 176, 0.1)",
-                border: "1px solid rgba(156, 39, 176, 0.3)",
-                borderRadius: 2,
-                maxWidth: 350,
+              p: 1.5,
+              mb: 3,
+              backgroundColor: "rgba(156, 39, 176, 0.1)",
+              border: "1px solid rgba(156, 39, 176, 0.3)",
+              borderRadius: 2,
+              maxWidth: { xs: "100%", sm: 350 },
               }}
             >
-              <Typography variant="caption" sx={{ color: "grey.300", textAlign: "center", display: "block", lineHeight: 1.4 }}>
-                ⚠️ <strong>Friendly reminder:</strong> I can make mistakes and miss things just like a human! 
-                Always double-check important moves, especially in real games. 
-                I am here to help you think through positions, not replace your own judgment.
+              <Typography
+              variant="caption"
+              sx={{
+                color: "grey.300",
+                textAlign: "center",
+                display: "block",
+                lineHeight: 1.4,
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
+              }}
+              >
+              ⚠️ <strong>Friendly reminder:</strong> I can make mistakes and miss things just like a human! Always double-check important moves, especially in real games. I am here to help you think through positions, not replace your own judgment.
               </Typography>
             </Paper>
 
             {/* Quick Start Prompts */}
             <Box sx={{ width: "100%" }}>
               <Typography
-                variant="caption"
-                sx={{ mb: 2, display: "block", opacity: 0.8, textAlign: "center", color: "grey.400" }}
+              variant="caption"
+              sx={{
+                mb: 2,
+                display: "block",
+                opacity: 0.8,
+                textAlign: "center",
+                color: "grey.400",
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
+              }}
               >
-                Quick start - try one of these:
+              Quick start - try one of these:
               </Typography>
               <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 1,
-                  justifyContent: "center",
-                }}
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+                justifyContent: "center",
+              }}
               >
-                {currentPrompts.slice(0, 4).map((prompt, index) => (
-                  <Chip
-                    key={index}
-                    label={prompt}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handlePromptSelect(prompt)}
-                    sx={{
-                      color: "white",
-                      borderColor: "rgba(156, 39, 176, 0.5)",
-                      cursor: "pointer",
-                      fontSize: '10px',
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        backgroundColor: "rgba(156, 39, 176, 0.2)",
-                        borderColor: "#9c27b0",
-                        transform: "translateY(-1px)",
-                      },
-                    }}
-                  />
-                ))}
+              {currentPrompts.slice(0, 4).map((prompt, index) => (
+                <Chip
+                key={index}
+                label={prompt}
+                variant="outlined"
+                size="small"
+                onClick={() => handlePromptSelect(prompt)}
+                sx={{
+                  color: "white",
+                  borderColor: "rgba(156, 39, 176, 0.5)",
+                  cursor: "pointer",
+                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                  backgroundColor: "rgba(156, 39, 176, 0.2)",
+                  borderColor: "#9c27b0",
+                  transform: "translateY(-1px)",
+                  },
+                }}
+                />
+              ))}
               </Box>
               <Box sx={{ textAlign: "center", mt: 2 }}>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => setDrawerOpen(true)}
-                  sx={{ 
-                    color: "#9c27b0",
-                    fontSize: '11px',
-                    "&:hover": {
-                      backgroundColor: "rgba(156, 39, 176, 0.1)",
-                    },
-                  }}
-                >
-                  More conversation starters →
-                </Button>
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => setDrawerOpen(true)}
+                sx={{
+                color: "#9c27b0",
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                "&:hover": {
+                  backgroundColor: "rgba(156, 39, 176, 0.1)",
+                },
+                }}
+              >
+                More conversation starters →
+              </Button>
               </Box>
             </Box>
-          </Box>
+            </Box>
         ) : (
           <Stack spacing={compactView ? 0.5 : 1}>
             {chatMessages.map((message) => (

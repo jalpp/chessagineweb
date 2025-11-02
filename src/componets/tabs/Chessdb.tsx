@@ -13,6 +13,8 @@ import {
   DialogActions,
   Button,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Settings as SettingsIcon, Storage, Refresh, Queue } from "@mui/icons-material";
 import { validateFen } from "chess.js";
@@ -205,6 +207,10 @@ export function ChessDBDisplay({
   onRefresh,
   onRequestAnalysis,
 }: ChessDBDisplayProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   const [chessDBEnabled, setChessDBEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showScores, setShowScores] = useLocalStorage<boolean>(
@@ -249,12 +255,12 @@ export function ChessDBDisplay({
     return (
       <Paper
         sx={{
-          p: 2,
+          p: isMobile ? 1.5 : 2,
           backgroundColor: "#1a1a1a",
           borderRadius: 2,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2}>
+        <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} flexWrap="wrap">
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
@@ -264,13 +270,14 @@ export function ChessDBDisplay({
                 backgroundColor: "grey.600",
               }}
             />
-            <Typography variant="subtitle2" sx={{ color: "grey.400", fontWeight: 600 }}>
+            <Typography variant="subtitle2" sx={{ color: "grey.400", fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
               ChessDB Off
             </Typography>
           </Box>
           <Switch
             checked={chessDBEnabled}
             onChange={handleChessDBToggle}
+            size={isMobile ? "small" : "medium"}
             sx={{
               '& .MuiSwitch-switchBase.Mui-checked': {
                 color: '#9c27b0',
@@ -294,11 +301,12 @@ export function ChessDBDisplay({
         <Dialog
           open={settingsOpen}
           onClose={handleSettingsClose}
+          fullScreen={isMobile}
           PaperProps={{
             sx: {
               backgroundColor: "#1a1a1a",
               color: "white",
-              minWidth: 400
+              minWidth: isMobile ? 'auto' : 400
             }
           }}
         >
@@ -306,11 +314,9 @@ export function ChessDBDisplay({
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-             
                 <Typography variant="caption" sx={{ color: "grey.400", mb: 1, display: "block" }}>
                   Available moves in this position: {actualMaxMoves}
                 </Typography>
-
               </Box>
               <Box>
                 <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
@@ -365,13 +371,13 @@ export function ChessDBDisplay({
         {/* Header */}
         <Paper
           sx={{
-            p: 2,
+            p: isMobile ? 1.5 : 2,
             backgroundColor: "#1a1a1a",
             borderRadius: 2,
             mb: 2
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} flexWrap="wrap">
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box
                 sx={{
@@ -381,13 +387,14 @@ export function ChessDBDisplay({
                   backgroundColor: "#9c27b0",
                 }}
               />
-              <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+              <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 ChessDB On
               </Typography>
             </Box>
             <Switch
               checked={chessDBEnabled}
               onChange={handleChessDBToggle}
+              size={isMobile ? "small" : "medium"}
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
                   color: '#9c27b0',
@@ -415,7 +422,7 @@ export function ChessDBDisplay({
               size={40} 
               sx={{ color: "#9c27b0" }} 
             />
-            <Typography variant="body2" sx={{ color: "grey.400" }}>
+            <Typography variant="body2" sx={{ color: "grey.400", fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
               Querying ChessDB...
             </Typography>
           </Stack>
@@ -425,11 +432,12 @@ export function ChessDBDisplay({
         <Dialog
           open={settingsOpen}
           onClose={handleSettingsClose}
+          fullScreen={isMobile}
           PaperProps={{
             sx: {
               backgroundColor: "#1a1a1a",
               color: "white",
-              minWidth: 400
+              minWidth: isMobile ? 'auto' : 400
             }
           }}
         >
@@ -437,12 +445,9 @@ export function ChessDBDisplay({
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-                
                 <Typography variant="caption" sx={{ color: "grey.400", mb: 1, display: "block" }}>
                   Available moves in this position: {actualMaxMoves}
                 </Typography>
-            
-                
               </Box>
               <Box>
                 <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
@@ -497,13 +502,13 @@ export function ChessDBDisplay({
         {/* Header */}
         <Paper
           sx={{
-            p: 2,
+            p: isMobile ? 1.5 : 2,
             backgroundColor: "#1a1a1a",
             borderRadius: 2,
             mb: 2
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} flexWrap="wrap">
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box
                 sx={{
@@ -513,13 +518,14 @@ export function ChessDBDisplay({
                   backgroundColor: "#9c27b0",
                 }}
               />
-              <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+              <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
                 ChessDB On
               </Typography>
             </Box>
             <Switch
               checked={chessDBEnabled}
               onChange={handleChessDBToggle}
+              size={isMobile ? "small" : "medium"}
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
                   color: '#9c27b0',
@@ -543,25 +549,28 @@ export function ChessDBDisplay({
         {/* No Data State with Action Buttons */}
         <Paper
           sx={{
-            p: 4,
+            p: isMobile ? 2 : 4,
             backgroundColor: "#1a1a1a",
             borderRadius: 2,
             textAlign: "center"
           }}
         >
-          <Typography variant="body2" sx={{ color: "grey.400", mb: 3 }}>
+          <Typography variant="body2" sx={{ color: "grey.400", mb: 3, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
             {error ? `Error: ${error}` : "No ChessDB data found for this position."}
           </Typography>
           
-          <Stack direction="row" spacing={2} justifyContent="center">
+          <Stack direction={isMobile ? "column" : "row"} spacing={2} justifyContent="center">
             <Button
               variant="outlined"
               startIcon={queueing ? <CircularProgress size={16} /> : <Queue />}
               onClick={onRequestAnalysis}
               disabled={queueing}
+              size={isMobile ? "small" : "medium"}
+              fullWidth={isMobile}
               sx={{
                 borderColor: "#9c27b0",
                 color: "#9c27b0",
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
                 "&:hover": {
                   borderColor: "#7b1fa2",
                   backgroundColor: "rgba(156, 39, 176, 0.1)",
@@ -579,9 +588,12 @@ export function ChessDBDisplay({
               variant="contained"
               startIcon={<Refresh />}
               onClick={onRefresh}
+              size={isMobile ? "small" : "medium"}
+              fullWidth={isMobile}
               sx={{
                 backgroundColor: "#9c27b0",
                 color: "white",
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
                 "&:hover": {
                   backgroundColor: "#7b1fa2",
                 },
@@ -591,7 +603,7 @@ export function ChessDBDisplay({
             </Button>
           </Stack>
           
-          <Typography variant="caption" sx={{ color: "grey.500", mt: 2, display: "block" }}>
+          <Typography variant="caption" sx={{ color: "grey.500", mt: 2, display: "block", fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
             Request analysis to queue this position for evaluation, then refresh to check for results.
           </Typography>
         </Paper>
@@ -604,13 +616,13 @@ export function ChessDBDisplay({
       {/* Header */}
       <Paper
         sx={{
-          p: 2,
+          p: isMobile ? 1.5 : 2,
           backgroundColor: "#1a1a1a",
           borderRadius: 2,
           mb: 2
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} sx={{ mb: 2 }} flexWrap="wrap">
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
@@ -620,13 +632,14 @@ export function ChessDBDisplay({
                 backgroundColor: "#9c27b0",
               }}
             />
-            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
               ChessDB On
             </Typography>
           </Box>
           <Switch
             checked={chessDBEnabled}
             onChange={handleChessDBToggle}
+            size={isMobile ? "small" : "medium"}
             sx={{
               '& .MuiSwitch-switchBase.Mui-checked': {
                 color: '#9c27b0',
@@ -637,14 +650,16 @@ export function ChessDBDisplay({
             }}
           />
           <Box sx={{ flexGrow: 1 }} />
-          <IconButton
-            onClick={onRefresh}
-            sx={{ color: "white", p: 0.5, mr: 1 }}
-            size="small"
-            title="Refresh data"
-          >
-            <Refresh fontSize="small" />
-          </IconButton>
+          {!isMobile && (
+            <IconButton
+              onClick={onRefresh}
+              sx={{ color: "white", p: 0.5, mr: 1 }}
+              size="small"
+              title="Refresh data"
+            >
+              <Refresh fontSize="small" />
+            </IconButton>
+          )}
           <IconButton
             onClick={() => setSettingsOpen(true)}
             sx={{ color: "white", p: 0.5 }}
@@ -655,8 +670,8 @@ export function ChessDBDisplay({
         </Stack>
 
         {/* Database Info */}
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+        <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} sx={{ mb: 2 }} flexWrap="wrap">
+          <Typography variant="body2" sx={{ color: "white", fontWeight: 500, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
             ChessDB Database
           </Typography>
           <Chip 
@@ -665,37 +680,50 @@ export function ChessDBDisplay({
             sx={{ 
               backgroundColor: "rgba(156, 39, 176, 0.2)", 
               color: "#9c27b0",
-              fontSize: "0.7rem",
-              fontWeight: 600
+              fontSize: isMobile ? '0.65rem' : '0.7rem',
+              fontWeight: 600,
+              height: isMobile ? 20 : 24
             }} 
           />
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ color: "white", fontWeight: 500, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
             Moves present
           </Typography>
+          {isMobile && (
+            <IconButton
+              onClick={onRefresh}
+              sx={{ color: "white", p: 0.5, ml: 'auto !important' }}
+              size="small"
+              title="Refresh data"
+            >
+              <Refresh fontSize="small" />
+            </IconButton>
+          )}
         </Stack>
 
-        {/* Column Headers */}
-        <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-          <Typography variant="caption" sx={{ color: "grey.400", minWidth: "80px" }}>
-            Move
-          </Typography>
-          {showScores && (
-            <Typography variant="caption" sx={{ color: "grey.400", minWidth: "60px" }}>
-              Score
+        {/* Column Headers - Hide on mobile */}
+        {!isMobile && (
+          <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+            <Typography variant="caption" sx={{ color: "grey.400", minWidth: "80px" }}>
+              Move
             </Typography>
-          )}
-          {showWinrates && (
-            <Typography variant="caption" sx={{ color: "grey.400", minWidth: "60px" }}>
-              Win %
+            {showScores && (
+              <Typography variant="caption" sx={{ color: "grey.400", minWidth: "60px" }}>
+                Score
+              </Typography>
+            )}
+            {showWinrates && (
+              <Typography variant="caption" sx={{ color: "grey.400", minWidth: "60px" }}>
+                Win %
+              </Typography>
+            )}
+            <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
+              Rank
             </Typography>
-          )}
-          <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
-            Rank
-          </Typography>
-          <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
-            Note
-          </Typography>
-        </Stack>
+            <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
+              Note
+            </Typography>
+          </Stack>
+        )}
       </Paper>
 
       {/* Moves List */}
@@ -705,7 +733,7 @@ export function ChessDBDisplay({
             key={`${move.uci}-${index}`}
             onClick={() => analyzeMove(move)}
             sx={{
-              p: 2,
+              p: isMobile ? 1.5 : 2,
               backgroundColor: "#1a1a1a",
               borderRadius: 0,
               borderLeft: index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
@@ -717,79 +745,162 @@ export function ChessDBDisplay({
               filter: llmLoading ? "grayscale(50%)" : "none",
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={2}>
-              {/* Move */}
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "#9c27b0",
-                  fontWeight: "bold",
-                  minWidth: "80px",
-                  fontFamily: "monospace",
-                  fontSize: "0.9rem"
-                }}
-              >
-                {index + 1}. {move.san}
-              </Typography>
-
-              {/* Score */}
-              {showScores && (
+            {isMobile ? (
+              // Mobile Layout - Stacked
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "#9c27b0",
+                      fontWeight: "bold",
+                      fontFamily: "monospace",
+                      fontSize: "0.85rem"
+                    }}
+                  >
+                    {index + 1}. {move.san}
+                  </Typography>
+                  <Chip 
+                    label={move.note}
+                    size="small"
+                    sx={{
+                      backgroundColor: "rgba(156, 39, 176, 0.2)",
+                      color: "#9c27b0",
+                      fontSize: "0.65rem",
+                      height: 20
+                    }}
+                  />
+                </Stack>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  {showScores && (
+                    <Box>
+                      <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.65rem" }}>
+                        Score
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: getScoreColor(move.score),
+                          fontFamily: "monospace",
+                          fontSize: "0.75rem",
+                          fontWeight: 500
+                        }}
+                      >
+                        {move.score === "N/A" ? "—" : `${parseFloat(move.score) >= 0 ? '+' : ''}${move.score}`}
+                      </Typography>
+                    </Box>
+                  )}
+                  {showWinrates && (
+                    <Box>
+                      <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.65rem" }}>
+                        Win %
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: getWinrateColor(move.winrate),
+                          fontFamily: "monospace",
+                          fontSize: "0.75rem",
+                          fontWeight: 500
+                        }}
+                      >
+                        {move.winrate === "N/A" ? "—" : `${move.winrate}%`}
+                      </Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" sx={{ color: "grey.500", fontSize: "0.65rem" }}>
+                      Rank
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "grey.400",
+                        fontFamily: "monospace",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      {move.rank}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Stack>
+            ) : (
+              // Desktop Layout - Inline
+              <Stack direction="row" alignItems="center" spacing={2}>
+                {/* Move */}
                 <Typography
                   variant="body2"
                   sx={{
-                    color: getScoreColor(move.score),
-                    minWidth: "60px",
+                    color: "#9c27b0",
+                    fontWeight: "bold",
+                    minWidth: "80px",
                     fontFamily: "monospace",
-                    fontSize: "0.85rem",
-                    fontWeight: 500
+                    fontSize: "0.9rem"
                   }}
                 >
-                  {move.score === "N/A" ? "—" : `${parseFloat(move.score) >= 0 ? '+' : ''}${move.score}`}
+                  {index + 1}. {move.san}
                 </Typography>
-              )}
 
-              {/* Win Rate */}
-              {showWinrates && (
+                {/* Score */}
+                {showScores && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: getScoreColor(move.score),
+                      minWidth: "60px",
+                      fontFamily: "monospace",
+                      fontSize: "0.85rem",
+                      fontWeight: 500
+                    }}
+                  >
+                    {move.score === "N/A" ? "—" : `${parseFloat(move.score) >= 0 ? '+' : ''}${move.score}`}
+                  </Typography>
+                )}
+
+                {/* Win Rate */}
+                {showWinrates && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: getWinrateColor(move.winrate),
+                      minWidth: "60px",
+                      fontFamily: "monospace",
+                      fontSize: "0.85rem",
+                      fontWeight: 500
+                    }}
+                  >
+                    {move.winrate === "N/A" ? "—" : `${move.winrate}%`}
+                  </Typography>
+                )}
+
+                {/* Rank */}
                 <Typography
                   variant="body2"
                   sx={{
-                    color: getWinrateColor(move.winrate),
-                    minWidth: "60px",
+                    color: "grey.400",
                     fontFamily: "monospace",
-                    fontSize: "0.85rem",
-                    fontWeight: 500
+                    fontSize: "0.8rem",
+                    flex: 1
                   }}
                 >
-                  {move.winrate === "N/A" ? "—" : `${move.winrate}%`}
+                  {move.rank}
                 </Typography>
-              )}
 
-              {/* Rank */}
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "grey.400",
-                  fontFamily: "monospace",
-                  fontSize: "0.8rem",
-                  flex: 1
-                }}
-              >
-                {move.rank}
-              </Typography>
-
-              {/* Note */}
-               <Typography
-                variant="body2"
-                sx={{
-                  color: "grey.400",
-                  fontFamily: "monospace",
-                  fontSize: "0.8rem",
-                  flex: 1
-                }}
-              >
-                {move.note}
-              </Typography>
-            </Stack>
+                {/* Note */}
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "grey.400",
+                    fontFamily: "monospace",
+                    fontSize: "0.8rem",
+                    flex: 1
+                  }}
+                >
+                  {move.note}
+                </Typography>
+              </Stack>
+            )}
           </Paper>
         ))}
       </Stack>
@@ -797,20 +908,20 @@ export function ChessDBDisplay({
       {/* Footer Info */}
       <Paper
         sx={{
-          p: 1.5,
+          p: isMobile ? 1 : 1.5,
           backgroundColor: "#1a1a1a",
           borderRadius: 0,
           mt: 0
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={isMobile ? 1 : 0}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <Storage fontSize="small" sx={{ color: "#9c27b0" }} />
-            <Typography variant="caption" sx={{ color: "grey.400" }}>
+            <Typography variant="caption" sx={{ color: "grey.400", fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
               Data from ChessDB
             </Typography>
           </Stack>
-          <Typography variant="caption" sx={{ color: "grey.400" }}>
+          <Typography variant="caption" sx={{ color: "grey.400", fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
             Showing {data.length} moves
           </Typography>
         </Stack>
@@ -820,11 +931,12 @@ export function ChessDBDisplay({
       <Dialog
         open={settingsOpen}
         onClose={handleSettingsClose}
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
             backgroundColor: "#1a1a1a",
             color: "white",
-            minWidth: 400
+            minWidth: isMobile ? 'auto' : 400
           }
         }}
       >
@@ -887,10 +999,10 @@ export function ChessDBDisplay({
       </Dialog>
 
       {/* Hint */}
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ mt: 2, px: isMobile ? 0.5 : 0 }}>
         <Typography
           variant="caption"
-          sx={{ color: "grey.500", fontStyle: "italic" }}
+          sx={{ color: "grey.500", fontStyle: "italic", fontSize: isMobile ? '0.7rem' : '0.75rem' }}
         >
           💡 Click on any move above to get AI analysis of that candidate
         </Typography>

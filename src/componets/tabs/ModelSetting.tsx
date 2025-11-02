@@ -119,7 +119,7 @@ const ModelSetting: React.FC = () => {
     }
     
     
-    if (tempSettings.provider !== 'ollama') {
+    if (tempSettings.provider === "anthropic" || tempSettings.provider === "google" || tempSettings.provider === "openai") {
       if (!tempSettings.apiKey) {
         setValidationError('Please enter an API key');
         return;

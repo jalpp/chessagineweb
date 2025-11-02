@@ -131,9 +131,11 @@ export default function AiChessboardPanel({
     puzzleMode || playMode ? false : true
   );
   const [boardSize, setBoardSize] = useLocalStorage<number>(
-    "board_ui_size",
-    DEFAULT_BOARD_SIZE
-  );
+  "board_ui_size",
+  typeof window !== 'undefined' && window.innerWidth < 768 
+    ? Math.min(window.innerWidth - 100, 400) // Mobile size
+    : DEFAULT_BOARD_SIZE
+);
   const [pieceType, setPieceType] = useLocalStorage<string>(
     "board_piece_type",
     "Cburnett"
@@ -175,14 +177,40 @@ export default function AiChessboardPanel({
     );
 
   // Resize functionality
-  const [panelDimensions, setPanelDimensions] = useLocalStorage<{
-    width: number;
-    height: number;
-  }>("board_ui_show_panel_dimensions", DEFAULT_BOARD_PANEL_DIMENSIONS);
+  
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
   const startDimensionsRef = useRef({ width: 0, height: 0 });
+
+  // Replace the fixed dimensions with responsive logic
+const [panelDimensions, setPanelDimensions] = useLocalStorage<{
+  width: number;
+  height: number;
+}>("board_ui_show_panel_dimensions", {
+  width: typeof window !== 'undefined' && window.innerWidth < 768 
+    ? window.innerWidth - 32 // Mobile: full width minus padding
+    : DEFAULT_BOARD_PANEL_DIMENSIONS.width,
+  height: typeof window !== 'undefined' && window.innerWidth < 768 
+    ? window.innerHeight - 100 // Mobile: account for header/nav
+    : DEFAULT_BOARD_PANEL_DIMENSIONS.height,
+});
+
+// Add window resize listener
+useEffect(() => {
+  const handleResize = () => {
+    if (window.innerWidth < 768) {
+      setPanelDimensions({
+        width: window.innerWidth - 32,
+        height: window.innerHeight - 100,
+      });
+      setBoardSize(Math.min(window.innerWidth - 100, 500));
+    }
+  };
+  
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
 
   // Memoized Board analysis
   const boardAnalysis = useMemo(() => {
@@ -780,6 +808,8 @@ export default function AiChessboardPanel({
         width: `${panelDimensions.width}px`,
         height: `${panelDimensions.height}px`,
         position: "relative",
+        maxWidth: '100vw', 
+        maxHeight: '100vw',
         border: "1px solid #444",
         borderRadius: 2,
         backgroundColor: "#1a1a1a",
@@ -862,6 +892,7 @@ export default function AiChessboardPanel({
               lineEval={stockfishAnalysisResult?.lines[0]} 
               boardOrientation={getBoardOrientation()}
               height={boardSize} // Match the board height
+              
             />
           )}
           <Chessboard
@@ -1159,7 +1190,7 @@ export default function AiChessboardPanel({
           backgroundColor: "#555",
           borderTopRightRadius: "3px",
           opacity: 0.7,
-          display: "flex",
+          display: { xs: 'none', md: 'flex' }, 
           alignItems: "center",
           justifyContent: "center",
           "&:hover": {
@@ -1193,22 +1224,6 @@ export default function AiChessboardPanel({
         <DialogTitle>Chessboard Settings</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
-            <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
-                Board Size: {boardSize}px
-              </Typography>
-              <Slider
-                value={boardSize}
-                onChange={handleBoardSizeChange}
-                min={300}
-                max={800}
-                step={25}
-                sx={{
-                  color: "#9c27b0",
-                }}
-              />
-            </Box>
-
             {/* Board Theme Selection */}
             <Box>
               <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
