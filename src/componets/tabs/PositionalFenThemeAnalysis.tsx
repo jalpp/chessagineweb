@@ -19,6 +19,7 @@ import {
   Bolt,
   Refresh,
   Square,
+  Speed,
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 import { useThemeScore } from "@/hooks/useThemeScore";
@@ -38,7 +39,7 @@ const formatThemeName = (theme: string) =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
-const getThemeIcon = (theme: keyof ThemeScore) => {
+export const getThemeIcon = (theme: keyof ThemeScore) => {
   switch (theme) {
     case 'material': return <MonetizationOn />;
     case 'mobility': return <DirectionsRun />;
@@ -48,6 +49,7 @@ const getThemeIcon = (theme: keyof ThemeScore) => {
     case 'tactical': return <Bolt />;
     case 'darksqaureControl': return <Square/>
     case 'lightsqaureControl': return <Square/>
+    case 'tempo': return <Speed/>
     default: return null;
   }
 };

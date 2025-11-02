@@ -111,7 +111,8 @@ export enum STATE_THEMES {
     SQAURE_CONTROL_DARK,
     KING_SAFETY,
     MOBILITY,
-    TACTICAL
+    TACTICAL,
+    TEMPO
 }
 
 export interface SideStateScores{

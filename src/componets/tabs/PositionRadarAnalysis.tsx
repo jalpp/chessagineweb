@@ -9,18 +9,11 @@ import {
   Stack,
   Alert,
 } from "@mui/material";
-import {
-  MonetizationOn,
-  DirectionsRun,
-  GridOn,
-  Place,
-  Shield,
-  Bolt,
-} from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 import { MoveAnalysis, MoveQuality } from "@/hooks/useGameReview";
 import { getMoveClassificationStyle } from "./GameReviewTab";
 import { ThemeScore, GameReviewTheme, getThemeLabelColor } from "@/libs/themes/helper";
+import { getThemeIcon } from "./PositionalFenThemeAnalysis";
 
 
 interface CurrentPositionAnalysisProps {
@@ -29,32 +22,12 @@ interface CurrentPositionAnalysisProps {
   moveAnalysis: MoveAnalysis[];
 }
 
-const themeColors = {
-  material: '#bb86fc',
-  mobility: '#81c784',
-  space: '#64b5f6',
-  positional: '#ffb74d',
-  kingSafety: '#e57373',
-  tactical: '#ffd54f'
-};
-
 const formatThemeName = (theme: string) =>
   theme
     .split(/(?=[A-Z])/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
-const getThemeIcon = (theme: keyof ThemeScore) => {
-  switch (theme) {
-    case 'material': return <MonetizationOn />;
-    case 'mobility': return <DirectionsRun />;
-    case 'space': return <GridOn />;
-    case 'positional': return <Place />;
-    case 'kingSafety': return <Shield />;
-    case 'tactical': return <Bolt />;
-    default: return null;
-  }
-};
 
 const getMoveQualityColor = (quality: string) => {
   return getMoveClassificationStyle(quality as MoveQuality).color

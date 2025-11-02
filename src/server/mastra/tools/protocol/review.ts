@@ -99,9 +99,10 @@ function calculateAverageScores(scores: Array<ThemeScore>) {
         kingSafety: acc.kingSafety + score.kingSafety,
         tactical: acc.tactical + score.tactical,
         darksqaureControl: acc.darksqaureControl + score.darksqaureControl,
-        lightsqaureControl: acc.lightsqaureControl + score.lightsqaureControl
+        lightsqaureControl: acc.lightsqaureControl + score.lightsqaureControl,
+        tempo: acc.tempo + score.tempo
 
-    }), { material: 0, mobility: 0, space: 0, positional: 0, kingSafety: 0, tactical: 0, darksqaureControl: 0, lightsqaureControl: 0 });
+    }), { material: 0, mobility: 0, space: 0, positional: 0, kingSafety: 0, tactical: 0, darksqaureControl: 0, lightsqaureControl: 0, tempo: 0 });
     
     const count = scores.length;
     return {
@@ -112,7 +113,8 @@ function calculateAverageScores(scores: Array<ThemeScore>) {
         kingSafety: parseFloat((sum.kingSafety / count).toFixed(2)),
         tactical: parseFloat((sum.tactical / count).toFixed(2)),
         darksqaureControl: parseFloat((sum.darksqaureControl / count).toFixed(2)),
-        lightsqaureControl: parseFloat((sum.lightsqaureControl / count).toFixed(2))
+        lightsqaureControl: parseFloat((sum.lightsqaureControl / count).toFixed(2)),
+        tempo: parseFloat((sum.tempo / count).toFixed(2))
 
     };
 }

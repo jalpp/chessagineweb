@@ -37,7 +37,7 @@ interface Pin {
   isAbsolute: boolean;
 }
 
-export class TacticlBoard {
+export class TacticalBoard {
   private board: string[][] = Array.from({ length: 8 }, () =>
     Array(8).fill("")
   );
@@ -1004,13 +1004,13 @@ export class TacticlBoard {
    *
    * Scoring system:
    * - Hanging pieces: -10 points each (critical weakness)
-   * - Semi-protected pieces: -3 points each (vulnerable)
+   * - Semi-protected pieces: -1 points each (vulnerable)
    * - Pins created by this side: +5 points for absolute, +3 for relative
    * - Pins against this side: -5 points for absolute, -3 for relative
    * - Deadly forks available: +8 points each
-   * - Regular forks available: +4 points each
+   * - Regular forks available: +3 points each
    * - Opponent's deadly forks: -8 points each
-   * - Opponent's regular forks: -4 points each
+   * - Opponent's regular forks: -3 points each
    */
   public calculateTacticalScore(side: Color): number {
     let score = 0;
@@ -1037,9 +1037,9 @@ export class TacticlBoard {
         (side === "b" && pieceDesc.includes("black"));
 
       if (belongsToSide) {
-        score -= 3; // Our semi-protected piece = slight weakness
+        score -= 1; // Our semi-protected piece = slight weakness
       } else {
-        score += 3; // Opponent's semi-protected piece = slight advantage
+        score += 1; // Opponent's semi-protected piece = slight advantage
       }
     }
 
@@ -1082,7 +1082,7 @@ export class TacticlBoard {
           if (fork.includes("DEADLY FORK")) {
             score += 8; // Deadly fork is very valuable
           } else if (fork.includes("Regular fork")) {
-            score += 4; // Regular fork has moderate value
+            score += 3; // Regular fork has moderate value
           }
         }
       }
@@ -1109,7 +1109,7 @@ export class TacticlBoard {
           if (fork.includes("DEADLY FORK")) {
             score -= 8; // Opponent's deadly fork is very dangerous
           } else if (fork.includes("Regular fork")) {
-            score -= 4; // Opponent's regular fork is moderately dangerous
+            score -= 3; // Opponent's regular fork is moderately dangerous
           }
         }
       }
