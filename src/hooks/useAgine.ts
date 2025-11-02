@@ -241,7 +241,7 @@ export default function useAgine(fen: string) {
         throw new Error("Please configure your Ollama Ngrok local LLM endpoint in the settins page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.")
       }
       
-      if (!apiSettings.apiKey && apiSettings.provider != "ollama") {
+      if (!apiSettings.apiKey && (apiSettings.provider === "anthropic" || apiSettings.provider === "google" || apiSettings.provider === "openai")) {
         throw new Error('Please configure your API Key in the Settings page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.');
       }
       

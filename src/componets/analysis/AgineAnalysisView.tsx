@@ -360,7 +360,7 @@ function AgineAnalysisView({
               <Accordion
                 expanded={activeAnalysisTab === 1}
                 onChange={() =>
-                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
+                  setActiveAnalysisTab(activeAnalysisTab === 1 ? 0 : 1)
                 }
                 sx={{
                   backgroundColor: purpleTheme.background.card,
@@ -467,14 +467,14 @@ function AgineAnalysisView({
 
             {/* Opening Explorer */}
             <Accordion
-              expanded={activeAnalysisTab === (isGameReviewMode ? 2 : 1)}
+              expanded={activeAnalysisTab === (isGameReviewMode ? 2 : 0)}
               onChange={() =>
                 setActiveAnalysisTab(
-                  activeAnalysisTab === (isGameReviewMode ? 2 : 1)
+                  activeAnalysisTab === (isGameReviewMode ? 2 : 0)
                     ? -1
                     : isGameReviewMode
                     ? 2
-                    : 1
+                    : 0
                 )
               }
               sx={{

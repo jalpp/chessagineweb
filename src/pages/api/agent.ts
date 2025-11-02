@@ -96,7 +96,7 @@ export default async function handler(
       });
     }
 
-    if (rawApiSettings.provider !== "ollama" && !rawApiSettings.apiKey) {
+    if ((rawApiSettings.provider === "anthropic" || rawApiSettings.provider === "google" || rawApiSettings.provider === "openai") && !rawApiSettings.apiKey) {
       return res.status(400).json({
         message: "API key is required for non-Ollama providers",
       });
@@ -104,7 +104,7 @@ export default async function handler(
 
     if (rawApiSettings.provider == "ollama" && !rawApiSettings.ollamaBaseUrl) {
       return res.status(400).json({
-        message: "Ollama base ngrok endpoint required, please set up the url",
+        message: "Ollama base ngrok endpoint required, please set up the URL by reading chessAgine docs",
       });
     }
 

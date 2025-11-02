@@ -107,50 +107,48 @@ export default function NavBar() {
       <AppBar position="static" sx={{ backgroundColor: "#111", mb: 3 }}>
         <Toolbar sx={{ justifyContent: "space-between", px: { xs: 1, md: 3 } }}>
           {/* Logo Section - Left */}
-            <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              cursor: 'pointer',
-              '&:hover': {
-              opacity: 0.8,
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              "&:hover": {
+                opacity: 0.8,
               },
-              transition: 'opacity 0.2s',
+              transition: "opacity 0.2s",
             }}
             onClick={handleLogoClick}
-            >
-            
-            <Typography 
-              variant="h6" 
-              sx={{ 
-              fontWeight: 700,
-              letterSpacing: '-0.5px',
-              display: { xs: 'none', sm: 'block' },
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: "-0.5px",
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
               }}
             >
               ChessAgine
             </Typography>
-            </Box>
-          
+          </Box>
+
           {/* Navigation Links - Center/Left */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'left', gap: 0.5, ml: 4 }}>
+            <Box sx={{ display: "flex", alignItems: "left", gap: 0.5, ml: 4 }}>
               {/* Public links */}
               {publicNavLinks.map((link) => (
-                <Button 
-                  key={link.href} 
-                  color="inherit" 
+                <Button
+                  key={link.href}
+                  color="inherit"
                   href={link.href}
                   startIcon={link.icon}
                   sx={{
-                    textTransform: 'none',
-                    fontSize: '0.95rem',
+                    textTransform: "none",
+                    fontSize: "0.95rem",
                     px: 2,
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.1)",
                     },
                   }}
                 >
@@ -160,28 +158,28 @@ export default function NavBar() {
 
               {/* Authenticated links */}
               <SignedIn>
-                <Divider 
-                  orientation="vertical" 
-                  flexItem 
-                  sx={{ 
-                    mx: 1, 
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    height: '24px',
-                    alignSelf: 'center',
-                  }} 
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{
+                    mx: 1,
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    height: "24px",
+                    alignSelf: "center",
+                  }}
                 />
                 {authNavLinks.map((link) => (
-                  <Button 
-                    key={link.href} 
-                    color="inherit" 
+                  <Button
+                    key={link.href}
+                    color="inherit"
                     href={link.href}
                     startIcon={link.icon}
                     sx={{
-                      textTransform: 'none',
-                      fontSize: '0.95rem',
+                      textTransform: "none",
+                      fontSize: "0.95rem",
                       px: 2,
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      "&:hover": {
+                        bgcolor: "rgba(255, 255, 255, 0.1)",
                       },
                     }}
                   >
@@ -193,20 +191,20 @@ export default function NavBar() {
           )}
 
           {/* Spacer for mobile to push items to edges */}
-          <Box sx={{ flexGrow: 1, display: { md: 'none' } }} />
+          <Box sx={{ flexGrow: 1, display: { md: "none" } }} />
 
           {/* Auth Section - Right */}
           {isMobile ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <SignedIn>
                 <UserButton />
               </SignedIn>
-              <IconButton 
-                color="inherit" 
+              <IconButton
+                color="inherit"
                 onClick={toggleDrawer(true)}
                 sx={{
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
                   },
                 }}
               >
@@ -214,41 +212,41 @@ export default function NavBar() {
               </IconButton>
             </Box>
           ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <SignedOut>
-                <Button 
-                  color="inherit" 
+                <Button
+                  color="inherit"
                   onClick={handleSignIn}
-                  sx={{ 
-                    textTransform: 'none',
-                    fontSize: '0.95rem',
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.95rem",
                     px: 2.5,
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.1)',
-                      borderColor: 'rgba(255, 255, 255, 0.5)',
+                    border: "1px solid rgba(255, 255, 255, 0.3)",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.1)",
+                      borderColor: "rgba(255, 255, 255, 0.5)",
                     },
                   }}
                 >
                   Sign In
                 </Button>
-                <Button 
-                  color="inherit" 
+                <Button
+                  color="inherit"
                   onClick={handleSignUp}
-                  sx={{ 
-                    textTransform: 'none',
-                    fontSize: '0.95rem',
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.95rem",
                     px: 2.5,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #5568d3 0%, #653a8a 100%)',
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #5568d3 0%, #653a8a 100%)",
                     },
                   }}
                 >
                   Sign Up
                 </Button>
               </SignedOut>
-              
+
               <SignedIn>
                 <UserButton />
               </SignedIn>
@@ -256,7 +254,7 @@ export default function NavBar() {
           )}
         </Toolbar>
       </AppBar>
-      
+
       {/* Mobile Drawer */}
       <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
         <Box
@@ -284,7 +282,7 @@ export default function NavBar() {
                   },
                 }}
               >
-                <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
                   {link.icon}
                 </ListItemIcon>
                 <ListItemText primary={link.label} />
@@ -293,8 +291,8 @@ export default function NavBar() {
 
             {/* Authenticated navigation items */}
             <SignedIn>
-              <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
-              
+              <Divider sx={{ my: 1, bgcolor: "rgba(255, 255, 255, 0.3)" }} />
+
               {authNavLinks.map((link) => (
                 <ListItem
                   key={link.href}
@@ -308,19 +306,19 @@ export default function NavBar() {
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                  <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
                     {link.icon}
                   </ListItemIcon>
                   <ListItemText primary={link.label} />
                 </ListItem>
               ))}
 
-              <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
+              <Divider sx={{ my: 1, bgcolor: "rgba(255, 255, 255, 0.3)" }} />
             </SignedIn>
 
             {/* Auth section for signed out users */}
             <SignedOut>
-              <Divider sx={{ my: 1, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
+              <Divider sx={{ my: 1, bgcolor: "rgba(255, 255, 255, 0.3)" }} />
               <ListItem
                 onClick={handleSignIn}
                 sx={{
