@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   AppBar,
   Toolbar,
@@ -18,7 +17,7 @@ import {
   useMediaQuery,
   useTheme,
   Divider,
-  Avatar,
+  LinearProgress,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { 
@@ -60,22 +59,38 @@ export default function NavBar() {
     router.push("/");
   };
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigation = async (href: string, isExternal: boolean = false) => {
+    if (isExternal) {
+      window.open(href, "_blank", "noopener,noreferrer");
+    } else {
+      setIsNavigating(true);
+      router.push(href);
+      // Reset after a short delay to allow the navigation to complete
+      setTimeout(() => setIsNavigating(false), 500);
+    }
+  };
+
   // Public navigation links (available to everyone)
   const publicNavLinks = [
     { 
       label: "Docs", 
       href: "/docs", 
-      icon: <FaBook />
+      icon: <FaBook />,
+      isExternal: false
     },
     {
       label: "Github",
       href: "https://github.com/jalpp/chessagineweb",
-      icon: <GitHub/>
+      icon: <GitHub/>,
+      isExternal: true
     },
     {
       label: "Discord",
       href: "https://discord.gg/3RpEnvmZwp",
       icon: <FaDiscord />,
+      isExternal: true
     },
   ];
 
@@ -83,22 +98,26 @@ export default function NavBar() {
     { 
       label: "Analyze Position", 
       href: "/position", 
-      icon: <FaChessBoard />
+      icon: <FaChessBoard />,
+      isExternal: false
     },
     { 
       label: "Analyze Game", 
       href: "/game", 
-      icon: <FaChessPawn />
+      icon: <FaChessPawn />,
+      isExternal: false
     },
     { 
       label: "Puzzles", 
       href: "/puzzle", 
-      icon: <FaPuzzlePiece />
+      icon: <FaPuzzlePiece />,
+      isExternal: false
     },
     { 
       label: "Settings", 
       href: "/setting", 
-      icon: <FaGear />
+      icon: <FaGear />,
+      isExternal: false
     },
   ];
 
@@ -141,7 +160,7 @@ export default function NavBar() {
                 <Button
                   key={link.href}
                   color="inherit"
-                  href={link.href}
+                  onClick={() => handleNavigation(link.href, link.isExternal)}
                   startIcon={link.icon}
                   sx={{
                     textTransform: "none",
@@ -172,7 +191,7 @@ export default function NavBar() {
                   <Button
                     key={link.href}
                     color="inherit"
-                    href={link.href}
+                    onClick={() => handleNavigation(link.href, link.isExternal)}
                     startIcon={link.icon}
                     sx={{
                       textTransform: "none",
@@ -253,6 +272,20 @@ export default function NavBar() {
             </Box>
           )}
         </Toolbar>
+        {/* Loading bar */}
+        {isNavigating && (
+          <LinearProgress
+            sx={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              "& .MuiLinearProgress-bar": {
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              },
+            }}
+          />
+        )}
       </AppBar>
 
       {/* Mobile Drawer */}
@@ -272,11 +305,9 @@ export default function NavBar() {
             {publicNavLinks.map((link) => (
               <ListItem
                 key={link.href}
-                component="a"
-                href={link.href}
+                onClick={() => handleNavigation(link.href, link.isExternal)}
                 sx={{
-                  textDecoration: "none",
-                  color: "inherit",
+                  cursor: "pointer",
                   "&:hover": {
                     bgcolor: "rgba(255, 255, 255, 0.1)",
                   },
@@ -296,11 +327,9 @@ export default function NavBar() {
               {authNavLinks.map((link) => (
                 <ListItem
                   key={link.href}
-                  component="a"
-                  href={link.href}
+                  onClick={() => handleNavigation(link.href, link.isExternal)}
                   sx={{
-                    textDecoration: "none",
-                    color: "inherit",
+                    cursor: "pointer",
                     "&:hover": {
                       bgcolor: "rgba(255, 255, 255, 0.1)",
                     },
