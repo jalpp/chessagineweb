@@ -15,7 +15,7 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 <p align="center">
   <img src="/public/static/images/previewrel1.png" alt="ChessAgine_Preview" >
 </p>
-(Agine analyzing position using Ollama and gpt-oss models)
+(Agine analyzing position using free open source model)
 
 
 ## Features
