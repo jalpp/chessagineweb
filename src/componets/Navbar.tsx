@@ -67,12 +67,12 @@ export default function NavBar() {
     } else {
       setIsNavigating(true);
       router.push(href);
-      // Reset after a short delay to allow the navigation to complete
-      setTimeout(() => setIsNavigating(false), 500);
+      
+      setTimeout(() => setIsNavigating(false), 800);
     }
   };
 
-  // Public navigation links (available to everyone)
+
   const publicNavLinks = [
     { 
       label: "Docs", 
