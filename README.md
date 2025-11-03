@@ -13,9 +13,9 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 ## Preview
 
 <p align="center">
-  <img src="/public/static/images/agineuiupdate.png" alt="ChessAgine_Preview" >
+  <img src="/public/static/images/previewrel1.png" alt="ChessAgine_Preview" >
 </p>
-(Agine analyzing position using Ollama and gpt-oss models)
+(Agine analyzing position using free open source model)
 
 
 ## Features
@@ -26,8 +26,8 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 - **Opening Explorer**: Comprehensive opening database integration  
 - **Puzzle Training**: Interactive chess puzzles for skill improvement  
 - **Game Review**: Generate game review and ask Agine for specific move analysis  
-- **Ollama Integration**: Run LLMs locally or via cloud and connect to ChessAgine — free, open source, and no API key required  
-
+- **Ollama Integration**: Run LLMs locally or via cloud and connect to ChessAgine. Free, open source, and no API key required  
+- **Mobile/Tablet UI support** Able to talk to Agine on mobile/tablet
 
 
 ## Providers & Routers
