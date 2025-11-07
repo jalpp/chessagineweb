@@ -15,89 +15,11 @@ import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { ApiSettings } from "../componets/tabs/ModelSetting";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
+import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
 
-// Types
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  maxTokens?: number,
-  provider?: string,
-  fen: string,
-  model?: string,
-  content: string;
-  timestamp: Date;
-}
-
-export interface AgentMessage {
-  message: string,
-  maxTokens: number,
-  provider: string,
-  model: string,
-}
-
-interface AgineState {
-  llmAnalysisResult: string | null;
-  stockfishAnalysisResult: PositionEval | null;
-  openingData: MasterGames | null;
-  lichessOpeningData: MasterGames | null;
-  llmLoading: boolean;
-  stockfishLoading: boolean;
-  openingLoading: boolean;
-  lichessOpeningLoading: boolean;
-  moveSquares: { [square: string]: string };
-  analysisTab: number;
-  chatMessages: ChatMessage[];
-  chatInput: string;
-  chatLoading: boolean;
-  sessionMode: boolean;
-}
-
-// Analysis data types
-interface EngineLineData {
-  line: LineEval;
-  lineIndex: number;
-}
-
-interface MoveCoachData {
-  fen: string;
-  notation: string;
-  quality: MoveQuality;
-  player: "w" | "b";
-  plyNumber: number;
-  sanNotation?: string;
-}
-
-type AnalysisData = EngineLineData | Moves | CandidateMove | MoveCoachData | MoveAnalysis;
-
-
-// Utility functions
-const isValidFEN = (fen: string): boolean => {
-  if (!fen || typeof fen !== 'string') return false;
-  const parts = fen.trim().split(' ');
-  return parts.length === 6;
-};
-
-const createChatMessage = (
-  role: "user" | "assistant", 
-  fen: string,
-  content: string,
-  maxTokens?: number,
-  provider?: string,
-  model?: string, 
-  id?: string
-): ChatMessage => ({
-  id: id || Date.now().toString(),
-  role,
-  maxTokens,
-  provider,
-  fen,
-  model,
-  content,
-  timestamp: new Date(),
-});
 
 export default function useAgine(fen: string) {
-  // ==================== STATE MANAGEMENT ====================
+ 
   const [state, setState] = useState<AgineState>({
     llmAnalysisResult: null,
     stockfishAnalysisResult: null,
