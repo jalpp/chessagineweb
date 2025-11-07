@@ -25,7 +25,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import NotesIcon from '@mui/icons-material/Notes';
 import { MoveQuality, MoveAnalysis, } from '../../hooks/useGameReview';
 import { getMoveClassificationStyle } from './GameReviewTab';
-import { AgentMessage } from '../../hooks/useAgine';
+import { AgentMessage } from '@/libs/agine/helper';
 import { useLocalStorage } from 'usehooks-ts';
 import { DEFAULT_PGN_PANEL_DIMENSIONS } from '@/libs/setting/helper';
 
