@@ -1,6 +1,6 @@
 # Chess Context Protocol (CCP)
-version: v0.1
-date changed: Oct, 5, 2025
+version: v0.2
+date changed: Nov, 8, 2025
 
 Chess Context Protocol is designed to provide specifications on making LLMs and Agents chess-aware such that
 they are able to better communicate any chess related queries to end user via using context. This protocol
@@ -95,9 +95,12 @@ The server should be able to receive the chess context, as well the position fen
 
 The server should be able to run Agents, various tools the agent needs as well as system prompts that the agent will use to better infer the context that is fetched from the client. 
 
-### 2. Themes Computation
+### 2. PTAG Computation
 
 The server should compute and score N chess themes on behalf of the agent, each computation must have a key-value pair of theme associated the score. The themes must be computed from both sides, as well as the generic board state and game state.
+
+The server should be able to compute the Positional Theme Analysis Graph (PTAG) such that it is graphable, the scores must represent the advantage to a side by following the engine eval calculation. + positive meaning good for white, - meaning good 
+for black.
 
 ### 3. Complete Prompt Injection & Exchange
 
@@ -120,7 +123,7 @@ Client sends engine context and expects LLM's output
 ```
 
 Authors:
-Jalp Panchal
+@jalpp
 
 
 

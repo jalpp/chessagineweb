@@ -127,6 +127,6 @@ A huge thanks to everyone who helped make ChessAgine possible:
 
 ## Author
 
-ChessAgine by Jalp Panchal
+ChessAgine by @jalpp
 
 
