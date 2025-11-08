@@ -15,89 +15,11 @@ import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { ApiSettings } from "../componets/tabs/ModelSetting";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
+import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
 
-// Types
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  maxTokens?: number,
-  provider?: string,
-  fen: string,
-  model?: string,
-  content: string;
-  timestamp: Date;
-}
-
-export interface AgentMessage {
-  message: string,
-  maxTokens: number,
-  provider: string,
-  model: string,
-}
-
-interface AgineState {
-  llmAnalysisResult: string | null;
-  stockfishAnalysisResult: PositionEval | null;
-  openingData: MasterGames | null;
-  lichessOpeningData: MasterGames | null;
-  llmLoading: boolean;
-  stockfishLoading: boolean;
-  openingLoading: boolean;
-  lichessOpeningLoading: boolean;
-  moveSquares: { [square: string]: string };
-  analysisTab: number;
-  chatMessages: ChatMessage[];
-  chatInput: string;
-  chatLoading: boolean;
-  sessionMode: boolean;
-}
-
-// Analysis data types
-interface EngineLineData {
-  line: LineEval;
-  lineIndex: number;
-}
-
-interface MoveCoachData {
-  fen: string;
-  notation: string;
-  quality: MoveQuality;
-  player: "w" | "b";
-  plyNumber: number;
-  sanNotation?: string;
-}
-
-type AnalysisData = EngineLineData | Moves | CandidateMove | MoveCoachData | MoveAnalysis;
-
-
-// Utility functions
-const isValidFEN = (fen: string): boolean => {
-  if (!fen || typeof fen !== 'string') return false;
-  const parts = fen.trim().split(' ');
-  return parts.length === 6;
-};
-
-const createChatMessage = (
-  role: "user" | "assistant", 
-  fen: string,
-  content: string,
-  maxTokens?: number,
-  provider?: string,
-  model?: string, 
-  id?: string
-): ChatMessage => ({
-  id: id || Date.now().toString(),
-  role,
-  maxTokens,
-  provider,
-  fen,
-  model,
-  content,
-  timestamp: new Date(),
-});
 
 export default function useAgine(fen: string) {
-  // ==================== STATE MANAGEMENT ====================
+ 
   const [state, setState] = useState<AgineState>({
     llmAnalysisResult: null,
     stockfishAnalysisResult: null,
@@ -143,21 +65,21 @@ export default function useAgine(fen: string) {
     generateGameReview,
   } = useGameReview(engine, engineDepth);
 
-  // Refs
+
   const currentFenRef = useRef(fen);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Update ref when fen changes
+
   useEffect(() => {
     currentFenRef.current = fen;
   }, [fen]);
 
-  // ==================== COMPUTED VALUES ====================
+ 
   const legalMoves = useMemo(() => {
     return isValidFEN(fen) ? new Chess(fen).moves() : [];
   }, [fen]);
 
-  // ==================== UTILITY FUNCTIONS ====================
+ 
   const formatEvaluation = useCallback((line: LineEval): string => {
     if (line.mate !== undefined) {
       return `M${line.mate}`;
@@ -223,7 +145,7 @@ export default function useAgine(fen: string) {
     });
   }, [state.chatMessages, updateState]);
 
-  // ==================== API FUNCTIONS ====================
+
   const makeApiRequest = useCallback(
   async (fen: string, query: string, mode: string): Promise<AgentMessage> => {
     if (abortControllerRef.current) {
@@ -349,7 +271,7 @@ export default function useAgine(fen: string) {
     }
   }, [engine, engineDepth, engineLines, updateState]);
 
-  // ==================== CHAT FUNCTIONS ====================
+
   const abortChatMessage = useCallback((): void => {
     if (abortControllerRef.current) {
       console.log("Aborting chat message...");
@@ -383,7 +305,6 @@ Current FEN: ${currentFen}
 Side to Move: ${sideToMove}
 </position_context>`;
 
-      // Add mode-specific instructions
       if (puzzleMode === true) {
         query += `
 
@@ -419,7 +340,6 @@ Type: ${state.sessionMode ? 'Analysis Mode' : 'Chat Mode'}
 </mode>`;
       }
 
-      // Add additional context
       if (puzzleQuery) {
         query += `
 
@@ -445,7 +365,7 @@ ${currentMove}
 </current_move>`;
       }
 
-      // Add game review if available
+    
       if (gameReview && gameReview.length > 0) {
         const generateGameReviewSummary = (moves: MoveAnalysis[]): string => {
           const movesByQuality: Record<MoveQuality, MoveAnalysis[]> = {
@@ -525,7 +445,7 @@ ${gameReview.map(move => {
 </game_review_analysis>`;
       }
 
-      // Add engine analysis for non-play modes
+      
       if (state.sessionMode && !playMode && state.stockfishAnalysisResult) {
         const formattedEngineLines = state.stockfishAnalysisResult.lines
           .map((line, index) => {
@@ -551,7 +471,7 @@ ${formattedEngineLines}
 </engine_analysis>`;
       }
 
-      // Add opening information
+      
       if (state.openingData) {
         const openingSpeech = getOpeningStatSpeech(state.openingData);
         query += `
@@ -561,7 +481,7 @@ ${openingSpeech}
 </opening_information>`;
       }
 
-      // Add chess database information
+      
       if (chessdbdata) {
         const candidateMoves = getChessDBSpeech(chessdbdata);
         query += `
@@ -1062,7 +982,7 @@ ${customQuery}
     [createAnalysisHandler]
   );
 
-  // ==================== SPECIALIZED HANDLERS ====================
+ 
   const handleFutureMoveLegalClick = useCallback(
     async (move: string): Promise<void> => {
       if (state.llmLoading || state.chatLoading) return;
@@ -1174,7 +1094,7 @@ Be concise but thorough, and use clear chess language.`;
 
       const keyMoves: MoveAnalysis[] = [];
 
-      // Collect key moves (first blunder, mistake, dubious for each player)
+      
       ["Blunder", "Mistake", "Dubious"].forEach(quality => {
         const whiteMove = findMovesByQuality(quality as MoveQuality, "w")[0];
         const blackMove = findMovesByQuality(quality as MoveQuality, "b")[0];
@@ -1195,7 +1115,7 @@ Be concise but thorough, and use clear chess language.`;
       chathistory.push(summaryMessage);
       updateState({ chatMessages: chathistory });
 
-      // Process each key move sequentially
+      
       for (let i = 0; i < keyMoves.length; i++) {
         const move = keyMoves[i];
         
@@ -1227,7 +1147,7 @@ Be concise but thorough, and use clear chess language.`;
     [state.chatLoading, state.chatMessages, handleMoveCoachClick, updateState]
   );
 
-  // ==================== AUTO ANALYSIS EFFECT ====================
+  
   useEffect(() => {
     if (!engine || !fen) return;
 
@@ -1255,7 +1175,7 @@ Be concise but thorough, and use clear chess language.`;
     return () => clearTimeout(timeoutId);
   }, [fen, engine, engineDepth, engineLines, analyzeWithStockfish, fetchOpeningData, fetchLichessOpeningData, updateState]);
 
-  // ==================== CLEANUP EFFECT ====================
+  
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -1264,7 +1184,7 @@ Be concise but thorough, and use clear chess language.`;
     };
   }, []);
 
-  // ==================== MEMOIZED RETURN OBJECT ====================
+
   return useMemo(
     () => ({
       // Analysis Results

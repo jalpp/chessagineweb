@@ -96,6 +96,7 @@ export default function PuzzlePage() {
 
   // Puzzle solving state
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
+  const [sanSolutionMoves, setSanSolutionMoves] = useState<string[]>([]);
   const [currentSolutionIndex, setCurrentSolutionIndex] = useState(0);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
   const [puzzleFailed, setPuzzleFailed] = useState(false);
@@ -124,8 +125,39 @@ export default function PuzzlePage() {
         sideToMove = fenParts[1] === "w" ? "White to move." : fenParts[1] === "b" ? "Black to move." : "";
       }
     }
-    return `Current chess puzzle context: ${themesText} ${sideToMove} ${solutionText}`.trim();
+    return `
+    <puzzle_session>
+     Phase: puzzle_starting
+    ${themesText} 
+    \n
+    ${sideToMove} 
+    \n
+    ${solutionText}
+    </puzzle_session>
+    `
+    ;
   }, [puzzleData]);
+
+  const createTransitionPuzzlePrompt = useCallback((query: PuzzleQuery, solution: string): string => {
+    const themesText = query.themes.length > 0 ? `This puzzle focuses on: ${query.themes.join(", ")}. themes` : "";
+    let sideToMove = "";
+    if (puzzleData && puzzleData.FEN) {
+      const fenParts = puzzleData.FEN.split(" ");
+      if (fenParts.length > 1) {
+        sideToMove = fenParts[1] === "w" ? "White to move." : fenParts[1] === "b" ? "Black to move." : "";
+      }
+    }
+    return `
+    <puzzle_session>
+    ${themesText} 
+    \n
+    ${sideToMove} 
+    \n 
+    ${solution}
+    </puzzle_session>
+    `
+  }, [puzzleData]);
+
 
   const convertMovesToSAN = useCallback((moves: string[], startingFEN: string): string[] => {
     const tempGame = new Chess(startingFEN);
@@ -333,6 +365,7 @@ export default function PuzzlePage() {
         if (!move) return false;
         const moveNotation = move.from + move.to + (move.promotion || "");
         const expectedMove = solutionMoves[currentSolutionIndex];
+        
         if (moveNotation === expectedMove) {
           setGame(gameCopy);
           setFen(gameCopy.fen());
@@ -340,6 +373,18 @@ export default function PuzzlePage() {
             [source]: "rgba(155, 199, 0, 0.41)",
             [target]: "rgba(155, 199, 0, 0.41)",
           });
+          
+          const playedMove = sanSolutionMoves[currentSolutionIndex];
+          const remainingMoves = sanSolutionMoves.slice(currentSolutionIndex + 1);
+          const solutionText = remainingMoves.length > 0 
+            ? `Move played: ${playedMove}. Remaining solution: ${remainingMoves.join(" ")}.`
+            : `Move played: ${playedMove}. Puzzle complete!`;
+          
+          if (puzzleQuery) {
+            const puzzleTransitionQuery = createTransitionPuzzlePrompt(puzzleQuery, solutionText);
+            setPuzzleQueryString(puzzleTransitionQuery);
+          }
+          
           if (currentSolutionIndex === solutionMoves.length - 1) {
             setPuzzleComplete(true);
             showSnackbar(hintUsed ? "Puzzle complete! (Hint used)" : "Perfect! Puzzle solved!", "success");
@@ -374,7 +419,7 @@ export default function PuzzlePage() {
         return false;
       }
     },
-    [fen, solutionMoves, currentSolutionIndex, puzzleComplete, puzzleFailed, showingSolution, hintUsed]
+    [fen, solutionMoves, sanSolutionMoves, currentSolutionIndex, puzzleComplete, puzzleFailed, showingSolution, hintUsed, puzzleQuery, createTransitionPuzzlePrompt]
   );
 
   const handleSquareClick = useCallback(
