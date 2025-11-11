@@ -25,7 +25,8 @@ ChessAgine integrates with Stockfish 17.1 engine and chess databases to better a
 - **Stockfish Integration**: Powered by Stockfish 17.1 engine for accurate evaluation  
 - **Opening Explorer**: Comprehensive opening database integration  
 - **Puzzle Training**: Interactive chess puzzles for skill improvement  
-- **Game Review**: Generate game review and ask Agine for specific move analysis  
+- **Game Review**: Generate game review and ask Agine for specific move analysis
+- **hallucinations Checker** checks the previous responses hallucinations  
 - **Ollama Integration**: Run LLMs locally or via cloud and connect to ChessAgine. Free, open source, and no API key required  
 - **Mobile/Tablet UI support** Able to talk to Agine on mobile/tablet
 
@@ -39,7 +40,7 @@ ChessAgine works with multiple AI providers:
 | OpenAI     | ✅ Yes          | gpt-4, gpt-4o, gpt-5, o1, o3                     |
 | Anthropic  | ✅ Yes          | claude-sonnet-4, claude-3.5-haiku                |
 | Google     | ✅ Yes          | gemini-1.5-pro, gemini-2.5-flash                 |
-| Ollama     | ❌ No           | qwen3:8b, gpt-oss:120b, deepseek-v3.1:671b-cloud |
+| Ollama     | ❌ No           | qwen3:8b, gpt-oss:120b, deepseek-v3.1:671b-cloud, kimi-k2-thinking:cloud, kimi-k2:1t-cloud |
 | ChessAgine Cloud |  ❌ No |    google/gemini-2.0-flash-exp,openai/gpt-oss-20b,nvidia/nemotron-nano-9b-v2 |
 
 > ✅ Use Ollama for free, local, and open source AI integration without needing API keys.
