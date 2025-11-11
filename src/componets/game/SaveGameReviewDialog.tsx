@@ -23,12 +23,14 @@ import {
 import { purpleTheme } from "@/theme/theme";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { useLocalStorage } from "usehooks-ts";
+import { GameReviewTheme } from "@/libs/themes/helper";
 
 export interface SavedGameReview {
   id: string;
   gameInfo: Record<string, string>;
   pgn: string;
   gameReview: MoveAnalysis[];
+  gameReviewTheme: GameReviewTheme,
   moves: string[];
   savedAt: string;
   title?: string;
@@ -43,6 +45,7 @@ interface SaveGameReviewProp {
   gameInfo: Record<string, string>;
   pgnText: string;
   gameReview: MoveAnalysis[];
+  gameReviewTheme: GameReviewTheme;
   moves: string[];
 }
 
@@ -55,6 +58,7 @@ function SaveGameReviewDialog({
   gameInfo,
   gameReview,
   moves,
+  gameReviewTheme,
   pgnText,
 }: SaveGameReviewProp) {
   const [gameReviewHistory, setGameReviewHistory] = useLocalStorage<
@@ -92,6 +96,7 @@ const [saveTitle, setSaveTitle] = useState("");
       pgn: pgnText,
       gameReview,
       moves,
+      gameReviewTheme,
       savedAt: new Date().toISOString(),
       title: gameTitle,
     };

@@ -74,7 +74,7 @@ interface BaseAnalysisViewProps {
     currentMove?: string,
     puzzleMode?: boolean,
     puzzleQuery?: string,
-    playMode?: boolean
+    playMode?: boolean,
   ) => Promise<void>;
   chatLoading: boolean;
   abortChatMessage: () => void;
@@ -236,7 +236,7 @@ function AgineAnalysisView({
           p: { xs: 1.5, sm: 2, md: 3 },
           flex: 1,
           overflow: "auto",
-          WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+          WebkitOverflowScrolling: 'touch', 
         }}
       >
         <TabPanel value={analysisTab} index={0}>

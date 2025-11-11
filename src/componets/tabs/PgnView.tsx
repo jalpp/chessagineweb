@@ -45,7 +45,7 @@ export interface MoveComment {
 
 type ViewMode = 'pgn' | 'movelist';
 
-interface PGNViewProps {
+export interface PGNViewProps {
   moves: string[];
   gameResult?: string;
   gamePgn?: string;

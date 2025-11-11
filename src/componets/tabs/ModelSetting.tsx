@@ -125,7 +125,7 @@ const ModelSetting: React.FC = () => {
         return;
       }
       
-      if (!validateApiKey(tempSettings.provider, tempSettings.apiKey)) {
+      if (!validateApiKey(tempSettings.provider, tempSettings.apiKey) && !tempSettings.isRouted) {
         const config = PROVIDERS[tempSettings.provider];
         const expectedPrefix = config?.keyPrefix;
         const providerName = config?.name;

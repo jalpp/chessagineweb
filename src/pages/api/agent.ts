@@ -84,8 +84,7 @@ export default async function handler(
       
     }
 
-    
-
+  
     const { query, fen, mode, apiSettings } = req.body;
 
     const rawApiSettings = apiSettings as ApiSetting;
@@ -167,6 +166,7 @@ export default async function handler(
     runtimeContext.set("mode", mode);
     runtimeContext.set("isRouted", apiSettings.isRouted)
     runtimeContext.set("lang", apiSettings.language);
+
 
     if (apiSettings.provider === "ollama") {
       if (apiSettings.ollamaBaseUrl) {
