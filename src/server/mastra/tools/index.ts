@@ -63,7 +63,7 @@ const variationAnalysisSchema = z.object({
 export const getThemeScoresTool = createTool({
   id: "get-theme-scores",
   description:
-    "Get chess theme scores (material, mobility, space, positional, king safety) for a given position fen and the side to eval from",
+    "Get chess theme scores (material, mobility, space, positional, king safety, tactics, light/dark square) for a given position fen and the side to eval from",
   inputSchema: z.object({
     fen: fenSchema,
     color: colorSchema,
@@ -358,3 +358,9 @@ export const AgineTools = {
   compareVariationsTool,
   findCriticalMomentsTool
 };
+
+export const AgineCloudTools = {
+  isLegalMoveTool,
+  getThemeProgressionTool,
+  getThemeScoresTool,
+}

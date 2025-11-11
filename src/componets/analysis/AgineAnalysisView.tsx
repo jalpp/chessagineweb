@@ -74,7 +74,7 @@ interface BaseAnalysisViewProps {
     currentMove?: string,
     puzzleMode?: boolean,
     puzzleQuery?: string,
-    playMode?: boolean
+    playMode?: boolean,
   ) => Promise<void>;
   chatLoading: boolean;
   abortChatMessage: () => void;

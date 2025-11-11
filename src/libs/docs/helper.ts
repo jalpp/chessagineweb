@@ -136,7 +136,9 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'gpt-oss:120b',
       'deepseek-v3.1:671b-cloud',
       'gpt-oss:120b-cloud',
-      'gpt-oss:20b-cloud'
+      'gpt-oss:20b-cloud',
+      'kimi-k2-thinking:cloud',
+      'kimi-k2:1t-cloud'
     ],
     keyPrefix: '',
     website: 'https://docs.ollama.com/',

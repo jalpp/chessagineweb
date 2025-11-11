@@ -85,7 +85,6 @@ export interface ChatTabProps {
     puzzleMode?: boolean,
     puzzleQuery?: string,
     playMode?: boolean,
-    questionMode?: boolean
   ) => void;
   abortChatMessage?: () => void;
 }
@@ -189,6 +188,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   );
   const [questionMode, setQuestionMode] = useLocalStorage<boolean>(
     "agine_question_mode",
+    false
+  );
+
+  const [selfEvalMode, setSelfEvalMode] = useLocalStorage<boolean>(
+    "agine_selfEval_mode",
     false
   );
 
@@ -982,7 +986,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         </Stack>
 
         {/* Mode Controls */}
-        {!puzzleMode && !playMode && (
+        {!playMode && (
           <Stack
             direction={{ xs: "column", sm: "row" }}
             alignItems={{ xs: "flex-start", sm: "center" }}
@@ -1056,6 +1060,38 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   : "Positional Analysis"}
               </Typography>
             </Stack>
+             <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ flexWrap: "wrap" }}
+            >
+              <Typography
+                variant="caption"
+                sx={{ color: "white", fontWeight: 500 }}
+              >
+                Self Eval
+              </Typography>
+              <Switch
+                checked={selfEvalMode}
+                onChange={(e) => setSelfEvalMode(e.target.checked)}
+                size="small"
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: "#9c27b0",
+                  },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: "#9c27b0",
+                  },
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{ color: "grey.400", fontSize: "11px" }}
+              >
+                hallucinations check
+              </Typography>
+            </Stack>
             <Box sx={{ flexGrow: 1 }} />
             {chatMessages.length > 0 && (
               <Button
@@ -1080,7 +1116,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           </Stack>
         )}
 
-        {(puzzleMode || playMode) && (
+        {(playMode) && (
           <Stack
             direction={{ xs: "column", sm: "row" }}
             alignItems={{ xs: "flex-start", sm: "center" }}
@@ -1632,7 +1668,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 puzzleMode,
                 puzzleQuery,
                 playMode,
-                questionMode
               )
             }
             disabled={chatLoading || !chatInput.trim()}

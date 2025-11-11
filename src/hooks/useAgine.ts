@@ -47,6 +47,8 @@ export default function useAgine(fen: string) {
     DEFAULT_ENGINE_LINES
   );
 
+  
+
   const [enginePicked] = useLocalStorage<EngineName>(
     "stockfish-engine-picked",
     EngineName.Stockfish17Point
@@ -501,78 +503,132 @@ ${candidateMoves}
     [state.sessionMode, state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
   );
 
+  const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
+const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "true";
+
   const sendChatMessage = useCallback(
-    async (
-      gameInfo?: string,
-      currentMove?: string,
-      puzzleMode?: boolean,
-      puzzleQuery?: string,
-      playMode?: boolean,
-      questionMode?: boolean,
-    ): Promise<void> => {
-      if (!state.chatInput.trim()) return;
-      const userMessage = createChatMessage("user", fen, state.chatInput);
-      const currentInput = state.chatInput;
-     
-      updateState({
-        chatMessages: [...state.chatMessages, userMessage],
-        chatInput: "",
-        chatLoading: true
-      });
-      const currentFen = currentFenRef.current;
-      try {
-        const chessInstance = new Chess(currentFen);
-        const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-       
-        const query = buildChatQuery(
-          currentInput,
-          currentFen,
-          sideToMove,
-          gameInfo,
-          currentMove,
-          puzzleMode,
-          puzzleQuery,
-          playMode
+  async (
+    gameInfo?: string,
+    currentMove?: string,
+    puzzleMode?: boolean,
+    puzzleQuery?: string,
+    playMode?: boolean,
+ 
+  ): Promise<void> => {
+    if (!state.chatInput.trim()) return;
+
+    console.time("SEND_MESSAGE_TOTAL");
+
+    const userMessage = createChatMessage("user", fen, state.chatInput);
+    const currentInput = state.chatInput;
+
+    updateState({
+      chatMessages: [...state.chatMessages, userMessage],
+      chatInput: "",
+      chatLoading: true
+    });
+
+    const currentFen = currentFenRef.current;
+
+    try {
+      const chessInstance = new Chess(currentFen);
+      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+
+      const query = buildChatQuery(
+        currentInput,
+        currentFen,
+        sideToMove,
+        gameInfo,
+        currentMove,
+        puzzleMode,
+        puzzleQuery,
+        playMode
+      );
+
+      let mode = getQuestionMode() ? "question" : (puzzleMode || puzzleQuery ? "puzzle" : "position");
+
+      console.time("PRIMARY_AGENT_TIME");
+      const result = await makeApiRequest(currentFen, query, mode);
+      console.timeEnd("PRIMARY_AGENT_TIME");
+
+      let assistantMessage = createChatMessage(
+        "assistant",
+        fen,
+        result.message,
+        result.maxTokens,
+        result.provider,
+        result.model,
+        (Date.now() + 1).toString()
+      );
+
+      let newChatMessages = [...state.chatMessages, userMessage, assistantMessage];
+      const selfevalMode = getSelfEvalMode();
+      console.log(selfevalMode)
+
+      if (selfevalMode) {
+      
+        const selfEvalUserMessage = createChatMessage(
+          "user",
+          fen,
+          "Go check for hallucinations."
+        );
+        newChatMessages = [...newChatMessages, selfEvalUserMessage];
+
+        updateState({
+          chatMessages: newChatMessages,
+          chatLoading: true
+        });
+
+        const evalQuery = `
+        mode: ${mode}
+        \n\n
+        ${assistantMessage.content}
+        `
+        const selfEvalResult = await makeApiRequest(currentFen, evalQuery, "selfeval");
+
+        const correctedMessage = createChatMessage(
+          "assistant",
+          fen,
+          selfEvalResult.message,
+          selfEvalResult.maxTokens,
+          selfEvalResult.provider,
+          selfEvalResult.model,
+          (Date.now() + 2).toString()
         );
 
-        let mode = "position";
+        newChatMessages = [...newChatMessages, correctedMessage];
 
-        if(questionMode){
-          mode = "question"
-        }else{
-           mode = puzzleMode === true || puzzleQuery
-          ? "puzzle"
-          : "position";
-        }
-         
-        const result = await makeApiRequest(currentFen, query, mode);
-        const assistantMessage = createChatMessage("assistant", fen,result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
         updateState({
-          chatMessages: [...state.chatMessages, userMessage, assistantMessage],
+          chatMessages: newChatMessages,
           chatLoading: false
         });
-      } catch (error) {
-        console.error("Error sending chat message:", error);
-        if (!(error instanceof Error && error.message === "Request cancelled")) {
-          const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
-          const errorMessage = createChatMessage(
-            "assistant",
-            "",
-            errorMsg,
-            undefined,
-            undefined,
-            undefined,
-            (Date.now() + 1).toString()
-          );
-          updateState({
-            chatMessages: [...state.chatMessages, userMessage, errorMessage],
-            chatLoading: false
-          });
-        }
+
+        return;
       }
-    },
-    [state.chatInput, state.chatMessages, buildChatQuery, makeApiRequest, updateState]
-  );
+
+      updateState({
+        chatMessages: newChatMessages,
+        chatLoading: false
+      });
+
+    } catch (error) {
+      console.error("Error sending chat message:", error);
+
+      if (!(error instanceof Error && error.message === "Request cancelled")) {
+        const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
+        const errorMessage = createChatMessage("assistant", "", errorMsg);
+        updateState({
+          chatMessages: [...state.chatMessages, userMessage, errorMessage],
+          chatLoading: false
+        });
+      }
+    }
+
+    console.timeEnd("SEND_MESSAGE_TOTAL");
+  },
+  [state.chatInput, state.chatMessages, buildChatQuery, makeApiRequest, updateState]
+);
+
 
   const handleChatKeyPress = useCallback(
     (e: React.KeyboardEvent): void => {

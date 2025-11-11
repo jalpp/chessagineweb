@@ -10,11 +10,12 @@ import { createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {
   aginePuzzleSystemPrompt,
   agineQuestionMode,
+  agineSelfEval,
   agineSystemPrompt,
   chessAgineAnnoPrompt,
 } from "./prompt";
 import { OpenAIModel, GoogleModel, AnthropicModel, OllamaModel, AgineCloudModel } from "./types";
-import { AgineTools } from "../tools";
+import { AgineCloudTools, AgineTools } from "../tools";
 
 function createModelFromRouter(runtimeContext: RuntimeContext) {
   const provider = runtimeContext.get("provider") as string;
@@ -30,6 +31,7 @@ function createModelFromRouter(runtimeContext: RuntimeContext) {
 
 function createAgineCloudModel(runtimeContext: RuntimeContext) {
   const modelName = runtimeContext.get("model") as string;
+
 
   const apiKey = process.env.AGINE_KEY;
 
@@ -53,6 +55,8 @@ function createAgentInstruction(runtimeContext: RuntimeContext) {
       return chessAgineAnnoPrompt.replace("ENGLISH", lang);
     case "question":
       return agineQuestionMode.replace("ENGLISH", lang);
+    case "selfeval":
+      return agineSelfEval;  
     default:
       return agineSystemPrompt.replace("ENGLISH", lang);
   }
@@ -67,7 +71,7 @@ function createModelFromContext(runtimeContext: RuntimeContext) {
     | string
     | undefined;
 
-  if(isRouted){
+  if(isRouted && !provider.includes("agineCloud")){
     return createModelFromRouter(runtimeContext);
   }     
 
@@ -103,9 +107,19 @@ function createModelFromContext(runtimeContext: RuntimeContext) {
   }
 }
 
+function createToolsFromContext(runtimeContext: RuntimeContext) {
+  const provider = runtimeContext.get("provider") as string;
+
+  if(provider.includes("agineCloud") || provider.includes("ollama")){
+    return {}
+  }
+
+  return AgineTools;
+}
+
 export const chessAgine = new Agent({
   name: "ChessAgine",
   instructions: ({ runtimeContext }) => createAgentInstruction(runtimeContext),
   model: ({ runtimeContext }) => createModelFromContext(runtimeContext),
-  tools: AgineTools,
+  tools: ({runtimeContext}) => createToolsFromContext(runtimeContext)
 });
