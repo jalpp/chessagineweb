@@ -72,14 +72,31 @@ export default function PositionPage() {
   return (
     <Box
       sx={{
-        p: 4,
+        p: { xs: 1, sm: 2, md: 4 }, 
         backgroundColor: purpleTheme.background.main,
         minHeight: "100vh",
       }}
     >
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={4}>
+      <Stack 
+        direction={{ xs: "column", lg: "row" }} 
+        spacing={{ xs: 2, sm: 3, md: 4 }}
+        sx={{
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden' 
+        }}
+      >
         {/* Chessboard Section */}
-        <Box sx={{ flex: "0 0 auto" }}>
+        <Box 
+          sx={{ 
+            flex: { xs: "1 1 auto", lg: "0 0 auto" },
+            width: { xs: '100%', lg: 'auto' },
+            maxWidth: '100%',
+            display: 'flex',
+            justifyContent: { xs: 'center', lg: 'flex-start' },
+            px: { xs: 0, sm: 1 }
+          }}
+        >
           <AiChessboardPanel
             game={game}
             fen={fen}
@@ -100,7 +117,15 @@ export default function PositionPage() {
           />
         </Box>
 
-        <Box sx={{ flex: 1 }}>
+        {/* Analysis Section */}
+        <Box 
+          sx={{ 
+            flex: 1,
+            width: { xs: '100%', lg: 'auto' },
+            maxWidth: '100%',
+            minWidth: 0 // Important for flex child overflow
+          }}
+        >
           <AgineAnalysisView
             isGameReviewMode={false}
             stockfishAnalysisResult={stockfishAnalysisResult}

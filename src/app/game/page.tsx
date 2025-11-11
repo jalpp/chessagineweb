@@ -139,6 +139,7 @@ export default function PGNUploaderPage() {
       setMoves(savedGame.moves);
       setGameInfo(savedGame.gameInfo);
       setGameReview(savedGame.gameReview);
+      
 
       const parsed = extractMovesWithComments(savedGame.pgn);
       setParsedMovesWithComments(parsed);
@@ -284,7 +285,7 @@ export default function PGNUploaderPage() {
   return (
     <Box
       sx={{
-        p: 4,
+        p: { xs: 1, sm: 2, md: 4 },
         backgroundColor: purpleTheme.background.main,
         minHeight: "100vh",
       }}
@@ -292,20 +293,21 @@ export default function PGNUploaderPage() {
       {inputsVisible && (
         <Card
           sx={{
-            mb: 4,
+            mb: { xs: 2, sm: 3, md: 4 },
             backgroundColor: purpleTheme.background.paper,
-            borderRadius: 3,
+            borderRadius: { xs: 2, md: 3 },
             boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
           }}
         >
-          <CardContent sx={{ p: 4 }}>
-            <Box sx={{ textAlign: "center", mb: 4 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+            <Box sx={{ textAlign: "center", mb: { xs: 2, sm: 3, md: 4 } }}>
               <Typography
                 variant="h3"
                 gutterBottom
                 sx={{
                   color: purpleTheme.text.primary,
                   fontWeight: 700,
+                  fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
                   background: `linear-gradient(45deg, ${purpleTheme.accent}, ${purpleTheme.secondary})`,
                   backgroundClip: "text",
                   WebkitBackgroundClip: "text",
@@ -319,8 +321,10 @@ export default function PGNUploaderPage() {
                 sx={{
                   color: purpleTheme.text.secondary,
                   mb: 3,
+                  fontSize: { xs: "0.9rem", sm: "1rem", md: "1.25rem" },
                   maxWidth: 600,
                   mx: "auto",
+                  px: { xs: 2, sm: 0 },
                 }}
               >
                 Get detailed AI insights on your games! Paste your PGN, Lichess
@@ -328,7 +332,7 @@ export default function PGNUploaderPage() {
               </Typography>
             </Box>
 
-            <Stack spacing={3}>
+            <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
               <GamereviewHistory setHistoryDialogOpen={setHistoryDialogOpen} />
 
               <LoadStudy
@@ -368,7 +372,11 @@ export default function PGNUploaderPage() {
               <Box>
                 <Typography
                   variant="h6"
-                  sx={{ color: purpleTheme.text.accent, mb: 2 }}
+                  sx={{ 
+                    color: purpleTheme.text.accent, 
+                    mb: 2,
+                    fontSize: { xs: "1rem", sm: "1.15rem", md: "1.25rem" }
+                  }}
                 >
                   Your Lichess Games
                 </Typography>
@@ -382,48 +390,84 @@ export default function PGNUploaderPage() {
         </Card>
       )}
 
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={4}>
+      <Stack 
+        direction={{ xs: "column", lg: "row" }} 
+        spacing={{ xs: 2, sm: 3, md: 4 }}
+        sx={{
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden'
+        }}
+      >
         {!inputsVisible && (
-          <Box sx={{ flex: "0 0 auto" }}>
-            <Stack spacing={3} alignItems="center">
-              <AiChessboardPanel
-                game={game}
-                fen={fen}
-                moveSquares={moveSquares}
-                engine={engine}
-                setMoveSquares={setMoveSquares}
-                setFen={setFen}
-                gameInfo={gameInfo}
-                setGame={setGame}
-                reviewMove={gameReview[currentMoveIndex]}
-                gameReviewMode={true}
-                setLlmAnalysisResult={setLlmAnalysisResult}
-                setOpeningData={setOpeningData}
-                setStockfishAnalysisResult={setStockfishAnalysisResult}
-                stockfishAnalysisResult={stockfishAnalysisResult}
-                fetchOpeningData={fetchOpeningData}
-                analyzeWithStockfish={analyzeWithStockfish}
-                llmLoading={llmLoading}
-                stockfishLoading={stockfishLoading}
-                openingLoading={openingLoading}
-              />
+          <Box 
+            sx={{ 
+              flex: { xs: "1 1 auto", lg: "0 0 auto" },
+              width: { xs: '100%', lg: 'auto' },
+              maxWidth: '100%',
+            }}
+          >
+            <Stack 
+              spacing={{ xs: 2, sm: 2.5, md: 3 }} 
+              alignItems="center"
+              sx={{
+                width: '100%',
+                px: { xs: 0, sm: 1 }
+              }}
+            >
+              <Box
+               sx={{ width: '100%', maxWidth: { xs: '100%', lg: '600px' } }}
+              >
+                <AiChessboardPanel
+                  game={game}
+                  fen={fen}
+                  moveSquares={moveSquares}
+                  engine={engine}
+                  setMoveSquares={setMoveSquares}
+                  setFen={setFen}
+                  gameInfo={gameInfo}
+                  setGame={setGame}
+                  reviewMove={gameReview[currentMoveIndex]}
+                  gameReviewMode={true}
+                  setLlmAnalysisResult={setLlmAnalysisResult}
+                  setOpeningData={setOpeningData}
+                  setStockfishAnalysisResult={setStockfishAnalysisResult}
+                  stockfishAnalysisResult={stockfishAnalysisResult}
+                  fetchOpeningData={fetchOpeningData}
+                  analyzeWithStockfish={analyzeWithStockfish}
+                  llmLoading={llmLoading}
+                  stockfishLoading={stockfishLoading}
+                  openingLoading={openingLoading}
+                />
+              </Box>
 
-              <PGNView
-                moves={moves}
-                moveAnalysis={gameReview}
-                onAnnotateMove={handleMovePGNAnnotateClick}
-                gamePgn={pgnText}
-                goToMove={goToMove}
-                gameResult={gameInfo.Result}
-                currentMoveIndex={currentMoveIndex}
-              />
+              <Box sx={{ width: '100%', maxWidth: { xs: '100%', lg: '600px' } }}>
+                <PGNView
+                  moves={moves}
+                  moveAnalysis={gameReview}
+                  onAnnotateMove={handleMovePGNAnnotateClick}
+                  gamePgn={pgnText}
+                  goToMove={goToMove}
+                  gameResult={gameInfo.Result}
+                  currentMoveIndex={currentMoveIndex}
+                />
+              </Box>
 
-              <Stack direction="row" spacing={2}>
+              <Stack 
+                direction={{ xs: "column", sm: "row" }} 
+                spacing={2}
+                sx={{ 
+                  width: '100%', 
+                  maxWidth: { xs: '100%', lg: '600px' },
+                  px: { xs: 2, sm: 0 }
+                }}
+              >
                 <Button
                   variant="contained"
                   onClick={saveGameReview}
                   startIcon={<SaveIcon />}
                   disabled={!gameReview.length}
+                  fullWidth
                   sx={{
                     backgroundColor: purpleTheme.accent,
                     "&:hover": {
@@ -435,7 +479,8 @@ export default function PGNUploaderPage() {
                     },
                     borderRadius: 2,
                     px: 3,
-                    py: 1.5,
+                    py: { xs: 1.25, sm: 1.5 },
+                    fontSize: { xs: "0.875rem", sm: "0.9375rem" },
                     textTransform: "none",
                   }}
                 >
@@ -456,6 +501,7 @@ export default function PGNUploaderPage() {
                     setFen(reset.fen());
                   }}
                   startIcon={<RefreshIcon />}
+                  fullWidth
                   sx={{
                     borderColor: purpleTheme.secondary,
                     color: purpleTheme.text.primary,
@@ -465,7 +511,8 @@ export default function PGNUploaderPage() {
                     },
                     borderRadius: 2,
                     px: 3,
-                    py: 1.5,
+                    py: { xs: 1.25, sm: 1.5 },
+                    fontSize: { xs: "0.875rem", sm: "0.9375rem" },
                     textTransform: "none",
                   }}
                 >
@@ -477,8 +524,15 @@ export default function PGNUploaderPage() {
         )}
 
         {!inputsVisible && (
-          <Box sx={{ flex: 1 }}>
-            <Stack spacing={3}>
+          <Box 
+            sx={{ 
+              flex: 1,
+              width: { xs: '100%', lg: 'auto' },
+              maxWidth: '100%',
+              minWidth: 0
+            }}
+          >
+            <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
               {moves.length > 0 && (
                 <AgineAnalysisView
                   isGameReviewMode={true}
@@ -533,6 +587,7 @@ export default function PGNUploaderPage() {
                   gameReview={gameReview}
                   pgnText={pgnText}
                   currentMove={moves[currentMoveIndex]}
+                  fen={fen}
                 />
               )}
               {chapters.length > 0 && (
@@ -555,6 +610,7 @@ export default function PGNUploaderPage() {
         historyDialogOpen={historyDialogOpen}
         setHistoryDialogOpen={setHistoryDialogOpen}
         gameInfo={gameInfo}
+        gameReviewTheme={gameReviewTheme!}
         gameReview={gameReview}
         moves={moves}
         pgnText={pgnText}

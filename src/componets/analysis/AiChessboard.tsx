@@ -189,10 +189,10 @@ const [panelDimensions, setPanelDimensions] = useLocalStorage<{
   height: number;
 }>("board_ui_show_panel_dimensions", {
   width: typeof window !== 'undefined' && window.innerWidth < 768 
-    ? window.innerWidth - 32 // Mobile: full width minus padding
+    ? window.innerWidth - 32 
     : DEFAULT_BOARD_PANEL_DIMENSIONS.width,
   height: typeof window !== 'undefined' && window.innerWidth < 768 
-    ? window.innerHeight - 100 // Mobile: account for header/nav
+    ? window.innerHeight - 100 
     : DEFAULT_BOARD_PANEL_DIMENSIONS.height,
 });
 
