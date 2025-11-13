@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ChessAgine - AI-Powered Chess Training",
+  title: "ChessAgine",
   description: "Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine, chess databases and to better align with position context, making LLMs chess aware.",
   
   // Open Graph metadata (for Facebook, LinkedIn, Discord, etc.)
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   // Twitter Card metadata
   twitter: {
     card: "summary_large_image",
-    title: "ChessAgine - AI-Powered Chess Training",
+    title: "ChessAgine",
     description: "Transform any AI model into your personal chess coach. Get live training with OpenAI, Claude, or Gemini integrated with Stockfish 17.1.",
     images: ["static/images/agineowl-og.png"], // Same image as Open Graph
   },
@@ -62,24 +62,20 @@ export const metadata: Metadata = {
   ],
   
 
- 
-  // Robots
-  // robots: {
-  //   index: true,
-  //   follow: true,
-  //   googleBot: {
-  //     index: true,
-  //     follow: true,
-  //     'max-video-preview': -1,
-  //     'max-image-preview': 'large',
-  //     'max-snippet': -1,
-  //   },
-  // },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   
-  // Additional Open Graph properties
   other: {
-    // For better Discord embeds
-    'theme-color': '#8209a3ff', // Replace with your brand color
+    'theme-color': '#8209a3ff',
   },
 };
 

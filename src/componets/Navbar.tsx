@@ -88,7 +88,7 @@ export default function NavBar() {
     },
     {
       label: "Discord",
-      href: "https://discord.gg/3RpEnvmZwp",
+      href: "https://discord.gg/NwZb6JJAkS",
       icon: <FaDiscord />,
       isExternal: true
     },
@@ -125,7 +125,6 @@ export default function NavBar() {
     <>
       <AppBar position="static" sx={{ backgroundColor: "#111", mb: 3 }}>
         <Toolbar sx={{ justifyContent: "space-between", px: { xs: 1, md: 3 } }}>
-          {/* Logo Section - Left */}
           <Box
             sx={{
               display: "flex",
