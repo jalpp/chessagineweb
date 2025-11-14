@@ -18,8 +18,8 @@ import {
   SwapHorizontalCircleOutlined,
   
 } from "@mui/icons-material";
-import { purpleTheme } from "@/theme/theme";
-import ConstructionIcon from '@mui/icons-material/Construction';
+
+
 
 
 export const renderHeader = () => (
@@ -28,8 +28,8 @@ export const renderHeader = () => (
       sx={{
         p: 4,
         mb: 4,
-        background: `linear-gradient(135deg, ${purpleTheme.primary} 0%, ${purpleTheme.secondary} 100%)`,
-        color: purpleTheme.text.primary,
+    
+   
       }}
     >
       <Typography variant="h3" component="h1" gutterBottom>
@@ -72,7 +72,7 @@ export const renderHeader = () => (
         <List>
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon/>
             </ListItemIcon>
             <ListItemText
               primary="Agine Cloud (beta)"
@@ -81,7 +81,7 @@ export const renderHeader = () => (
           </ListItem>
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon  />
             </ListItemIcon>
             <ListItemText
               primary="Ollama Support"
