@@ -1271,9 +1271,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   sx={{
                     p: compactView ? 1 : 1.5,
                     maxWidth: "85%",
-                    backgroundColor:
-                      message.role === "user" ? "#1976d2" : "#7b1fa2",
-                   
                     borderRadius: 2,
                     position: "relative",
                     "&:hover .message-actions": {
@@ -1387,14 +1384,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       <Tooltip title="Copy message" arrow>
                         <IconButton
                           onClick={() => copyMessage(message.content)}
-                          sx={{
-                            color: "rgba(255, 255, 255, 0.7)",
-                            backgroundColor: "rgba(0, 0, 0, 0.2)",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.4)",
-                        
-                            },
-                          }}
+                         
                           size="small"
                         >
                           <ContentCopy fontSize="inherit" />
@@ -1527,11 +1517,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         onClick={handleAbortMessage}
                         size="small"
                         sx={{
-                      
                           ml: 0.5,
-                          "&:hover": {
-                            backgroundColor: "rgba(255, 255, 255, 0.1)",
-                          },
+                          
                         }}
                       >
                         <Stop fontSize="small" />
@@ -1657,7 +1644,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         </DialogTitle>
         <DialogContent sx={{ p: 2 }}>{libraryContent}</DialogContent>
         <DialogActions>
-          <Button onClick={closeLibraryModal} sx={{ color: "#9c27b0" }}>
+          <Button onClick={closeLibraryModal} >
             Close
           </Button>
         </DialogActions>
@@ -1815,7 +1802,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 </Stack>
               </Stack>
             </Box>
-            <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+            <Divider  />
 
             {/* Text-to-Speech Settings */}
             {speechEnabled && (
@@ -1831,18 +1818,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         value={selectedVoice}
                         onChange={(e) => setSelectedVoice(e.target.value)}
                         label="Voice"
-                        sx={{
-                      
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "rgba(255,255,255,0.2)",
-                          },
-                          "&:hover .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "rgba(255,255,255,0.3)",
-                          },
-                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#9c27b0",
-                          },
-                        }}
+                        
                     
                       >
                         {availableVoices.map((voice) => (
@@ -1870,10 +1846,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                           onChange={(e) =>
                             setSpeechRate(Number(e.target.value))
                           }
-                          style={{
-                            width: "100%",
-                            accentColor: "#9c27b0",
-                          }}
+                         
                         />
                       </Box>
                     </Box>
@@ -1895,10 +1868,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                           onChange={(e) =>
                             setSpeechPitch(Number(e.target.value))
                           }
-                          style={{
-                            width: "100%",
-                            accentColor: "#9c27b0",
-                          }}
+                          
                         />
                       </Box>
                     </Box>
@@ -1920,22 +1890,19 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                           onChange={(e) =>
                             setSpeechVolume(Number(e.target.value))
                           }
-                          style={{
-                            width: "100%",
-                            accentColor: "#9c27b0",
-                          }}
+                          
                         />
                       </Box>
                     </Box>
                   </Stack>
                 </Box>
-                <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+                <Divider />
               </>
             )}
 
             <ModelSetting />
 
-            <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+            <Divider />
 
             <Box>
               <Typography variant="body2" sx={{  mb: 1 }}>
@@ -1954,17 +1921,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   max={18}
                   value={fontSize}
                   onChange={(e) => setFontSize(Number(e.target.value))}
-                  style={{
-                    width: "100%",
-                    accentColor: "#9c27b0",
-                  }}
+                
                 />
               </Box>
             </Box>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+          <Button onClick={handleSettingsClose}>
             Done
           </Button>
         </DialogActions>

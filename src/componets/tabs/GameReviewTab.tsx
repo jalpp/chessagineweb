@@ -223,13 +223,13 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
 
   if (!gameReview || gameReview.length === 0) {
     return (
-      <Box sx={{ bgcolor: "#000", p: 2 }}>
+      <Box >
         <Stack spacing={2} alignItems="center">
-          <Sparkles size={32} color="#666" />
-          <Typography variant="h6" sx={{ color: "#fff", textAlign: "center" }}>
+          <Sparkles size={32} />
+          <Typography variant="h6" sx={{ textAlign: "center" }}>
             AI Game Analysis
           </Typography>
-          <Typography variant="body2" sx={{ color: "#999", textAlign: "center" }}>
+          <Typography variant="body2" sx={{  textAlign: "center" }}>
             Generate detailed move-by-move analysis with AI insights
           </Typography>
 
@@ -239,12 +239,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             disabled={gameReviewLoading || moves.length === 0}
             startIcon={!gameReviewLoading && <PlayCircle size={18} />}
             sx={{
-              bgcolor: "#333",
-              color: "#fff",
               px: 3,
               py: 1,
-              "&:hover": { bgcolor: "#444" },
-              "&:disabled": { bgcolor: "#222", color: "#666" },
             }}
           >
             {gameReviewLoading ? "Analyzing..." : "Generate Analysis"}
@@ -255,12 +251,9 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               <LinearProgress
                 variant="determinate"
                 value={gameReviewProgress}
-                sx={{
-                  bgcolor: "#333",
-                  "& .MuiLinearProgress-bar": { bgcolor: "#666" },
-                }}
+               
               />
-              <Typography variant="caption" sx={{ color: "#999", mt: 1, display: "block", textAlign: "center" }}>
+              <Typography variant="caption" sx={{  mt: 1, display: "block", textAlign: "center" }}>
                 {`${Math.round(gameReviewProgress)}% Complete`}
               </Typography>
             </Box>
@@ -274,15 +267,15 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   const currentMove = getCurrentMoveReview;
 
   return (
-    <Box sx={{ bgcolor: "#000", p: 2 }}>
+    <Box sx={{  p: 2 }}>
       <Stack spacing={2}>
         {/* Current Move Classification */}
         {currentMove && (
-          <Card sx={{ bgcolor: "#111", border: "1px solid #333" }}>
+          <Card >
             <CardContent sx={{ p: 2 }}>
               <Stack spacing={2}>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <Typography variant="subtitle1" sx={{ color: "#fff" }}>
+                  <Typography variant="subtitle1" >
                     {currentMove.notation}
                   </Typography>
                   <Chip
@@ -291,7 +284,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     icon={getMoveClassificationStyle(currentMove.quality).icon}
                     sx={{
                       bgcolor: getMoveClassificationStyle(currentMove.quality).bgColor,
-                      color: getMoveClassificationStyle(currentMove.quality).color,
                       border: `1px solid ${getMoveClassificationStyle(currentMove.quality).color}40`,
                     }}
                   />
@@ -310,12 +302,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     }
                     onClick={() => handleChatClick(currentMove)}
                     disabled={chatLoading}
-                    sx={{
-                      borderColor: "#333",
-                      color: "#fff",
-                      "&:hover": { borderColor: "#555", bgcolor: "#222" },
-                      "&:disabled": { borderColor: "#222", color: "#666" },
-                    }}
+                    
                   >
                     Ask AI
                   </Button>
@@ -332,12 +319,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     }
                     onClick={() => handleAnnotateClick(currentMove, userThoughts)}
                     disabled={chatLoading}
-                    sx={{
-                      borderColor: "#333",
-                      color: "#fff",
-                      "&:hover": { borderColor: "#555", bgcolor: "#222" },
-                      "&:disabled": { borderColor: "#222", color: "#666" },
-                    }}
+                   
                   >
                     Annotate
                   </Button>
@@ -348,9 +330,9 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         )}
 
         {/* Analysis Notes */}
-        <Card sx={{ bgcolor: "#111", border: "1px solid #333" }}>
+        <Card >
           <CardContent sx={{ p: 2 }}>
-            <Typography variant="subtitle2" sx={{ color: "#fff", mb: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Your Analysis Notes
             </Typography>
             <TextField
@@ -363,16 +345,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               onChange={(e) => setUserThoughts(e.target.value)}
               disabled={chatLoading}
               size="small"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: "#000",
-                  color: "#fff",
-                  "& fieldset": { borderColor: "#333" },
-                  "&:hover fieldset": { borderColor: "#555" },
-                  "&.Mui-focused fieldset": { borderColor: "#666" },
-                },
-                "& .MuiInputBase-input::placeholder": { color: "#666" },
-              }}
+              
             />
             
             <Button
@@ -388,11 +361,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               disabled={!gameReview || gameReview.length === 0 || chatLoading}
               sx={{
                 mt: 2,
-                bgcolor: "#333",
-                color: "#fff",
                 py: 1,
-                "&:hover": { bgcolor: "#444" },
-                "&:disabled": { bgcolor: "#222", color: "#666" },
               }}
             >
               {loadingStates.gameReport ? "Generating Report..." : "Generate Game Report"}
@@ -400,16 +369,16 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           </CardContent>
         </Card>
 
-        {/* Game Statistics */}
+     
         {stats && (
-          <Card sx={{ bgcolor: "#111", border: "1px solid #333" }}>
+          <Card >
             <CardContent sx={{ p: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: "#fff", mb: 2 }}>
+              <Typography variant="subtitle2" >
                 Game Statistics
               </Typography>
               <Grid container spacing={2}>
                 <Grid >
-                  <Typography variant="caption" sx={{ color: "#999", display: "block", mb: 1 }}>
+                  <Typography variant="caption" sx={{ isplay: "block", mb: 1 }}>
                     {whiteTitle} {whitePlayer} (White) - {calculateAccuracy(stats.whiteStats)}% Accuracy
                   </Typography>
                   <Stack spacing={0.5}>
@@ -421,7 +390,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                           <Box sx={{ color: style.color, display: "flex", alignItems: "center" }}>
                             {style.icon}
                           </Box>
-                          <Typography variant="caption" sx={{ color: style.color }}>
+                          <Typography variant="caption" >
                             {classification}: {count}
                           </Typography>
                         </Box>
@@ -430,7 +399,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                   </Stack>
                 </Grid>
                 <Grid >
-                  <Typography variant="caption" sx={{ color: "#999", display: "block", mb: 1 }}>
+                  <Typography variant="caption" sx={{ display: "block", mb: 1 }}>
                     {blackTitle} {blackPlayer} (Black) - {calculateAccuracy(stats.blackStats)}% Accuracy
                   </Typography>
                   <Stack spacing={0.5}>
@@ -442,7 +411,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                           <Box sx={{ color: style.color, display: "flex", alignItems: "center" }}>
                             {style.icon}
                           </Box>
-                          <Typography variant="caption" sx={{ color: style.color }}>
+                          <Typography variant="caption">
                             {classification}: {count}
                           </Typography>
                         </Box>

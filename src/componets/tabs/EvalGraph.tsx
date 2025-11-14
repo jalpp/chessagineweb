@@ -7,8 +7,6 @@ import {
   Box,
   Typography,
   Tooltip,
-  createTheme,
-  ThemeProvider,
   Button,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";

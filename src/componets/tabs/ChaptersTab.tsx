@@ -116,7 +116,7 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
                   height: 'auto',
                   minHeight: '36px',
                   cursor: isResizing ? 'default' : 'pointer',
-                  transition: 'background-color 0.2s ease',
+                
                   '& .MuiChip-label': {
                     whiteSpace: 'normal',
                     wordBreak: 'break-word',
