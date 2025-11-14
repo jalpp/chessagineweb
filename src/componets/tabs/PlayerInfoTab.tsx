@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   Box,
   Typography,
@@ -65,7 +65,7 @@ const PlayerInfoBar = ({ gameInfo, boardOrientation }: PlayerInfoType) => {
       <Box
         sx={{
           width: '100%',
-          color: '#fff',
+     
           px: 2,
           py: 1,
           display: 'flex',
@@ -83,7 +83,6 @@ const PlayerInfoBar = ({ gameInfo, boardOrientation }: PlayerInfoType) => {
               size="small"
               sx={{
                 backgroundColor: resultInfo.color,
-                color: '#fff',
                 fontWeight: 'bold',
                 fontSize: '12px',
                 minWidth: '50px'
@@ -96,11 +95,11 @@ const PlayerInfoBar = ({ gameInfo, boardOrientation }: PlayerInfoType) => {
             sx={{
               width: 32,
               height: 32,
-              backgroundColor: color === 'white' ? '#fff' : '#000',
-              border: `2px solid ${color === 'white' ? '#ccc' : '#666'}`,
+              
+              border: `2px solid ${color === 'white' ? '#aeacacff' : '#666'}`,
               fontSize: '14px',
               fontWeight: 'bold',
-              color: color === 'white' ? '#000' : '#fff'
+            
             }}
           >
           </Avatar>

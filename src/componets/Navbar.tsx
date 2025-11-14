@@ -123,7 +123,7 @@ export default function NavBar() {
 
   return (
     <>
-      <AppBar position="static" sx={{ backgroundColor: "#111", mb: 3 }}>
+      <AppBar position="static" sx={{ mb: 3 }}>
         <Toolbar sx={{ justifyContent: "space-between", px: { xs: 1, md: 3 } }}>
           <Box
             sx={{
@@ -139,13 +139,7 @@ export default function NavBar() {
           >
             <Typography
               variant="h6"
-              sx={{
-                fontWeight: 700,
-                letterSpacing: "-0.5px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
+              
             >
               ChessAgine
             </Typography>

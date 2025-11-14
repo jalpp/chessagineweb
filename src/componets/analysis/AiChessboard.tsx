@@ -843,7 +843,7 @@ useEffect(() => {
         <Paper
           sx={{
             p: 1.5,
-            backgroundColor: "#1a1a1a",
+           
             borderRadius: 2,
             mb: 2,
           }}
@@ -858,8 +858,7 @@ useEffect(() => {
               label={modeInfo.label}
               size="small"
               sx={{
-                backgroundColor: `${modeInfo.color}20`,
-                color: modeInfo.color,
+                
                 fontSize: "0.65rem",
                 fontWeight: 600,
               }}
@@ -867,7 +866,7 @@ useEffect(() => {
             <Box sx={{ flexGrow: 1 }} />
             <IconButton
               onClick={() => setSettingsOpen(true)}
-              sx={{ color: "white", p: 0.5 }}
+              sx={{ p: 0.5 }}
               size="small"
             >
               <SettingsIcon fontSize="small" />
@@ -877,7 +876,7 @@ useEffect(() => {
           {/* Board Info */}
           <Stack direction="row" alignItems="center" spacing={2}>
             {(puzzleMode || playMode) && (
-              <Typography variant="caption" sx={{ color: "grey.400" }}>
+              <Typography variant="caption">
                 {getBoardOrientation()} To Play
               </Typography>
             )}
@@ -965,13 +964,12 @@ useEffect(() => {
                   borderRadius: 2,
                 }}
               >
-                <Typography variant="caption" sx={{ color: "grey.300", mb: 1 }}>
+                <Typography variant="caption" sx={{ mb: 1 }}>
                   Current Position (FEN)
                 </Typography>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "white",
                     fontFamily: "monospace",
                   
                     p: 1,
@@ -998,7 +996,7 @@ useEffect(() => {
                 >
                   <Typography
                     variant="caption"
-                    sx={{ color: "grey.300", mb: 1.5, display: "block" }}
+                    sx={{ mb: 1.5, display: "block" }}
                   >
                     Piece Analysis
                   </Typography>
@@ -1022,7 +1020,7 @@ useEffect(() => {
                               key={index}
                               variant="caption"
                               sx={{
-                                color: "white",
+                                
                                 fontSize: "0.65rem",
                                 display: "block",
                                 ml: 1,
@@ -1055,7 +1053,7 @@ useEffect(() => {
                               key={index}
                               variant="caption"
                               sx={{
-                                color: "white",
+                              
                                 fontSize: "0.65rem",
                                 display: "block",
                                 ml: 1,
@@ -1084,7 +1082,7 @@ useEffect(() => {
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "grey.400",
+                     
                         fontSize: "0.6rem",
                         display: "block",
                       }}
@@ -1110,7 +1108,7 @@ useEffect(() => {
                           />
                           <Typography
                             variant="caption"
-                            sx={{ color: "grey.400", fontSize: "0.6rem" }}
+                            sx={{  fontSize: "0.6rem" }}
                           >
                             Critical
                           </Typography>
@@ -1135,7 +1133,7 @@ useEffect(() => {
                           />
                           <Typography
                             variant="caption"
-                            sx={{ color: "grey.400", fontSize: "0.6rem" }}
+                            sx={{ fontSize: "0.6rem" }}
                           >
                             Contested
                           </Typography>
@@ -1186,7 +1184,7 @@ useEffect(() => {
         <OpenInFullIcon
           sx={{
             fontSize: "10px",
-            color: "#ccc",
+           
             transform: "rotate(180deg)",
           }}
         />
@@ -1198,7 +1196,7 @@ useEffect(() => {
         onClose={handleSettingsClose}
         PaperProps={{
           sx: {
-            color: "white",
+            
             minWidth: 450,
             maxHeight: "90vh",
           },
@@ -1209,11 +1207,11 @@ useEffect(() => {
           <Stack spacing={3} sx={{ pt: 1 }}>
             {/* Board Theme Selection */}
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{  mb: 2 }}>
                 Board Theme
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel sx={{ color: "grey.300" }}>theme</InputLabel>
+                <InputLabel >theme</InputLabel>
                 <Select
                   value={boardTheme}
                   onChange={(e) => setBoardTheme(e.target.value)}
@@ -1231,35 +1229,15 @@ useEffect(() => {
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Piece Style
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel sx={{ color: "grey.300" }}>piece style</InputLabel>
+                <InputLabel >piece style</InputLabel>
                 <Select
                   value={pieceType}
                   onChange={(e) => setPieceType(e.target.value)}
-                  label="Pieces"
-                  sx={{
-                    color: "white",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.2)",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.3)",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#9c27b0",
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        backgroundColor: "#2a2a2a",
-                        color: "white",
-                      },
-                    },
-                  }}
+                  label="Pieces" 
                 >
                   {Object.entries(PIECE_STYLE_TYPES).map(
                     ([key, piece]) => (
@@ -1273,7 +1251,7 @@ useEffect(() => {
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
                 Animation Speed: {animationDuration}ms
               </Typography>
               <Slider
@@ -1282,14 +1260,12 @@ useEffect(() => {
                 min={0}
                 max={1000}
                 step={50}
-                sx={{
-                  color: "#9c27b0",
-                }}
+                
               />
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{  mb: 2 }}>
                 Display Options
               </Typography>
               <Stack spacing={2}>
@@ -1298,7 +1274,7 @@ useEffect(() => {
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Show Coordinates
                   </Typography>
                   <Switch
@@ -1313,7 +1289,7 @@ useEffect(() => {
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Show FEN String
                   </Typography>
                   <Switch
@@ -1329,7 +1305,7 @@ useEffect(() => {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Show Analysis Arrows
                     </Typography>
                     <Switch
@@ -1346,7 +1322,7 @@ useEffect(() => {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Show Eval Bar
                     </Typography>
                     <Switch
@@ -1359,9 +1335,8 @@ useEffect(() => {
               </Stack>
             </Box>
 
-            {/* Piece Highlighting Options */}
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" >
                 Piece Highlighting
               </Typography>
               <Stack spacing={2}>
@@ -1371,12 +1346,12 @@ useEffect(() => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Hanging Pieces
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ color: "grey.500", fontSize: "0.7rem" }}
+                      sx={{ fontSize: "0.7rem" }}
                     >
                       Critical threats - undefended pieces
                     </Typography>
@@ -1402,12 +1377,12 @@ useEffect(() => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Semi-Protected Pieces
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ color: "grey.500", fontSize: "0.7rem" }}
+                      sx={{  fontSize: "0.7rem" }}
                     >
                       Equal attackers and defenders
                     </Typography>
@@ -1436,7 +1411,7 @@ useEffect(() => {
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
 
                 <Box>
-                  <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
                     Board Controls
                   </Typography>
 
@@ -1461,14 +1436,7 @@ useEffect(() => {
                       size="small"
                       fullWidth
                     
-                      slotProps={{
-                        input: {
-                          sx: { color: "white" },
-                        },
-                        inputLabel: {
-                          sx: { color: "grey.400" },
-                        },
-                      }}
+                      
                       placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                     />
 
@@ -1489,7 +1457,7 @@ useEffect(() => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+          <Button onClick={handleSettingsClose} >
             Done
           </Button>
         </DialogActions>
