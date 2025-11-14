@@ -43,7 +43,7 @@ import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { useSession } from "@clerk/nextjs";
-import { purpleTheme } from "@/theme/theme";
+
 import {
   Lightbulb,
   Star,
@@ -534,7 +534,7 @@ export default function PuzzlePage() {
   return (
     <>
       <Box sx={{ 
-        backgroundColor: purpleTheme.background.main, 
+      
         minHeight: "100vh",
         pb: isMobile ? 10 : 4,
         px: isMobile ? 1 : 4,
@@ -545,7 +545,7 @@ export default function PuzzlePage() {
           <Stack spacing={2}>
             {/* Header with Rating - Mobile Only */}
             {puzzleData && (
-              <Card sx={{ backgroundColor: purpleTheme.background.card }}>
+              <Card >
                 <CardContent sx={{ py: 1.5 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Chip
@@ -629,7 +629,7 @@ export default function PuzzlePage() {
                 flex: 1,
                 minHeight: 600,
                 color: "white",
-                backgroundColor: purpleTheme.background.paper,
+          
                 maxHeight: "85vh",
                 overflow: "auto",
                 display: 'flex',
@@ -660,7 +660,7 @@ export default function PuzzlePage() {
                   ) : (
                     <Stack spacing={3}>
                       {/* Theme Selection */}
-                      <Card sx={{ backgroundColor: purpleTheme.background.card }}>
+                      <Card >
                         <CardContent>
                           <Typography variant="h6" sx={{ mb: 2, color: "wheat" }}>
                             Puzzle Themes
@@ -673,7 +673,7 @@ export default function PuzzlePage() {
                                 onChange={handleQuickThemeChange}
                                 label="Quick Select"
                                 sx={{
-                                  backgroundColor: grey[900],
+                                 
                                   color: "wheat",
                                   ".MuiOutlinedInput-notchedOutline": { borderColor: "wheat" },
                                 }}
@@ -717,7 +717,7 @@ export default function PuzzlePage() {
 
                       {/* Rating Display */}
                       {puzzleData && (
-                        <Card sx={{ backgroundColor: purpleTheme.background.card }}>
+                        <Card >
                           <CardContent>
                             <Stack direction="row" justifyContent="center" spacing={2}>
                               <Chip
@@ -737,7 +737,7 @@ export default function PuzzlePage() {
                       )}
 
                       {/* Action Buttons */}
-                      <Card sx={{ backgroundColor: purpleTheme.background.card }}>
+                      <Card >
                         <CardContent>
                           {showingSolution ? (
                             <Stack spacing={2}>
@@ -920,7 +920,7 @@ export default function PuzzlePage() {
             onClose={() => setBottomDrawerOpen(false)}
             PaperProps={{
               sx: {
-                backgroundColor: purpleTheme.background.paper,
+                
                 borderTopLeftRadius: 16,
                 borderTopRightRadius: 16,
                 maxHeight: '90vh',
@@ -1031,7 +1031,7 @@ export default function PuzzlePage() {
                 )}
 
                 {/* Theme Selection - Collapsible */}
-                <Card sx={{ backgroundColor: purpleTheme.background.card }}>
+                <Card >
                   <CardContent sx={{ p: 2 }}>
                     <Stack 
                       direction="row" 
@@ -1054,7 +1054,7 @@ export default function PuzzlePage() {
                             onChange={handleQuickThemeChange}
                             label="Quick Select"
                             sx={{
-                              backgroundColor: grey[900],
+                             
                               color: "wheat",
                               ".MuiOutlinedInput-notchedOutline": { borderColor: "wheat" },
                             }}
@@ -1107,7 +1107,7 @@ export default function PuzzlePage() {
                 </Card>
 
                 {/* Tabs for Mobile */}
-                <Card sx={{ backgroundColor: purpleTheme.background.card }}>
+                <Card >
                   <CardContent sx={{ p: 1 }}>
                     <Tabs
                       value={analysisTab}
@@ -1201,7 +1201,6 @@ export default function PuzzlePage() {
         fullScreen={isMobile}
         PaperProps={{
           sx: {
-            backgroundColor: grey[900],
             color: "white",
           },
         }}

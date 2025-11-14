@@ -812,7 +812,7 @@ useEffect(() => {
         maxHeight: '100vw',
         border: "1px solid #444",
         borderRadius: 2,
-        backgroundColor: "#1a1a1a",
+   
         overflow: "hidden",
         userSelect: isResizing ? "none" : "auto",
       }}
@@ -935,15 +935,7 @@ useEffect(() => {
                 startIcon={<NavigateBefore fontSize="small" />}
                 fullWidth
                 size="small"
-                sx={{
-                  backgroundColor: "#9c27b0",
-                  "&:hover": {
-                    backgroundColor: "#7b1fa2",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "rgba(156, 39, 176, 0.3)",
-                  },
-                }}
+             
               >
                 Previous
               </Button>
@@ -954,15 +946,7 @@ useEffect(() => {
                 endIcon={<NavigateNext fontSize="small" />}
                 fullWidth
                 size="small"
-                sx={{
-                  backgroundColor: "#9c27b0",
-                  "&:hover": {
-                    backgroundColor: "#7b1fa2",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "rgba(156, 39, 176, 0.3)",
-                  },
-                }}
+               
               >
                 Next
               </Button>
@@ -977,7 +961,7 @@ useEffect(() => {
               <Paper
                 sx={{
                   p: 1.5,
-                  backgroundColor: "#1a1a1a",
+                 
                   borderRadius: 2,
                 }}
               >
@@ -989,7 +973,7 @@ useEffect(() => {
                   sx={{
                     color: "white",
                     fontFamily: "monospace",
-                    backgroundColor: "rgba(255,255,255,0.05)",
+                  
                     p: 1,
                     borderRadius: 1,
                     wordBreak: "break-all",
@@ -1008,7 +992,7 @@ useEffect(() => {
                 <Paper
                   sx={{
                     p: 1.5,
-                    backgroundColor: "#1a1a1a",
+                    
                     borderRadius: 2,
                   }}
                 >
@@ -1214,7 +1198,6 @@ useEffect(() => {
         onClose={handleSettingsClose}
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
             color: "white",
             minWidth: 450,
             maxHeight: "90vh",
@@ -1235,26 +1218,8 @@ useEffect(() => {
                   value={boardTheme}
                   onChange={(e) => setBoardTheme(e.target.value)}
                   label="Voice"
-                  sx={{
-                    color: "white",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.2)",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.3)",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#9c27b0",
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        backgroundColor: "#2a2a2a",
-                        color: "white",
-                      },
-                    },
-                  }}
+                  
+                 
                 >
                   {Object.entries(BOARD_THEMES).map(([key, theme]) => (
                     <MenuItem key={key} value={key}>
@@ -1339,15 +1304,7 @@ useEffect(() => {
                   <Switch
                     checked={showCoordinates}
                     onChange={(e) => setShowCoordinates(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+               
                   />
                 </Stack>
 
@@ -1362,15 +1319,7 @@ useEffect(() => {
                   <Switch
                     checked={showFen}
                     onChange={(e) => setShowFen(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+                 
                   />
                 </Stack>
 
@@ -1386,15 +1335,7 @@ useEffect(() => {
                     <Switch
                       checked={showArrows}
                       onChange={(e) => setShowArrows(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#9c27b0",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#9c27b0",
-                          },
-                      }}
+                    
                     />
                   </Stack>
                 )}
@@ -1411,15 +1352,7 @@ useEffect(() => {
                     <Switch
                       checked={showEvalBar}
                       onChange={(e) => setEvalBar(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#9c27b0",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#9c27b0",
-                          },
-                      }}
+                     
                     />
                   </Stack>
                 )}
@@ -1514,14 +1447,7 @@ useEffect(() => {
                       onClick={flipBoard}
                       startIcon={<RotateLeft />}
                       fullWidth
-                      sx={{
-                        color: "#9c27b0",
-                        borderColor: "#9c27b0",
-                        "&:hover": {
-                          borderColor: "#7b1fa2",
-                          backgroundColor: "rgba(156, 39, 176, 0.1)",
-                        },
-                      }}
+                    
                     >
                       Flip Board
                     </Button>
@@ -1534,20 +1460,7 @@ useEffect(() => {
                       onChange={(e) => setCustomFen(e.target.value)}
                       size="small"
                       fullWidth
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "rgba(255,255,255,0.05)",
-                          "& fieldset": {
-                            borderColor: "rgba(255,255,255,0.2)",
-                          },
-                          "&:hover fieldset": {
-                            borderColor: "rgba(255,255,255,0.3)",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#9c27b0",
-                          },
-                        },
-                      }}
+                    
                       slotProps={{
                         input: {
                           sx: { color: "white" },
@@ -1565,15 +1478,7 @@ useEffect(() => {
                       startIcon={<Upload />}
                       disabled={!customFen.trim()}
                       fullWidth
-                      sx={{
-                        backgroundColor: "#9c27b0",
-                        "&:hover": {
-                          backgroundColor: "#7b1fa2",
-                        },
-                        "&:disabled": {
-                          backgroundColor: "rgba(156, 39, 176, 0.3)",
-                        },
-                      }}
+                      
                     >
                       Load FEN
                     </Button>

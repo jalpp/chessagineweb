@@ -1,5 +1,5 @@
 import { Box, Typography } from "@mui/material"
-import { purpleTheme } from "@/theme/theme"
+
 
 const Warning = () => {
     return (
@@ -8,11 +8,10 @@ const Warning = () => {
           p: 4,
           display: "flex",
           justifyContent: "center",
-          backgroundColor: purpleTheme.background.main,
           minHeight: "100vh",
         }}
       >
-        <Typography variant="h6" sx={{ color: purpleTheme.text.primary }}>
+        <Typography variant="h6" >
           Please sign in to view this page.
         </Typography>
       </Box>

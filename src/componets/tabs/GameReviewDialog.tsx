@@ -16,7 +16,6 @@ import {
   Alert,
   Button,
   createTheme,
-  ThemeProvider,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -248,7 +247,7 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
   );
 
   return (
-    <ThemeProvider theme={darkGreyTheme}>
+    <>
       <Button
         variant="contained"
         startIcon={<Analytics />}
@@ -364,6 +363,6 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
           )}
         </DialogContent>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 };

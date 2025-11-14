@@ -1,5 +1,4 @@
 import { Grid, Card, CardContent, Typography, Box, Chip } from "@mui/material";
-import { purpleTheme } from "@/theme/theme";
 import { MODEL_RECOMMENDATIONS } from "@/libs/docs/helper";
 import {
   Speed as SpeedIcon,
@@ -73,7 +72,7 @@ export const renderModelRecommendations = () => (
 
               <Typography
                 variant="body2"
-                sx={{ color: purpleTheme.text.primary, mb: 1, fontWeight: 500 }}
+                sx={{ mb: 1, fontWeight: 500 }}
               >
                 {rec.model}
               </Typography>

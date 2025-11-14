@@ -19,7 +19,7 @@ import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
 import PGNView from "@/componets/tabs/PgnView";
 import ResizableChapterSelector from "@/componets/tabs/ChaptersTab";
 import { extractMovesWithComments, extractGameInfo } from "@/libs/game/helper";
-import { purpleTheme } from "@/theme/theme";
+
 import { useGameTheme } from "@/hooks/useGameTheme";
 import Loader from "@/componets/loading/Loader";
 import Warning from "@/componets/loading/SignUpWarning";
@@ -286,7 +286,7 @@ export default function PGNUploaderPage() {
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 4 },
-        backgroundColor: purpleTheme.background.main,
+      
         minHeight: "100vh",
       }}
     >
@@ -294,7 +294,7 @@ export default function PGNUploaderPage() {
         <Card
           sx={{
             mb: { xs: 2, sm: 3, md: 4 },
-            backgroundColor: purpleTheme.background.paper,
+           
             borderRadius: { xs: 2, md: 3 },
             boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
           }}
@@ -305,10 +305,9 @@ export default function PGNUploaderPage() {
                 variant="h3"
                 gutterBottom
                 sx={{
-                  color: purpleTheme.text.primary,
+                 
                   fontWeight: 700,
                   fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
-                  background: `linear-gradient(45deg, ${purpleTheme.accent}, ${purpleTheme.secondary})`,
                   backgroundClip: "text",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -319,7 +318,7 @@ export default function PGNUploaderPage() {
               <Typography
                 variant="h6"
                 sx={{
-                  color: purpleTheme.text.secondary,
+              
                   mb: 3,
                   fontSize: { xs: "0.9rem", sm: "1rem", md: "1.25rem" },
                   maxWidth: 600,
@@ -340,7 +339,7 @@ export default function PGNUploaderPage() {
                 setInputsVisible={setInputsVisible}
               />
 
-              <Divider sx={{ borderColor: purpleTheme.secondary }} />
+              <Divider />
 
               <LoadLichessGameUrl
                 setComment={setComment}
@@ -358,7 +357,7 @@ export default function PGNUploaderPage() {
                 analyzeGameTheme={analyzeGameTheme}
               />
 
-              <Divider sx={{ borderColor: purpleTheme.secondary }} />
+              <Divider />
 
               <LoadPGNGame
                 pgnText={pgnText}
@@ -367,13 +366,13 @@ export default function PGNUploaderPage() {
                 setInputsVisible={setInputsVisible}
               />
 
-              <Divider sx={{ borderColor: purpleTheme.secondary }} />
+              <Divider  />
 
               <Box>
                 <Typography
                   variant="h6"
                   sx={{ 
-                    color: purpleTheme.text.accent, 
+                   
                     mb: 2,
                     fontSize: { xs: "1rem", sm: "1.15rem", md: "1.25rem" }
                   }}
@@ -469,14 +468,7 @@ export default function PGNUploaderPage() {
                   disabled={!gameReview.length}
                   fullWidth
                   sx={{
-                    backgroundColor: purpleTheme.accent,
-                    "&:hover": {
-                      backgroundColor: `${purpleTheme.accent}dd`,
-                    },
-                    "&:disabled": {
-                      backgroundColor: purpleTheme.secondary,
-                      color: purpleTheme.text.secondary,
-                    },
+                   
                     borderRadius: 2,
                     px: 3,
                     py: { xs: 1.25, sm: 1.5 },
@@ -503,12 +495,7 @@ export default function PGNUploaderPage() {
                   startIcon={<RefreshIcon />}
                   fullWidth
                   sx={{
-                    borderColor: purpleTheme.secondary,
-                    color: purpleTheme.text.primary,
-                    "&:hover": {
-                      borderColor: purpleTheme.accent,
-                      backgroundColor: `${purpleTheme.accent}20`,
-                    },
+                    
                     borderRadius: 2,
                     px: 3,
                     py: { xs: 1.25, sm: 1.5 },

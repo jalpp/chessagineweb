@@ -20,31 +20,6 @@ interface EvalGraphProps {
   moves: MoveAnalysis[];
 }
 
-const darkGreyTheme = createTheme({
-  palette: {
-    mode: "dark",
-    background: {
-      default: "#121212",
-      paper: "#1E1E1E",
-    },
-    text: {
-      primary: "#E0E0E0",
-      secondary: "#B0B0B0",
-    },
-    primary: {
-      main: "#bb86fc",
-    },
-  },
-  components: {
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: "#1E1E1E",
-        },
-      },
-    },
-  },
-});
 
 const EvalGraph: React.FC<EvalGraphProps> = ({ moves }) => {
   const [open, setOpen] = useState(false);
@@ -76,7 +51,7 @@ const EvalGraph: React.FC<EvalGraphProps> = ({ moves }) => {
   const criticalDubiousY = getCriticalY("Dubious");
 
   return (
-    <ThemeProvider theme={darkGreyTheme}>
+      <>
       <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
         <Tooltip title="Eval Graph" arrow>
           <Button
@@ -185,7 +160,7 @@ const EvalGraph: React.FC<EvalGraphProps> = ({ moves }) => {
           </Box>
         </DialogContent>
       </Dialog>
-    </ThemeProvider>
+    </>
   );
 };
 

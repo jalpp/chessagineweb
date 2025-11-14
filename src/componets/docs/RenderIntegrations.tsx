@@ -20,7 +20,7 @@ import {
   OpenInNew as OpenIcon,
 } from "@mui/icons-material";
 import { FaGear } from "react-icons/fa6";
-import { purpleTheme } from "@/theme/theme";
+
 
 const INTEGRATIONS: IntegrationItem[] = [
   {
@@ -146,7 +146,7 @@ export const renderIntegrations = () => (
                   <ListItem key={featureIndex} sx={{ py: 0.5, pl: 0 }}>
                     <ListItemIcon sx={{ minWidth: 24 }}>
                       <CheckCircleIcon
-                        sx={{ fontSize: 16, color: purpleTheme.success }}
+                        sx={{ fontSize: 16 }}
                       />
                     </ListItemIcon>
                     <ListItemText

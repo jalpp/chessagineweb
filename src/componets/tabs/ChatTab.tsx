@@ -569,18 +569,18 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           alignItems: "center",
           p: 2,
           borderBottom: `1px solid rgba(255,255,255,0.1)`,
-          backgroundColor: "#1a1a1a",
+
         }}
       >
         <Typography
           variant="subtitle1"
-          sx={{ color: "white", fontWeight: 600 }}
+          sx={{fontWeight: 600 }}
         >
           {modeTitle}
         </Typography>
         <IconButton
           onClick={() => setDrawerOpen(false)}
-          sx={{ color: "white" }}
+          
           size="small"
         >
           <Close />
@@ -588,7 +588,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       </Box>
 
       <List
-        sx={{ p: 0, backgroundColor: "#1a1a1a", height: "calc(100% - 80px)" }}
+        sx={{ p: 0, height: "calc(100% - 80px)" }}
       >
         {currentPrompts.map((prompt, index) => (
           <ListItem key={index} disablePadding>
@@ -601,16 +601,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   index < currentPrompts.length - 1
                     ? `1px solid rgba(255,255,255,0.1)`
                     : "none",
-                "&:hover": {
-                  backgroundColor: "#2a2a2a",
-                },
+                
               }}
             >
               <ListItemText
                 primary={prompt}
                 sx={{
                   "& .MuiListItemText-primary": {
-                    color: "white",
+                 
                     fontSize: "0.9rem",
                     lineHeight: 1.4,
                   },
@@ -625,12 +623,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         sx={{
           p: 2,
           borderTop: `1px solid rgba(255,255,255,0.1)`,
-          backgroundColor: "#1a1a1a",
+        
         }}
       >
         <Typography
           variant="caption"
-          sx={{ color: "grey.400", fontStyle: "italic" }}
+          sx={{  fontStyle: "italic" }}
         >
           💡 Click any prompt to get started
         </Typography>
@@ -652,17 +650,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         sx={{
           flex: 1,
           overflowY: "auto",
-          backgroundColor: "#1a1a1a",
-          "&::-webkit-scrollbar": {
-            width: "6px",
-          },
-          "&::-webkit-scrollbar-track": {
-            background: "#2a2a2a",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            background: "#555",
-            borderRadius: "3px",
-          },
+         
         }}
       >
         {savedPositions.length === 0 ? (
@@ -696,9 +684,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     index < savedPositions.length - 1
                       ? "1px solid #333"
                       : "none",
-                  "&:hover": {
-                    backgroundColor: "#252525",
-                  },
+                
                 }}
               >
                 {/* Left side - Actual Chessboard */}
@@ -710,7 +696,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "#222",
+                
                     borderRight: "1px solid #333",
                   }}
                 >
@@ -759,7 +745,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     <Typography
                       variant="subtitle1"
                       sx={{
-                        color: "white",
+                    
                         fontWeight: 600,
                         flex: 1,
                       }}
@@ -808,10 +794,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         viewPositionFromLibrary(position);
                       }}
                       size="small"
-                      sx={{
-                        color: "#aaa",
-                        "&:hover": { color: "white" },
-                      }}
+                      
                     >
                       <Visibility fontSize="small" />
                     </IconButton>
@@ -822,10 +805,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         copyMessage(position.analysis);
                       }}
                       size="small"
-                      sx={{
-                        color: "#aaa",
-                        "&:hover": { color: "white" },
-                      }}
+                     
                     >
                       <ContentCopy fontSize="small" />
                     </IconButton>
@@ -862,7 +842,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         maxWidth: "100vw",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#1a1a1a",
+      
         overflow: "hidden",
         position: "relative",
         border: "1px solid #444",
@@ -874,7 +854,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       <Paper
         sx={{
           p: 1.5,
-          backgroundColor: "#1a1a1a",
+        
           borderRadius: 0,
           borderBottom: "1px solid rgba(255,255,255,0.1)",
         }}
@@ -895,7 +875,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             />
             <Typography
               variant="subtitle2"
-              sx={{ color: "white", fontWeight: 600 }}
+              
             >
               Agine - Your Chess Buddy
             </Typography>
@@ -907,7 +887,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             <Tooltip title="Conversation starters" arrow>
               <IconButton
                 onClick={() => setDrawerOpen(true)}
-                sx={{ color: "white", p: 0.5 }}
+               
                 size="small"
               >
                 <MenuBook fontSize="small" />
@@ -918,7 +898,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               <IconButton
                 onClick={openLibraryModal}
                 sx={{
-                  color: savedPositions.length > 0 ? "#9c27b0" : "white",
                   p: 0.5,
                   position: "relative",
                 }}
@@ -933,14 +912,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                       right: -2,
                       width: 12,
                       height: 12,
-                      backgroundColor: "#9c27b0",
+                
                       borderRadius: "50%",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: "8px",
                       fontWeight: "bold",
-                      color: "white",
                     }}
                   >
                     {savedPositions.length > 9 ? "9+" : savedPositions.length}
@@ -953,7 +931,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               <Tooltip title="Chat History" arrow>
                 <IconButton
                   onClick={handleCopyMenuClick}
-                  sx={{ color: "white", p: 0.5 }}
+                  sx={{p: 0.5 }}
                   size="small"
                 >
                   <History fontSize="small" />
@@ -976,7 +954,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             <Tooltip title="Settings" arrow>
               <IconButton
                 onClick={() => setSettingsOpen(true)}
-                sx={{ color: "white", p: 0.5 }}
+                sx={{ p: 0.5 }}
                 size="small"
               >
                 <SettingsIcon fontSize="small" />
@@ -1000,7 +978,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             >
               <Typography
                 variant="caption"
-                sx={{ color: "white", fontWeight: 500 }}
+                sx={{ fontWeight: 500 }}
               >
                 Position Context
               </Typography>
@@ -1008,18 +986,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 checked={sessionMode}
                 onChange={(e) => setSessionMode(e.target.checked)}
                 size="small"
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#9c27b0",
-                  },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#9c27b0",
-                  },
-                }}
+               
               />
               <Typography
                 variant="caption"
-                sx={{ color: "grey.400", fontSize: "11px" }}
+                sx={{  fontSize: "11px" }}
               >
                 {sessionMode
                   ? "Looking at the board together"
@@ -1034,7 +1005,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             >
               <Typography
                 variant="caption"
-                sx={{ color: "white", fontWeight: 500 }}
+                sx={{ fontWeight: 500 }}
               >
                 Interactive Q/A
               </Typography>
@@ -1042,18 +1013,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 checked={questionMode}
                 onChange={(e) => setQuestionMode(e.target.checked)}
                 size="small"
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#9c27b0",
-                  },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#9c27b0",
-                  },
-                }}
+             
               />
               <Typography
                 variant="caption"
-                sx={{ color: "grey.400", fontSize: "11px" }}
+                sx={{  fontSize: "11px" }}
               >
                 {questionMode
                   ? "Interactive question mode"
@@ -1068,7 +1032,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             >
               <Typography
                 variant="caption"
-                sx={{ color: "white", fontWeight: 500 }}
+                sx={{  fontWeight: 500 }}
               >
                 Self Eval
               </Typography>
@@ -1076,18 +1040,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 checked={selfEvalMode}
                 onChange={(e) => setSelfEvalMode(e.target.checked)}
                 size="small"
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#9c27b0",
-                  },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#9c27b0",
-                  },
-                }}
+              
               />
               <Typography
                 variant="caption"
-                sx={{ color: "grey.400", fontSize: "11px" }}
+                sx={{  fontSize: "11px" }}
               >
                 hallucinations check
               </Typography>
@@ -1099,15 +1056,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 size="small"
                 onClick={clearChatHistory}
                 sx={{
-                  color: "white",
+                
                   borderColor: "rgba(255,255,255,0.3)",
                   fontSize: "11px",
                   py: 0.5,
                   px: 1,
-                  "&:hover": {
-                    borderColor: "#9c27b0",
-                    backgroundColor: "rgba(156, 39, 176, 0.1)",
-                  },
+                 
                 }}
               >
                 Clear
@@ -1126,15 +1080,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               label={modeTitle}
               size="small"
               sx={{
-                backgroundColor: "#9c27b0",
-                color: "white",
+              
                 fontWeight: 500,
                 fontSize: "11px",
               }}
             />
             <Typography
               variant="caption"
-              sx={{ color: "grey.400", fontSize: "10px" }}
+              sx={{ fontSize: "10px" }}
             >
               {modeDescription}
             </Typography>
@@ -1145,15 +1098,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 size="small"
                 onClick={clearChatHistory}
                 sx={{
-                  color: "white",
                   borderColor: "rgba(255,255,255,0.3)",
                   fontSize: "11px",
                   py: 0.5,
                   px: 1,
-                  "&:hover": {
-                    borderColor: "#9c27b0",
-                    backgroundColor: "rgba(156, 39, 176, 0.1)",
-                  },
+                  
                 }}
               >
                 Clear
@@ -1169,7 +1118,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         sx={{
           flex: 1,
           overflowY: "auto",
-          backgroundColor: "#1a1a1a",
+        
           position: "relative",
           px: 1.5,
           py: 1,
@@ -1197,7 +1146,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               alignItems: "center",
               justifyContent: "center",
               height: "100%",
-              color: "white",
+           
               p: { xs: 1, sm: 2 },
             }}
           >
@@ -1215,8 +1164,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               sx={{
                 p: 1.5,
                 mb: 3,
-                backgroundColor: "rgba(156, 39, 176, 0.1)",
-                border: "1px solid rgba(156, 39, 176, 0.3)",
                 borderRadius: 2,
                 maxWidth: { xs: "100%", sm: 350 },
               }}
@@ -1224,7 +1171,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               <Typography
                 variant="caption"
                 sx={{
-                  color: "grey.300",
+                
                   textAlign: "center",
                   display: "block",
                   lineHeight: 1.4,
@@ -1247,7 +1194,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   display: "block",
                   opacity: 0.8,
                   textAlign: "center",
-                  color: "grey.400",
                   fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 }}
               >
@@ -1269,16 +1215,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     size="small"
                     onClick={() => handlePromptSelect(prompt)}
                     sx={{
-                      color: "white",
+                 
                       borderColor: "rgba(156, 39, 176, 0.5)",
                       cursor: "pointer",
                       fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       transition: "all 0.2s ease",
-                      "&:hover": {
-                        backgroundColor: "rgba(156, 39, 176, 0.2)",
-                        borderColor: "#9c27b0",
-                        transform: "translateY(-1px)",
-                      },
+                    
                     }}
                   />
                 ))}
@@ -1291,9 +1233,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   sx={{
                     color: "#9c27b0",
                     fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                    "&:hover": {
-                      backgroundColor: "rgba(156, 39, 176, 0.1)",
-                    },
+                    
                   }}
                 >
                   More conversation starters →
@@ -1333,7 +1273,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     maxWidth: "85%",
                     backgroundColor:
                       message.role === "user" ? "#1976d2" : "#7b1fa2",
-                    color: "white",
+                   
                     borderRadius: 2,
                     position: "relative",
                     "&:hover .message-actions": {
@@ -1400,7 +1340,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                               backgroundColor: "rgba(0, 0, 0, 0.2)",
                               "&:hover": {
                                 backgroundColor: "rgba(0, 0, 0, 0.4)",
-                                color: "white",
+                              
                               },
                             }}
                             size="small"
@@ -1431,7 +1371,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                               backgroundColor: "rgba(0, 0, 0, 0.2)",
                               "&:hover": {
                                 backgroundColor: "rgba(0, 0, 0, 0.4)",
-                                color: "white",
+                               
                               },
                             }}
                             size="small"
@@ -1452,7 +1392,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                             backgroundColor: "rgba(0, 0, 0, 0.2)",
                             "&:hover": {
                               backgroundColor: "rgba(0, 0, 0, 0.4)",
-                              color: "white",
+                        
                             },
                           }}
                           size="small"
@@ -1567,17 +1507,17 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 <Paper
                   sx={{
                     p: compactView ? 1 : 1.5,
-                    backgroundColor: "#7b1fa2",
+                   
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
                     borderRadius: 2,
                   }}
                 >
-                  <CircularProgress size={14} sx={{ color: "white" }} />
+                  <CircularProgress size={14}  />
                   <Typography
                     variant="caption"
-                    sx={{ color: "white", fontSize: `${fontSize}px` }}
+                    sx={{ fontSize: `${fontSize}px` }}
                   >
                     Agine is thinking...
                   </Typography>
@@ -1587,7 +1527,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                         onClick={handleAbortMessage}
                         size="small"
                         sx={{
-                          color: "white",
+                      
                           ml: 0.5,
                           "&:hover": {
                             backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -1611,7 +1551,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       <Paper
         sx={{
           p: 1.5,
-          backgroundColor: "#1a1a1a",
+  
           borderRadius: 0,
           borderTop: "1px solid rgba(255,255,255,0.1)",
         }}
@@ -1635,24 +1575,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             onKeyDown={handleChatKeyPress}
             disabled={chatLoading}
             size="small"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "rgba(255,255,255,0.05)",
-                "& fieldset": {
-                  borderColor: "rgba(255,255,255,0.2)",
-                },
-                "&:hover fieldset": {
-                  borderColor: "rgba(255,255,255,0.3)",
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#9c27b0",
-                },
-              },
-            }}
             slotProps={{
               input: {
                 sx: {
-                  color: "white",
                   fontSize: `${fontSize}px`,
                 },
               },
@@ -1671,17 +1596,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               )
             }
             disabled={chatLoading || !chatInput.trim()}
-            sx={{
-              minWidth: "auto",
-              px: 1.5,
-              backgroundColor: "#9c27b0",
-              "&:hover": {
-                backgroundColor: "#7b1fa2",
-              },
-              "&:disabled": {
-                backgroundColor: "rgba(156, 39, 176, 0.3)",
-              },
-            }}
+         
           >
             <Send fontSize="small" />
           </Button>
@@ -1698,7 +1613,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           width: "16px",
           height: "16px",
           cursor: "nw-resize",
-          backgroundColor: "#555",
+      
           borderTopRightRadius: "3px",
           opacity: 0.7,
           display: "flex",
@@ -1713,7 +1628,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         <OpenInFullIcon
           sx={{
             fontSize: "10px",
-            color: "#ccc",
             transform: "rotate(180deg)",
           }}
         />
@@ -1726,8 +1640,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         maxWidth="md"
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
             minWidth: 450,
             maxHeight: "80vh",
           },
@@ -1757,8 +1669,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         maxWidth="md"
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
             minWidth: 450,
             maxHeight: "80vh",
           },
@@ -1772,10 +1682,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             pb: 1,
           }}
         >
-          <Typography variant="h6" sx={{ color: "white" }}>
+          <Typography variant="h6" >
             Position View
           </Typography>
-          <IconButton onClick={closeChessboardModal} sx={{ color: "white" }}>
+          <IconButton onClick={closeChessboardModal} >
             <Close />
           </IconButton>
         </DialogTitle>
@@ -1803,7 +1713,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           <Typography
             variant="caption"
             sx={{
-              color: "grey.400",
               display: "block",
               textAlign: "center",
               mt: 2,
@@ -1816,11 +1725,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         <DialogActions>
           <Button
             onClick={() => copyToClipboard(selectedFen)}
-            sx={{ color: "#9c27b0" }}
+
           >
             Copy FEN
           </Button>
-          <Button onClick={closeChessboardModal} sx={{ color: "#9c27b0" }}>
+          <Button onClick={closeChessboardModal} >
             Close
           </Button>
         </DialogActions>
@@ -1833,8 +1742,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         fullScreen={window.innerWidth < 600} // Full screen on mobile
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
             minWidth: { xs: "100%", sm: 450 },
             maxWidth: { xs: "100%", sm: 600 },
             maxHeight: { xs: "100%", sm: "90vh" },
@@ -1846,7 +1753,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Display Options
               </Typography>
               <Stack spacing={2}>
@@ -1855,21 +1762,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Auto-scroll to new messages
                   </Typography>
                   <Switch
                     checked={autoScroll}
                     onChange={(e) => setAutoScroll(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+                   
                   />
                 </Stack>
                 <Stack
@@ -1877,21 +1776,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2">
                     Show timestamps
                   </Typography>
                   <Switch
                     checked={showTimestamps}
                     onChange={(e) => setShowTimestamps(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+                    
                   />
                 </Stack>
                 <Stack
@@ -1899,21 +1790,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Show tokens, model info
                   </Typography>
                   <Switch
                     checked={showTechnicalInfo}
                     onChange={(e) => setTechnicalInfo(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+                   
                   />
                 </Stack>
                 <Stack
@@ -1921,21 +1804,13 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Compact view
                   </Typography>
                   <Switch
                     checked={compactView}
                     onChange={(e) => setCompactView(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+                    
                   />
                 </Stack>
               </Stack>
@@ -1946,18 +1821,18 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             {speechEnabled && (
               <>
                 <Box>
-                  <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
                     Text-to-Speech Settings
                   </Typography>
                   <Stack spacing={2}>
                     <FormControl size="small" fullWidth>
-                      <InputLabel sx={{ color: "grey.300" }}>Voice</InputLabel>
+                      <InputLabel >Voice</InputLabel>
                       <Select
                         value={selectedVoice}
                         onChange={(e) => setSelectedVoice(e.target.value)}
                         label="Voice"
                         sx={{
-                          color: "white",
+                      
                           "& .MuiOutlinedInput-notchedOutline": {
                             borderColor: "rgba(255,255,255,0.2)",
                           },
@@ -1968,14 +1843,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                             borderColor: "#9c27b0",
                           },
                         }}
-                        MenuProps={{
-                          PaperProps: {
-                            sx: {
-                              backgroundColor: "#2a2a2a",
-                              color: "white",
-                            },
-                          },
-                        }}
+                    
                       >
                         {availableVoices.map((voice) => (
                           <MenuItem key={voice.name} value={voice.name}>
@@ -1988,7 +1856,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     <Box>
                       <Typography
                         variant="body2"
-                        sx={{ color: "grey.300", mb: 1 }}
+                        sx={{ mb: 1 }}
                       >
                         Speech Rate: {speechRate.toFixed(1)}x
                       </Typography>
@@ -2013,7 +1881,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     <Box>
                       <Typography
                         variant="body2"
-                        sx={{ color: "grey.300", mb: 1 }}
+                        sx={{ mb: 1 }}
                       >
                         Pitch: {speechPitch.toFixed(1)}
                       </Typography>
@@ -2038,7 +1906,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     <Box>
                       <Typography
                         variant="body2"
-                        sx={{ color: "grey.300", mb: 1 }}
+                        sx={{ mb: 1 }}
                       >
                         Volume: {Math.round(speechVolume * 100)}%
                       </Typography>
@@ -2070,12 +1938,12 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+              <Typography variant="body2" sx={{  mb: 1 }}>
                 Font Size: {fontSize}px
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "grey.400", mb: 2, display: "block" }}
+                sx={{  mb: 2, display: "block" }}
               >
                 Adjust text size for better readability
               </Typography>
@@ -2109,8 +1977,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         onClose={handleCopyMenuClose}
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
+           
+       
             border: "1px solid rgba(255,255,255,0.1)",
           },
         }}
@@ -2132,10 +2000,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           onClose={() => setCopySnackbar(false)}
           severity="success"
           variant="filled"
-          sx={{
-            backgroundColor: "#9c27b0",
-            color: "white",
-          }}
+      
         >
           Copied to clipboard!
         </Alert>
@@ -2146,12 +2011,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
-          },
-        }}
+      
       >
         {drawerContent}
       </Drawer>

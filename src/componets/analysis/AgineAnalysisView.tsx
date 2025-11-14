@@ -10,7 +10,6 @@ import {
   AccordionDetails,
   Typography,
   Divider,
-  ThemeProvider,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -20,7 +19,7 @@ import {
   Chat as ChatIcon,
 } from "@mui/icons-material";
 
-import { darkGreyTheme, purpleTheme } from "@/theme/theme";
+
 import StockfishAnalysisTab from "../tabs/StockfishTab";
 import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
@@ -174,7 +173,7 @@ function AgineAnalysisView({
   return (
     <Card
       sx={{
-        backgroundColor: purpleTheme.background.paper,
+    
         borderRadius: { xs: 2, md: 3 },
         boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
         minHeight: isGameReviewMode ? 500 : { xs: 'auto', md: 600 },
@@ -187,7 +186,6 @@ function AgineAnalysisView({
     >
       <Box
         sx={{
-          borderBottom: `1px solid ${purpleTheme.secondary}40`,
           px: { xs: 1, sm: 2, md: 3 },
           pt: { xs: 1, md: 2 },
         }}
@@ -199,7 +197,7 @@ function AgineAnalysisView({
           sx={{
             minHeight: { xs: 48, md: 56 },
             "& .MuiTab-root": {
-              color: purpleTheme.text.secondary,
+
               textTransform: "none",
               fontSize: { xs: "0.875rem", md: "1rem" },
               fontWeight: 500,
@@ -208,11 +206,11 @@ function AgineAnalysisView({
               px: { xs: 1, sm: 2 },
             },
             "& .Mui-selected": {
-              color: `${purpleTheme.accent} !important`,
+       
               fontWeight: 600,
             },
             "& .MuiTabs-indicator": {
-              backgroundColor: purpleTheme.accent,
+           
               height: 3,
               borderRadius: 2,
             },
@@ -249,7 +247,7 @@ function AgineAnalysisView({
                   setActiveAnalysisTab(activeAnalysisTab === 0 ? -1 : 0)
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
+                
                   "&:before": { display: "none" },
                   borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
@@ -257,14 +255,12 @@ function AgineAnalysisView({
               >
                 <AccordionSummary
                   expandIcon={
-                    <ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />
+                    <ExpandMoreIcon  />
                   }
                   sx={{
-                    backgroundColor: purpleTheme.background.card,
+                  
                     minHeight: { xs: 48, md: 56 },
-                    "&:hover": {
-                      backgroundColor: `${purpleTheme.secondary}20`,
-                    },
+                 
                     "& .MuiAccordionSummary-content": {
                       margin: { xs: '12px 0', md: '16px 0' },
                     },
@@ -273,7 +269,7 @@ function AgineAnalysisView({
                   <Typography
                     variant="h6"
                     sx={{
-                      color: purpleTheme.text.primary,
+                   
                       fontWeight: 600,
                       fontSize: { xs: '1rem', md: '1.25rem' },
                     }}
@@ -283,7 +279,7 @@ function AgineAnalysisView({
                 </AccordionSummary>
                 <AccordionDetails
                   sx={{
-                    backgroundColor: purpleTheme.background.paper,
+                    
                     p: { xs: 1.5, md: 2 },
                   }}
                 >
@@ -316,14 +312,14 @@ function AgineAnalysisView({
                   setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
+               
                   "&:before": { display: "none" },
                   borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
                 }}
               >
                 <AccordionSummary
-                  expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                  expandIcon={<ExpandMoreIcon  />}
                   sx={{
                     minHeight: { xs: 48, md: 56 },
                     "& .MuiAccordionSummary-content": {
@@ -334,7 +330,7 @@ function AgineAnalysisView({
                   <Typography
                     variant="h6"
                     sx={{
-                      color: purpleTheme.text.primary,
+                    
                       fontWeight: 600,
                       fontSize: { xs: '1rem', md: '1.25rem' },
                     }}
@@ -346,13 +342,13 @@ function AgineAnalysisView({
                   {gameReviewTheme !== null &&
                     gameReview !== undefined &&
                     currentMoveIndex !== undefined && (
-                      <ThemeProvider theme={darkGreyTheme}>
+                     
                         <PositionRadarAnalysis
                           moveAnalysis={gameReview}
                           currentMoveIndex={currentMoveIndex}
                           gameReview={gameReviewTheme}
                         />
-                      </ThemeProvider>
+                   
                     )}
                 </AccordionDetails>
               </Accordion>
@@ -363,14 +359,14 @@ function AgineAnalysisView({
                   setActiveAnalysisTab(activeAnalysisTab === 1 ? 0 : 1)
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
+                  
                   "&:before": { display: "none" },
                   borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
                 }}
               >
                 <AccordionSummary
-                  expandIcon={<ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />}
+                  expandIcon={<ExpandMoreIcon />}
                   sx={{
                     minHeight: { xs: 48, md: 56 },
                     "& .MuiAccordionSummary-content": {
@@ -381,7 +377,7 @@ function AgineAnalysisView({
                   <Typography
                     variant="h6"
                     sx={{
-                      color: purpleTheme.text.primary,
+                 
                       fontWeight: 600,
                       fontSize: { xs: '1rem', md: '1.25rem' },
                     }}
@@ -390,9 +386,9 @@ function AgineAnalysisView({
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  <ThemeProvider theme={darkGreyTheme}>
+                 
                     <PositionFenThemeAnalysis fen={fen ?? ""} />
-                  </ThemeProvider>
+                 
                 </AccordionDetails>
               </Accordion>
             )}
@@ -410,7 +406,7 @@ function AgineAnalysisView({
                 )
               }
               sx={{
-                backgroundColor: purpleTheme.background.card,
+              
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
@@ -418,14 +414,10 @@ function AgineAnalysisView({
             >
               <AccordionSummary
                 expandIcon={
-                  <ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />
+                  <ExpandMoreIcon />
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
                   minHeight: { xs: 48, md: 56 },
-                  "&:hover": {
-                    backgroundColor: `${purpleTheme.secondary}20`,
-                  },
                   "& .MuiAccordionSummary-content": {
                     margin: { xs: '12px 0', md: '16px 0' },
                   },
@@ -434,7 +426,7 @@ function AgineAnalysisView({
                 <Typography
                   variant="h6"
                   sx={{
-                    color: purpleTheme.text.primary,
+                   
                     fontWeight: 600,
                     fontSize: { xs: '1rem', md: '1.25rem' },
                   }}
@@ -444,7 +436,6 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                  backgroundColor: purpleTheme.background.paper,
                   p: { xs: 1.5, md: 2 },
                 }}
               >
@@ -478,7 +469,6 @@ function AgineAnalysisView({
                 )
               }
               sx={{
-                backgroundColor: purpleTheme.background.card,
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
@@ -486,14 +476,12 @@ function AgineAnalysisView({
             >
               <AccordionSummary
                 expandIcon={
-                  <ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />
+                  <ExpandMoreIcon  />
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
+                 
                   minHeight: { xs: 48, md: 56 },
-                  "&:hover": {
-                    backgroundColor: `${purpleTheme.secondary}20`,
-                  },
+                  
                   "& .MuiAccordionSummary-content": {
                     margin: { xs: '12px 0', md: '16px 0' },
                   },
@@ -502,7 +490,7 @@ function AgineAnalysisView({
                 <Typography
                   variant="h6"
                   sx={{
-                    color: purpleTheme.text.primary,
+              
                     fontWeight: 600,
                     fontSize: { xs: '1rem', md: '1.25rem' },
                   }}
@@ -512,7 +500,7 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                  backgroundColor: purpleTheme.background.paper,
+                  
                   p: { xs: 1.5, md: 2 },
                 }}
               >
@@ -540,7 +528,7 @@ function AgineAnalysisView({
                 )
               }
               sx={{
-                backgroundColor: purpleTheme.background.card,
+                
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
@@ -548,14 +536,12 @@ function AgineAnalysisView({
             >
               <AccordionSummary
                 expandIcon={
-                  <ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />
+                  <ExpandMoreIcon  />
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
+                
                   minHeight: { xs: 48, md: 56 },
-                  "&:hover": {
-                    backgroundColor: `${purpleTheme.secondary}20`,
-                  },
+                  
                   "& .MuiAccordionSummary-content": {
                     margin: { xs: '12px 0', md: '16px 0' },
                   },
@@ -564,7 +550,7 @@ function AgineAnalysisView({
                 <Typography
                   variant="h6"
                   sx={{
-                    color: purpleTheme.text.primary,
+                   
                     fontWeight: 600,
                     fontSize: { xs: '1rem', md: '1.25rem' },
                   }}
@@ -574,7 +560,7 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                  backgroundColor: purpleTheme.background.paper,
+                 
                   p: { xs: 1.5, md: 2 },
                 }}
               >
@@ -603,7 +589,7 @@ function AgineAnalysisView({
                 )
               }
               sx={{
-                backgroundColor: purpleTheme.background.card,
+                
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
@@ -611,14 +597,12 @@ function AgineAnalysisView({
             >
               <AccordionSummary
                 expandIcon={
-                  <ExpandMoreIcon sx={{ color: purpleTheme.text.primary }} />
+                  <ExpandMoreIcon  />
                 }
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
+           
                   minHeight: { xs: 48, md: 56 },
-                  "&:hover": {
-                    backgroundColor: `${purpleTheme.secondary}20`,
-                  },
+                 
                   "& .MuiAccordionSummary-content": {
                     margin: { xs: '12px 0', md: '16px 0' },
                   },
@@ -627,7 +611,7 @@ function AgineAnalysisView({
                 <Typography
                   variant="h6"
                   sx={{
-                    color: purpleTheme.text.primary,
+                  
                     fontWeight: 600,
                     fontSize: { xs: '1rem', md: '1.25rem' },
                   }}
@@ -637,7 +621,7 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                  backgroundColor: purpleTheme.background.paper,
+                  
                   p: { xs: 1.5, md: 2 },
                 }}
               >

@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Stack, Card, CardContent, Typography, Chip, Box, } from '@mui/material';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import { purpleTheme } from '@/theme/theme';
 import { useLocalStorage } from 'usehooks-ts';
 import { DEFAULT_CHAPTER_DIMENIONS } from '@/libs/setting/helper';
 
@@ -68,14 +67,14 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
     <Card
       ref={containerRef}
       sx={{
-        backgroundColor: purpleTheme.background.paper,
+      
         borderRadius: 3,
         boxShadow: `0 4px 20px rgba(138, 43, 226, 0.1)`,
         width: dimensions.width,
         height: dimensions.height,
         position: 'relative',
         overflow: 'hidden',
-        border: isResizing ? `2px solid ${purpleTheme.accent}` : `1px solid ${purpleTheme.secondary}40`,
+    
         userSelect: isResizing ? 'none' : 'auto',
       }}
     >
@@ -83,7 +82,7 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexShrink: 0 }}>
           <Typography
             variant="h6"
-            sx={{ color: purpleTheme.text.primary, fontWeight: 600 }}
+            sx={{fontWeight: 600 }}
           >
             Study Chapters
           </Typography>
@@ -100,17 +99,7 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
             '&::-webkit-scrollbar': {
               width: '8px',
             },
-            '&::-webkit-scrollbar-track': {
-              background: purpleTheme.background.card,
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: purpleTheme.secondary,
-              borderRadius: '4px',
-              '&:hover': {
-                background: purpleTheme.accent,
-              },
-            },
+           
           }}
         >
           <Stack spacing={1}>
@@ -120,11 +109,7 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
                 label={ch.title}
                 onClick={() => !isResizing && onChapterSelect(ch.pgn)}
                 sx={{
-                  backgroundColor: purpleTheme.background.card,
-                  color: purpleTheme.text.primary,
-                  '&:hover': {
-                    backgroundColor: isResizing ? purpleTheme.background.card : purpleTheme.secondary,
-                  },
+                  
                   borderRadius: 2,
                   justifyContent: 'flex-start',
                   width: '100%',
@@ -157,7 +142,6 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
           width: '16px',
           height: '16px',
           cursor: 'nw-resize',
-          backgroundColor: purpleTheme.accent,
           borderTopRightRadius: '3px',
           opacity: 0.7,
           display: 'flex',
@@ -165,14 +149,12 @@ const ResizableChapterSelector: React.FC<ResizableChapterSelectorProps> = ({
           justifyContent: 'center',
           '&:hover': {
             opacity: 1,
-            backgroundColor: purpleTheme.primaryDark,
           },
         }}
       >
         <OpenInFullIcon 
           sx={{ 
             fontSize: '10px', 
-            color: purpleTheme.text.primary,
             transform: 'rotate(180deg)'
           }} 
         />

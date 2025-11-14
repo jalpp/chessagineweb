@@ -133,7 +133,6 @@ export const EvalBar: React.FC<EvalBarProps> = ({
               width: 6,
               height: 6,
               borderRadius: "50%",
-              backgroundColor: "rgba(0,100,200,0.8)",
               border: "1px solid white",
               cursor: "pointer",
               zIndex: 2,
