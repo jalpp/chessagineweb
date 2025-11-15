@@ -297,7 +297,7 @@ export default function useAgine(fen: string) {
 
   ): string => {
     
-    const type = 'explanation';
+    const type = 'standard';
     
     let query = `
 LangCode: ${langCode}
