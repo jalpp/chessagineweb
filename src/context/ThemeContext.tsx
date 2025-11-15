@@ -6,10 +6,25 @@ import {
   darkGreyTheme, 
   lightTheme, 
   darkBlueThemeConfig, 
-  forestThemeConfig 
+  forestThemeConfig,
+  woodenThemeConfig,
+  discoThemeConfig,
+  classicChessThemeConfig,
+  marbleThemeConfig,
+  neonCyberThemeConfig
 } from '@/theme/theme';
 
-export type ThemeType = 'light' | 'dark' | 'purple' | 'darkBlue' | 'forest';
+export type ThemeType = 
+  | 'light' 
+  | 'dark' 
+  | 'purple' 
+  | 'darkBlue' 
+  | 'forest' 
+  | 'wooden' 
+  | 'disco' 
+  | 'classicChess' 
+  | 'marble' 
+  | 'neonCyber';
 
 interface ThemeContextType {
   currentTheme: ThemeType;
@@ -36,13 +51,17 @@ const themeMap = {
   purple: agineTheme,
   darkBlue: darkBlueThemeConfig,
   forest: forestThemeConfig,
+  wooden: woodenThemeConfig,
+  disco: discoThemeConfig,
+  classicChess: classicChessThemeConfig,
+  marble: marbleThemeConfig,
+  neonCyber: neonCyberThemeConfig,
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>('purple');
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>('dark');
   const [mounted, setMounted] = useState(false);
 
-  // Load theme from localStorage on mount
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem('app-theme') as ThemeType;
@@ -58,7 +77,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const theme = themeMap[currentTheme];
 
-  // Prevent flash of unstyled content
   if (!mounted) {
     return null;
   }

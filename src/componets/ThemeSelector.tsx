@@ -8,9 +8,6 @@ import {
   SelectChangeEvent,
   Box,
   Typography,
-  Card,
-  CardContent,
-  Grid,
 } from '@mui/material';
 import { useTheme, ThemeType } from '@/context/ThemeContext';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -18,6 +15,11 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
 import WavesIcon from '@mui/icons-material/Waves';
 import ForestIcon from '@mui/icons-material/Forest';
+import NaturePeopleIcon from '@mui/icons-material/NaturePeople';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import DiamondIcon from '@mui/icons-material/Diamond';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
 
 const ThemeSelector: React.FC = () => {
   const { currentTheme, setTheme } = useTheme();
@@ -32,12 +34,17 @@ const ThemeSelector: React.FC = () => {
     { value: 'purple', label: 'Purple', icon: <ColorLensIcon />, color: '#9c27b0' },
     { value: 'darkBlue', label: 'Dark Blue', icon: <WavesIcon />, color: '#1e88e5' },
     { value: 'forest', label: 'Forest', icon: <ForestIcon />, color: '#388e3c' },
+    { value: 'wooden', label: 'Wooden Chess', icon: <NaturePeopleIcon />, color: '#8B4513' },
+    { value: 'disco', label: 'Disco', icon: <MusicNoteIcon />, color: '#FF1493' },
+    { value: 'classicChess', label: 'Classic Chess', icon: <CheckBoxIcon />, color: '#FFFFFF' },
+    { value: 'marble', label: 'Marble', icon: <DiamondIcon />, color: '#757575' },
+    { value: 'neonCyber', label: 'Neon Cyber', icon: <FlashOnIcon />, color: '#00FFFF' },
   ];
 
   return (
     <Box>
       <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-        Theme Settings
+        GUI Color Settings
       </Typography>
       
       <FormControl fullWidth sx={{ mb: 4 }}>
@@ -58,38 +65,7 @@ const ThemeSelector: React.FC = () => {
             </MenuItem>
           ))}
         </Select>
-      </FormControl>
-
-      <Typography variant="subtitle2" gutterBottom sx={{ mb: 2 }}>
-        Theme Preview
-      </Typography>
-      
-      <Grid container spacing={2}>
-        {themes.map((theme) => (
-          <Grid  sx={{xs: 12, sm: 6, md: 4}} key={theme.value}>
-            <Card
-              sx={{
-                cursor: 'pointer',
-                border: currentTheme === theme.value ? 2 : 1,
-                borderColor: currentTheme === theme.value ? theme.color : 'divider',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 3,
-                },
-              }}
-              onClick={() => setTheme(theme.value as ThemeType)}
-            >
-              <CardContent sx={{ textAlign: 'center' }}>
-                {React.cloneElement(theme.icon, { 
-                  sx: { fontSize: 40, color: theme.color, mb: 1 } 
-                })}
-                <Typography variant="body2">{theme.label}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      </FormControl>  
     </Box>
   );
 };

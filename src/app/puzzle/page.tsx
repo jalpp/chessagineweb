@@ -33,7 +33,7 @@ import {
   useTheme,
   Snackbar,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
+
 import { Chess } from "chess.js";
 import { useCallback, useEffect, useMemo } from "react";
 import { Square } from "chess.js";
@@ -621,15 +621,13 @@ export default function PuzzlePage() {
               />
             </Box>
 
-            {/* Right Side - Analysis Panel */}
+          
             <Paper
               elevation={3}
               sx={{
                 p: 3,
                 flex: 1,
                 minHeight: 600,
-                color: "white",
-          
                 maxHeight: "85vh",
                 overflow: "auto",
                 display: 'flex',
@@ -640,10 +638,7 @@ export default function PuzzlePage() {
                 <Tabs
                   value={analysisTab}
                   onChange={(_, newValue) => setAnalysisTab(newValue)}
-                  sx={{
-                    "& .MuiTab-root": { color: "wheat" },
-                    "& .Mui-selected": { color: "white !important" },
-                  }}
+                  
                 >
                   <Tab label="Puzzle Info" />
                   <Tab label="Stockfish Analysis" />
@@ -662,21 +657,17 @@ export default function PuzzlePage() {
                       {/* Theme Selection */}
                       <Card >
                         <CardContent>
-                          <Typography variant="h6" sx={{ mb: 2, color: "wheat" }}>
+                          <Typography variant="h6" >
                             Puzzle Themes
                           </Typography>
                           <Stack spacing={2}>
                             <FormControl fullWidth>
-                              <InputLabel sx={{ color: "wheat" }}>Quick Select</InputLabel>
+                              <InputLabel >Quick Select</InputLabel>
                               <Select
                                 value={quickTheme}
                                 onChange={handleQuickThemeChange}
                                 label="Quick Select"
-                                sx={{
-                                 
-                                  color: "wheat",
-                                  ".MuiOutlinedInput-notchedOutline": { borderColor: "wheat" },
-                                }}
+                                
                               >
                                 <MenuItem value=""><em>Random Puzzle</em></MenuItem>
                                 {DIFFICULTY_THEMES.map((theme) => (
@@ -697,7 +688,7 @@ export default function PuzzlePage() {
                             </Button>
                             {selectedThemes.length > 0 && (
                               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                <Typography variant="body2" sx={{ color: "wheat", width: '100%', mb: 0.5 }}>
+                                <Typography variant="body2" sx={{ width: '100%', mb: 0.5 }}>
                                   Active Themes:
                                 </Typography>
                                 {selectedThemes.map((theme) => (
@@ -705,7 +696,7 @@ export default function PuzzlePage() {
                                     key={theme}
                                     label={PUZZLE_THEMES.find((t) => t.tag === theme)?.description || theme}
                                     size="small"
-                                    sx={{ color: "wheat", borderColor: "wheat" }}
+                                    
                                     variant="outlined"
                                   />
                                 ))}
@@ -729,7 +720,7 @@ export default function PuzzlePage() {
                               <Chip
                                 label={showingSolution ? `Solution ${solutionViewIndex}/${solutionMoves.length}` : `Move ${Math.floor(currentSolutionIndex / 2) + 1}`}
                                 variant="outlined"
-                                sx={{ fontSize: '1rem', py: 2, height: 'auto', color: "wheat" }}
+                                sx={{ fontSize: '1rem', py: 2, height: 'auto'}}
                               />
                             </Stack>
                           </CardContent>
@@ -741,7 +732,7 @@ export default function PuzzlePage() {
                         <CardContent>
                           {showingSolution ? (
                             <Stack spacing={2}>
-                              <Typography variant="h6" sx={{ textAlign: "center", color: "white" }}>
+                              <Typography variant="h6" sx={{ textAlign: "center" }}>
                                 Solution View ({solutionViewIndex}/{solutionMoves.length})
                               </Typography>
                               <Stack direction="row" spacing={2}>
@@ -929,9 +920,9 @@ export default function PuzzlePage() {
           >
             <Box sx={{ p: 2 }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="h6" color="white">Puzzle Controls</Typography>
+                <Typography variant="h6">Puzzle Controls</Typography>
                 <IconButton onClick={() => setBottomDrawerOpen(false)}>
-                  <X color="white" />
+                  <X />
                 </IconButton>
               </Stack>
 
@@ -939,7 +930,7 @@ export default function PuzzlePage() {
                 {/* Quick Actions */}
                 {showingSolution ? (
                   <>
-                    <Typography variant="subtitle2" color="wheat" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2"  sx={{ mb: 1 }}>
                       Solution Navigation ({solutionViewIndex}/{solutionMoves.length})
                     </Typography>
                     <Stack direction="row" spacing={1}>
@@ -1040,24 +1031,20 @@ export default function PuzzlePage() {
                       onClick={() => setThemesSectionExpanded(!themesSectionExpanded)}
                       sx={{ cursor: 'pointer' }}
                     >
-                      <Typography variant="subtitle1" color="wheat">
+                      <Typography variant="subtitle1" >
                         Puzzle Themes
                       </Typography>
-                      {themesSectionExpanded ? <ChevronUp color="wheat" /> : <ChevronDown color="wheat" />}
+                      {themesSectionExpanded ? <ChevronUp/> : <ChevronDown/>}
                     </Stack>
                     <Collapse in={themesSectionExpanded}>
                       <Stack spacing={2} sx={{ mt: 2 }}>
                         <FormControl fullWidth size="small">
-                          <InputLabel sx={{ color: "wheat" }}>Quick Select</InputLabel>
+                          <InputLabel >Quick Select</InputLabel>
                           <Select
                             value={quickTheme}
                             onChange={handleQuickThemeChange}
                             label="Quick Select"
-                            sx={{
-                             
-                              color: "wheat",
-                              ".MuiOutlinedInput-notchedOutline": { borderColor: "wheat" },
-                            }}
+                            
                           >
                             <MenuItem value=""><em>Random</em></MenuItem>
                             {DIFFICULTY_THEMES.map((theme) => (
@@ -1087,7 +1074,7 @@ export default function PuzzlePage() {
                                 key={theme}
                                 label={PUZZLE_THEMES.find((t) => t.tag === theme)?.description || theme}
                                 size="small"
-                                sx={{ color: "wheat", borderColor: "wheat" }}
+                              
                                 variant="outlined"
                               />
                             ))}
@@ -1095,7 +1082,7 @@ export default function PuzzlePage() {
                               <Chip
                                 label={`+${selectedThemes.length - 3} more`}
                                 size="small"
-                                sx={{ color: "wheat", borderColor: "wheat" }}
+                               
                                 variant="outlined"
                               />
                             )}
@@ -1113,14 +1100,7 @@ export default function PuzzlePage() {
                       value={analysisTab}
                       onChange={(_, newValue) => setAnalysisTab(newValue)}
                       variant="fullWidth"
-                      sx={{
-                        "& .MuiTab-root": { 
-                          color: "wheat",
-                          fontSize: '0.75rem',
-                          minHeight: 48,
-                        },
-                        "& .Mui-selected": { color: "white !important" },
-                      }}
+                      
                     >
                       <Tab label="Info" icon={<Zap size={16} />} iconPosition="start" />
                       <Tab label="Engine" icon={<Settings size={16} />} iconPosition="start" />
@@ -1192,18 +1172,14 @@ export default function PuzzlePage() {
         )}
       </Box>
 
-      {/* Advanced Theme Selection Dialog */}
+    
       <Dialog
         open={themeDialogOpen}
         onClose={() => setThemeDialogOpen(false)}
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}
-        PaperProps={{
-          sx: {
-            color: "white",
-          },
-        }}
+       
       >
         <DialogTitle>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -1213,14 +1189,14 @@ export default function PuzzlePage() {
             </Stack>
             {isMobile && (
               <IconButton onClick={() => setThemeDialogOpen(false)}>
-                <X color="white" />
+                <X />
               </IconButton>
             )}
           </Stack>
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 2 }}>
-            <Typography variant="body2" color="wheat">
+            <Typography variant="body2" >
               Customize your puzzle practice by selecting specific themes and difficulty.
             </Typography>
 
@@ -1260,15 +1236,12 @@ export default function PuzzlePage() {
                   </Typography>
                 </Box>
               )}
-              sx={{
-                "& .MuiAutocomplete-popupIndicator": { color: "wheat" },
-                "& .MuiAutocomplete-clearIndicator": { color: "wheat" },
-              }}
+              
             />
 
             {/* Popular Themes */}
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1, color: "wheat" }}>
+              <Typography variant="subtitle2" >
                 Popular Themes:
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -1297,9 +1270,8 @@ export default function PuzzlePage() {
               </Stack>
             </Box>
 
-            {/* Difficulty Slider */}
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1, color: "wheat" }}>
+              <Typography variant="subtitle2" >
                 Difficulty Rating: {puzzleLevel} - {puzzleLevel + 500}
               </Typography>
               <Slider

@@ -177,19 +177,9 @@ const ModelSetting: React.FC = () => {
   
   const currentProviderConfig = PROVIDERS[tempSettings.provider];
 
-
   const selectedLanguage = LANGUAGES.find(lang => lang.name === (tempSettings.language || 'English')) || LANGUAGES[0];
 
   const supportsRouting = currentProviderConfig?.supportsRouting || false;
-
-  const colors = {
-    background: { card: '#1a1a1a', input: '#2a2a2a' },
-    text: { primary: '#ffffff', secondary: '#cccccc', accent: '#bb86fc' },
-    primary: '#bb86fc',
-    primaryDark: '#9965f4',
-    secondary: '#03dac6',
-    accent: '#cf6679',
-  };
 
   return (
     <Box>
@@ -199,8 +189,6 @@ const ModelSetting: React.FC = () => {
           severity="error" 
           sx={{ 
             mb: 3,
-            backgroundColor: '#d32f2f20',
-            color: colors.text.primary,
           }}
         >
           {validationError}
@@ -211,48 +199,28 @@ const ModelSetting: React.FC = () => {
         variant="outlined" 
         sx={{ 
           mb: 3, 
-          backgroundColor: colors.background.card,
-          borderColor: `${colors.secondary}60`,
+          
         }}
       >
         <CardContent>
           <Typography 
             variant="h6" 
             gutterBottom
-            sx={{ color: colors.text.accent }}
+           
           >
             Provider Configuration
           </Typography>
           
           <FormControl fullWidth margin="normal">
-            <InputLabel sx={{ color: colors.text.secondary }}>
+            <InputLabel >
               AI Provider
             </InputLabel>
             <Select
               value={tempSettings.provider || ''}
               label="AI Provider"
               onChange={(e) => handleProviderChange(e.target.value)}
-              sx={{
-                backgroundColor: colors.background.input,
-                color: colors.text.primary,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: `${colors.secondary}60`,
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: colors.secondary,
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: colors.primary,
-                },
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    backgroundColor: colors.background.input,
-                    color: colors.text.primary,
-                  },
-                },
-              }}
+              
+              
             >
               <MenuItem value="">
                 <em>Select a provider</em>
@@ -268,31 +236,17 @@ const ModelSetting: React.FC = () => {
           {/* Model Selection */}
           {tempSettings.provider && currentProviderConfig && (
             <FormControl fullWidth margin="normal">
-              <InputLabel sx={{ color: colors.text.secondary }}>
+              <InputLabel >
                 Model
               </InputLabel>
               <Select
                 value={tempSettings.model || ''}
                 label="Model"
                 onChange={(e) => setTempSettings({ ...tempSettings, model: e.target.value })}
-                sx={{
-                  backgroundColor: colors.background.input,
-                  color: colors.text.primary,
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: `${colors.secondary}60`,
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: colors.secondary,
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: colors.primary,
-                  },
-                }}
+               
                 MenuProps={{
                   PaperProps: {
                     sx: {
-                      backgroundColor: colors.background.input,
-                      color: colors.text.primary,
                       maxHeight: 400,
                     },
                   },
@@ -315,28 +269,19 @@ const ModelSetting: React.FC = () => {
                   <Checkbox
                     checked={tempSettings.isRouted || false}
                     onChange={(e) => setTempSettings({ ...tempSettings, isRouted: e.target.checked })}
-                    sx={{
-                      color: colors.text.secondary,
-                      '&.Mui-checked': {
-                        color: colors.primary,
-                      },
-                    }}
+                    
                   />
                 }
                 label={
                   <Box display="flex" alignItems="center" gap={1}>
-                    <SwapHorizIcon fontSize="small" sx={{ color: colors.text.accent }} />
-                    <Typography sx={{ color: colors.text.primary }}>
+                    <SwapHorizIcon fontSize="small" />
+                    <Typography >
                       Use OpenRouter
                     </Typography>
                     <Chip 
                       size="small" 
                       label="Optional"
-                      sx={{
-                        backgroundColor: `${colors.secondary}30`,
-                        color: colors.text.primary,
-                        fontSize: '0.7rem',
-                      }}
+                      
                     />
                   </Box>
                 }
@@ -344,7 +289,6 @@ const ModelSetting: React.FC = () => {
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: colors.text.secondary, 
                   ml: 4,
                   display: 'block',
                   fontStyle: 'italic'
@@ -361,16 +305,14 @@ const ModelSetting: React.FC = () => {
         variant="outlined" 
         sx={{ 
           mb: 3, 
-          backgroundColor: colors.background.card,
-          borderColor: `${colors.secondary}60`,
         }}
       >
         <CardContent>
           <Box display="flex" alignItems="center" gap={1} mb={2}>
-            <LanguageIcon sx={{ color: colors.text.accent }} />
+            <LanguageIcon />
             <Typography 
               variant="h6"
-              sx={{ color: colors.text.accent }}
+             
             >
               Output Language
             </Typography>
@@ -378,46 +320,20 @@ const ModelSetting: React.FC = () => {
               <Chip 
                 size="small" 
                 label={`${selectedLanguage.flag} ${selectedLanguage.nativeName}`}
-                sx={{
-                  backgroundColor: `${colors.primary}30`,
-                  color: colors.text.primary,
-                  borderColor: colors.primary,
-                }}
                 variant="outlined"
               />
             )}
           </Box>
           
           <FormControl fullWidth>
-            <InputLabel sx={{ color: colors.text.secondary }}>
+            <InputLabel >
               Preferred Language for AI Responses
             </InputLabel>
             <Select
               value={tempSettings.language || 'English'}
               label="Preferred Language for AI Responses"
               onChange={(e) => setTempSettings({ ...tempSettings, language: e.target.value })}
-              sx={{
-                backgroundColor: colors.background.input,
-                color: colors.text.primary,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: `${colors.secondary}60`,
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: colors.secondary,
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: colors.primary,
-                },
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    backgroundColor: colors.background.input,
-                    color: colors.text.primary,
-                    maxHeight: 400,
-                  },
-                },
-              }}
+              
             >
               {LANGUAGES.map((language) => (
                 <MenuItem key={language.code} value={language.name}>
@@ -426,13 +342,13 @@ const ModelSetting: React.FC = () => {
                       {language.flag}
                     </Typography>
                     <Box>
-                      <Typography variant="body2" sx={{ color: colors.text.primary }}>
+                      <Typography variant="body2" >
                         {language.name}
                       </Typography>
                       <Typography 
                         variant="caption" 
                         sx={{ 
-                          color: colors.text.secondary,
+                        
                           fontStyle: 'italic' 
                         }}
                       >
@@ -448,7 +364,6 @@ const ModelSetting: React.FC = () => {
           <Typography 
             variant="caption" 
             sx={{ 
-              color: colors.text.secondary, 
               mt: 1, 
               display: 'block',
               fontStyle: 'italic'
@@ -464,26 +379,18 @@ const ModelSetting: React.FC = () => {
           variant="outlined" 
           sx={{ 
             mb: 3,
-            backgroundColor: colors.background.card,
-            borderColor: `${colors.secondary}60`,
           }}
         >
           <CardContent>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <Typography 
                 variant="h6"
-                sx={{ color: colors.text.accent }}
               >
                 API Key
               </Typography>
               <Chip 
                 size="small" 
                 label={currentProviderConfig.name}
-                sx={{
-                  backgroundColor: `${colors.secondary}30`,
-                  color: colors.text.primary,
-                  borderColor: colors.secondary,
-                }}
                 variant="outlined"
               />
             </Box>
@@ -496,35 +403,13 @@ const ModelSetting: React.FC = () => {
               onChange={(e) => setTempSettings({ ...tempSettings, apiKey: e.target.value })}
               placeholder={`Enter your ${currentProviderConfig.name} API key...`}
               helperText={currentProviderConfig.keyPrefix ? `Should start with "${currentProviderConfig.keyPrefix}"` : 'Enter your API key'}
-              sx={{
-                '& .MuiInputBase-root': {
-                  backgroundColor: colors.background.input,
-                },
-                '& .MuiInputLabel-root': {
-                  color: colors.text.secondary,
-                },
-                '& .MuiOutlinedInput-root': {
-                  color: colors.text.primary,
-                  '& fieldset': {
-                    borderColor: `${colors.secondary}60`,
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.secondary,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.primary,
-                  },
-                },
-                '& .MuiFormHelperText-root': {
-                  color: colors.text.secondary,
-                },
-              }}
+             
               InputProps={{
                 endAdornment: (
                   <IconButton
                     onClick={() => setShowApiKey(!showApiKey)}
                     edge="end"
-                    sx={{ color: colors.text.secondary }}
+                    
                   >
                     {showApiKey ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -541,10 +426,6 @@ const ModelSetting: React.FC = () => {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 0.5,
-                  color: colors.accent,
-                  '&:hover': {
-                    color: colors.text.accent,
-                  }
                 }}
               >
                 <InfoIcon fontSize="small" />
@@ -559,30 +440,18 @@ const ModelSetting: React.FC = () => {
       {tempSettings.isRouted && (
         <Card 
           variant="outlined" 
-          sx={{ 
-            mb: 3,
-            backgroundColor: colors.background.card,
-            borderColor: `${colors.primary}60`,
-            boxShadow: `0 0 10px ${colors.primary}30`,
-          }}
         >
           <CardContent>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <SwapHorizIcon sx={{ color: colors.text.accent }} />
+              <SwapHorizIcon  />
               <Typography 
                 variant="h6"
-                sx={{ color: colors.text.accent }}
               >
                 OpenRouter API Key
               </Typography>
               <Chip 
                 size="small" 
                 label="Routing Enabled"
-                sx={{
-                  backgroundColor: `${colors.primary}30`,
-                  color: colors.text.primary,
-                  borderColor: colors.primary,
-                }}
                 variant="outlined"
               />
             </Box>
@@ -595,35 +464,13 @@ const ModelSetting: React.FC = () => {
               onChange={(e) => setTempSettings({ ...tempSettings, apiKey: e.target.value })}
               placeholder="Enter your OpenRouter API key..."
               helperText='Should start with "sk-or-"'
-              sx={{
-                '& .MuiInputBase-root': {
-                  backgroundColor: colors.background.input,
-                },
-                '& .MuiInputLabel-root': {
-                  color: colors.text.secondary,
-                },
-                '& .MuiOutlinedInput-root': {
-                  color: colors.text.primary,
-                  '& fieldset': {
-                    borderColor: `${colors.primary}60`,
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.primary,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.primary,
-                  },
-                },
-                '& .MuiFormHelperText-root': {
-                  color: colors.text.secondary,
-                },
-              }}
+              
               InputProps={{
                 endAdornment: (
                   <IconButton
                     onClick={() => setShowOpenRouterKey(!showOpenRouterKey)}
                     edge="end"
-                    sx={{ color: colors.text.secondary }}
+                   
                   >
                     {showOpenRouterKey ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -640,10 +487,6 @@ const ModelSetting: React.FC = () => {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 0.5,
-                  color: colors.accent,
-                  '&:hover': {
-                    color: colors.text.accent,
-                  }
                 }}
               >
                 <InfoIcon fontSize="small" />
@@ -655,11 +498,7 @@ const ModelSetting: React.FC = () => {
               severity="info" 
               sx={{ 
                 mt: 2,
-                backgroundColor: `${colors.primary}10`,
-                color: colors.text.primary,
-                '& .MuiAlert-icon': {
-                  color: colors.primary,
-                },
+                
               }}
             >
               Your {currentProviderConfig.name} {tempSettings.model} requests will be routed through OpenRouter. 
@@ -674,26 +513,20 @@ const ModelSetting: React.FC = () => {
           variant="outlined" 
           sx={{ 
             mb: 3,
-            backgroundColor: colors.background.card,
-            borderColor: `${colors.secondary}60`,
           }}
         >
           <CardContent>
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <Typography 
                 variant="h6"
-                sx={{ color: colors.text.accent }}
+                
               >
                 Local LLM ngrok endpoint
               </Typography>
               <Chip 
                 size="small" 
                 label={currentProviderConfig.name}
-                sx={{
-                  backgroundColor: `${colors.secondary}30`,
-                  color: colors.text.primary,
-                  borderColor: colors.secondary,
-                }}
+                
                 variant="outlined"
               />
             </Box>
@@ -705,29 +538,7 @@ const ModelSetting: React.FC = () => {
               onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value.trim() })}
               placeholder="Enter your ngrok endpoint https:..."
               helperText="Enter your ngrok endpoint https:..."
-              sx={{
-                '& .MuiInputBase-root': {
-                  backgroundColor: colors.background.input,
-                },
-                '& .MuiInputLabel-root': {
-                  color: colors.text.secondary,
-                },
-                '& .MuiOutlinedInput-root': {
-                  color: colors.text.primary,
-                  '& fieldset': {
-                    borderColor: `${colors.secondary}60`,
-                  },
-                  '&:hover fieldset': {
-                    borderColor: colors.secondary,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: colors.primary,
-                  },
-                },
-                '& .MuiFormHelperText-root': {
-                  color: colors.text.secondary,
-                },
-              }}
+             
             />
             
             <Box mt={2}>
@@ -739,10 +550,6 @@ const ModelSetting: React.FC = () => {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: 0.5,
-                  color: colors.accent,
-                  '&:hover': {
-                    color: colors.text.accent,
-                  }
                 }}
               >
                 <InfoIcon fontSize="small" />
@@ -758,11 +565,6 @@ const ModelSetting: React.FC = () => {
           severity="success" 
           sx={{ 
             mb: 3,
-            backgroundColor: `${colors.secondary}20`,
-            color: colors.text.primary,
-            '& .MuiAlert-icon': {
-              color: colors.accent,
-            },
           }}
         >
           Settings saved successfully!
@@ -774,14 +576,6 @@ const ModelSetting: React.FC = () => {
         <Button 
           variant="outlined" 
           onClick={handleReset}
-          sx={{
-            borderColor: colors.secondary,
-            color: colors.text.secondary,
-            '&:hover': {
-              borderColor: colors.text.accent,
-              backgroundColor: `${colors.secondary}20`,
-            }
-          }}
         >
           Reset
         </Button>
@@ -790,16 +584,7 @@ const ModelSetting: React.FC = () => {
           startIcon={<SaveIcon />}
           onClick={handleSave}
           disabled={!tempSettings.provider}
-          sx={{
-            backgroundColor: colors.primary,
-            '&:hover': {
-              backgroundColor: colors.primaryDark,
-            },
-            '&:disabled': {
-              backgroundColor: `${colors.primary}50`,
-              color: `${colors.text.primary}50`,
-            }
-          }}
+          
         >
           Save Settings
         </Button>
