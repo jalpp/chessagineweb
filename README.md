@@ -5,15 +5,13 @@
   <img src="/public/static/images/agineowl.png" alt="ChessAgine" width="200"/>
 </p>
 
-Convert OpenAI, Claude, Gemini, or Ollama models into chess-aware Chessbuddy and get personalized live chat training.  
-ChessAgine integrates with Stockfish 17.1 engine and chess databases to better align with position context, making LLMs chess aware.
-
+A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the community, by the community.
 ---
 
 ## Preview
 
 <p align="center">
-  <img src="/public/static/images/previewrel1.png" alt="ChessAgine_Preview" >
+  <img src="/public/static/images/aginelatestui.png" alt="ChessAgine_Preview" >
 </p>
 (Agine analyzing position using free open source model)
 
