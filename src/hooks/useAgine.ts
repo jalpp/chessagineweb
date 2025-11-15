@@ -65,6 +65,8 @@ export default function useAgine(fen: string) {
     gameReviewProgress,
     setGameReviewLoading,
     generateGameReview,
+    rootCurrentMove,
+    setRootCurrentMove
   } = useGameReview(engine, engineDepth);
 
 
@@ -285,6 +287,74 @@ export default function useAgine(fen: string) {
     }
   }, [updateState, addChatMessage]);
 
+ 
+
+  const buildCustomChatQuery = useCallback(
+  (
+    currentFen: string,
+    sideToMove: string,
+    langCode: string,
+
+  ): string => {
+    
+    const type = 'standard';
+    
+    let query = `
+LangCode: ${langCode}
+Type: ${type}
+FEN: ${currentFen}`;
+
+
+    const formattedSide = sideToMove.charAt(0).toUpperCase() + sideToMove.slice(1).toLowerCase();
+    query += `\nSide: ${formattedSide}`;
+
+   
+    query += `\nActor: human`;
+
+    const currentMoveIndex = rootCurrentMove;
+ 
+    if (gameReview && gameReview.length > 0 && currentMoveIndex) {
+          
+      if (currentMoveIndex !== -1) {
+        const moveAnalysis = gameReview[currentMoveIndex];
+        
+        query += `\nmoveSAN: ${moveAnalysis.notation}`
+        query += `\nTag: ${moveAnalysis.quality}`;
+        
+  
+        if (moveAnalysis.sanNotation) {
+          query += `\nBestAlt: ${moveAnalysis.sanNotation}`;
+        }
+        
+        
+        const cpAfter = moveAnalysis.evalMove;
+        let cpBefore = cpAfter; 
+        
+        if (currentMoveIndex > 0) {
+          cpBefore = gameReview[currentMoveIndex - 1].evalMove;
+        }
+        
+        const delta = cpAfter - cpBefore;
+        query += `\nCP: ${cpBefore}->${cpAfter} (Δ=${delta})`;
+      }
+    }
+
+    // Alternative: Get BestAlt from stockfish analysis (2nd variation)
+    if (!gameReview && state.stockfishAnalysisResult?.lines && state.stockfishAnalysisResult.lines.length > 1) {
+      const secondBestLine = state.stockfishAnalysisResult.lines[1];
+      if (secondBestLine?.pv && secondBestLine.pv.length > 0) {
+        // Extract first move from second best line
+        const bestAltMove = secondBestLine.pv[0];
+        query += `\nBestAlt: ${bestAltMove}`;
+      }
+    }
+
+    return query;
+  },
+  [gameReview, state.stockfishAnalysisResult]
+);
+
+
   const buildChatQuery = useCallback(
     (
       currentInput: string,
@@ -503,7 +573,7 @@ ${candidateMoves}
     [state.sessionMode, state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
   );
 
-  const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
+const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
 const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "true";
 
   const sendChatMessage = useCallback(
@@ -513,7 +583,7 @@ const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "t
     puzzleMode?: boolean,
     puzzleQuery?: string,
     playMode?: boolean,
- 
+
   ): Promise<void> => {
     if (!state.chatInput.trim()) return;
 
@@ -533,8 +603,22 @@ const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "t
     try {
       const chessInstance = new Chess(currentFen);
       const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+      const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
 
-      const query = buildChatQuery(
+      let query = '';
+
+      
+      let mode = getQuestionMode() ? "question" : (puzzleMode || puzzleQuery ? "puzzle" : "position");
+
+      if(apiSettings.provider === "ollama" && apiSettings.model === "hf.co/NAKSTStudio/chess-gemma-commentary:F16"){
+        query = buildCustomChatQuery(
+          currentFen,
+          sideToMove,
+          apiSettings.language,
+        )
+        mode = "chess-gemma-commentary";
+      }else{
+        query = buildChatQuery(
         currentInput,
         currentFen,
         sideToMove,
@@ -544,12 +628,10 @@ const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "t
         puzzleQuery,
         playMode
       );
+      }
 
-      let mode = getQuestionMode() ? "question" : (puzzleMode || puzzleQuery ? "puzzle" : "position");
-
-      console.time("PRIMARY_AGENT_TIME");
       const result = await makeApiRequest(currentFen, query, mode);
-      console.timeEnd("PRIMARY_AGENT_TIME");
+     
 
       let assistantMessage = createChatMessage(
         "assistant",
@@ -1299,6 +1381,8 @@ Be concise but thorough, and use clear chess language.`;
       gameReviewProgress,
       setGameReviewLoading,
       generateGameReview,
+      rootCurrentMove,
+      setRootCurrentMove,
 
       // Functions
       fetchOpeningData,
@@ -1337,6 +1421,8 @@ Be concise but thorough, and use clear chess language.`;
       setEngineLines,
       engine,
       gameReview,
+      rootCurrentMove,
+      setRootCurrentMove,
       setGameReview,
       gameReviewLoading,
       gameReviewProgress,

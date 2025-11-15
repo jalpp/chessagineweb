@@ -107,6 +107,7 @@ export default function PGNUploaderPage() {
     requestAnalysis,
     legalMoves,
     handleFutureMoveLegalClick,
+    setRootCurrentMove
   } = useAgine(fen);
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -123,8 +124,8 @@ export default function PGNUploaderPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentMoveIndex, moves]);
+  
 
-  // Game review history functions
   const saveGameReview = () => {
     if (!gameReview.length) {
       alert("No game review to save. Please generate a review first.");
@@ -269,6 +270,7 @@ export default function PGNUploaderPage() {
     setGame(tempGame);
     setFen(tempGame.fen());
     setCurrentMoveIndex(index);
+    setRootCurrentMove(index);
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
     setLlmAnalysisResult(null);
     setStockfishAnalysisResult(null);

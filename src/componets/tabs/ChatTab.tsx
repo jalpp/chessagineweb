@@ -73,19 +73,14 @@ export interface ChatTabProps {
   chatLoading: boolean;
   gameInfo?: string;
   currentMove?: string;
+  currentMoveIndex?: number;
   chatInput: string;
   puzzleMode?: boolean;
   playMode?: boolean;
   puzzleQuery?: string;
   setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  sendChatMessage: (
-    gameInfo?: string,
-    currentMove?: string,
-    puzzleMode?: boolean,
-    puzzleQuery?: string,
-    playMode?: boolean,
-  ) => void;
+  sendChatMessage: (gameInfo?: string | undefined, currentMove?: string | undefined, puzzleMode?: boolean | undefined, puzzleQuery?: string | undefined, playMode?: boolean | undefined, currentMoveIndex?: number | undefined) => void;
   abortChatMessage?: () => void;
 }
 

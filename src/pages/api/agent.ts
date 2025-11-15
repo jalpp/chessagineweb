@@ -158,7 +158,7 @@ export default async function handler(
       });
     }
 
-    const aginePromptInject = `${query} \n ${positionPrompt}`;
+    const aginePromptInject = `$${positionPrompt}`;
     const runtimeContext = new RuntimeContext();
     runtimeContext.set("provider", apiSettings.provider);
     runtimeContext.set("model", apiSettings.model);
@@ -176,15 +176,26 @@ export default async function handler(
 
     let response;
     let maxTokens;
-
     try {
-      response = await chessAgine.generate(
-        [{ role: "user", content: aginePromptInject }],
-        {
-          runtimeContext,
-        }
-      );
-      maxTokens = response.usage.totalTokens || 0;
+      if(runtimeContext.get("mode") === "chess-gemma-commentary"){
+        response = await chessAgine.generate(
+          [{role: "user", content: query}],
+          {
+            runtimeContext,
+          }
+        );
+        maxTokens = response.usage.totalTokens || 0;
+      } else {
+        response = await chessAgine.generate(
+          [
+            {role: "system", content: aginePromptInject},
+            { role: "user", content: query }],
+          {
+            runtimeContext,
+          }
+        );
+        maxTokens = response.usage.totalTokens || 0;
+      }
     } catch (agentError) {
       console.error("Error from chess agent:", agentError);
 

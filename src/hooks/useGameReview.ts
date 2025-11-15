@@ -39,6 +39,7 @@ const useGameReview = (
   const [gameReview, setGameReview] = useState<MoveAnalysis[]>([]);
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
+  const [rootCurrentMove, setRootCurrentMove] = useState(0);
 
   const isVeryGoodMove = (
     preMoveAdvantage: number,
@@ -477,6 +478,8 @@ const useGameReview = (
     setGameReview,
     setGameReviewLoading,
     generateGameReview,
+    setRootCurrentMove,
+    rootCurrentMove
   };
 };
 
