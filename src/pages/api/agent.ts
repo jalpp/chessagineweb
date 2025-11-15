@@ -176,8 +176,6 @@ export default async function handler(
 
     let response;
     let maxTokens;
-    console.log(query);
-    console.log(mode);
     try {
       if(runtimeContext.get("mode") === "chess-gemma-commentary"){
         response = await chessAgine.generate(
