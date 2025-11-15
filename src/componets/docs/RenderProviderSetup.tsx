@@ -16,7 +16,7 @@ import {
   Info as InfoIcon,
 } from "@mui/icons-material";
 
-import { purpleTheme } from "@/theme/theme";
+
 import { ProviderConfig } from "@/libs/docs/helper";
 
 export const renderProviderSetup = (provider: ProviderConfig) => (
@@ -25,7 +25,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
       <Typography
         variant="h6"
         gutterBottom
-        sx={{ color: purpleTheme.text.primary }}
+       
       >
         {provider.name} Setup Guide
       </Typography>
@@ -35,19 +35,18 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
         <Box sx={{ 
           p: 3, 
           textAlign: 'center',
-          backgroundColor: purpleTheme.background?.paper || 'rgba(255,255,255,0.05)',
+       
           borderRadius: 2,
-          border: `2px solid ${purpleTheme.success}`
+         
         }}>
           <CheckCircleIcon sx={{ 
             fontSize: 48, 
-            color: purpleTheme.success,
             mb: 2
           }} />
-          <Typography variant="h6" sx={{ color: purpleTheme.text.primary, mb: 1 }}>
+          <Typography variant="h6" sx={{  mb: 1 }}>
             No Setup Required!
           </Typography>
-          <Typography variant="body2" sx={{ color: purpleTheme.text.secondary }}>
+          <Typography variant="body2" >
             AgineCloud models are completely free and ready to use immediately.
             Just select a model and start analyzing your chess games.
             AgineCloud is in beta, so you might experiece few delays
@@ -57,7 +56,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
         <List dense>
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Download Ollama" />
             <Button
@@ -76,21 +75,21 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon  />
             </ListItemIcon>
             <ListItemText primary="Sign up to Ollama" />
           </ListItem>
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Install models locally using terminal or use cloud (-cloud models) in Ollama interface by chatting with them" />
           </ListItem>
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Download Ngrok" />
             <Button
@@ -109,7 +108,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Authenticate ngrok in terminal by getting the token from in your dashboard" />
             <Button
@@ -128,21 +127,21 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon  />
             </ListItemIcon>
             <ListItemText primary="Point ngrok to port 11434 by running ngrok http 11434" />
           </ListItem>
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Paste the ngrok web link in ChessAgine settings" />
           </ListItem>
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon/>
             </ListItemIcon>
             <ListItemText primary="Start using it!" />
           </ListItem>
@@ -151,7 +150,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
         <List dense>
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Visit the API keys page" />
           </ListItem>
@@ -171,14 +170,14 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon  />
             </ListItemIcon>
             <ListItemText primary="Create a new API key" />
           </ListItem>
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon  />
             </ListItemIcon>
             <ListItemText
               primary="Copy your API key"
@@ -188,7 +187,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon sx={{ color: purpleTheme.success }} />
+              <CheckCircleIcon  />
             </ListItemIcon>
             <ListItemText primary="Enter the key in ChessAgine settings" />
           </ListItem>
@@ -206,10 +205,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
               label={model}
               size="small"
               variant="outlined"
-              sx={{
-                color: purpleTheme.text.primary,
-                borderColor: purpleTheme.text.secondary,
-              }}
+
             />
           ))}
         </Box>

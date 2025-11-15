@@ -47,8 +47,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code}) => {
         elevation={0}
         sx={{
           p: 2,
-          bgcolor: "#1e1e1e",
-          color: "#d4d4d4",
           fontFamily: "monospace",
           fontSize: "0.875rem",
           overflow: "auto",

@@ -74,7 +74,7 @@ export function LegalMoveTab({
     if (move.includes("+")) return "#ff5722"; // Orange for check
     if (move.includes("#")) return "#f44336"; // Red for checkmate
     if (move.includes("x")) return "#ff9800"; // Amber for capture
-    return "#d3d3d3ff"; // Green for pawn moves
+    return "#393636ff"; // Green for pawn moves
   };
 
   const getPieceIcon = (move: string) => {
@@ -93,7 +93,7 @@ export function LegalMoveTab({
       <Paper
         sx={{
           p: 2,
-          backgroundColor: "#1a1a1a",
+        
           borderRadius: 2,
         }}
       >
@@ -104,55 +104,42 @@ export function LegalMoveTab({
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-                backgroundColor: "grey.600",
+               
               }}
             />
-            <Typography variant="subtitle2" sx={{ color: "grey.400", fontWeight: 600 }}>
+            <Typography variant="subtitle2" sx={{  fontWeight: 600 }}>
               Legal Moves Off
             </Typography>
           </Box>
           <Switch
             checked={legalMovesEnabled}
             onChange={handleLegalMovesToggle}
-            sx={{
-              '& .MuiSwitch-switchBase.Mui-checked': {
-                color: '#9c27b0',
-              },
-              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                backgroundColor: '#9c27b0',
-              },
-            }}
+           
           />
           <Box sx={{ flexGrow: 1 }} />
           <IconButton
             onClick={() => setSettingsOpen(true)}
-            sx={{ color: "grey.400", p: 0.5 }}
+            sx={{  p: 0.5 }}
             size="small"
           >
             <SettingsIcon fontSize="small" />
           </IconButton>
         </Stack>
 
-        {/* Settings Dialog */}
+     
         <Dialog
           open={settingsOpen}
           onClose={handleSettingsClose}
-          PaperProps={{
-            sx: {
-              backgroundColor: "#1a1a1a",
-              color: "white",
-              minWidth: 400
-            }
-          }}
+         
         >
           <DialogTitle>Legal Moves Settings</DialogTitle>
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-                <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
                   Max Moves to Display: {maxMoves}
                 </Typography>
-                <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+                <Typography variant="caption" sx={{ mb: 2, display: "block" }}>
                   Set how many legal moves to show
                 </Typography>
                 <Box sx={{ px: 1 }}>
@@ -181,15 +168,12 @@ export function LegalMoveTab({
     );
   }
 
-  // Show no moves state
   if (!legalMoves || legalMoves.length === 0) {
     return (
       <Box>
-        {/* Header */}
         <Paper
           sx={{
             p: 2,
-            backgroundColor: "#1a1a1a",
             borderRadius: 2,
             mb: 2
           }}
@@ -201,29 +185,22 @@ export function LegalMoveTab({
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  backgroundColor: "#9c27b0",
+                
                 }}
               />
-              <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+              <Typography variant="subtitle2" sx={{  fontWeight: 600 }}>
                 Legal Moves On
               </Typography>
             </Box>
             <Switch
               checked={legalMovesEnabled}
               onChange={handleLegalMovesToggle}
-              sx={{
-                '& .MuiSwitch-switchBase.Mui-checked': {
-                  color: '#9c27b0',
-                },
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                  backgroundColor: '#9c27b0',
-                },
-              }}
+              
             />
             <Box sx={{ flexGrow: 1 }} />
             <IconButton
               onClick={() => setSettingsOpen(true)}
-              sx={{ color: "white", p: 0.5 }}
+              sx={{ p: 0.5 }}
               size="small"
             >
               <SettingsIcon fontSize="small" />
@@ -233,7 +210,7 @@ export function LegalMoveTab({
 
         {/* No Moves State */}
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <Typography variant="body2" sx={{ color: "grey.400", textAlign: "center" }}>
+          <Typography variant="body2" sx={{  textAlign: "center" }}>
             No legal moves available.
           </Typography>
         </Box>
@@ -243,11 +220,9 @@ export function LegalMoveTab({
 
   return (
     <Box>
-      {/* Header */}
       <Paper
         sx={{
           p: 2,
-          backgroundColor: "#1a1a1a",
           borderRadius: 2,
           mb: 2
         }}
@@ -259,29 +234,20 @@ export function LegalMoveTab({
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-                backgroundColor: "#9c27b0",
               }}
             />
-            <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               Legal Moves On
             </Typography>
           </Box>
           <Switch
             checked={legalMovesEnabled}
             onChange={handleLegalMovesToggle}
-            sx={{
-              '& .MuiSwitch-switchBase.Mui-checked': {
-                color: '#9c27b0',
-              },
-              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                backgroundColor: '#9c27b0',
-              },
-            }}
           />
           <Box sx={{ flexGrow: 1 }} />
           <IconButton
             onClick={() => setSettingsOpen(true)}
-            sx={{ color: "white", p: 0.5 }}
+            sx={{ p: 0.5 }}
             size="small"
           >
             <SettingsIcon fontSize="small" />
@@ -290,36 +256,34 @@ export function LegalMoveTab({
 
         {/* Move Count Info */}
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
             Available Legal Moves
           </Typography>
           <Chip 
             label={`${processedMoves.length}`} 
             size="small" 
             sx={{ 
-              backgroundColor: "rgba(76, 175, 80, 0.2)", 
-              color: "#4caf50",
               fontSize: "0.7rem",
               fontWeight: 600
             }} 
           />
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{  fontWeight: 500 }}>
             {filterByPiece !== "all" ? `${filterByPiece} moves` : "total moves"}
           </Typography>
         </Stack>
 
         {/* Column Headers */}
         <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-          <Typography variant="caption" sx={{ color: "grey.400", minWidth: "40px" }}>
+          <Typography variant="caption" sx={{  minWidth: "40px" }}>
             #
           </Typography>
-          <Typography variant="caption" sx={{ color: "grey.400", minWidth: "40px" }}>
+          <Typography variant="caption" sx={{  minWidth: "40px" }}>
             Piece
           </Typography>
-          <Typography variant="caption" sx={{ color: "grey.400", flex: 1 }}>
+          <Typography variant="caption" sx={{  flex: 1 }}>
             Move
           </Typography>
-          <Typography variant="caption" sx={{ color: "grey.400", minWidth: "80px" }}>
+          <Typography variant="caption" sx={{  minWidth: "80px" }}>
             Type
           </Typography>
         </Stack>
@@ -333,15 +297,14 @@ export function LegalMoveTab({
             onClick={() => !disabled && handleFutureMoveLegalClick(move)}
             sx={{
               p: 2,
-              backgroundColor: "#1a1a1a",
+              
               borderRadius: 0,
               borderBottom: index < processedMoves.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none",
               borderLeft: "3px solid transparent",
               cursor: disabled ? "not-allowed" : "pointer",
-              transition: "background-color 0.2s ease",
+             
               "&:hover": {
-                backgroundColor: disabled ? "#1a1a1a" : "rgba(76, 175, 80, 0.1)",
-                borderLeft: disabled ? "3px solid transparent" : "3px solid #4caf50",
+                borderLeft: disabled ? "3px solid transparent" : "3px solid #a6d7a8ff",
               },
               filter: disabled ? "grayscale(50%)" : "none",
             }}
@@ -351,7 +314,7 @@ export function LegalMoveTab({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "grey.400",
+                 
                   minWidth: "40px",
                   fontFamily: "monospace",
                   fontSize: "0.8rem"
@@ -377,7 +340,7 @@ export function LegalMoveTab({
               <Typography
                 variant="body2"
                 sx={{
-                  color: "grey.400",
+                  
                   fontWeight: "bold",
                   fontFamily: "monospace",
                   fontSize: "0.9rem",
@@ -409,23 +372,23 @@ export function LegalMoveTab({
         ))}
       </Stack>
 
-      {/* Footer Info */}
+     
       <Paper
         sx={{
           p: 1.5,
-          backgroundColor: "#1a1a1a",
+        
           borderRadius: 0,
           mt: 0
         }}
       >
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Gavel fontSize="small" sx={{ color: "#4caf50" }} />
-            <Typography variant="caption" sx={{ color: "grey.400" }}>
+            <Gavel fontSize="small" />
+            <Typography variant="caption" >
               Legal Moves Available
             </Typography>
           </Stack>
-          <Typography variant="caption" sx={{ color: "grey.400" }}>
+          <Typography variant="caption" >
             Showing {processedMoves.length} of {legalMoves.length} moves
           </Typography>
         </Stack>
@@ -437,8 +400,7 @@ export function LegalMoveTab({
         onClose={handleSettingsClose}
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
+           
             minWidth: 400
           }
         }}
@@ -447,13 +409,13 @@ export function LegalMoveTab({
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+              <Typography variant="body2" sx={{  mb: 1 }}>
                 Max Moves to Display: {Math.min(maxMoves, actualMaxMoves)}
               </Typography>
-              <Typography variant="caption" sx={{ color: "grey.400", mb: 1, display: "block" }}>
+              <Typography variant="caption" sx={{  mb: 1, display: "block" }}>
                 Available moves in this position: {actualMaxMoves}
               </Typography>
-              <Typography variant="caption" sx={{ color: "grey.400", mb: 2, display: "block" }}>
+              <Typography variant="caption" sx={{  mb: 2, display: "block" }}>
                 Set how many legal moves to show
               </Typography>
               <Box sx={{ px: 1 }}>
@@ -472,30 +434,22 @@ export function LegalMoveTab({
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
                 Sort Options
               </Typography>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" sx={{ color: "grey.300" }}>
+                <Typography variant="body2" >
                   Sort Alphabetically
                 </Typography>
                 <Switch
                   checked={sortAlphabetically}
                   onChange={(e) => setSortAlphabetically(e.target.checked)}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#9c27b0',
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#9c27b0',
-                    },
-                  }}
                 />
               </Stack>
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Filter by Piece Type
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -505,15 +459,7 @@ export function LegalMoveTab({
                     label={piece.charAt(0).toUpperCase() + piece.slice(1)}
                     variant={filterByPiece === piece ? "filled" : "outlined"}
                     onClick={() => setFilterByPiece(piece)}
-                    sx={{
-                      backgroundColor: filterByPiece === piece ? "#4caf50" : "transparent",
-                      borderColor: "#4caf50",
-                      color: filterByPiece === piece ? "white" : "#4caf50",
-                      "&:hover": {
-                        backgroundColor: filterByPiece === piece ? "#388e3c" : "rgba(76, 175, 80, 0.1)",
-                      },
-                      fontSize: "0.7rem"
-                    }}
+                  
                     size="small"
                   />
                 ))}
@@ -532,9 +478,9 @@ export function LegalMoveTab({
       <Box sx={{ mt: 2 }}>
         <Typography
           variant="caption"
-          sx={{ color: "grey.500", fontStyle: "italic" }}
+          sx={{ fontStyle: "italic" }}
         >
-          💡 Click on any legal move to get AI analysis of the move
+          Click on any legal move to get AI analysis of the move
         </Typography>
       </Box>
     </Box>

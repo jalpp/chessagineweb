@@ -349,7 +349,6 @@ const PGNView: React.FC<PGNViewProps> = ({
           key={`num-${moveNumber}`}
           component="span"
           sx={{ 
-            color: '#888',
             mr: 0.3,
             fontFamily: 'monospace',
             fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
@@ -364,8 +363,6 @@ const PGNView: React.FC<PGNViewProps> = ({
       const whiteIndex = i;
       const whiteAnalysis = getMoveAnalysis(whiteIndex);
       const whiteStyle = whiteAnalysis ? getMoveClassificationStyle(whiteAnalysis.quality) : null;
-      const isWhiteSelected = whiteIndex === currentMoveIndex - 1;
-      const hasWhiteComment = getMoveComment(whiteIndex);
       const showWhiteClassification = whiteAnalysis && shouldShowClassification(whiteAnalysis.quality);
       
       elements.push(
@@ -384,17 +381,11 @@ const PGNView: React.FC<PGNViewProps> = ({
             fontFamily: 'monospace',
             fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
             height: '20px',
-            backgroundColor: isWhiteSelected ? '#555' : 'transparent',
-            color: isWhiteSelected ? '#fff' : '#ccc',
-            border: hasWhiteComment ? '1px solid #4FC3F7' : 'none',
-            '&:hover': {
-              backgroundColor: isWhiteSelected ? '#666' : '#333',
-            },
-            '& .MuiButton-startIcon': {
-              marginRight: '2px',
-              marginLeft: 0,
-              color: whiteStyle?.color || 'inherit',
-            },
+           '& .MuiButton-startIcon': {
+                marginRight: '2px',
+                marginLeft: 0,
+                color: whiteStyle?.color || 'inherit',
+              },
           }}
         >
           {whiteMove}
@@ -406,8 +397,7 @@ const PGNView: React.FC<PGNViewProps> = ({
         const blackIndex = i + 1;
         const blackAnalysis = getMoveAnalysis(blackIndex);
         const blackStyle = blackAnalysis ? getMoveClassificationStyle(blackAnalysis.quality) : null;
-        const isBlackSelected = blackIndex === currentMoveIndex - 1;
-        const hasBlackComment = getMoveComment(blackIndex);
+      
         const showBlackClassification = blackAnalysis && shouldShowClassification(blackAnalysis.quality);
         
         elements.push(
@@ -426,12 +416,7 @@ const PGNView: React.FC<PGNViewProps> = ({
               fontFamily: 'monospace',
               fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
               height: '20px',
-              backgroundColor: isBlackSelected ? '#555' : 'transparent',
-              color: isBlackSelected ? '#fff' : '#ccc',
-              border: hasBlackComment ? '1px solid #4FC3F7' : 'none',
-              '&:hover': {
-                backgroundColor: isBlackSelected ? '#666' : '#333',
-              },
+             
               '& .MuiButton-startIcon': {
                 marginRight: '2px',
                 marginLeft: 0,
@@ -463,7 +448,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             ml: 1,
             px: 1,
             py: 0.5,
-            backgroundColor: '#333',
+           
             borderRadius: '3px',
             flexShrink: 0
           }}
@@ -520,7 +505,7 @@ const PGNView: React.FC<PGNViewProps> = ({
           {/* Move number */}
           <Typography
             sx={{
-              color: '#888',
+             
               fontFamily: 'monospace',
               fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
               width: '32px',
@@ -548,15 +533,8 @@ const PGNView: React.FC<PGNViewProps> = ({
               textTransform: 'none',
               fontFamily: 'monospace',
               fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
-              backgroundColor: isWhiteSelected ? '#555' : 'transparent',
-              color: isWhiteSelected ? '#fff' : '#ccc',
-              border: hasWhiteComment ? '1px solid #4FC3F7' : '1px solid transparent',
-              justifyContent: 'flex-start',
-              '&:hover': {
-                backgroundColor: isWhiteSelected ? '#666' : '#333',
-              },
               '& .MuiButton-startIcon': {
-                marginRight: '4px',
+                marginRight: '2px',
                 marginLeft: 0,
                 color: whiteStyle?.color || 'inherit',
               },
@@ -582,18 +560,11 @@ const PGNView: React.FC<PGNViewProps> = ({
                 textTransform: 'none',
                 fontFamily: 'monospace',
                 fontSize: { xs: '10px', sm: '12px' }, // Adjust font size for mobile
-                backgroundColor: isBlackSelected ? '#555' : 'transparent',
-                color: isBlackSelected ? '#fff' : '#ccc',
-                border: hasBlackComment ? '1px solid #4FC3F7' : '1px solid transparent',
-                justifyContent: 'flex-start',
-                '&:hover': {
-                  backgroundColor: isBlackSelected ? '#666' : '#333',
-                },
-                '& .MuiButton-startIcon': {
-                  marginRight: '4px',
-                  marginLeft: 0,
-                  color: blackStyle?.color || 'inherit',
-                },
+               '& .MuiButton-startIcon': {
+                marginRight: '2px',
+                marginLeft: 0,
+                color: blackStyle?.color || 'inherit',
+              },
               }}
             >
               {blackMove}
@@ -630,13 +601,13 @@ const PGNView: React.FC<PGNViewProps> = ({
         >
           <Typography
             sx={{ 
-              color: '#FFD700',
+              color: '#816f08ff',
               fontFamily: 'monospace',
               fontSize: { xs: '12px', sm: '14px' }, // Adjust font size for mobile
               fontWeight: 'bold',
               px: 2,
               py: 0.5,
-              backgroundColor: '#333',
+             
               borderRadius: '4px',
             }}
           >
@@ -661,20 +632,7 @@ const PGNView: React.FC<PGNViewProps> = ({
           exclusive
           onChange={handleViewModeChange}
           size="small"
-          sx={{
-            '& .MuiToggleButton-root': {
-              color: '#888',
-              borderColor: '#555',
-              '&.Mui-selected': {
-                color: '#4FC3F7',
-                backgroundColor: '#333',
-                borderColor: '#4FC3F7',
-              },
-              '&:hover': {
-                backgroundColor: '#333',
-              },
-            },
-          }}
+         
         >
           <ToggleButton value="pgn" aria-label="PGN view">
             <Tooltip title="PGN Format">
@@ -695,20 +653,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             size="small"
             startIcon={<DownloadIcon />}
             onClick={handleDownloadPGN}
-            sx={{
-              color: '#ccc',
-              borderColor: '#555',
-              backgroundColor: '#2a2a2a',
-              fontSize: '11px',
-              textTransform: 'none',
-              '&:hover': {
-                borderColor: '#777',
-                backgroundColor: '#333',
-              },
-              '& .MuiButton-startIcon': {
-                marginRight: '4px',
-              },
-            }}
+          
           >
             Download Annotated PGN
           </Button>
@@ -723,9 +668,7 @@ const PGNView: React.FC<PGNViewProps> = ({
           maxHeight: { xs: '300px', sm: `${dimensions.height}px` }, // Limit height on mobile
           overflowY: 'auto',
           overflowX: 'hidden',
-          backgroundColor: '#2a2a2a',
           borderRadius: 1,
-          border: '1px solid #444',
           px: { xs: 0.5, sm: 1 }, // Adjust padding for mobile
           py: { xs: 0.5, sm: 0.5 },
           position: 'relative',
@@ -734,15 +677,11 @@ const PGNView: React.FC<PGNViewProps> = ({
         width: '6px',
           },
           '&::-webkit-scrollbar-track': {
-        background: '#1a1a1a',
+     
         borderRadius: '3px',
           },
           '&::-webkit-scrollbar-thumb': {
-        background: '#555',
-        borderRadius: '3px',
-        '&:hover': {
-          background: '#666',
-        },
+        
           },
         }}
       >
@@ -812,12 +751,7 @@ const PGNView: React.FC<PGNViewProps> = ({
             ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
             : undefined
         }
-        sx={{
-          '& .MuiPaper-root': {
-            backgroundColor: '#333',
-            color: '#ccc',
-          },
-        }}
+        
       >
         <MenuItem onClick={() => contextMenu && handleOpenCommentDialog(contextMenu.moveIndex)}>
           <ListItemIcon>
@@ -833,12 +767,7 @@ const PGNView: React.FC<PGNViewProps> = ({
         onClose={handleCloseCommentDialog}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: '#2a2a2a',
-            color: '#ccc',
-          },
-        }}
+       
       >
         <DialogTitle>
           {selectedMoveIndex !== null && (

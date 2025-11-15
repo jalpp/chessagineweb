@@ -8,7 +8,7 @@ import {
     Alert
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import { purpleTheme } from "@/theme/theme";
+
 
 interface PGNUploaderProps {
     loadPGN: (pgn: string) => void;
@@ -52,14 +52,13 @@ const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
             elevation={3}
             sx={{
                 p: 3,
-                backgroundColor: purpleTheme.background.paper,
-                color: purpleTheme.text.primary,
+              
             }}
         >
             <Typography 
                 variant="h6" 
                 sx={{ 
-                    color: purpleTheme.text.primary,
+                   
                     mb: 2,
                     textAlign: "center"
                 }}
@@ -70,7 +69,7 @@ const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
             <Typography 
                 variant="subtitle2" 
                 sx={{ 
-                    color: purpleTheme.text.secondary,
+                 
                     mb: 3,
                     textAlign: "center"
                 }}
@@ -83,11 +82,7 @@ const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
                     severity="error" 
                     sx={{ 
                         mb: 2,
-                        backgroundColor: purpleTheme.background.card,
-                        color: purpleTheme.text.primary,
-                        '& .MuiAlert-icon': {
-                            color: purpleTheme.accent
-                        }
+                       
                     }}
                 >
                     {error}
@@ -100,11 +95,7 @@ const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
                     component="label"
                     startIcon={<UploadFileIcon />}
                     sx={{
-                        backgroundColor: purpleTheme.primary,
-                        color: purpleTheme.text.primary,
-                        '&:hover': {
-                            backgroundColor: purpleTheme.primaryDark,
-                        },
+                       
                         minWidth: 200,
                         py: 1.5,
                     }}
@@ -122,22 +113,19 @@ const UserPGNUploader: React.FC<PGNUploaderProps> = ({ loadPGN }) => {
                     <Box
                         sx={{
                             p: 2,
-                            backgroundColor: purpleTheme.background.card,
                             borderRadius: 1,
-                            border: `1px solid ${purpleTheme.secondary}`,
                             textAlign: "center",
                         }}
                     >
                         <Typography 
                             variant="body2" 
-                            sx={{ color: purpleTheme.text.secondary }}
+                          
                         >
                             Selected file:
                         </Typography>
                         <Typography 
                             variant="body1" 
                             sx={{ 
-                                color: purpleTheme.text.accent,
                                 fontWeight: "medium"
                             }}
                         >

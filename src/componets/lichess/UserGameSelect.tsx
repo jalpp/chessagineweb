@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import UserLichessGames from "./UserLichessGames";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import { purpleTheme } from "@/theme/theme";
+
 
 interface UserGameSelectProps {
   loadPGN: (pgn: string) => void;
@@ -29,11 +29,7 @@ const UserGameSelect: React.FC<UserGameSelectProps> = ({ loadPGN }) => {
           onClick={handleOpen}
           startIcon={<SportsEsportsIcon />}
           sx={{
-            backgroundColor: purpleTheme.primary,
-            color: purpleTheme.text.primary,
-            '&:hover': {
-              backgroundColor: purpleTheme.primaryDark,
-            },
+           
             py: 1.5,
             fontWeight: 'medium',
           }}
@@ -50,21 +46,19 @@ const UserGameSelect: React.FC<UserGameSelectProps> = ({ loadPGN }) => {
         slotProps={{
           paper: {
             sx: {
-              backgroundColor: purpleTheme.background.main,
-              color: purpleTheme.text.primary,
+              
               padding: 2,
               borderRadius: 2,
-              border: `1px solid ${purpleTheme.secondary}`,
+          
             },
           },
         }}
       >
         <DialogTitle 
           sx={{ 
-            color: purpleTheme.text.primary,
+      
             textAlign: 'center',
             fontWeight: 'bold',
-            borderBottom: `1px solid ${purpleTheme.secondary}`,
             pb: 2,
             mb: 2,
           }}
@@ -79,7 +73,7 @@ const UserGameSelect: React.FC<UserGameSelectProps> = ({ loadPGN }) => {
         <DialogActions 
           sx={{ 
             pt: 2,
-            borderTop: `1px solid ${purpleTheme.secondary}`,
+   
             justifyContent: 'center',
           }}
         >
@@ -87,13 +81,7 @@ const UserGameSelect: React.FC<UserGameSelectProps> = ({ loadPGN }) => {
             onClick={handleClose} 
             variant="outlined"
             sx={{ 
-              color: purpleTheme.text.secondary,
-              borderColor: purpleTheme.secondary,
-              '&:hover': {
-                borderColor: purpleTheme.primary,
-                backgroundColor: purpleTheme.background.card,
-                color: purpleTheme.text.primary,
-              },
+            
               minWidth: 100,
             }}
           >

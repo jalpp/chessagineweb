@@ -6,7 +6,6 @@ import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { useSession } from "@clerk/nextjs";
-import { purpleTheme } from "@/theme/theme";
 import Loader from "@/componets/loading/Loader";
 import Warning from "@/componets/loading/SignUpWarning";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
@@ -73,7 +72,6 @@ export default function PositionPage() {
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 4 }, 
-        backgroundColor: purpleTheme.background.main,
         minHeight: "100vh",
       }}
     >

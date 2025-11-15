@@ -812,7 +812,7 @@ useEffect(() => {
         maxHeight: '100vw',
         border: "1px solid #444",
         borderRadius: 2,
-        backgroundColor: "#1a1a1a",
+   
         overflow: "hidden",
         userSelect: isResizing ? "none" : "auto",
       }}
@@ -843,7 +843,7 @@ useEffect(() => {
         <Paper
           sx={{
             p: 1.5,
-            backgroundColor: "#1a1a1a",
+           
             borderRadius: 2,
             mb: 2,
           }}
@@ -858,8 +858,7 @@ useEffect(() => {
               label={modeInfo.label}
               size="small"
               sx={{
-                backgroundColor: `${modeInfo.color}20`,
-                color: modeInfo.color,
+                
                 fontSize: "0.65rem",
                 fontWeight: 600,
               }}
@@ -867,7 +866,7 @@ useEffect(() => {
             <Box sx={{ flexGrow: 1 }} />
             <IconButton
               onClick={() => setSettingsOpen(true)}
-              sx={{ color: "white", p: 0.5 }}
+              sx={{ p: 0.5 }}
               size="small"
             >
               <SettingsIcon fontSize="small" />
@@ -877,7 +876,7 @@ useEffect(() => {
           {/* Board Info */}
           <Stack direction="row" alignItems="center" spacing={2}>
             {(puzzleMode || playMode) && (
-              <Typography variant="caption" sx={{ color: "grey.400" }}>
+              <Typography variant="caption">
                 {getBoardOrientation()} To Play
               </Typography>
             )}
@@ -935,15 +934,7 @@ useEffect(() => {
                 startIcon={<NavigateBefore fontSize="small" />}
                 fullWidth
                 size="small"
-                sx={{
-                  backgroundColor: "#9c27b0",
-                  "&:hover": {
-                    backgroundColor: "#7b1fa2",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "rgba(156, 39, 176, 0.3)",
-                  },
-                }}
+             
               >
                 Previous
               </Button>
@@ -954,15 +945,7 @@ useEffect(() => {
                 endIcon={<NavigateNext fontSize="small" />}
                 fullWidth
                 size="small"
-                sx={{
-                  backgroundColor: "#9c27b0",
-                  "&:hover": {
-                    backgroundColor: "#7b1fa2",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "rgba(156, 39, 176, 0.3)",
-                  },
-                }}
+               
               >
                 Next
               </Button>
@@ -977,19 +960,18 @@ useEffect(() => {
               <Paper
                 sx={{
                   p: 1.5,
-                  backgroundColor: "#1a1a1a",
+                 
                   borderRadius: 2,
                 }}
               >
-                <Typography variant="caption" sx={{ color: "grey.300", mb: 1 }}>
+                <Typography variant="caption" sx={{ mb: 1 }}>
                   Current Position (FEN)
                 </Typography>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: "white",
                     fontFamily: "monospace",
-                    backgroundColor: "rgba(255,255,255,0.05)",
+                  
                     p: 1,
                     borderRadius: 1,
                     wordBreak: "break-all",
@@ -1008,13 +990,13 @@ useEffect(() => {
                 <Paper
                   sx={{
                     p: 1.5,
-                    backgroundColor: "#1a1a1a",
+                    
                     borderRadius: 2,
                   }}
                 >
                   <Typography
                     variant="caption"
-                    sx={{ color: "grey.300", mb: 1.5, display: "block" }}
+                    sx={{ mb: 1.5, display: "block" }}
                   >
                     Piece Analysis
                   </Typography>
@@ -1038,7 +1020,7 @@ useEffect(() => {
                               key={index}
                               variant="caption"
                               sx={{
-                                color: "white",
+                                
                                 fontSize: "0.65rem",
                                 display: "block",
                                 ml: 1,
@@ -1071,7 +1053,7 @@ useEffect(() => {
                               key={index}
                               variant="caption"
                               sx={{
-                                color: "white",
+                              
                                 fontSize: "0.65rem",
                                 display: "block",
                                 ml: 1,
@@ -1100,7 +1082,7 @@ useEffect(() => {
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "grey.400",
+                     
                         fontSize: "0.6rem",
                         display: "block",
                       }}
@@ -1126,7 +1108,7 @@ useEffect(() => {
                           />
                           <Typography
                             variant="caption"
-                            sx={{ color: "grey.400", fontSize: "0.6rem" }}
+                            sx={{  fontSize: "0.6rem" }}
                           >
                             Critical
                           </Typography>
@@ -1151,7 +1133,7 @@ useEffect(() => {
                           />
                           <Typography
                             variant="caption"
-                            sx={{ color: "grey.400", fontSize: "0.6rem" }}
+                            sx={{ fontSize: "0.6rem" }}
                           >
                             Contested
                           </Typography>
@@ -1202,7 +1184,7 @@ useEffect(() => {
         <OpenInFullIcon
           sx={{
             fontSize: "10px",
-            color: "#ccc",
+           
             transform: "rotate(180deg)",
           }}
         />
@@ -1214,8 +1196,7 @@ useEffect(() => {
         onClose={handleSettingsClose}
         PaperProps={{
           sx: {
-            backgroundColor: "#1a1a1a",
-            color: "white",
+            
             minWidth: 450,
             maxHeight: "90vh",
           },
@@ -1226,35 +1207,17 @@ useEffect(() => {
           <Stack spacing={3} sx={{ pt: 1 }}>
             {/* Board Theme Selection */}
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{  mb: 2 }}>
                 Board Theme
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel sx={{ color: "grey.300" }}>theme</InputLabel>
+                <InputLabel >theme</InputLabel>
                 <Select
                   value={boardTheme}
                   onChange={(e) => setBoardTheme(e.target.value)}
                   label="Voice"
-                  sx={{
-                    color: "white",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.2)",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.3)",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#9c27b0",
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        backgroundColor: "#2a2a2a",
-                        color: "white",
-                      },
-                    },
-                  }}
+                  
+                 
                 >
                   {Object.entries(BOARD_THEMES).map(([key, theme]) => (
                     <MenuItem key={key} value={key}>
@@ -1266,35 +1229,15 @@ useEffect(() => {
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Piece Style
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel sx={{ color: "grey.300" }}>piece style</InputLabel>
+                <InputLabel >piece style</InputLabel>
                 <Select
                   value={pieceType}
                   onChange={(e) => setPieceType(e.target.value)}
-                  label="Pieces"
-                  sx={{
-                    color: "white",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.2)",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.3)",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#9c27b0",
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        backgroundColor: "#2a2a2a",
-                        color: "white",
-                      },
-                    },
-                  }}
+                  label="Pieces" 
                 >
                   {Object.entries(PIECE_STYLE_TYPES).map(
                     ([key, piece]) => (
@@ -1308,7 +1251,7 @@ useEffect(() => {
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
                 Animation Speed: {animationDuration}ms
               </Typography>
               <Slider
@@ -1317,14 +1260,12 @@ useEffect(() => {
                 min={0}
                 max={1000}
                 step={50}
-                sx={{
-                  color: "#9c27b0",
-                }}
+                
               />
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" sx={{  mb: 2 }}>
                 Display Options
               </Typography>
               <Stack spacing={2}>
@@ -1333,21 +1274,13 @@ useEffect(() => {
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Show Coordinates
                   </Typography>
                   <Switch
                     checked={showCoordinates}
                     onChange={(e) => setShowCoordinates(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+               
                   />
                 </Stack>
 
@@ -1356,21 +1289,13 @@ useEffect(() => {
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" sx={{ color: "grey.300" }}>
+                  <Typography variant="body2" >
                     Show FEN String
                   </Typography>
                   <Switch
                     checked={showFen}
                     onChange={(e) => setShowFen(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#9c27b0",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#9c27b0",
-                        },
-                    }}
+                 
                   />
                 </Stack>
 
@@ -1380,21 +1305,13 @@ useEffect(() => {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Show Analysis Arrows
                     </Typography>
                     <Switch
                       checked={showArrows}
                       onChange={(e) => setShowArrows(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#9c27b0",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#9c27b0",
-                          },
-                      }}
+                    
                     />
                   </Stack>
                 )}
@@ -1405,30 +1322,21 @@ useEffect(() => {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Show Eval Bar
                     </Typography>
                     <Switch
                       checked={showEvalBar}
                       onChange={(e) => setEvalBar(e.target.checked)}
-                      sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: "#9c27b0",
-                        },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: "#9c27b0",
-                          },
-                      }}
+                     
                     />
                   </Stack>
                 )}
               </Stack>
             </Box>
 
-            {/* Piece Highlighting Options */}
             <Box>
-              <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+              <Typography variant="body2" >
                 Piece Highlighting
               </Typography>
               <Stack spacing={2}>
@@ -1438,12 +1346,12 @@ useEffect(() => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Hanging Pieces
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ color: "grey.500", fontSize: "0.7rem" }}
+                      sx={{ fontSize: "0.7rem" }}
                     >
                       Critical threats - undefended pieces
                     </Typography>
@@ -1469,12 +1377,12 @@ useEffect(() => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" sx={{ color: "grey.300" }}>
+                    <Typography variant="body2" >
                       Semi-Protected Pieces
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ color: "grey.500", fontSize: "0.7rem" }}
+                      sx={{  fontSize: "0.7rem" }}
                     >
                       Equal attackers and defenders
                     </Typography>
@@ -1503,7 +1411,7 @@ useEffect(() => {
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
 
                 <Box>
-                  <Typography variant="body2" sx={{ color: "grey.300", mb: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
                     Board Controls
                   </Typography>
 
@@ -1514,14 +1422,7 @@ useEffect(() => {
                       onClick={flipBoard}
                       startIcon={<RotateLeft />}
                       fullWidth
-                      sx={{
-                        color: "#9c27b0",
-                        borderColor: "#9c27b0",
-                        "&:hover": {
-                          borderColor: "#7b1fa2",
-                          backgroundColor: "rgba(156, 39, 176, 0.1)",
-                        },
-                      }}
+                    
                     >
                       Flip Board
                     </Button>
@@ -1534,28 +1435,8 @@ useEffect(() => {
                       onChange={(e) => setCustomFen(e.target.value)}
                       size="small"
                       fullWidth
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "rgba(255,255,255,0.05)",
-                          "& fieldset": {
-                            borderColor: "rgba(255,255,255,0.2)",
-                          },
-                          "&:hover fieldset": {
-                            borderColor: "rgba(255,255,255,0.3)",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#9c27b0",
-                          },
-                        },
-                      }}
-                      slotProps={{
-                        input: {
-                          sx: { color: "white" },
-                        },
-                        inputLabel: {
-                          sx: { color: "grey.400" },
-                        },
-                      }}
+                    
+                      
                       placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                     />
 
@@ -1565,15 +1446,7 @@ useEffect(() => {
                       startIcon={<Upload />}
                       disabled={!customFen.trim()}
                       fullWidth
-                      sx={{
-                        backgroundColor: "#9c27b0",
-                        "&:hover": {
-                          backgroundColor: "#7b1fa2",
-                        },
-                        "&:disabled": {
-                          backgroundColor: "rgba(156, 39, 176, 0.3)",
-                        },
-                      }}
+                      
                     >
                       Load FEN
                     </Button>
@@ -1584,7 +1457,7 @@ useEffect(() => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSettingsClose} sx={{ color: "#9c27b0" }}>
+          <Button onClick={handleSettingsClose} >
             Done
           </Button>
         </DialogActions>

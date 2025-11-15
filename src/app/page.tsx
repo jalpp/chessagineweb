@@ -17,8 +17,6 @@ import {
 import ChatIcon from "@mui/icons-material/Chat";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import SchoolIcon from "@mui/icons-material/School";
-import AnalyticsIcon from "@mui/icons-material/Analytics";
-import ViewBoardIcon from "@mui/icons-material/Bolt";
 import SearchIcon from "@mui/icons-material/Search";
 import StorageIcon from "@mui/icons-material/Storage";
 import PsychologyIcon from "@mui/icons-material/Psychology";
@@ -27,138 +25,20 @@ import ApiIcon from "@mui/icons-material/Api";
 import SecurityIcon from "@mui/icons-material/Security";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { FaPuzzlePiece, FaQuestion } from "react-icons/fa6";
+import { FaPuzzlePiece} from "react-icons/fa6";
 import { Cloud, SwapCallsOutlined } from "@mui/icons-material";
+import HomeView from "@/componets/view/HomeView";
 
 export default function HomePage() {
-  const { isSignedIn, isLoaded, user } = useUser();
+  const { isSignedIn, isLoaded} = useUser();
   const clerk = useClerk();
   const router = useRouter();
 
-  // Dashboard for logged-in users
+
   if (isSignedIn && isLoaded) {
     return (
-      <main>
-        <Box bgcolor="#7c3aed" color="white" py={8}>
-          <Container maxWidth="md">
-            <Stack spacing={3} alignItems="center">
-              <Avatar
-                sx={{
-                  bgcolor: "#f5deb3",
-                  color: "#7c3aed",
-                  width: 72,
-                  height: 72,
-                }}
-                src="/static/images/agineowl.png"
-              ></Avatar>
-              <Typography variant="h4" fontWeight="bold" textAlign="center">
-                Welcome back, {user?.firstName || "Chess Player"}!
-              </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9 }} textAlign="center">
-                Ready to train with Agine today?
-              </Typography>
-            </Stack>
-          </Container>
-        </Box>
-
-        <Box py={8} bgcolor="#f5deb3">
-          <Container maxWidth="md">
-            <Stack
-              direction={{ xs: "column", md: "row" }}
-              spacing={4}
-              alignItems="stretch"
-              justifyContent="center"
-            >
-              {[
-                {
-                  icon: <ViewBoardIcon sx={{ fontSize: 48 }} />,
-                  title: "Position Board",
-                  description:
-                    "Set up any position and analyze it with Agine. ",
-                  onClick: () => router.push("/position"),
-                },
-                {
-                  icon: <AnalyticsIcon sx={{ fontSize: 48 }} />,
-                  title: "Game Analysis",
-                  description:
-                    "Upload your games or paste PGN to get detailed analysis .",
-                  onClick: () => router.push("/game"),
-                },
-                {
-                  icon: <FaPuzzlePiece style={{ fontSize: 48 }} />,
-                  title: "Interactive Puzzles",
-                  description:
-                    "Do chess theme based Lichess puzzles interactivly with Agine",
-                  onClick: () => router.push("/puzzle"),
-                },
-                {
-                  icon: <FaQuestion style={{ fontSize: 48 }} />,
-                  title: "Docs",
-                  description:
-                    "Stuck on how to use ChessAgine GUI?, read the docs to set up your API key",
-                  onClick: () => router.push("/docs"),
-                },
-              ].map((card) => (
-                <Card
-                  key={card.title}
-                  elevation={6}
-                  sx={{
-                    flex: 1,
-                    minWidth: 220,
-                    maxWidth: 340,
-                    height: { xs: "auto", md: 320 },
-                    background:
-                      "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)",
-                    color: "white",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    borderRadius: 3,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    "&:hover": {
-                      transform: "translateY(-8px) scale(1.02)",
-                      boxShadow: "0 20px 40px rgba(124, 58, 237, 0.3)",
-                    },
-                  }}
-                  onClick={card.onClick}
-                >
-                  <CardContent
-                    sx={{
-                      p: 4,
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <Box mb={2}>{card.icon}</Box>
-                    <Typography
-                      variant="h5"
-                      fontWeight="bold"
-                      textAlign="center"
-                      gutterBottom
-                    >
-                      {card.title}
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ opacity: 0.9 }}
-                      textAlign="center"
-                    >
-                      {card.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          </Container>
-        </Box>
-      </main>
-    );
+      <HomeView/>
+    )
   }
 
   return (
@@ -230,7 +110,7 @@ export default function HomePage() {
                     mt: 2,
                   }}
                 >
-                  Your AI-Powered Chess buddy
+                  An AI-Powered Modern FOSS Chess GUI
                 </Typography>
               </Box>
 
@@ -243,13 +123,12 @@ export default function HomePage() {
                   fontSize: { xs: "1.2rem", md: "1.5rem" },
                 }}
               >
-                Plug-and-play chess training with your choice of AI provider.
-                Convert any LLM model into chess-aware Chessbuddy, get started with ChessAgine for
-                FREE using ChessAgine Cloud.
+                ChessAgine GUI is the modern Free Open Source Software Chess GUI that integrates
+                LLMs + chess Engines into one unified ChessAgine
               </Typography>
             </Stack>
 
-            {/* Feature Pills */}
+          
             <Stack
               direction="row"
               spacing={2}

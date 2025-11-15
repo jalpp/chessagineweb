@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Box, Typography, TextField, Button } from "@mui/material";
-import { purpleTheme } from "@/theme/theme";
 import { Analytics } from "@mui/icons-material";
 import { parsePgnChapters } from "@/libs/game/helper";
 
@@ -24,7 +23,6 @@ function LoadStudy({setChapters, setInputsVisible}: GameLoaderProp) {
       <Typography
         variant="h6"
         sx={{
-          color: purpleTheme.text.accent,
           mb: 2,
           display: "flex",
           alignItems: "center",
@@ -40,32 +38,17 @@ function LoadStudy({setChapters, setInputsVisible}: GameLoaderProp) {
         onChange={(e) => setStudyUrl(e.target.value)}
         placeholder="https://lichess.org/study/GuglnqGD"
         sx={{
-          backgroundColor: purpleTheme.background.input,
+          
           borderRadius: 2,
           mb: 2,
-          "& .MuiOutlinedInput-root": {
-            "& fieldset": {
-              borderColor: purpleTheme.secondary,
-            },
-            "&:hover fieldset": {
-              borderColor: purpleTheme.accent,
-            },
-            "&.Mui-focused fieldset": {
-              borderColor: purpleTheme.accent,
-            },
-          },
+         
         }}
-        slotProps={{
-          inputLabel: { sx: { color: purpleTheme.text.secondary } },
-          input: { sx: { color: purpleTheme.text.primary } },
-        }}
+        
       />
       <Button
         variant="contained"
         fullWidth
         sx={{
-          backgroundColor: purpleTheme.primary,
-          "&:hover": { backgroundColor: purpleTheme.primaryDark },
           borderRadius: 2,
           py: 1.5,
           textTransform: "none",

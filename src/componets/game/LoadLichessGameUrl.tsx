@@ -2,7 +2,6 @@ import { Box, Typography, Button, TextField } from "@mui/material";
 import { useState } from "react";
 import { CircularProgress } from "@mui/material";
 import { Gamepad } from "@mui/icons-material";
-import { purpleTheme } from "@/theme/theme";
 import {
   getValidGameId,
   fetchLichessGame,
@@ -120,7 +119,6 @@ function LoadLichessGameUrl({
       <Typography
         variant="h6"
         sx={{
-          color: purpleTheme.text.accent,
           mb: 2,
           display: "flex",
           alignItems: "center",
@@ -136,25 +134,11 @@ function LoadLichessGameUrl({
         onChange={(e) => setGameUrl(e.target.value)}
         placeholder="https://lichess.org/abcdefgh or https://lichess.org/abcdefgh1234"
         sx={{
-          backgroundColor: purpleTheme.background.input,
+         
           borderRadius: 2,
           mb: 2,
-          "& .MuiOutlinedInput-root": {
-            "& fieldset": {
-              borderColor: purpleTheme.secondary,
-            },
-            "&:hover fieldset": {
-              borderColor: purpleTheme.accent,
-            },
-            "&.Mui-focused fieldset": {
-              borderColor: purpleTheme.accent,
-            },
-          },
         }}
-        slotProps={{
-          inputLabel: { sx: { color: purpleTheme.text.secondary } },
-          input: { sx: { color: purpleTheme.text.primary } },
-        }}
+      
       />
       <Button
         variant="contained"
@@ -163,8 +147,6 @@ function LoadLichessGameUrl({
         disabled={loadingGame}
         startIcon={loadingGame ? <CircularProgress size={20} /> : null}
         sx={{
-          backgroundColor: purpleTheme.primary,
-          "&:hover": { backgroundColor: purpleTheme.primaryDark },
           borderRadius: 2,
           py: 1.5,
           textTransform: "none",

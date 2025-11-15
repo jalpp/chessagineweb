@@ -20,7 +20,7 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
-import { purpleTheme } from "@/theme/theme";
+
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { useLocalStorage } from "usehooks-ts";
 import { GameReviewTheme } from "@/libs/themes/helper";
@@ -116,12 +116,12 @@ const [saveTitle, setSaveTitle] = useState("");
         fullWidth
         PaperProps={{
           sx: {
-            backgroundColor: purpleTheme.background.paper,
+        
             borderRadius: 3,
           },
         }}
       >
-        <DialogTitle sx={{ color: purpleTheme.text.primary }}>
+        <DialogTitle >
           Save Game Review
         </DialogTitle>
         <DialogContent>
@@ -129,7 +129,7 @@ const [saveTitle, setSaveTitle] = useState("");
             <Typography
               variant="body2"
               component="div"
-              sx={{ color: purpleTheme.text.secondary, mb: 2 }}
+              sx={{ mb: 2 }}
             >
               Give your game review a title for easy identification
             </Typography>
@@ -144,38 +144,22 @@ const [saveTitle, setSaveTitle] = useState("");
             placeholder={generateGameTitle()}
             sx={{
               mt: 1,
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: purpleTheme.secondary,
-                },
-                "&:hover fieldset": {
-                  borderColor: purpleTheme.accent,
-                },
-                "&.Mui-focused fieldset": {
-                  borderColor: purpleTheme.accent,
-                },
-              },
+           
             }}
-            slotProps={{
-              inputLabel: { sx: { color: purpleTheme.text.secondary } },
-              input: { sx: { color: purpleTheme.text.primary } },
-            }}
+            
           />
         </DialogContent>
         <DialogActions>
           <Button
             onClick={() => setSaveDialogOpen(false)}
-            sx={{ color: purpleTheme.text.secondary }}
+           
           >
             Cancel
           </Button>
           <Button
             onClick={handleSaveConfirm}
             variant="contained"
-            sx={{
-              backgroundColor: purpleTheme.accent,
-              "&:hover": { backgroundColor: `${purpleTheme.accent}dd` },
-            }}
+           
           >
             Save Review
           </Button>
@@ -191,27 +175,21 @@ const [saveTitle, setSaveTitle] = useState("");
         slotProps={{
           paper: {
             sx: {
-              backgroundColor: purpleTheme.background.paper,
+             
               borderRadius: 3,
               maxHeight: "80vh",
             },
           },
         }}
       >
-        <DialogTitle sx={{ color: purpleTheme.text.primary }}>
+        <DialogTitle >
           Saved Game Reviews
         </DialogTitle>
         <DialogContent>
           {gameReviewHistory.length === 0 ? (
             <Alert
               severity="info"
-              sx={{
-                backgroundColor: `${purpleTheme.accent}20`,
-                color: purpleTheme.text.primary,
-                "& .MuiAlert-icon": {
-                  color: purpleTheme.accent,
-                },
-              }}
+              
             >
               No saved game reviews yet. Analyze a game and save the review to
               build your history!
@@ -222,23 +200,16 @@ const [saveTitle, setSaveTitle] = useState("");
                 <ListItem
                   key={savedGame.id}
                   sx={{
-                    backgroundColor: purpleTheme.background.card,
+                    
                     borderRadius: 2,
                     mb: 1,
-                    "&:hover": {
-                      backgroundColor: `${purpleTheme.secondary}20`,
-                    },
+                   
                   }}
                   secondaryAction={
                     <Stack direction="row" spacing={1}>
                       <IconButton
                         onClick={() => loadFromHistory(savedGame)}
-                        sx={{
-                          color: purpleTheme.accent,
-                          "&:hover": {
-                            backgroundColor: `${purpleTheme.accent}20`,
-                          },
-                        }}
+                        
                       >
                         <ViewIcon />
                       </IconButton>
@@ -246,9 +217,7 @@ const [saveTitle, setSaveTitle] = useState("");
                         onClick={() => deleteFromHistory(savedGame.id)}
                         sx={{
                           color: "#f44336",
-                          "&:hover": {
-                            backgroundColor: "#f4433620",
-                          },
+                          
                         }}
                       >
                         <DeleteIcon />
@@ -263,7 +232,7 @@ const [saveTitle, setSaveTitle] = useState("");
                           variant="h6"
                           component="div"
                           sx={{
-                            color: purpleTheme.text.primary,
+                           
                             fontWeight: 600,
                           }}
                         >
@@ -277,7 +246,7 @@ const [saveTitle, setSaveTitle] = useState("");
                           variant="body2"
                           component="span"
                           sx={{
-                            color: purpleTheme.text.secondary,
+                            
                             display: "block",
                           }}
                         >
@@ -298,8 +267,7 @@ const [saveTitle, setSaveTitle] = useState("");
                             } vs ${savedGame.gameInfo.Black || "unknown"}`}
                             size="small"
                             sx={{
-                              backgroundColor: `${purpleTheme.accent}30`,
-                              color: purpleTheme.text.primary,
+                      
                               fontSize: "0.75rem",
                             }}
                           />
@@ -308,8 +276,7 @@ const [saveTitle, setSaveTitle] = useState("");
                               label={`Result: ${savedGame.gameInfo.Result}`}
                               size="small"
                               sx={{
-                                backgroundColor: `${purpleTheme.secondary}30`,
-                                color: purpleTheme.text.primary,
+                              
                                 fontSize: "0.75rem",
                               }}
                             />
@@ -318,8 +285,7 @@ const [saveTitle, setSaveTitle] = useState("");
                             label={`${savedGame.moves.length} moves`}
                             size="small"
                             sx={{
-                              backgroundColor: `${purpleTheme.primary}30`,
-                              color: purpleTheme.text.primary,
+                             
                               fontSize: "0.75rem",
                             }}
                           />
@@ -335,7 +301,7 @@ const [saveTitle, setSaveTitle] = useState("");
         <DialogActions>
           <Button
             onClick={() => setHistoryDialogOpen(false)}
-            sx={{ color: purpleTheme.text.secondary }}
+         
           >
             Close
           </Button>

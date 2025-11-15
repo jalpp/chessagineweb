@@ -17,7 +17,7 @@ import TimerIcon from "@mui/icons-material/Timer";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import HistoryIcon from "@mui/icons-material/History";
 import CasinoIcon from "@mui/icons-material/Casino";
-import { purpleTheme } from "@/theme/theme";
+
 import {useTheme} from "@mui/material";
 
 interface UserGameProp {
@@ -53,15 +53,15 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
   const getSpeedIcon = (speed: string) => {
     switch (speed) {
       case "bullet":
-        return <FlashOnIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
+        return <FlashOnIcon fontSize="small" sx={{ mr: 1,  }} />;
       case "blitz":
-        return <TimerIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
+        return <TimerIcon fontSize="small" sx={{ mr: 1, }} />;
       case "rapid":
-        return <RocketLaunchIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
+        return <RocketLaunchIcon fontSize="small" sx={{ mr: 1, }} />;
       case "classical":
-        return <HistoryIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
+        return <HistoryIcon fontSize="small" sx={{ mr: 1 }} />;
       default:
-        return <CasinoIcon fontSize="small" sx={{ mr: 1, color: purpleTheme.primary }} />;
+        return <CasinoIcon fontSize="small" sx={{ mr: 1 }} />;
     }
   };
 
@@ -70,8 +70,6 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
       elevation={3}
       sx={{
         p: 3,
-        backgroundColor: purpleTheme.background.paper,
-        color: purpleTheme.text.primary,
         maxWidth: "100%",
         mx: "auto",
         [theme.breakpoints.down("sm")]: {
@@ -86,39 +84,19 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
             variant="outlined"
             value={lichessUsername}
             onChange={(e) => setLichessUsername(e.target.value)}
-            InputLabelProps={{ 
-              style: { color: purpleTheme.text.secondary } 
-            }}
-            InputProps={{
-              style: {
-                color: purpleTheme.text.primary,
-                backgroundColor: purpleTheme.background.input,
-              },
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: purpleTheme.secondary,
-                },
-                '&:hover fieldset': {
-                  borderColor: purpleTheme.primary,
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: purpleTheme.primary,
-                },
-              },
-            }}
+           
+           
           />
         </FormControl>
       </Box>
 
       {!lichessUsername ? (
-        <Typography textAlign="center" color={purpleTheme.text.secondary}>
+        <Typography textAlign="center" >
           Enter a username to load recent games
         </Typography>
       ) : games.length === 0 ? (
         <Box display="flex" justifyContent="center" mt={4}>
-          <CircularProgress sx={{ color: purpleTheme.primary }} />
+          <CircularProgress  />
         </Box>
       ) : (
         <List sx={{ maxHeight: 400, overflowY: "auto", px: 1 }}>
@@ -131,12 +109,9 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
               }}
               sx={{
                 mb: 1,
-                backgroundColor: purpleTheme.background.card,
-                color: purpleTheme.text.primary,
+           
                 borderRadius: "8px",
-                "&:hover": {
-                  backgroundColor: purpleTheme.primaryDark,
-                },
+               
                 [theme.breakpoints.down("sm")]: {
                   mb: 0.5,
                   p: 1,
@@ -160,12 +135,10 @@ export default function UserLichessGames({ loadPGN, setOpen }: UserGameProp) {
                 primaryTypographyProps={{
                   fontWeight: "bold",
                   noWrap: true,
-                  color: purpleTheme.text.primary,
                   fontSize: "0.9rem",
                 }}
                 secondaryTypographyProps={{
                   noWrap: true,
-                  color: purpleTheme.text.secondary,
                   fontSize: "0.8rem",
                 }}
               />

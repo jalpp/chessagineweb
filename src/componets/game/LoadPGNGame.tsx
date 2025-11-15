@@ -1,5 +1,5 @@
 import { Box, Typography, Button, TextField } from "@mui/material";
-import { purpleTheme } from "@/theme/theme";
+
 import { Upload } from "@mui/icons-material";
 
 interface LoadPGNProp {
@@ -17,7 +17,7 @@ function LoadPGNGame({pgnText, setPgnText, loadPGN, setInputsVisible}: LoadPGNPr
       <Typography
         variant="h6"
         sx={{
-          color: purpleTheme.text.accent,
+         
           mb: 2,
           display: "flex",
           alignItems: "center",
@@ -34,26 +34,13 @@ function LoadPGNGame({pgnText, setPgnText, loadPGN, setInputsVisible}: LoadPGNPr
         value={pgnText}
         onChange={(e) => setPgnText(e.target.value)}
         sx={{
-          backgroundColor: purpleTheme.background.input,
+         
           borderRadius: 2,
           mb: 2,
-          "& .MuiOutlinedInput-root": {
-            "& fieldset": {
-              borderColor: purpleTheme.secondary,
-            },
-            "&:hover fieldset": {
-              borderColor: purpleTheme.accent,
-            },
-            "&.Mui-focused fieldset": {
-              borderColor: purpleTheme.accent,
-            },
-          },
+         
         }}
         placeholder="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6..."
-        slotProps={{
-          input: { sx: { color: purpleTheme.text.primary } },
-          inputLabel: { sx: { color: purpleTheme.text.secondary } },
-        }}
+        
       />
       <Button
         variant="contained"
@@ -67,8 +54,6 @@ function LoadPGNGame({pgnText, setPgnText, loadPGN, setInputsVisible}: LoadPGNPr
           }
         }}
         sx={{
-          backgroundColor: purpleTheme.primary,
-          "&:hover": { backgroundColor: purpleTheme.primaryDark },
           borderRadius: 2,
           py: 1.5,
           textTransform: "none",
