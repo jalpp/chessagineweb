@@ -53,6 +53,20 @@ ChessAgine works with multiple AI providers:
 
 > ✅ ChessAgine now supports Open router to connect to multiple providers at a time
 
+## Chess trained LLM Models
+ChessAgine GUI connects to [NAKSTStudio/chess-gemma-commentary](https://huggingface.co/NAKSTStudio/chess-gemma-commentary)
+which can be used in Game review mode.
+
+A Fine-tuned Gemma 3 270M model for generating chess move commentary, ELO predictions, and move classifications in 14 languages. 
+
+@model{chess_gemma_commentary_2025,
+  title={Chess Gemma Commentary: Multilingual Chess Analysis},
+  author={NAKST Studio},
+  year={2025},
+  howpublished={Hugging Face Hub}
+}
+
+
 ## Using Ollama Locally (No API Key Required)
 
 ChessAgine supports **Ollama** as a free, open-source option to run LLMs locally or via Ollama Cloud.  
@@ -122,6 +136,8 @@ A huge thanks to everyone who helped make ChessAgine possible:
 * **Mastra devs** [https://mastra.ai/](https://mastra.ai/) for the Agent framework powering AI features.
 
 * **Chessboardmagic devs** [Toan Hoang](https://github.com/HollowLeaf1981/ChessPieces) for free open source chess pieces.
+
+* **NAKSTStudio Devs** [https://huggingface.co/NAKSTStudio](https://huggingface.co/NAKSTStudio/activity/likes) for Free open source chess commentary trained model
 
 ---
 
