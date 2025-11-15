@@ -68,13 +68,7 @@ interface BaseAnalysisViewProps {
   chatMessages: ChatMessage[];
   chatInput: string;
   setChatInput: (input: string) => void;
-  sendChatMessage: (
-    gameInfo?: string,
-    currentMove?: string,
-    puzzleMode?: boolean,
-    puzzleQuery?: string,
-    playMode?: boolean,
-  ) => Promise<void>;
+  sendChatMessage: (gameInfo?: string | undefined, currentMove?: string | undefined, puzzleMode?: boolean | undefined, puzzleQuery?: string | undefined, playMode?: boolean | undefined, currentMoveIndex?: number | undefined) => Promise<void>;
   chatLoading: boolean;
   abortChatMessage: () => void;
   handleChatKeyPress: (e: React.KeyboardEvent) => void;
@@ -84,7 +78,6 @@ interface BaseAnalysisViewProps {
   llmLoading: boolean;
 }
 
-// Game Review specific props
 interface GameReviewProps {
   moves?: string[];
   currentMoveIndex?: number;
@@ -641,6 +634,7 @@ function AgineAnalysisView({
             setChatInput={setChatInput}
             sendChatMessage={sendChatMessage}
             chatLoading={chatLoading}
+            currentMoveIndex={currentMoveIndex}
             abortChatMessage={abortChatMessage}
             puzzleMode={false}
             handleChatKeyPress={handleChatKeyPress}

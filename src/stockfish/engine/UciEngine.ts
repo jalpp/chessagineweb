@@ -65,7 +65,7 @@ export abstract class UciEngine {
      * @param worker The engine worker.
      * @param debug Whether to print debug logs to the console. Defaults to true on non-prod and false on prod.
      */
-    constructor(engineName: EngineName, worker?: EngineWorker, debug = true) {
+    constructor(engineName: EngineName, worker?: EngineWorker, debug = false) {
         this.engineName = engineName;
         this.worker = worker;
         this._debug = debug;

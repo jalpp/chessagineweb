@@ -15,7 +15,7 @@ import {
   chessAgineAnnoPrompt,
 } from "./prompt";
 import { OpenAIModel, GoogleModel, AnthropicModel, OllamaModel, AgineCloudModel } from "./types";
-import { AgineCloudTools, AgineTools } from "../tools";
+import { AgineTools } from "../tools";
 
 function createModelFromRouter(runtimeContext: RuntimeContext) {
   const provider = runtimeContext.get("provider") as string;
@@ -56,7 +56,9 @@ function createAgentInstruction(runtimeContext: RuntimeContext) {
     case "question":
       return agineQuestionMode.replace("ENGLISH", lang);
     case "selfeval":
-      return agineSelfEval;  
+      return agineSelfEval; 
+    case "chess-gemma-commentary":
+      return "Generate professional chess commentary in the specified language. For Type=standard use 30–40 words. For Type=explanation, explain the best move briefly and address the userQuery. (≤50 words). Return exactly: Commentary, Predicted ELO, Verified Classification.";   
     default:
       return agineSystemPrompt.replace("ENGLISH", lang);
   }
@@ -123,3 +125,4 @@ export const chessAgine = new Agent({
   model: ({ runtimeContext }) => createModelFromContext(runtimeContext),
   tools: ({runtimeContext}) => createToolsFromContext(runtimeContext)
 });
+

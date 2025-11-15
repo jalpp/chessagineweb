@@ -138,7 +138,8 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'gpt-oss:120b-cloud',
       'gpt-oss:20b-cloud',
       'kimi-k2-thinking:cloud',
-      'kimi-k2:1t-cloud'
+      'kimi-k2:1t-cloud',
+      'hf.co/NAKSTStudio/chess-gemma-commentary:F16'
     ],
     keyPrefix: '',
     website: 'https://docs.ollama.com/',
