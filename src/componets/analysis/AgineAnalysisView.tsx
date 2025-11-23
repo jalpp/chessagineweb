@@ -38,6 +38,7 @@ import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 import { DownloadModelModal } from "../maia/DownloadMaiaModel";
+import EvalGraph from "../tabs/EvalGraph";
 
 // Base interface for common analysis view props
 interface BaseAnalysisViewProps {
@@ -312,7 +313,13 @@ function AgineAnalysisView({
                     chatLoading={chatLoading}
                     gameReview={gameReview!}
                   />
-                  <Divider />
+
+                  <Divider/>
+
+                  {gameReview && (
+                    <EvalGraph moves={gameReview!}/>
+                  )}
+ 
                 </AccordionDetails>
               </Accordion>
             )}

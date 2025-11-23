@@ -121,6 +121,16 @@ const useGameReview = (
     return 50;
   };
 
+  function normalizeChessDBScore(score: number, turn: Color): number{
+
+  if(turn === "b"){
+    return -score;
+  }
+
+  return score;
+  
+}
+
   const assessMoveQuality = (
     previousAdvantage: number,
     currentAdvantage: number,
@@ -161,7 +171,7 @@ const useGameReview = (
 
     try {
       const encodedFen = encodeURIComponent(fenString);
-      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&learn=1&json=1`;
+      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&learn=0&json=1`;
 
       const response = await fetch(apiUrl);
 
@@ -313,7 +323,7 @@ const useGameReview = (
             sanBestMove = moveObjSan ? moveObjSan.san : undefined;
           } else {
             preMoveWinRate = percentToNumber(chessDbEvals[0].winrate);
-            evalMove = Number(chessDbEvals[0].score || 0);
+            evalMove = normalizeChessDBScore( Number(chessDbEvals[0].score || 0), activePlayer)
             secondBestWinRate = percentToNumber(chessDbEvals[0].winrate);
             bestMove = chessDbEvals[0].uci;
             sanBestMove = chessDbEvals[0].san;

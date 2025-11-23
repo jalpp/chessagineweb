@@ -15,7 +15,6 @@ import {
   Stack,
   Alert,
   Button,
-  createTheme,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -29,8 +28,7 @@ import {
 import { BarChart, LineChart, RadarChart } from "@mui/x-charts";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { PositionRadarAnalysis } from "./PositionRadarAnalysis";
-import { darkGreyTheme } from "@/theme/theme";
-import { GameReviewTheme, getThemeLabelColor, themeColors } from "@/libs/themes/helper";
+import { GameReviewTheme, getThemeLabelColor} from "@/libs/themes/helper";
 import { ThemeScore } from "@/libs/themes/helper";
 
 
@@ -303,7 +301,7 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
             )}
 
 
-          {tabValue === 3 && (
+          {tabValue === 2 && (
             <Box>
               <Card sx={{ mb: 3 }}>
                 <CardContent>
@@ -335,7 +333,6 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
                         mb: 1.5,
                         p: 2,
                         borderRadius: 1,
-                        backgroundColor: "#2A2A2A",
                         borderLeft: 4,
                         borderColor:
                           tp.player === "White"
