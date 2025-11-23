@@ -63,6 +63,20 @@ const INTEGRATIONS: IntegrationItem[] = [
     status: "Available",
   },
   {
+    name: "Maia 2",
+    description:
+      "A human-like neural model tuned to predict and evaluate human chess moves, providing realistic training feedback and insights.",
+    icon: <EngineIcon />,
+    features: [
+      "Human-like move prediction for realistic training",
+      "Skill-level tuned evaluations and recommendations",
+      "Explanations highlighting common human mistakes",
+      "Useful for training, post-game analysis, and practice positions",
+    ],
+    status: "Beta",
+    link: "https://maiachess.org",
+  },
+  {
     name: "ChessDB",
     description: "Access to comprehensive chess position databases",
     icon: <DatabaseIcon />,

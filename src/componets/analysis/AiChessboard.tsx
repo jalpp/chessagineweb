@@ -92,7 +92,7 @@ interface AiChessboardPanelProps {
   gameStatus?: string;
   playerSide?: "white" | "black";
   engineThinking?: boolean;
-  evaluations: { [key: string]: MaiaEvaluation } | null
+  evaluations?: { [key: string]: MaiaEvaluation } | null
 }
 
 export default function AiChessboardPanel({
