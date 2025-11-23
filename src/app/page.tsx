@@ -628,7 +628,7 @@ export default function HomePage() {
                         sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
                       />
                     ),
-                    title: "Maia 2 — Human-Like Model",
+                    title: "Maia 2: Human-Like Model",
                     description:
                       "Maia 2 is trained to mimic human move choices and evaluations, making it ideal for training with realistic play, learning from typical mistakes, and improving practical decision-making.",
                   },

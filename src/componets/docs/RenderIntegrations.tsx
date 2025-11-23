@@ -73,8 +73,8 @@ const INTEGRATIONS: IntegrationItem[] = [
       "Explanations highlighting common human mistakes",
       "Useful for training, post-game analysis, and practice positions",
     ],
-    status: "Beta",
-    link: "https://maiachess.org",
+    status: "Available",
+    link: "https://www.maiachess.com/",
   },
   {
     name: "ChessDB",
@@ -86,7 +86,7 @@ const INTEGRATIONS: IntegrationItem[] = [
       "Endgame tablebase access",
       "Position occurrence frequency",
     ],
-    status: "Beta",
+    status: "Available",
     link: "https://chessdb.cn/",
   },
 ];
@@ -118,13 +118,13 @@ export const renderIntegrations = () => (
 
     <Typography variant="body1" color="text.secondary" paragraph>
       ChessAgine connects with powerful chess tools and databases to enhance
-      your experience. ChessAgine convets a general purpose LLM into a chess
+      your experience. ChessAgine converts a general purpose LLM into a chess
       native helper buddy.
     </Typography>
 
     <Grid container spacing={3}>
       {INTEGRATIONS.map((integration, index) => (
-        <Grid key={index}>
+        <Grid  sx={{xs: 12, sm: 6, md: 4}} key={index}>
           <Card sx={{ height: "100%" }}>
             <CardContent>
               <Box
