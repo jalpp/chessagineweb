@@ -253,7 +253,7 @@ function AgineAnalysisView({
           p: { xs: 1.5, sm: 2, md: 3 },
           flex: 1,
           overflow: "auto",
-          WebkitOverflowScrolling: "touch",
+          maxHeight: "100%",
         }}
       >
         <TabPanel value={analysisTab} index={0}>
