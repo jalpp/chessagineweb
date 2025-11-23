@@ -107,7 +107,11 @@ export default function PGNUploaderPage() {
     requestAnalysis,
     legalMoves,
     handleFutureMoveLegalClick,
-    setRootCurrentMove
+    setRootCurrentMove,
+    evaluations,
+    sanEvaluations,
+    maiaError,
+    maiaIsLoading
   } = useAgine(fen);
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -426,6 +430,7 @@ export default function PGNUploaderPage() {
                   engine={engine}
                   setMoveSquares={setMoveSquares}
                   setFen={setFen}
+                  evaluations={evaluations}
                   gameInfo={gameInfo}
                   setGame={setGame}
                   reviewMove={gameReview[currentMoveIndex]}
@@ -531,6 +536,9 @@ export default function PGNUploaderPage() {
                   engineDepth={engineDepth}
                   engineLines={engineLines}
                   engine={engine}
+                  maiaerror={maiaError}
+                  isMaiaLoading={maiaIsLoading}
+                  evaluations={sanEvaluations}
                   analyzeWithStockfish={analyzeWithStockfish}
                   formatEvaluation={formatEvaluation}
                   formatPrincipalVariation={formatPrincipalVariation}

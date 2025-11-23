@@ -21,7 +21,8 @@ A modern FOSS chess interface that combines LLMs and chess engines into one unif
 
 - **Multi-AI Support**: Compatible with OpenAI, Claude, Gemini, and Ollama models  
 - **Chess-Aware AI**: Advanced position analysis and contextual understanding via implementation of **Chess Context Protocol (CCP)**  
-- **Stockfish Integration**: Powered by Stockfish 17.1 engine for accurate evaluation  
+- **Stockfish Integration**: Powered by Stockfish 17.1 engine for accurate evaluation
+- **Maia2 Integration**: Support for Maia 2 to see most human made moves for given position  
 - **Opening Explorer**: Comprehensive opening database integration  
 - **Puzzle Training**: Interactive chess puzzles for skill improvement  
 - **Game Review**: Generate game review and ask Agine for specific move analysis
@@ -59,12 +60,13 @@ which can be used in Game review mode.
 
 A Fine-tuned Gemma 3 270M model for generating chess move commentary, ELO predictions, and move classifications in 14 languages. 
 
-@model{chess_gemma_commentary_2025,
+```@model{chess_gemma_commentary_2025,
   title={Chess Gemma Commentary: Multilingual Chess Analysis},
   author={NAKST Studio},
   year={2025},
   howpublished={Hugging Face Hub}
 }
+```
 
 
 ## Using Ollama Locally (No API Key Required)
@@ -128,6 +130,21 @@ ChessAgine recognizes all the open source contributions made by various develope
 A huge thanks to everyone who helped make ChessAgine possible:
 
 * **Stockfish developers** (see AUTHORS file). Stockfish [Computer software]. [https://github.com/official-stockfish/Stockfish](https://github.com/official-stockfish/Stockfish)
+
+* **Maia developers and researchers:**
+
+```
+@inproceedings{tang2024maia,
+       title={Maia-2: A Unified Model for Human-{AI} Alignment in Chess},
+       author={Zhenwei Tang and Difan Jiao and Reid McIlroy-Young and Jon Kleinberg and Siddhartha Sen and Ashton Anderson},
+       booktitle={The Thirty-eighth Annual Conference on Neural Information Processing Systems},
+       year={2024},
+       url={https://openreview.net/forum?id=XWlkhRn14K}
+}
+```
+
+- Maia Web source coded modified and taken from [https://github.com/CSSLab/maia-platform-frontend](https://github.com/CSSLab/maia-platform-frontend)
+
 * **ChessDojo developers**, whose modified UiEngine model and Stockfish UI components were used. [https://github.com/jackstenglein/chess-dojo-scheduler](https://github.com/jackstenglein/chess-dojo-scheduler)
 * **Stockfish.js developers** [https://github.com/nmrugg/stockfish.js/](https://github.com/nmrugg/stockfish.js/) for providing compiled Stockfish 17.1 wasm and NNUE files.
 * **Lichess developers** whose API enabled opening explorer, puzzle databases, and game imports. [https://lichess.org/api](https://lichess.org/api)

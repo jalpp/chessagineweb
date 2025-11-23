@@ -7,6 +7,7 @@ import "./globals.css";
 import NavBar from "@/componets/Navbar";
 import { ThemeProvider } from "@/context/ThemeContext";
 import BodyWrapper from "@/componets/BodyWrapper";
+import { MaiaEngineContextProvider } from "@/context/MaiaEngineContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -98,7 +99,9 @@ export default function RootLayout({
           <ThemeProvider>
             <BodyWrapper>
               <NavBar/>
-              {children}
+              <MaiaEngineContextProvider>
+                {children}
+              </MaiaEngineContextProvider>
             </BodyWrapper>
           </ThemeProvider>
         </body>

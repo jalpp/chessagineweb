@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   Box,
   Stack,
@@ -19,7 +19,6 @@ import {
   Chat as ChatIcon,
 } from "@mui/icons-material";
 
-
 import StockfishAnalysisTab from "../tabs/StockfishTab";
 import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
@@ -36,6 +35,9 @@ import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
+import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
+import { MaiaEngineContext } from "@/context/MaiaEngineContext";
+import { DownloadModelModal } from "../maia/DownloadMaiaModel";
 
 // Base interface for common analysis view props
 interface BaseAnalysisViewProps {
@@ -68,7 +70,14 @@ interface BaseAnalysisViewProps {
   chatMessages: ChatMessage[];
   chatInput: string;
   setChatInput: (input: string) => void;
-  sendChatMessage: (gameInfo?: string | undefined, currentMove?: string | undefined, puzzleMode?: boolean | undefined, puzzleQuery?: string | undefined, playMode?: boolean | undefined, currentMoveIndex?: number | undefined) => Promise<void>;
+  sendChatMessage: (
+    gameInfo?: string | undefined,
+    currentMove?: string | undefined,
+    puzzleMode?: boolean | undefined,
+    puzzleQuery?: string | undefined,
+    playMode?: boolean | undefined,
+    currentMoveIndex?: number | undefined
+  ) => Promise<void>;
   chatLoading: boolean;
   abortChatMessage: () => void;
   handleChatKeyPress: (e: React.KeyboardEvent) => void;
@@ -88,8 +97,14 @@ interface GameReviewProps {
   generateGameReview?: (moves: string[]) => void;
   gameReviewLoading?: boolean;
   gameReviewProgress?: number;
-  handleGameReviewSummaryClick?: (review: MoveAnalysis[], gameInfo: string) => Promise<void>;
-  handleMoveAnnontateClick?: (review: MoveAnalysis, customQuery?: string) => Promise<void>;
+  handleGameReviewSummaryClick?: (
+    review: MoveAnalysis[],
+    gameInfo: string
+  ) => Promise<void>;
+  handleMoveAnnontateClick?: (
+    review: MoveAnalysis,
+    customQuery?: string
+  ) => Promise<void>;
   handleMoveCoachClick?: (review: MoveAnalysis) => void;
   gameReview?: MoveAnalysis[];
   pgnText?: string;
@@ -97,7 +112,10 @@ interface GameReviewProps {
 }
 
 // Main interface that combines all props
-interface AgineAnalysisViewProps extends GameReviewProps, BaseAnalysisViewProps {
+interface AgineAnalysisViewProps
+  extends GameReviewProps,
+    BaseAnalysisViewProps,
+    MaiaResultsProps {
   isGameReviewMode: boolean;
 }
 
@@ -155,26 +173,31 @@ function AgineAnalysisView({
   gameReview,
   pgnText,
   currentMove,
+  evaluations,
+  isMaiaLoading,
+  maiaerror,
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useState<number>(0);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<number>(0);
-  
+
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { status, progress, downloadModel } = useContext(MaiaEngineContext);
+
+  const shouldShowDownloadModal = status === "no-cache" || status === "error";
 
   return (
     <Card
       sx={{
-    
         borderRadius: { xs: 2, md: 3 },
         boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
-        minHeight: isGameReviewMode ? 500 : { xs: 'auto', md: 600 },
-        maxHeight: isGameReviewMode ? "none" : { xs: 'none', md: "80vh" },
+        minHeight: isGameReviewMode ? 500 : { xs: "auto", md: 600 },
+        maxHeight: isGameReviewMode ? "none" : { xs: "none", md: "80vh" },
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        width: '100%',
+        width: "100%",
       }}
     >
       <Box
@@ -190,32 +213,35 @@ function AgineAnalysisView({
           sx={{
             minHeight: { xs: 48, md: 56 },
             "& .MuiTab-root": {
-
               textTransform: "none",
               fontSize: { xs: "0.875rem", md: "1rem" },
               fontWeight: 500,
               minHeight: { xs: 48, md: 56 },
-              minWidth: { xs: 'auto', md: 90 },
+              minWidth: { xs: "auto", md: 90 },
               px: { xs: 1, sm: 2 },
             },
             "& .Mui-selected": {
-       
               fontWeight: 600,
             },
             "& .MuiTabs-indicator": {
-           
               height: 3,
               borderRadius: 2,
             },
           }}
         >
           <Tab
-            icon={<AnalyticsIcon sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />}
+            icon={
+              <AnalyticsIcon
+                sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" } }}
+              />
+            }
             iconPosition={isSmallMobile ? "top" : "start"}
             label={isSmallMobile ? "Analysis" : "Analysis"}
           />
           <Tab
-            icon={<ChatIcon sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />}
+            icon={
+              <ChatIcon sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" } }} />
+            }
             iconPosition={isSmallMobile ? "top" : "start"}
             label={isSmallMobile ? "Chat" : "AI Chat"}
           />
@@ -227,7 +253,7 @@ function AgineAnalysisView({
           p: { xs: 1.5, sm: 2, md: 3 },
           flex: 1,
           overflow: "auto",
-          WebkitOverflowScrolling: 'touch', 
+          WebkitOverflowScrolling: "touch",
         }}
       >
         <TabPanel value={analysisTab} index={0}>
@@ -240,31 +266,26 @@ function AgineAnalysisView({
                   setActiveAnalysisTab(activeAnalysisTab === 0 ? -1 : 0)
                 }
                 sx={{
-                
                   "&:before": { display: "none" },
                   borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
                 }}
               >
                 <AccordionSummary
-                  expandIcon={
-                    <ExpandMoreIcon  />
-                  }
+                  expandIcon={<ExpandMoreIcon />}
                   sx={{
-                  
                     minHeight: { xs: 48, md: 56 },
-                 
+
                     "& .MuiAccordionSummary-content": {
-                      margin: { xs: '12px 0', md: '16px 0' },
+                      margin: { xs: "12px 0", md: "16px 0" },
                     },
                   }}
                 >
                   <Typography
                     variant="h6"
                     sx={{
-                   
                       fontWeight: 600,
-                      fontSize: { xs: '1rem', md: '1.25rem' },
+                      fontSize: { xs: "1rem", md: "1.25rem" },
                     }}
                   >
                     Game Review
@@ -272,7 +293,6 @@ function AgineAnalysisView({
                 </AccordionSummary>
                 <AccordionDetails
                   sx={{
-                    
                     p: { xs: 1.5, md: 2 },
                   }}
                 >
@@ -305,54 +325,6 @@ function AgineAnalysisView({
                   setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
                 }
                 sx={{
-               
-                  "&:before": { display: "none" },
-                  borderRadius: { xs: 1.5, md: 2 },
-                  overflow: "hidden",
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon  />}
-                  sx={{
-                    minHeight: { xs: 48, md: 56 },
-                    "& .MuiAccordionSummary-content": {
-                      margin: { xs: '12px 0', md: '16px 0' },
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                    
-                      fontWeight: 600,
-                      fontSize: { xs: '1rem', md: '1.25rem' },
-                    }}
-                  >
-                    Position Theme Analysis
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  {gameReviewTheme !== null &&
-                    gameReview !== undefined &&
-                    currentMoveIndex !== undefined && (
-                     
-                        <PositionRadarAnalysis
-                          moveAnalysis={gameReview}
-                          currentMoveIndex={currentMoveIndex}
-                          gameReview={gameReviewTheme}
-                        />
-                   
-                    )}
-                </AccordionDetails>
-              </Accordion>
-            ) : (
-              <Accordion
-                expanded={activeAnalysisTab === 1}
-                onChange={() =>
-                  setActiveAnalysisTab(activeAnalysisTab === 1 ? 0 : 1)
-                }
-                sx={{
-                  
                   "&:before": { display: "none" },
                   borderRadius: { xs: 1.5, md: 2 },
                   overflow: "hidden",
@@ -363,65 +335,95 @@ function AgineAnalysisView({
                   sx={{
                     minHeight: { xs: 48, md: 56 },
                     "& .MuiAccordionSummary-content": {
-                      margin: { xs: '12px 0', md: '16px 0' },
+                      margin: { xs: "12px 0", md: "16px 0" },
                     },
                   }}
                 >
                   <Typography
                     variant="h6"
                     sx={{
-                 
                       fontWeight: 600,
-                      fontSize: { xs: '1rem', md: '1.25rem' },
+                      fontSize: { xs: "1rem", md: "1.25rem" },
                     }}
                   >
                     Position Theme Analysis
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                 
-                    <PositionFenThemeAnalysis fen={fen ?? ""} />
-                 
+                  {gameReviewTheme !== null &&
+                    gameReview !== undefined &&
+                    currentMoveIndex !== undefined && (
+                      <PositionRadarAnalysis
+                        moveAnalysis={gameReview}
+                        currentMoveIndex={currentMoveIndex}
+                        gameReview={gameReviewTheme}
+                      />
+                    )}
+                </AccordionDetails>
+              </Accordion>
+            ) : (
+              <Accordion
+                expanded={activeAnalysisTab === 1}
+                onChange={() =>
+                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
+                }
+                sx={{
+                  "&:before": { display: "none" },
+                  borderRadius: { xs: 1.5, md: 2 },
+                  overflow: "hidden",
+                }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{
+                    minHeight: { xs: 48, md: 56 },
+                    "& .MuiAccordionSummary-content": {
+                      margin: { xs: "12px 0", md: "16px 0" },
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: { xs: "1rem", md: "1.25rem" },
+                    }}
+                  >
+                    Position Theme Analysis
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
+                  <PositionFenThemeAnalysis fen={fen ?? ""} />
                 </AccordionDetails>
               </Accordion>
             )}
 
             {/* Stockfish Analysis */}
             <Accordion
-              expanded={activeAnalysisTab === (isGameReviewMode ? 1 : 0)}
+              expanded={activeAnalysisTab === 2}
               onChange={() =>
-                setActiveAnalysisTab(
-                  activeAnalysisTab === (isGameReviewMode ? 1 : 0)
-                    ? -1
-                    : isGameReviewMode
-                    ? 1
-                    : 0
-                )
+                setActiveAnalysisTab(activeAnalysisTab === 2 ? -1 : 2)
               }
               sx={{
-              
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
               <AccordionSummary
-                expandIcon={
-                  <ExpandMoreIcon />
-                }
+                expandIcon={<ExpandMoreIcon />}
                 sx={{
                   minHeight: { xs: 48, md: 56 },
                   "& .MuiAccordionSummary-content": {
-                    margin: { xs: '12px 0', md: '16px 0' },
+                    margin: { xs: "12px 0", md: "16px 0" },
                   },
                 }}
               >
                 <Typography
                   variant="h6"
                   sx={{
-                   
                     fontWeight: 600,
-                    fontSize: { xs: '1rem', md: '1.25rem' },
+                    fontSize: { xs: "1rem", md: "1.25rem" },
                   }}
                 >
                   Stockfish Analysis
@@ -449,17 +451,10 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
 
-            {/* Opening Explorer */}
             <Accordion
-              expanded={activeAnalysisTab === (isGameReviewMode ? 2 : 0)}
+              expanded={activeAnalysisTab === 3}
               onChange={() =>
-                setActiveAnalysisTab(
-                  activeAnalysisTab === (isGameReviewMode ? 2 : 0)
-                    ? -1
-                    : isGameReviewMode
-                    ? 2
-                    : 0
-                )
+                setActiveAnalysisTab(activeAnalysisTab === 3 ? -1 : 3)
               }
               sx={{
                 "&:before": { display: "none" },
@@ -468,24 +463,90 @@ function AgineAnalysisView({
               }}
             >
               <AccordionSummary
-                expandIcon={
-                  <ExpandMoreIcon  />
-                }
+                expandIcon={<ExpandMoreIcon />}
                 sx={{
-                 
                   minHeight: { xs: 48, md: 56 },
-                  
                   "& .MuiAccordionSummary-content": {
-                    margin: { xs: '12px 0', md: '16px 0' },
+                    margin: { xs: "12px 0", md: "16px 0" },
                   },
                 }}
               >
                 <Typography
                   variant="h6"
                   sx={{
-              
                     fontWeight: 600,
-                    fontSize: { xs: '1rem', md: '1.25rem' },
+                    fontSize: { xs: "1rem", md: "1.25rem" },
+                  }}
+                >
+                  Maia Analysis
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails
+                sx={{
+                  p: { xs: 1.5, md: 2 },
+                }}
+              >
+                {shouldShowDownloadModal ? (
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    minHeight="300px"
+                  >
+                    <DownloadModelModal
+                      progress={progress}
+                      download={downloadModel}
+                    />
+                  </Box>
+                ) : status === "downloading" ? (
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    minHeight="300px"
+                  >
+                    <DownloadModelModal
+                      progress={progress}
+                      download={downloadModel}
+                    />
+                  </Box>
+                ) : (
+                  <MaiaResults
+                    evaluations={evaluations}
+                    isMaiaLoading={isMaiaLoading}
+                    maiaerror={maiaerror}
+                  />
+                )}
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Opening Explorer */}
+            <Accordion
+              expanded={activeAnalysisTab === 4}
+              onChange={() =>
+                setActiveAnalysisTab(activeAnalysisTab === 4 ? -1 : 4)
+              }
+              sx={{
+                "&:before": { display: "none" },
+                borderRadius: { xs: 1.5, md: 2 },
+                overflow: "hidden",
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  minHeight: { xs: 48, md: 56 },
+
+                  "& .MuiAccordionSummary-content": {
+                    margin: { xs: "12px 0", md: "16px 0" },
+                  },
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: { xs: "1rem", md: "1.25rem" },
                   }}
                 >
                   Opening Explorer
@@ -493,7 +554,6 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                  
                   p: { xs: 1.5, md: 2 },
                 }}
               >
@@ -510,42 +570,31 @@ function AgineAnalysisView({
 
             {/* ChessDB */}
             <Accordion
-              expanded={activeAnalysisTab === (isGameReviewMode ? 3 : 2)}
+              expanded={activeAnalysisTab === 5}
               onChange={() =>
-                setActiveAnalysisTab(
-                  activeAnalysisTab === (isGameReviewMode ? 3 : 2)
-                    ? -1
-                    : isGameReviewMode
-                    ? 3
-                    : 2
-                )
+                setActiveAnalysisTab(activeAnalysisTab === 5 ? -1 : 5)
               }
               sx={{
-                
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
               <AccordionSummary
-                expandIcon={
-                  <ExpandMoreIcon  />
-                }
+                expandIcon={<ExpandMoreIcon />}
                 sx={{
-                
                   minHeight: { xs: 48, md: 56 },
-                  
+
                   "& .MuiAccordionSummary-content": {
-                    margin: { xs: '12px 0', md: '16px 0' },
+                    margin: { xs: "12px 0", md: "16px 0" },
                   },
                 }}
               >
                 <Typography
                   variant="h6"
                   sx={{
-                   
                     fontWeight: 600,
-                    fontSize: { xs: '1rem', md: '1.25rem' },
+                    fontSize: { xs: "1rem", md: "1.25rem" },
                   }}
                 >
                   Chess Database
@@ -553,7 +602,6 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                 
                   p: { xs: 1.5, md: 2 },
                 }}
               >
@@ -571,42 +619,31 @@ function AgineAnalysisView({
 
             {/* Legal Move Analysis */}
             <Accordion
-              expanded={activeAnalysisTab === (isGameReviewMode ? 4 : 3)}
+              expanded={activeAnalysisTab === 6}
               onChange={() =>
-                setActiveAnalysisTab(
-                  activeAnalysisTab === (isGameReviewMode ? 4 : 3)
-                    ? -1
-                    : isGameReviewMode
-                    ? 4
-                    : 3
-                )
+                setActiveAnalysisTab(activeAnalysisTab === 6 ? -1 : 6)
               }
               sx={{
-                
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
                 overflow: "hidden",
               }}
             >
               <AccordionSummary
-                expandIcon={
-                  <ExpandMoreIcon  />
-                }
+                expandIcon={<ExpandMoreIcon />}
                 sx={{
-           
                   minHeight: { xs: 48, md: 56 },
-                 
+
                   "& .MuiAccordionSummary-content": {
-                    margin: { xs: '12px 0', md: '16px 0' },
+                    margin: { xs: "12px 0", md: "16px 0" },
                   },
                 }}
               >
                 <Typography
                   variant="h6"
                   sx={{
-                  
                     fontWeight: 600,
-                    fontSize: { xs: '1rem', md: '1.25rem' },
+                    fontSize: { xs: "1rem", md: "1.25rem" },
                   }}
                 >
                   Legal Move Analysis
@@ -614,7 +651,6 @@ function AgineAnalysisView({
               </AccordionSummary>
               <AccordionDetails
                 sx={{
-                  
                   p: { xs: 1.5, md: 2 },
                 }}
               >
