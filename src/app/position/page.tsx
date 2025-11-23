@@ -58,6 +58,10 @@ export default function PositionPage() {
     error,
     refetch,
     requestAnalysis,
+    evaluations,
+    sanEvaluations,
+    maiaError,
+    maiaIsLoading
   } = useAgine(fen);
 
   if (!session.isLoaded) {
@@ -105,6 +109,7 @@ export default function PositionPage() {
             setGame={setGame}
             setLlmAnalysisResult={setLlmAnalysisResult}
             setOpeningData={setOpeningData}
+            evaluations={evaluations}
             setStockfishAnalysisResult={setStockfishAnalysisResult}
             fetchOpeningData={fetchOpeningData}
             analyzeWithStockfish={analyzeWithStockfish}
@@ -164,6 +169,9 @@ export default function PositionPage() {
             gameReviewTheme={null}
             setSessionMode={setSessionMode}
             llmLoading={llmLoading}
+            evaluations={sanEvaluations}
+            isMaiaLoading={maiaIsLoading}
+            maiaerror={maiaError}
           />
         </Box>
       </Stack>

@@ -27,7 +27,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { FaPuzzlePiece } from "react-icons/fa6";
-import { Cloud, Extension, SwapCallsOutlined } from "@mui/icons-material";
+import { Cloud, Extension, SmartToy, SwapCallsOutlined } from "@mui/icons-material";
 import HomeView from "@/componets/view/HomeView";
 
 export default function HomePage() {
@@ -614,13 +614,23 @@ export default function HomePage() {
                 {[
                   {
                     icon: (
-                      <PsychologyIcon
+                      <SmartToy
                         sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
                       />
                     ),
                     title: "Stockfish 17.1 Engine",
                     description:
                       "Powered by the latest Stockfish 17.1 engine for world-class position evaluation and tactical analysis.",
+                  },
+                  {
+                    icon: (
+                       <PsychologyIcon
+                        sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                      />
+                    ),
+                    title: "Maia 2: Human-Like Model",
+                    description:
+                      "Maia 2 is trained to mimic human move choices and evaluations, making it ideal for training with realistic play, learning from typical mistakes, and improving practical decision-making.",
                   },
                   {
                     icon: (
