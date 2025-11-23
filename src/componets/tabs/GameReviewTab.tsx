@@ -26,7 +26,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
-import EvalGraph from "./EvalGraph";
 import { GameReviewDialog} from "./GameReviewDialog";
 import { GameReviewTheme } from "@/libs/themes/helper";
 export interface MoveStats {
@@ -423,8 +422,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             </CardContent>
           </Card>
         )}
-
-        <EvalGraph moves={gameReview}/>
         <GameReviewDialog gameReview={gameReviewTheme} currentMoveIndex={currentMoveIndex} moveAnalysis={gameReview}/>
       </Stack>
     </Box>

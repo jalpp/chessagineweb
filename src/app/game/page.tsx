@@ -111,7 +111,7 @@ export default function PGNUploaderPage() {
     evaluations,
     sanEvaluations,
     maiaError,
-    maiaIsLoading
+    maiaIsLoading,
   } = useAgine(fen);
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -128,7 +128,6 @@ export default function PGNUploaderPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentMoveIndex, moves]);
-  
 
   const saveGameReview = () => {
     if (!gameReview.length) {
@@ -144,7 +143,6 @@ export default function PGNUploaderPage() {
       setMoves(savedGame.moves);
       setGameInfo(savedGame.gameInfo);
       setGameReview(savedGame.gameReview);
-      
 
       const parsed = extractMovesWithComments(savedGame.pgn);
       setParsedMovesWithComments(parsed);
@@ -292,7 +290,7 @@ export default function PGNUploaderPage() {
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 4 },
-      
+
         minHeight: "100vh",
       }}
     >
@@ -300,7 +298,7 @@ export default function PGNUploaderPage() {
         <Card
           sx={{
             mb: { xs: 2, sm: 3, md: 4 },
-           
+
             borderRadius: { xs: 2, md: 3 },
             boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
           }}
@@ -311,7 +309,6 @@ export default function PGNUploaderPage() {
                 variant="h3"
                 gutterBottom
                 sx={{
-                 
                   fontWeight: 700,
                   fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
                   backgroundClip: "text",
@@ -324,7 +321,6 @@ export default function PGNUploaderPage() {
               <Typography
                 variant="h6"
                 sx={{
-              
                   mb: 3,
                   fontSize: { xs: "0.9rem", sm: "1rem", md: "1.25rem" },
                   maxWidth: 600,
@@ -372,15 +368,14 @@ export default function PGNUploaderPage() {
                 setInputsVisible={setInputsVisible}
               />
 
-              <Divider  />
+              <Divider />
 
               <Box>
                 <Typography
                   variant="h6"
-                  sx={{ 
-                   
+                  sx={{
                     mb: 2,
-                    fontSize: { xs: "1rem", sm: "1.15rem", md: "1.25rem" }
+                    fontSize: { xs: "1rem", sm: "1.15rem", md: "1.25rem" },
                   }}
                 >
                   Your Lichess Games
@@ -395,33 +390,40 @@ export default function PGNUploaderPage() {
         </Card>
       )}
 
-      <Stack 
-        direction={{ xs: "column", lg: "row" }} 
+      <Stack
+        direction={{ xs: "column", lg: "row" }}
         spacing={{ xs: 2, sm: 3, md: 4 }}
         sx={{
-          width: '100%',
-          maxWidth: '100%',
-          overflow: 'hidden'
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "hidden",
         }}
       >
         {!inputsVisible && (
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               flex: { xs: "1 1 auto", lg: "0 0 auto" },
-              width: { xs: '100%', lg: 'auto' },
-              maxWidth: '100%',
+              width: { xs: "100%", lg: "auto" },
+              maxWidth: "100%",
             }}
           >
-            <Stack 
-              spacing={{ xs: 2, sm: 2.5, md: 3 }} 
+            <Stack
+              spacing={{ xs: 2, sm: 2.5, md: 3 }}
               alignItems="center"
               sx={{
-                width: '100%',
-                px: { xs: 0, sm: 1 }
+                width: "100%",
+                px: { xs: 0, sm: 1 },
               }}
             >
               <Box
-               sx={{ width: '100%', maxWidth: { xs: '100%', lg: '600px' } }}
+                sx={{
+                  flex: { xs: "1 1 auto", lg: "0 0 auto" },
+                  width: { xs: "100%", lg: "auto" },
+                  maxWidth: "100%",
+                  display: "flex",
+                  justifyContent: { xs: "center", lg: "flex-start" },
+                  px: { xs: 0, sm: 1 },
+                }}
               >
                 <AiChessboardPanel
                   game={game}
@@ -447,7 +449,9 @@ export default function PGNUploaderPage() {
                 />
               </Box>
 
-              <Box sx={{ width: '100%', maxWidth: { xs: '100%', lg: '600px' } }}>
+              <Box
+                sx={{ width: "100%", maxWidth: { xs: "100%", lg: "600px" } }}
+              >
                 <PGNView
                   moves={moves}
                   moveAnalysis={gameReview}
@@ -459,13 +463,13 @@ export default function PGNUploaderPage() {
                 />
               </Box>
 
-              <Stack 
-                direction={{ xs: "column", sm: "row" }} 
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
                 spacing={2}
-                sx={{ 
-                  width: '100%', 
-                  maxWidth: { xs: '100%', lg: '600px' },
-                  px: { xs: 2, sm: 0 }
+                sx={{
+                  width: "100%",
+                  maxWidth: { xs: "100%", lg: "600px" },
+                  px: { xs: 2, sm: 0 },
                 }}
               >
                 <Button
@@ -475,7 +479,6 @@ export default function PGNUploaderPage() {
                   disabled={!gameReview.length}
                   fullWidth
                   sx={{
-                   
                     borderRadius: 2,
                     px: 3,
                     py: { xs: 1.25, sm: 1.5 },
@@ -502,7 +505,6 @@ export default function PGNUploaderPage() {
                   startIcon={<RefreshIcon />}
                   fullWidth
                   sx={{
-                    
                     borderRadius: 2,
                     px: 3,
                     py: { xs: 1.25, sm: 1.5 },
@@ -518,12 +520,12 @@ export default function PGNUploaderPage() {
         )}
 
         {!inputsVisible && (
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               flex: 1,
-              width: { xs: '100%', lg: 'auto' },
-              maxWidth: '100%',
-              minWidth: 0
+              width: { xs: "100%", lg: "auto" },
+              maxWidth: "100%",
+              minWidth: 0,
             }}
           >
             <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>

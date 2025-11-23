@@ -38,8 +38,9 @@ import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 import { DownloadModelModal } from "../maia/DownloadMaiaModel";
+import EvalGraph from "../tabs/EvalGraph";
 
-// Base interface for common analysis view props
+
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
   stockfishLoading: boolean;
@@ -111,7 +112,7 @@ interface GameReviewProps {
   currentMove?: string;
 }
 
-// Main interface that combines all props
+
 interface AgineAnalysisViewProps
   extends GameReviewProps,
     BaseAnalysisViewProps,
@@ -258,7 +259,7 @@ function AgineAnalysisView({
       >
         <TabPanel value={analysisTab} index={0}>
           <Stack spacing={{ xs: 2, md: 3 }}>
-            {/* Game Review Section (only for game page) */}
+        
             {isGameReviewMode && (
               <Accordion
                 expanded={activeAnalysisTab === 0}
@@ -312,12 +313,18 @@ function AgineAnalysisView({
                     chatLoading={chatLoading}
                     gameReview={gameReview!}
                   />
-                  <Divider />
+
+                  <Divider/>
+
+                  {gameReview && (
+                    <EvalGraph moves={gameReview!}/>
+                  )}
+ 
                 </AccordionDetails>
               </Accordion>
             )}
 
-            {/* Position Theme Analysis */}
+         
             {isGameReviewMode ? (
               <Accordion
                 expanded={activeAnalysisTab === 1}
@@ -398,7 +405,7 @@ function AgineAnalysisView({
               </Accordion>
             )}
 
-            {/* Stockfish Analysis */}
+           
             <Accordion
               expanded={activeAnalysisTab === 2}
               onChange={() =>
@@ -568,7 +575,6 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
 
-            {/* ChessDB */}
             <Accordion
               expanded={activeAnalysisTab === 5}
               onChange={() =>
@@ -616,8 +622,7 @@ function AgineAnalysisView({
                 />
               </AccordionDetails>
             </Accordion>
-
-            {/* Legal Move Analysis */}
+            
             <Accordion
               expanded={activeAnalysisTab === 6}
               onChange={() =>
