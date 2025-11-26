@@ -204,7 +204,7 @@ const useGameReview = (
       return processedMoves;
     } catch (err) {
       console.log("error!", err);
-      throw err;
+      return [];
     }
   }, []);
 
