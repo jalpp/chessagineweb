@@ -52,6 +52,7 @@ import {
   DEFAULT_BOARD_SHOW_FEN,
   DEFAULT_BOARD_SIZE,
   getCurrentThemeColors,
+  is3DSet,
   PIECE_STYLE_TYPES,
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
@@ -807,33 +808,95 @@ const handleSquareClick = useCallback(
   const colors = ["w", "b"];
   const customPieces: PieceRenderObject = {};
 
-  colors.forEach((color) => {
-    pieces.forEach((piece) => {
-      const pieceKey = `${color}${piece}`;
+  if (is3DSet(pieceSet)) {
+    const pieceHeights: Record<string, number> = {
+      P: 1, N: 1.2, B: 1.2, R: 1.2, Q: 1.5, K: 1.6
+    };
 
-      let src: string;
-      if (pieceSet.toLowerCase() === "cburnett" || !pieceSet) {
-        src = `/static/pieces/Cburnett/${pieceKey}.svg`;
-      } else {
-        src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
-      }
+    colors.forEach((color) => {
+      pieces.forEach((piece) => {
+        const pieceKey = `${color}${piece}`;
+        const pieceHeight = pieceHeights[piece];
 
-      // v5 signature: no parameters, just returns JSX.Element
-      customPieces[pieceKey] = () => (
-        <img 
-          src={src} 
-          style={{ 
-            width: '100%', 
-            height: '100%',
-            display: 'block'
-          }} 
-          alt={pieceKey}
-        />
-      );
+        customPieces[pieceKey] = () => {
+          const squareWidth = document.querySelector(`[data-column="a"][data-row="1"]`)?.getBoundingClientRect()?.width ?? 80;
+          
+          return (
+            <div style={{
+              width: squareWidth,
+              height: squareWidth,
+              position: 'relative',
+              pointerEvents: 'none'
+            }}>
+              <img 
+                src={`/static/pieces/${pieceSet}/${pieceKey}.png`}
+                width={squareWidth}
+                height={pieceHeight * squareWidth}
+                style={{
+                  position: 'absolute',
+                  bottom: `${0.2 * squareWidth}px`,
+                  objectFit: piece === 'K' ? 'contain' : 'cover'
+                }}
+                alt={pieceKey}
+              />
+            </div>
+          );
+        };
+      });
     });
-  });
+  } else {
+    colors.forEach((color) => {
+      pieces.forEach((piece) => {
+        const pieceKey = `${color}${piece}`;
+
+        let src: string;
+        if (pieceSet.toLowerCase() === "cburnett" || !pieceSet) {
+          src = `/static/pieces/Cburnett/${pieceKey}.svg`;
+        } else {
+          src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
+        }
+
+        customPieces[pieceKey] = () => (
+          <img 
+            src={src} 
+            style={{ 
+              width: '100%', 
+              height: '100%',
+              display: 'block'
+            }} 
+            alt={pieceKey}
+          />
+        );
+      });
+    });
+  }
 
   return customPieces;
+};
+
+const get3DBoardStyle = (pieceSet: string) => {
+  if (is3DSet(pieceSet)) {
+    return {
+      transform: 'rotateX(27.5deg)',
+      transformOrigin: 'center',
+      border: '16px solid #2b1e19ff',
+      borderStyle: 'outset',
+      borderRightColor: getCurrentThemeColors(boardTheme).darkSquareColor,
+      borderRadius: '4px',
+      boxShadow: 'rgba(0, 0, 0, 0.5) 2px 24px 24px 8px',
+      borderRightWidth: '2px',
+      borderLeftWidth: '2px',
+      borderTopWidth: '0px',
+      borderBottomWidth: '18px',
+      borderTopLeftRadius: '8px',
+      borderTopRightRadius: '8px',
+      padding: '8px 8px 12px',
+      background: getCurrentThemeColors(boardTheme).lightSquareColor,
+      backgroundSize: 'cover',
+      overflow: 'visible'
+    };
+  }
+  return {};
 };
 
   return (
@@ -951,6 +1014,7 @@ const handleSquareClick = useCallback(
               arrows: customArrows,
               boardOrientation: getBoardOrientation(),
               pieces: getCustomPieces(pieceType),
+              boardStyle: get3DBoardStyle(pieceType),
               id: "ai-chessboard", 
             }}
           />
