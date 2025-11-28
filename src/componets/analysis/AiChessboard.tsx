@@ -34,10 +34,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../../libs/openingdatabase/helper";
-// import {
-//   Arrow,
-//   BoardOrientation,
-// } from "react-chessboard/dist/chessboard/types";
 import { Arrow } from "react-chessboard";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { MoveAnalysis } from "../../hooks/useGameReview";
@@ -62,7 +58,7 @@ import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
 import { MaiaEvaluation } from "@/libs/maia/types";
 
-type BoardOrientation = "white" | "black";
+export type BoardOrientation = "white" | "black";
 
 interface AiChessboardPanelProps {
   fen: string;
