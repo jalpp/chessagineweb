@@ -28,16 +28,18 @@ import {
   Upload,
 } from "@mui/icons-material";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
-import { Chessboard } from "react-chessboard";
+import { Chessboard, PieceRenderObject } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../../libs/openingdatabase/helper";
-import {
-  Arrow,
-  BoardOrientation,
-} from "react-chessboard/dist/chessboard/types";
+// import {
+//   Arrow,
+//   BoardOrientation,
+// } from "react-chessboard/dist/chessboard/types";
+import { Arrow } from "react-chessboard";
+import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { MoveAnalysis } from "../../hooks/useGameReview";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
@@ -60,6 +62,8 @@ import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
 import { MaiaEvaluation } from "@/libs/maia/types";
 
+type BoardOrientation = "white" | "black";
+
 interface AiChessboardPanelProps {
   fen: string;
   moveSquares: { [square: string]: string };
@@ -77,8 +81,8 @@ interface AiChessboardPanelProps {
   puzzleMode?: boolean;
   playMode?: boolean;
   gameReviewMode?: boolean;
-  onDropPuzzle?: (source: string, target: string) => boolean;
-  handleSquarePuzzleClick?: (square: string) => void;
+  onDropPuzzle?: (args: PieceDropHandlerArgs) => boolean;
+  handleSquarePuzzleClick?: ({ piece, square }: SquareHandlerArgs) => void;
   reviewMove?: MoveAnalysis;
   puzzleCustomSquareStyle?: {
     [square: string]: CSSProperties;
@@ -92,7 +96,7 @@ interface AiChessboardPanelProps {
   gameStatus?: string;
   playerSide?: "white" | "black";
   engineThinking?: boolean;
-  evaluations?: { [key: string]: MaiaEvaluation } | null
+  evaluations?: { [key: string]: MaiaEvaluation } | null;
 }
 
 export default function AiChessboardPanel({
@@ -134,11 +138,11 @@ export default function AiChessboardPanel({
     puzzleMode || playMode ? false : true
   );
   const [boardSize, setBoardSize] = useLocalStorage<number>(
-  "board_ui_size",
-  typeof window !== 'undefined' && window.innerWidth < 768 
-    ? Math.min(window.innerWidth - 100, 400) // Mobile size
-    : DEFAULT_BOARD_SIZE
-);
+    "board_ui_size",
+    typeof window !== "undefined" && window.innerWidth < 768
+      ? Math.min(window.innerWidth - 100, 400) // Mobile size
+      : DEFAULT_BOARD_SIZE
+  );
   const [pieceType, setPieceType] = useLocalStorage<string>(
     "board_piece_type",
     "Cburnett"
@@ -180,40 +184,42 @@ export default function AiChessboardPanel({
     );
 
   // Resize functionality
-  
+
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0 });
   const startDimensionsRef = useRef({ width: 0, height: 0 });
 
   // Replace the fixed dimensions with responsive logic
-const [panelDimensions, setPanelDimensions] = useLocalStorage<{
-  width: number;
-  height: number;
-}>("board_ui_show_panel_dimensions", {
-  width: typeof window !== 'undefined' && window.innerWidth < 768 
-    ? window.innerWidth - 32 
-    : DEFAULT_BOARD_PANEL_DIMENSIONS.width,
-  height: typeof window !== 'undefined' && window.innerWidth < 768 
-    ? window.innerHeight - 100 
-    : DEFAULT_BOARD_PANEL_DIMENSIONS.height,
-});
+  const [panelDimensions, setPanelDimensions] = useLocalStorage<{
+    width: number;
+    height: number;
+  }>("board_ui_show_panel_dimensions", {
+    width:
+      typeof window !== "undefined" && window.innerWidth < 768
+        ? window.innerWidth - 32
+        : DEFAULT_BOARD_PANEL_DIMENSIONS.width,
+    height:
+      typeof window !== "undefined" && window.innerWidth < 768
+        ? window.innerHeight - 100
+        : DEFAULT_BOARD_PANEL_DIMENSIONS.height,
+  });
 
-// Add window resize listener
-useEffect(() => {
-  const handleResize = () => {
-    if (window.innerWidth < 768) {
-      setPanelDimensions({
-        width: window.innerWidth - 32,
-        height: window.innerHeight - 100,
-      });
-      setBoardSize(Math.min(window.innerWidth - 100, 500));
-    }
-  };
-  
-  window.addEventListener('resize', handleResize);
-  return () => window.removeEventListener('resize', handleResize);
-}, []);
+  // Add window resize listener
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setPanelDimensions({
+          width: window.innerWidth - 32,
+          height: window.innerHeight - 100,
+        });
+        setBoardSize(Math.min(window.innerWidth - 100, 500));
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Memoized Board analysis
   const boardAnalysis = useMemo(() => {
@@ -381,61 +387,7 @@ useEffect(() => {
     );
   }, [playMode, gameStatus, game, playerSide, engineThinking]);
 
-  // Custom onDrop handler for gameplay
-  const handlePlayerMove = useCallback(
-    (source: string, target: string) => {
-      if (playMode) {
-        if (!canPlayerMove()) return false;
-
-        try {
-          const move = game.move({
-            from: source,
-            to: target,
-            promotion: "q",
-          });
-
-          if (move) {
-            const newGame = new Chess(game.fen());
-            setGame(newGame);
-            setFen(newGame.fen());
-            setSelectedSquare(null);
-            setLegalMoves([]);
-            setMoveSquares({});
-            return true;
-          }
-        } catch (error) {
-          console.log("Invalid move:", error);
-        }
-        return false;
-      } else {
-        let moveMade = false;
-        safeGameMutate((gameInstance) => {
-          const move = gameInstance.move({
-            from: source,
-            to: target,
-            promotion: "q",
-          });
-          if (move) {
-            moveMade = true;
-            clearAnalysis();
-          }
-        });
-        setMoveSquares({});
-        return moveMade;
-      }
-    },
-    [
-      playMode,
-      canPlayerMove,
-      game,
-      setGame,
-      setFen,
-      setMoveSquares,
-      safeGameMutate,
-      clearAnalysis,
-    ]
-  );
-
+  
   const pgnMoves = useMemo(() => {
     if (moveHistory.length <= 1) return [];
 
@@ -486,175 +438,233 @@ useEffect(() => {
     [moveHistory, setGame, setFen, clearAnalysis]
   );
 
-  // Optimized square click handler
-  const handleSquareClick = useCallback(
-    (square: string) => {
-      if (selectedSquare === square) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
+  
+  const handlePlayerMove = useCallback(
+  (args: PieceDropHandlerArgs) => {
+    const source = args.sourceSquare;
+    const target = args.targetSquare;
 
-      if (selectedSquare && legalMoves.includes(square)) {
-        if (playMode) {
-          try {
-            const move = game.move({
-              from: selectedSquare,
-              to: square,
-              promotion: "q",
-            });
+    // In v5, targetSquare can be null if dropped off board
+    if (!source || !target) return false;
 
-            if (move) {
-              const newGame = new Chess(game.fen());
-              setGame(newGame);
-              setFen(newGame.fen());
-            }
-          } catch (error) {
-            console.log("Invalid move:", error);
-          }
-        } else {
-          safeGameMutate((newGame) => {
-            try {
-              const move = newGame.move({
-                from: selectedSquare,
-                to: square,
-                promotion: "q",
-              });
+    if (playMode) {
+      if (!canPlayerMove()) return false;
 
-              if (move) {
-                clearAnalysis();
-              }
-            } catch (error) {
-              console.log("Invalid move:", error);
-            }
-          });
-        }
+      try {
+        const move = game.move({
+          from: source,
+          to: target,
+          promotion: "q",
+        });
 
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      const piece = game.get(square as Square);
-      if (!piece || piece.color !== game.turn()) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      if (playMode) {
-        const playerColor = side === "white" ? "w" : "b";
-        if (piece.color !== playerColor) {
+        if (move) {
+          const newGame = new Chess(game.fen());
+          setGame(newGame);
+          setFen(newGame.fen());
           setSelectedSquare(null);
           setLegalMoves([]);
-          return;
+          setMoveSquares({});
+          return true;
         }
+      } catch (error) {
+        console.log("Invalid move:", error);
       }
+      return false;
+    } else {
+      let moveMade = false;
+      safeGameMutate((gameInstance) => {
+        const move = gameInstance.move({
+          from: source,
+          to: target,
+          promotion: "q",
+        });
+        if (move) {
+          moveMade = true;
+          clearAnalysis();
+        }
+      });
+      setMoveSquares({});
+      return moveMade;
+    }
+  },
+  [
+    playMode,
+    canPlayerMove,
+    game,
+    setGame,
+    setFen,
+    setMoveSquares,
+    safeGameMutate,
+    clearAnalysis,
+  ]
+);
 
-      const moves = game.moves({ square: square as Square, verbose: true });
-      const targetSquares = moves.map((move) => move.to);
+const handleSquareClick = useCallback(
+  ({ piece, square }: SquareHandlerArgs) => {
+    if (selectedSquare === square) {
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
 
-      setSelectedSquare(square);
-      setLegalMoves(targetSquares);
-    },
-    [
-      playMode,
-      canPlayerMove,
-      selectedSquare,
-      legalMoves,
-      game,
-      playerSide,
-      setGame,
-      setFen,
-      safeGameMutate,
-      clearAnalysis,
-    ]
-  );
+    if (selectedSquare && legalMoves.includes(square)) {
+      // Create PieceDropHandlerArgs for the move
+      const movingPiece = game.get(selectedSquare as Square);
+      const args: PieceDropHandlerArgs = {
+        piece: {
+          isSparePiece: false,
+          position: selectedSquare,
+          pieceType: movingPiece ? `${movingPiece.color}${movingPiece.type.toUpperCase()}` : 'wP',
+        },
+        sourceSquare: selectedSquare,
+        targetSquare: square,
+      };
+      
+      // Use handlePlayerMove to process the move
+      handlePlayerMove(args);
+      
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
+
+    const chessPiece = game.get(square as Square);
+    if (!chessPiece || chessPiece.color !== game.turn()) {
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
+
+    if (playMode) {
+      const playerColor = side === "white" ? "w" : "b";
+      if (chessPiece.color !== playerColor) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+    }
+
+    const moves = game.moves({ square: square as Square, verbose: true });
+    const targetSquares = moves.map((move) => move.to);
+
+    setSelectedSquare(square);
+    setLegalMoves(targetSquares);
+  },
+  [
+    playMode,
+    canPlayerMove,
+    selectedSquare,
+    legalMoves,
+    game,
+    side,
+    setGame,
+    setFen,
+    safeGameMutate,
+    clearAnalysis,
+    handlePlayerMove, // Add this dependency
+  ]
+);
+
 
   const customArrows = useMemo((): Arrow[] => {
-  if (!showArrows) {
-    return [];
-  }
+    if (!showArrows) {
+      return [];
+    }
 
-  const arrows: Arrow[] = [];
+    const arrows: Arrow[] = [];
 
-  // Only show review arrow if reviewMove exists and corresponds to current position
-  if (reviewMove) {
-    const reviewArrow: Arrow = [
-      reviewMove.arrowMove.from,
-      reviewMove.arrowMove.to,
-      getMoveClassificationStyle(reviewMove.quality).color,
-    ];
-    arrows.push(reviewArrow);
+    // Only show review arrow if reviewMove exists and corresponds to current position
+    if (reviewMove) {
+      const reviewArrow: Arrow = {
+        startSquare: reviewMove.arrowMove.from as Square,
+        endSquare: reviewMove.arrowMove.to as Square,
+        color: getMoveClassificationStyle(reviewMove.quality).color,
+      };
+      arrows.push(reviewArrow);
 
-    // Only add engine arrow if reviewMove quality is not "Best"
-    if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
+      // Only add engine arrow if reviewMove quality is not "Best"
+      if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
+        const bestLine = stockfishAnalysisResult.lines[0]?.pv;
+        if (bestLine && bestLine.length > 0) {
+          const move = bestLine[0];
+          if (move && move.length >= 4) {
+            const from = move.substring(0, 2);
+            const to = move.substring(2, 4);
+
+            // Avoid duplicate arrows
+            const arrowKey = `${from}-${to}`;
+            const reviewArrowKey = `${reviewMove.arrowMove.from}-${reviewMove.arrowMove.to}`;
+
+            if (arrowKey !== reviewArrowKey) {
+              const engineArrow: Arrow = {
+                startSquare: from as Square,
+                endSquare: to as Square,
+                color: "#4caf50",
+              };
+              arrows.push(engineArrow);
+            }
+          }
+        }
+      }
+    } else if (!reviewMove && stockfishAnalysisResult?.lines) {
+      // Only show engine arrow if no reviewMove is present
       const bestLine = stockfishAnalysisResult.lines[0]?.pv;
       if (bestLine && bestLine.length > 0) {
         const move = bestLine[0];
         if (move && move.length >= 4) {
           const from = move.substring(0, 2);
           const to = move.substring(2, 4);
+          const engineArrow: Arrow = {
+            startSquare: from as Square,
+            endSquare: to as Square,
+            color: "#4caf50",
+          };
+          arrows.push(engineArrow);
+        }
+      }
+    }
 
-          // Avoid duplicate arrows
-          const arrowKey = `${from}-${to}`;
-          const reviewArrowKey = `${reviewMove.arrowMove.from}-${reviewMove.arrowMove.to}`;
+    // Add Maia 1900 top move arrow (human-like move)
+    if (evaluations) {
+      const maia1900 = evaluations["maia_kdd_1900"];
+      if (maia1900 && maia1900.policy) {
+        const topMaiaMove = Object.entries(maia1900.policy).sort(
+          ([, a], [, b]) => b - a
+        )[0];
 
-          if (arrowKey !== reviewArrowKey) {
-            const engineArrow: Arrow = [
-              from as Square,
-              to as Square,
-              "#4caf50",
-            ];
-            arrows.push(engineArrow);
+        if (topMaiaMove) {
+          const [move] = topMaiaMove;
+          if (move.length >= 4) {
+            const from = move.substring(0, 2) as Square;
+            const to = move.substring(2, 4) as Square;
+
+            // Avoid duplicate arrows with existing arrows
+            const maiaArrowKey = `${from}-${to}`;
+            const existingArrow = arrows.find(
+              (a) => `${a.startSquare}-${a.endSquare}` === maiaArrowKey
+            );
+
+            if (!existingArrow) {
+              const maiaArrow: Arrow = {
+                startSquare: from,
+                endSquare: to,
+                color: "#7c3aed", // Dark purple
+              };
+              arrows.push(maiaArrow);
+            }
           }
         }
       }
     }
-  } else if (!reviewMove && stockfishAnalysisResult?.lines) {
-    // Only show engine arrow if no reviewMove is present
-    const bestLine = stockfishAnalysisResult.lines[0]?.pv;
-    if (bestLine && bestLine.length > 0) {
-      const move = bestLine[0];
-      if (move && move.length >= 4) {
-        const from = move.substring(0, 2);
-        const to = move.substring(2, 4);
-        const engineArrow: Arrow = [from as Square, to as Square, "#4caf50"];
-        arrows.push(engineArrow);
-      }
-    }
-  }
 
-  // Add Maia 1900 top move arrow (human-like move)
-  if (evaluations) {
-    const maia1900 = evaluations['maia_kdd_1900'];
-    if (maia1900 && maia1900.policy) {
-      const topMaiaMove = Object.entries(maia1900.policy)
-        .sort(([, a], [, b]) => b - a)[0];
-
-      if (topMaiaMove) {
-        const [move] = topMaiaMove;
-        if (move.length >= 4) {
-          const from = move.substring(0, 2) as Square;
-          const to = move.substring(2, 4) as Square;
-
-          // Avoid duplicate arrows with existing arrows
-          const maiaArrowKey = `${from}-${to}`;
-          const existingArrow = arrows.find(
-            ([arrowFrom, arrowTo]) => `${arrowFrom}-${arrowTo}` === maiaArrowKey
-          );
-
-          if (!existingArrow) {
-            const maiaArrow: Arrow = [from, to, "#7c3aed"]; // Dark purple
-            arrows.push(maiaArrow);
-          }
-        }
-      }
-    }
-  }
-
-  return arrows;
-}, [showArrows, reviewMove, stockfishAnalysisResult, currentMoveIndex, evaluations]);
+    return arrows;
+  }, [
+    showArrows,
+    reviewMove,
+    stockfishAnalysisResult,
+    currentMoveIndex,
+    evaluations,
+  ]);
 
   // Memoized custom square styles with piece highlighting
   const customSquareStyles = useMemo(() => {
@@ -796,41 +806,39 @@ useEffect(() => {
     boardOrientation: getBoardOrientation(),
   });
 
-  const getCustomPieces = (
-    pieceSet: string
-  ): Record<
-    string,
-    ({ squareWidth }: { squareWidth: number }) => JSX.Element
-  > => {
-    const pieces = ["P", "N", "B", "R", "Q", "K"];
-    const colors = ["w", "b"];
-    const customPieces: Record<
-      string,
-      ({ squareWidth }: { squareWidth: number }) => JSX.Element
-    > = {};
+  const getCustomPieces = (pieceSet: string): PieceRenderObject => {
+  const pieces = ["P", "N", "B", "R", "Q", "K"];
+  const colors = ["w", "b"];
+  const customPieces: PieceRenderObject = {};
 
-    colors.forEach((color) => {
-      pieces.forEach((piece) => {
-        const pieceKey = `${color}${piece}`;
+  colors.forEach((color) => {
+    pieces.forEach((piece) => {
+      const pieceKey = `${color}${piece}`;
 
-        let src: string;
-        if (pieceSet.toLowerCase() == 'cburnett' || !pieceSet) {
-          src = `/static/pieces/Cburnett/${pieceKey}.svg`;
-        } else {
-          src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
-        }
+      let src: string;
+      if (pieceSet.toLowerCase() === "cburnett" || !pieceSet) {
+        src = `/static/pieces/Cburnett/${pieceKey}.svg`;
+      } else {
+        src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
+      }
 
-        customPieces[pieceKey] = ({ squareWidth }) => (
-          <img
-            src={src}
-            style={{ width: squareWidth, height: squareWidth }}
-          />
-        );
-      });
+      // v5 signature: no parameters, just returns JSX.Element
+      customPieces[pieceKey] = () => (
+        <img 
+          src={src} 
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            display: 'block'
+          }} 
+          alt={pieceKey}
+        />
+      );
     });
+  });
 
-    return customPieces;
-  };
+  return customPieces;
+};
 
   return (
     <Box
@@ -839,11 +847,11 @@ useEffect(() => {
         width: `${panelDimensions.width}px`,
         height: `${panelDimensions.height}px`,
         position: "relative",
-        maxWidth: '100vw', 
-        maxHeight: '100vw',
+        maxWidth: "100vw",
+        maxHeight: "100vw",
         border: "1px solid #444",
         borderRadius: 2,
-   
+
         overflow: "hidden",
         userSelect: isResizing ? "none" : "auto",
       }}
@@ -874,7 +882,7 @@ useEffect(() => {
         <Paper
           sx={{
             p: 1.5,
-           
+
             borderRadius: 2,
             mb: 2,
           }}
@@ -889,7 +897,6 @@ useEffect(() => {
               label={modeInfo.label}
               size="small"
               sx={{
-                
                 fontSize: "0.65rem",
                 fontWeight: 600,
               }}
@@ -919,36 +926,37 @@ useEffect(() => {
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
           {showEvalBar && !puzzleMode && (
             <EvalBar
-              lineEval={stockfishAnalysisResult?.lines[0]} 
+              lineEval={stockfishAnalysisResult?.lines[0]}
               boardOrientation={getBoardOrientation()}
               height={boardSize} // Match the board height
-              
             />
           )}
           <Chessboard
-            position={fen}
-            onPieceDrop={puzzleMode ? onDropPuzzle : handlePlayerMove}
-            onSquareClick={
-              puzzleMode ? handleSquarePuzzleClick : handleSquareClick
-            }
-            allowDragOutsideBoard={false}
-            animationDuration={animationDuration}
-            showBoardNotation={showCoordinates}
-            customSquareStyles={
-              puzzleMode ? puzzleCustomSquareStyle : customSquareStyles
-            }
-            customDarkSquareStyle={{
-              backgroundColor:
-                getCurrentThemeColors(boardTheme).darkSquareColor,
+            options={{
+              position: fen,
+              onPieceDrop: puzzleMode ? onDropPuzzle : handlePlayerMove,
+              onSquareClick: puzzleMode
+                ? handleSquarePuzzleClick
+                : handleSquareClick,
+              allowDragOffBoard: false,
+              animationDurationInMs: animationDuration,
+              showNotation: showCoordinates,
+              squareStyles: puzzleMode
+                ? puzzleCustomSquareStyle
+                : customSquareStyles,
+              darkSquareStyle: {
+                backgroundColor:
+                  getCurrentThemeColors(boardTheme).darkSquareColor,
+              },
+              lightSquareStyle: {
+                backgroundColor:
+                  getCurrentThemeColors(boardTheme).lightSquareColor,
+              },
+              arrows: customArrows,
+              boardOrientation: getBoardOrientation(),
+              pieces: getCustomPieces(pieceType),
+              id: "ai-chessboard", 
             }}
-            customLightSquareStyle={{
-              backgroundColor:
-                getCurrentThemeColors(boardTheme).lightSquareColor,
-            }}
-            customArrows={customArrows}
-            boardWidth={boardSize}
-            boardOrientation={getBoardOrientation()}
-            customPieces={getCustomPieces(pieceType)}
           />
         </Box>
         {gameReviewMode && gameInfo && <BottomPlayerBar />}
@@ -965,7 +973,6 @@ useEffect(() => {
                 startIcon={<NavigateBefore fontSize="small" />}
                 fullWidth
                 size="small"
-             
               >
                 Previous
               </Button>
@@ -976,7 +983,6 @@ useEffect(() => {
                 endIcon={<NavigateNext fontSize="small" />}
                 fullWidth
                 size="small"
-               
               >
                 Next
               </Button>
@@ -991,7 +997,7 @@ useEffect(() => {
               <Paper
                 sx={{
                   p: 1.5,
-                 
+
                   borderRadius: 2,
                 }}
               >
@@ -1002,7 +1008,7 @@ useEffect(() => {
                   variant="caption"
                   sx={{
                     fontFamily: "monospace",
-                  
+
                     p: 1,
                     borderRadius: 1,
                     wordBreak: "break-all",
@@ -1021,7 +1027,7 @@ useEffect(() => {
                 <Paper
                   sx={{
                     p: 1.5,
-                    
+
                     borderRadius: 2,
                   }}
                 >
@@ -1051,7 +1057,6 @@ useEffect(() => {
                               key={index}
                               variant="caption"
                               sx={{
-                                
                                 fontSize: "0.65rem",
                                 display: "block",
                                 ml: 1,
@@ -1084,7 +1089,6 @@ useEffect(() => {
                               key={index}
                               variant="caption"
                               sx={{
-                              
                                 fontSize: "0.65rem",
                                 display: "block",
                                 ml: 1,
@@ -1113,7 +1117,6 @@ useEffect(() => {
                     <Typography
                       variant="caption"
                       sx={{
-                     
                         fontSize: "0.6rem",
                         display: "block",
                       }}
@@ -1139,7 +1142,7 @@ useEffect(() => {
                           />
                           <Typography
                             variant="caption"
-                            sx={{  fontSize: "0.6rem" }}
+                            sx={{ fontSize: "0.6rem" }}
                           >
                             Critical
                           </Typography>
@@ -1203,7 +1206,7 @@ useEffect(() => {
           backgroundColor: "#555",
           borderTopRightRadius: "3px",
           opacity: 0.7,
-          display: { xs: 'none', md: 'flex' }, 
+          display: { xs: "none", md: "flex" },
           alignItems: "center",
           justifyContent: "center",
           "&:hover": {
@@ -1215,7 +1218,7 @@ useEffect(() => {
         <OpenInFullIcon
           sx={{
             fontSize: "10px",
-           
+
             transform: "rotate(180deg)",
           }}
         />
@@ -1227,7 +1230,6 @@ useEffect(() => {
         onClose={handleSettingsClose}
         PaperProps={{
           sx: {
-            
             minWidth: 450,
             maxHeight: "90vh",
           },
@@ -1238,17 +1240,15 @@ useEffect(() => {
           <Stack spacing={3} sx={{ pt: 1 }}>
             {/* Board Theme Selection */}
             <Box>
-              <Typography variant="body2" sx={{  mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Board Theme
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel >theme</InputLabel>
+                <InputLabel>theme</InputLabel>
                 <Select
                   value={boardTheme}
                   onChange={(e) => setBoardTheme(e.target.value)}
                   label="Voice"
-                  
-                 
                 >
                   {Object.entries(BOARD_THEMES).map(([key, theme]) => (
                     <MenuItem key={key} value={key}>
@@ -1264,19 +1264,17 @@ useEffect(() => {
                 Piece Style
               </Typography>
               <FormControl size="small" fullWidth>
-                <InputLabel >piece style</InputLabel>
+                <InputLabel>piece style</InputLabel>
                 <Select
                   value={pieceType}
                   onChange={(e) => setPieceType(e.target.value)}
-                  label="Pieces" 
+                  label="Pieces"
                 >
-                  {Object.entries(PIECE_STYLE_TYPES).map(
-                    ([key, piece]) => (
-                      <MenuItem key={key} value={key}>
-                        {piece.name}
-                      </MenuItem>
-                    )
-                  )}
+                  {Object.entries(PIECE_STYLE_TYPES).map(([key, piece]) => (
+                    <MenuItem key={key} value={key}>
+                      {piece.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Box>
@@ -1291,12 +1289,11 @@ useEffect(() => {
                 min={0}
                 max={1000}
                 step={50}
-                
               />
             </Box>
 
             <Box>
-              <Typography variant="body2" sx={{  mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2 }}>
                 Display Options
               </Typography>
               <Stack spacing={2}>
@@ -1305,13 +1302,10 @@ useEffect(() => {
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" >
-                    Show Coordinates
-                  </Typography>
+                  <Typography variant="body2">Show Coordinates</Typography>
                   <Switch
                     checked={showCoordinates}
                     onChange={(e) => setShowCoordinates(e.target.checked)}
-               
                   />
                 </Stack>
 
@@ -1320,13 +1314,10 @@ useEffect(() => {
                   justifyContent="space-between"
                   alignItems="center"
                 >
-                  <Typography variant="body2" >
-                    Show FEN String
-                  </Typography>
+                  <Typography variant="body2">Show FEN String</Typography>
                   <Switch
                     checked={showFen}
                     onChange={(e) => setShowFen(e.target.checked)}
-                 
                   />
                 </Stack>
 
@@ -1336,13 +1327,12 @@ useEffect(() => {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography variant="body2" >
+                    <Typography variant="body2">
                       Show Analysis Arrows
                     </Typography>
                     <Switch
                       checked={showArrows}
                       onChange={(e) => setShowArrows(e.target.checked)}
-                    
                     />
                   </Stack>
                 )}
@@ -1353,13 +1343,10 @@ useEffect(() => {
                     justifyContent="space-between"
                     alignItems="center"
                   >
-                    <Typography variant="body2" >
-                      Show Eval Bar
-                    </Typography>
+                    <Typography variant="body2">Show Eval Bar</Typography>
                     <Switch
                       checked={showEvalBar}
                       onChange={(e) => setEvalBar(e.target.checked)}
-                     
                     />
                   </Stack>
                 )}
@@ -1367,9 +1354,7 @@ useEffect(() => {
             </Box>
 
             <Box>
-              <Typography variant="body2" >
-                Piece Highlighting
-              </Typography>
+              <Typography variant="body2">Piece Highlighting</Typography>
               <Stack spacing={2}>
                 <Stack
                   direction="row"
@@ -1377,13 +1362,8 @@ useEffect(() => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" >
-                      Hanging Pieces
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ fontSize: "0.7rem" }}
-                    >
+                    <Typography variant="body2">Hanging Pieces</Typography>
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
                       Critical threats - undefended pieces
                     </Typography>
                   </Box>
@@ -1408,13 +1388,10 @@ useEffect(() => {
                   alignItems="center"
                 >
                   <Box>
-                    <Typography variant="body2" >
+                    <Typography variant="body2">
                       Semi-Protected Pieces
                     </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{  fontSize: "0.7rem" }}
-                    >
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
                       Equal attackers and defenders
                     </Typography>
                   </Box>
@@ -1453,7 +1430,6 @@ useEffect(() => {
                       onClick={flipBoard}
                       startIcon={<RotateLeft />}
                       fullWidth
-                    
                     >
                       Flip Board
                     </Button>
@@ -1466,8 +1442,6 @@ useEffect(() => {
                       onChange={(e) => setCustomFen(e.target.value)}
                       size="small"
                       fullWidth
-                    
-                      
                       placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                     />
 
@@ -1477,7 +1451,6 @@ useEffect(() => {
                       startIcon={<Upload />}
                       disabled={!customFen.trim()}
                       fullWidth
-                      
                     >
                       Load FEN
                     </Button>
@@ -1488,9 +1461,7 @@ useEffect(() => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSettingsClose} >
-            Done
-          </Button>
+          <Button onClick={handleSettingsClose}>Done</Button>
         </DialogActions>
       </Dialog>
     </Box>

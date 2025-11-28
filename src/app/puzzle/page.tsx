@@ -43,6 +43,7 @@ import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { useSession } from "@clerk/nextjs";
+import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 
 import {
   Lightbulb,
@@ -352,103 +353,119 @@ export default function PuzzlePage() {
     [puzzleData, solutionGameState, solutionViewIndex, solutionMoves]
   );
 
-  const onDrop = useCallback(
-    (source: string, target: string) => {
-      if (puzzleComplete || puzzleFailed || showingSolution) return false;
-      try {
-        const gameCopy = new Chess(fen);
-        const move = gameCopy.move({
-          from: source,
-          to: target,
-          promotion: "q",
-        });
-        if (!move) return false;
-        const moveNotation = move.from + move.to + (move.promotion || "");
-        const expectedMove = solutionMoves[currentSolutionIndex];
-        
-        if (moveNotation === expectedMove) {
-          setGame(gameCopy);
-          setFen(gameCopy.fen());
-          setMoveSquares({
-            [source]: "rgba(155, 199, 0, 0.41)",
-            [target]: "rgba(155, 199, 0, 0.41)",
-          });
-          
-          const playedMove = sanSolutionMoves[currentSolutionIndex];
-          const remainingMoves = sanSolutionMoves.slice(currentSolutionIndex + 1);
-          const solutionText = remainingMoves.length > 0 
-            ? `Move played: ${playedMove}. Remaining solution: ${remainingMoves.join(" ")}.`
-            : `Move played: ${playedMove}. Puzzle complete!`;
-          
-          if (puzzleQuery) {
-            const puzzleTransitionQuery = createTransitionPuzzlePrompt(puzzleQuery, solutionText);
-            setPuzzleQueryString(puzzleTransitionQuery);
-          }
-          
-          if (currentSolutionIndex === solutionMoves.length - 1) {
-            setPuzzleComplete(true);
-            showSnackbar(hintUsed ? "Puzzle complete! (Hint used)" : "Perfect! Puzzle solved!", "success");
-          } else {
-            setTimeout(() => {
-              const nextMove = solutionMoves[currentSolutionIndex + 1];
-              if (nextMove) {
-                const opponentMove = gameCopy.move({
-                  from: nextMove.substring(0, 2),
-                  to: nextMove.substring(2, 4),
-                  promotion: nextMove.substring(4) || undefined,
-                });
-                if (opponentMove) {
-                  setGame(new Chess(gameCopy.fen()));
-                  setFen(gameCopy.fen());
-                  setCurrentSolutionIndex(currentSolutionIndex + 2);
-                }
-              }
-            }, 500);
-          }
-        } else {
-          setPuzzleFailed(true);
-          setMoveSquares({
-            [source]: "rgba(255, 0, 0, 0.41)",
-            [target]: "rgba(255, 0, 0, 0.41)",
-          });
-          showSnackbar("Wrong move! Try again or view the solution", "error");
-        }
-        return true;
-      } catch (error) {
-        console.error("Move error:", error);
-        return false;
-      }
-    },
-    [fen, solutionMoves, sanSolutionMoves, currentSolutionIndex, puzzleComplete, puzzleFailed, showingSolution, hintUsed, puzzleQuery, createTransitionPuzzlePrompt]
-  );
+ const onDrop = useCallback(
+  (args: PieceDropHandlerArgs) => {
+    if (puzzleComplete || puzzleFailed || showingSolution) return false;
+    try {
+      const gameCopy = new Chess(fen);
+      const source = args.sourceSquare;
+      const target = args.targetSquare;
 
-  const handleSquareClick = useCallback(
-    (square: string) => {
-      if (puzzleComplete || puzzleFailed || showingSolution) return;
-      if (selectedSquare === square) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
+      if (!source || !target) return false;
+
+      const move = gameCopy.move({
+        from: source,
+        to: target,
+        promotion: "q",
+      });
+      if (!move) return false;
+      const moveNotation = move.from + move.to + (move.promotion || "");
+      const expectedMove = solutionMoves[currentSolutionIndex];
+      
+      if (moveNotation === expectedMove) {
+        setGame(gameCopy);
+        setFen(gameCopy.fen());
+        setMoveSquares({
+          [source]: "rgba(155, 199, 0, 0.41)",
+          [target]: "rgba(155, 199, 0, 0.41)",
+        });
+        
+        const playedMove = sanSolutionMoves[currentSolutionIndex];
+        const remainingMoves = sanSolutionMoves.slice(currentSolutionIndex + 1);
+        const solutionText = remainingMoves.length > 0 
+          ? `Move played: ${playedMove}. Remaining solution: ${remainingMoves.join(" ")}.`
+          : `Move played: ${playedMove}. Puzzle complete!`;
+        
+        if (puzzleQuery) {
+          const puzzleTransitionQuery = createTransitionPuzzlePrompt(puzzleQuery, solutionText);
+          setPuzzleQueryString(puzzleTransitionQuery);
+        }
+        
+        if (currentSolutionIndex === solutionMoves.length - 1) {
+          setPuzzleComplete(true);
+          showSnackbar(hintUsed ? "Puzzle complete! (Hint used)" : "Perfect! Puzzle solved!", "success");
+        } else {
+          setTimeout(() => {
+            const nextMove = solutionMoves[currentSolutionIndex + 1];
+            if (nextMove) {
+              const opponentMove = gameCopy.move({
+                from: nextMove.substring(0, 2),
+                to: nextMove.substring(2, 4),
+                promotion: nextMove.substring(4) || undefined,
+              });
+              if (opponentMove) {
+                setGame(new Chess(gameCopy.fen()));
+                setFen(gameCopy.fen());
+                setCurrentSolutionIndex(currentSolutionIndex + 2);
+              }
+            }
+          }, 500);
+        }
+      } else {
+        setPuzzleFailed(true);
+        setMoveSquares({
+          [source]: "rgba(255, 0, 0, 0.41)",
+          [target]: "rgba(255, 0, 0, 0.41)",
+        });
+        showSnackbar("Wrong move! Try again or view the solution", "error");
       }
-      if (selectedSquare && legalMoves.includes(square)) {
-        onDrop(selectedSquare, square);
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-      const piece = game.get(square as Square);
-      if (!piece || piece.color !== game.turn()) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-      const moves = game.moves({ square: square as Square, verbose: true });
-      const targetSquares = moves.map((move) => move.to);
-      setSelectedSquare(square);
-      setLegalMoves(targetSquares);
-    },
-    [selectedSquare, legalMoves, game, onDrop, puzzleComplete, puzzleFailed, showingSolution]
-  );
+      return true;
+    } catch (error) {
+      console.error("Move error:", error);
+      return false;
+    }
+  },
+  [fen, solutionMoves, sanSolutionMoves, currentSolutionIndex, puzzleComplete, puzzleFailed, showingSolution, hintUsed, puzzleQuery, createTransitionPuzzlePrompt]
+);
+
+const handleSquareClick = useCallback(
+  ({ piece, square }: SquareHandlerArgs) => {
+    if (puzzleComplete || puzzleFailed || showingSolution) return;
+    if (selectedSquare === square) {
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
+    if (selectedSquare && legalMoves.includes(square)) {
+      // Create the args object matching PieceDropHandlerArgs
+      const chessPiece = game.get(selectedSquare as Square);
+      const args: PieceDropHandlerArgs = {
+        piece: {
+          isSparePiece: false,
+          position: selectedSquare,
+          pieceType: chessPiece ? `${chessPiece.color}${chessPiece.type.toUpperCase()}` : 'wP',
+        },
+        sourceSquare: selectedSquare,
+        targetSquare: square,
+      };
+      onDrop(args);
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
+    const chessPiece = game.get(square as Square);
+    if (!chessPiece || chessPiece.color !== game.turn()) {
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      return;
+    }
+    const moves = game.moves({ square: square as Square, verbose: true });
+    const targetSquares = moves.map((move) => move.to);
+    setSelectedSquare(square);
+    setLegalMoves(targetSquares);
+  },
+  [selectedSquare, legalMoves, game, onDrop, puzzleComplete, puzzleFailed, showingSolution]
+);
 
   const customSquareStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
