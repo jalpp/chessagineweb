@@ -89,6 +89,39 @@ export const BOARD_THEMES = {
     squareClickLegalColor: "rgba(46, 125, 50, 0.5)",
     selectedSquareColor: "rgba(255, 235, 59, 0.6)", // warm yellow
   },
+
+  purple: {
+    name: "Purple Dream",
+    lightSquareColor: "#e1d5e7",
+    darkSquareColor: "#7c4dff",
+    bestMoveArrowColor: "#ab47bc",
+    squareClickLegalColor: "rgba(156, 39, 176, 0.5)",
+    selectedSquareColor: "rgba(255, 193, 255, 0.6)",
+    },
+    orange: {
+    name: "Sunset",
+    lightSquareColor: "#ffe0b2",
+    darkSquareColor: "#ff9800",
+    bestMoveArrowColor: "#f57c00",
+    squareClickLegalColor: "rgba(255, 152, 0, 0.5)",
+    selectedSquareColor: "rgba(255, 235, 59, 0.6)",
+    },
+    pink: {
+    name: "Rose",
+    lightSquareColor: "#f8bbd0",
+    darkSquareColor: "#ad1457",
+    bestMoveArrowColor: "#d81b60",
+    squareClickLegalColor: "rgba(233, 30, 99, 0.5)",
+    selectedSquareColor: "rgba(255, 182, 193, 0.6)",
+    },
+    teal: {
+    name: "Teal Breeze",
+    lightSquareColor: "#b2dfdb",
+    darkSquareColor: "#00695c",
+    bestMoveArrowColor: "#00897b",
+    squareClickLegalColor: "rgba(0, 150, 136, 0.5)",
+    selectedSquareColor: "rgba(178, 223, 219, 0.6)",
+    },
 } as const;
 
 
@@ -99,15 +132,22 @@ export const PIECE_STYLE_TYPES = {
   Artemis: { name: "Artemis" },
   Attack: { name: "Attack" },
   Clash: { name: "Clash" },
-  Hades: { name: "Hades" },
-  Halloween: { name: "Halloween" },
-  Hera: { name: "Hera" },
+  // Hades: { name: "Hades" },
+  // Halloween: { name: "Halloween" },
+  // Hera: { name: "Hera" },
   Juno: { name: "Juno" },
   Junpiter: { name: "Junpiter" },
   Mars: { name: "Mars" },
   Minerva: { name: "Minerva" },
-  Cyborg: {name: "Cyborg"}
+  Cyborg: {name: "Cyborg"},
+  Trimmed: {name: "Trimmed-3D"},
+  Glass: {name: "Glass-3D"},
+  Wood: {name: "Wood-3D"}
 };
+
+export const is3DSet = (set: string) => {
+  return set === "Trimmed" || set === "Glass" || set === "Wood"
+}
 
 export const getCurrentThemeColors = (themeName: string) => {
   return BOARD_THEMES[themeName as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;
