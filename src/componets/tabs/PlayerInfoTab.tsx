@@ -6,7 +6,7 @@ import {
   Avatar,
   Chip
 } from '@mui/material';
-import { BoardOrientation } from 'react-chessboard/dist/chessboard/types';
+import { BoardOrientation } from '../analysis/AiChessboard';
 
 interface PlayerInfoType {
     gameInfo: Record<string, string> | undefined;

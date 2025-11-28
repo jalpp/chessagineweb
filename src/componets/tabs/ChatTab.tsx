@@ -705,16 +705,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                     }}
                   >
                     <Chessboard
-                      position={
-                        position.fen ||
-                        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+                      options={
+                        {
+                          position:position.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                          allowDragging: false,
+                          allowDragOffBoard: false,                          
+                        }
                       }
-                      arePiecesDraggable={false}
-                      boardWidth={190}
-                      customBoardStyle={{
-                        borderRadius: "4px",
-                        border: "1px solid #444",
-                      }}
                     />
                   </Box>
                 </Box>
@@ -1682,12 +1680,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           >
             {selectedFen && (
               <Chessboard
-                position={selectedFen}
-                arePiecesDraggable={false}
-                boardWidth={350}
-                customBoardStyle={{
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                options={{
+                  position: selectedFen,
+                  allowDragOffBoard: false,
+                  allowDragging: false
                 }}
               />
             )}

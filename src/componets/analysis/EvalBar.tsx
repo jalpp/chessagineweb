@@ -1,6 +1,6 @@
 import { Box, Typography, Tooltip } from "@mui/material";
 import { LineEval } from "@/stockfish/engine/engine";
-import { BoardOrientation } from "react-chessboard/dist/chessboard/types";
+import { BoardOrientation } from "./AiChessboard";
 
 interface EvalBarProps {
   lineEval?: LineEval;
