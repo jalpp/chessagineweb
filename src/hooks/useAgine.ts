@@ -368,6 +368,7 @@ FEN: ${currentFen}`;
       gameInfo?: string,
       currentMove?: string,
       puzzleMode?: boolean,
+      graderMode?: boolean,
       puzzleQuery?: string,
       playMode?: boolean
     ): string => {
@@ -442,8 +443,12 @@ ${currentMove}
 </current_move>`;
       }
 
+      if(graderMode){
+        query += `Grade user's position evaluation, if position is not present, ask user to evaluate the current position so you can grade it`;
+      }
+
     
-      if (gameReview && gameReview.length > 0) {
+      if (gameReview && gameReview.length > 0 && !graderMode) {
         const generateGameReviewSummary = (moves: MoveAnalysis[]): string => {
           const movesByQuality: Record<MoveQuality, MoveAnalysis[]> = {
             "Best": [], "Very Good": [], "Good": [], "Dubious": [], 
@@ -523,7 +528,7 @@ ${gameReview.map(move => {
       }
 
       
-      if (state.sessionMode && !playMode && state.stockfishAnalysisResult) {
+      if (state.stockfishAnalysisResult) {
         const formattedEngineLines = state.stockfishAnalysisResult.lines
           .map((line, index) => {
             const evaluation = formatEvaluation(line);
@@ -583,6 +588,7 @@ ${candidateMoves}
 
 const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
 const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "true";
+const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true";
 
   const sendChatMessage = useCallback(
   async (
@@ -617,6 +623,10 @@ const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "t
 
       
       let mode = getQuestionMode() ? "question" : (puzzleMode || puzzleQuery ? "puzzle" : "position");
+      const grader = getGraderMode();
+      if(grader){
+        mode = 'grader';
+      }
 
       if(apiSettings.provider === "ollama" && apiSettings.model === "hf.co/NAKSTStudio/chess-gemma-commentary:F16"){
         query = buildCustomChatQuery(
@@ -633,6 +643,7 @@ const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "t
         gameInfo,
         currentMove,
         puzzleMode,
+        grader,
         puzzleQuery,
         playMode
       );

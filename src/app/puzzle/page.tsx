@@ -658,7 +658,6 @@ const handleSquareClick = useCallback(
                   
                 >
                   <Tab label="Puzzle Info" />
-                  <Tab label="Stockfish Analysis" />
                   <Tab label="AI Chat" />
                 </Tabs>
               </Box>
@@ -863,26 +862,6 @@ const handleSquareClick = useCallback(
                 </TabPanel>
 
                 <TabPanel value={analysisTab} index={1}>
-                  <Typography variant="h6" gutterBottom>
-                    Stockfish Analysis
-                  </Typography>
-                  <StockfishAnalysisTab
-                    stockfishAnalysisResult={stockfishAnalysisResult}
-                    stockfishLoading={stockfishLoading}
-                    handleEngineLineClick={handleEngineLineClick}
-                    engineDepth={engineDepth}
-                    engineLines={engineLines}
-                    engine={engine}
-                    llmLoading={llmLoading}
-                    analyzeWithStockfish={analyzeWithStockfish}
-                    formatEvaluation={formatEvaluation}
-                    formatPrincipalVariation={formatPrincipalVariation}
-                    setEngineDepth={setEngineDepth}
-                    setEngineLines={setEngineLines}
-                  />
-                </TabPanel>
-
-                <TabPanel value={analysisTab} index={2}>
                   <ChatTab
                     chatMessages={chatMessages}
                     chatInput={chatInput}
@@ -1117,10 +1096,8 @@ const handleSquareClick = useCallback(
                       value={analysisTab}
                       onChange={(_, newValue) => setAnalysisTab(newValue)}
                       variant="fullWidth"
-                      
                     >
                       <Tab label="Info" icon={<Zap size={16} />} iconPosition="start" />
-                      <Tab label="Engine" icon={<Settings size={16} />} iconPosition="start" />
                       <Tab label="AI Chat" icon={<Lightbulb size={16} />} iconPosition="start" />
                     </Tabs>
                   </CardContent>
@@ -1151,22 +1128,6 @@ const handleSquareClick = useCallback(
                     )}
                   </TabPanel>
                   <TabPanel value={analysisTab} index={1}>
-                    <StockfishAnalysisTab
-                      stockfishAnalysisResult={stockfishAnalysisResult}
-                      stockfishLoading={stockfishLoading}
-                      handleEngineLineClick={handleEngineLineClick}
-                      engineDepth={engineDepth}
-                      engineLines={engineLines}
-                      engine={engine}
-                      llmLoading={llmLoading}
-                      analyzeWithStockfish={analyzeWithStockfish}
-                      formatEvaluation={formatEvaluation}
-                      formatPrincipalVariation={formatPrincipalVariation}
-                      setEngineDepth={setEngineDepth}
-                      setEngineLines={setEngineLines}
-                    />
-                  </TabPanel>
-                  <TabPanel value={analysisTab} index={2}>
                     <ChatTab
                       chatMessages={chatMessages}
                       chatInput={chatInput}

@@ -8,6 +8,7 @@ import { createOllama } from "ollama-ai-provider-v2";
 import { RuntimeContext } from "@mastra/core/di";
 import { createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {
+  agineEvalGraderPrompt,
   aginePuzzleSystemPrompt,
   agineQuestionMode,
   agineSelfEval,
@@ -56,7 +57,9 @@ function createAgentInstruction(runtimeContext: RuntimeContext) {
     case "question":
       return agineQuestionMode.replace("ENGLISH", lang);
     case "selfeval":
-      return agineSelfEval; 
+      return agineSelfEval.replace("ENGLISH", lang);
+    case "grader":
+      return agineEvalGraderPrompt.replace("ENGLISH", lang);  
     case "chess-gemma-commentary":
       return "Generate professional chess commentary in the specified language. For Type=standard use 30–40 words. For Type=explanation, explain the best move briefly and address the userQuery. (≤50 words). Return exactly: Commentary, Predicted ELO, Verified Classification.";   
     default:
@@ -81,6 +84,7 @@ function createModelFromContext(runtimeContext: RuntimeContext) {
     case "openai":
       const openAi = createOpenAI({
         apiKey: apiKey,
+        
       });
       return openAi(modelName as OpenAIModel);
 
