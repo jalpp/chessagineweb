@@ -1,11 +1,11 @@
+
 import { useState, useCallback } from "react";
-import { Chess, Move, validateFen } from "chess.js";
+import { Chess, Move, validateFen, Color } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { LineEval } from "@/stockfish/engine/engine";
-import { Color } from "chess.js";
 import { CandidateMove } from "../componets/tabs/Chessdb";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
-
+import { getOpeningStats } from "@/libs/openingdatabase/helper";
 
 export type MoveQuality =
   | "Best"
@@ -28,6 +28,15 @@ export interface MoveAnalysis {
   player: "w" | "b";
 }
 
+/**
+ * Some of move classifcation logic is taken from ChessKit devs 
+ * https://github.com/GuillaumeSD/Chesskit/blob/main/src/lib/engine/helpers/moveClassification.ts
+ * 
+ * other functions are my addition on top of it.
+ * 
+ * thanks to chessKit devs!
+ */
+
 const useGameReview = (
   stockfishEngine: UciEngine | undefined,
   searchDepth: number
@@ -41,60 +50,7 @@ const useGameReview = (
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
   const [rootCurrentMove, setRootCurrentMove] = useState(0);
 
-  const isVeryGoodMove = (
-    preMoveAdvantage: number,
-    postMoveAdvantage: number,
-    isWhiteTurn: boolean,
-    secondBestAdvantage: number | undefined
-  ): boolean => {
-    if (!secondBestAdvantage) return false;
-
-    const advantageChange =
-      (postMoveAdvantage - preMoveAdvantage) * (isWhiteTurn ? 1 : -1);
-
-    if (advantageChange < -2) return false;
-
-    if (
-      isInHopelessPosition(postMoveAdvantage, secondBestAdvantage, isWhiteTurn)
-    ) {
-      return false;
-    }
-
-    const reversedGameOutcome = hasReversedOutcome(
-      preMoveAdvantage,
-      postMoveAdvantage,
-      isWhiteTurn
-    );
-    const wasCriticalChoice = wasOnlyViableOption(
-      postMoveAdvantage,
-      secondBestAdvantage,
-      isWhiteTurn
-    );
-
-    return reversedGameOutcome || wasCriticalChoice;
-  };
-
-  const hasReversedOutcome = (
-    before: number,
-    after: number,
-    whiteToMove: boolean
-  ): boolean => {
-    const improvement = (after - before) * (whiteToMove ? 1 : -1);
-    const crossedEquality =
-      (before < 50 && after > 50) || (before > 50 && after < 50);
-    return improvement > 10 && crossedEquality;
-  };
-
-  const wasOnlyViableOption = (
-    chosenAdvantage: number,
-    alternativeAdvantage: number,
-    whiteToMove: boolean
-  ): boolean => {
-    const qualityGap =
-      (chosenAdvantage - alternativeAdvantage) * (whiteToMove ? 1 : -1);
-    return qualityGap > 10;
-  };
-
+  // Convert centipawn to win percentage
   const centipawnToWinRate = (centipawn: number): number => {
     const clampedCp = Math.max(-1100, Math.min(centipawn, 1100));
     const conversionFactor = -0.0038988;
@@ -102,11 +58,13 @@ const useGameReview = (
     return 55 + 55 * probability;
   };
 
+  // Convert mate score to win percentage
   const mateToWinRate = (mateDistance: number): number => {
     if (mateDistance === 0) return 55;
     return mateDistance > 0 ? 100 : 0;
   };
 
+  // Convert evaluation to win percentage
   const evaluationToWinRate = (evaluation: LineEval | undefined): number => {
     if (!evaluation) return 55;
 
@@ -121,45 +79,115 @@ const useGameReview = (
     return 50;
   };
 
-  function normalizeChessDBScore(score: number, turn: Color): number{
-
-  if(turn === "b"){
-    return -score;
+  // Normalize ChessDB score based on turn
+  function normalizeChessDBScore(score: number, turn: Color): number {
+    if (turn === "b") {
+      return -score;
+    }
+    return score;
   }
 
-  return score;
-  
-}
+  // Convert percentage string to number
+  function percentToNumber(percentStr: string): number {
+    return parseFloat(percentStr.replace('%', '').trim());
+  }
 
-  const assessMoveQuality = (
-    previousAdvantage: number,
-    currentAdvantage: number,
-    whiteToMove: boolean
+  const getHasChangedGameOutcome = (
+    lastPositionWinPercentage: number,
+    positionWinPercentage: number,
+    isWhiteMove: boolean
+  ): boolean => {
+    const winPercentageDiff =
+      (positionWinPercentage - lastPositionWinPercentage) *
+      (isWhiteMove ? 1 : -1);
+    return (
+      winPercentageDiff > 10 &&
+      ((lastPositionWinPercentage < 50 && positionWinPercentage > 50) ||
+        (lastPositionWinPercentage > 50 && positionWinPercentage < 50))
+    );
+  };
+
+  const getIsTheOnlyGoodMove = (
+    positionWinPercentage: number,
+    lastPositionAlternativeLineWinPercentage: number,
+    isWhiteMove: boolean
+  ): boolean => {
+    const winPercentageDiff =
+      (positionWinPercentage - lastPositionAlternativeLineWinPercentage) *
+      (isWhiteMove ? 1 : -1);
+    return winPercentageDiff > 10;
+  };
+
+  const isLosingOrAlternateCompletelyWinning = (
+    positionWinPercentage: number,
+    lastPositionAlternativeLineWinPercentage: number,
+    isWhiteMove: boolean
+  ): boolean => {
+    const isLosing = isWhiteMove
+      ? positionWinPercentage < 50
+      : positionWinPercentage > 50;
+    const isAlternateCompletelyWinning = isWhiteMove
+      ? lastPositionAlternativeLineWinPercentage > 97
+      : lastPositionAlternativeLineWinPercentage < 3;
+
+    return isLosing || isAlternateCompletelyWinning;
+  };
+
+  const isVeryGoodMove = (
+    lastPositionWinPercentage: number,
+    positionWinPercentage: number,
+    isWhiteMove: boolean,
+    lastPositionAlternativeLineWinPercentage: number | undefined
+  ): boolean => {
+    if (!lastPositionAlternativeLineWinPercentage) return false;
+
+    const winPercentageDiff =
+      (positionWinPercentage - lastPositionWinPercentage) *
+      (isWhiteMove ? 1 : -1);
+    if (winPercentageDiff < -2) return false;
+
+    if (
+      isLosingOrAlternateCompletelyWinning(
+        positionWinPercentage,
+        lastPositionAlternativeLineWinPercentage,
+        isWhiteMove
+      )
+    ) {
+      return false;
+    }
+
+    const hasChangedGameOutcome = getHasChangedGameOutcome(
+      lastPositionWinPercentage,
+      positionWinPercentage,
+      isWhiteMove
+    );
+
+    const isTheOnlyGoodMove = getIsTheOnlyGoodMove(
+      positionWinPercentage,
+      lastPositionAlternativeLineWinPercentage,
+      isWhiteMove
+    );
+
+    return hasChangedGameOutcome || isTheOnlyGoodMove;
+  };
+
+  const getMoveBasicClassification = (
+    lastPositionWinPercentage: number,
+    positionWinPercentage: number,
+    isWhiteMove: boolean
   ): MoveQuality => {
-    const advantageLoss =
-      (currentAdvantage - previousAdvantage) * (whiteToMove ? 1 : -1);
+    const winPercentageDiff =
+      (positionWinPercentage - lastPositionWinPercentage) *
+      (isWhiteMove ? 1 : -1);
 
-    if (advantageLoss < -22.2) return "Blunder";
-    if (advantageLoss < -11.1) return "Mistake";
-    if (advantageLoss < -5.5) return "Dubious";
-    if (advantageLoss < -2.2) return "Good";
+    if (winPercentageDiff < -20) return "Blunder";
+    if (winPercentageDiff < -10) return "Mistake";
+    if (winPercentageDiff < -5) return "Dubious";
+    if (winPercentageDiff < -2) return "Good";
     return "Very Good";
   };
 
-  const isInHopelessPosition = (
-    currentAdvantage: number,
-    fallbackAdvantage: number,
-    whiteToMove: boolean
-  ): boolean => {
-    const isBehind = whiteToMove
-      ? currentAdvantage < 55
-      : currentAdvantage > 55;
-    const alternativeIsWinning = whiteToMove
-      ? fallbackAdvantage > 99
-      : fallbackAdvantage < 4;
-    return isBehind || alternativeIsWinning;
-  };
-
+  // Fetch ChessDB data
   const fetchChessDBData = useCallback(async (fenString: string) => {
     if (!fenString.trim()) {
       return [];
@@ -208,10 +236,6 @@ const useGameReview = (
     }
   }, []);
 
-  function percentToNumber(percentStr: string): number {
-  return parseFloat(percentStr.replace('%', '').trim());
-}
-
   const generateGameReview = useCallback(
     async (gameNotation: string[]): Promise<void> => {
       setGameReviewLoading(true);
@@ -251,6 +275,7 @@ const useGameReview = (
         const phase1Weight = 0.95;
         const phase2Weight = 0.05;
 
+        // Phase 1: Collect all game states
         for (let ply = 0; ply < gameNotation.length; ply++) {
           const preMovefen = gameBoard.fen();
           const activePlayer = gameBoard.turn();
@@ -275,10 +300,12 @@ const useGameReview = (
           let secondBestWinRate: number | undefined = 0;
           let bestMove;
           let evalMove = 0.0;
+          
+          if(ply <= 20){
+          const fetchMasterDb = await getOpeningStats(postMovefen);
+          const openingMatch = isFenInAllDatabases(postMovefen) || (fetchMasterDb && fetchMasterDb.topGames.length > 0);
 
-          const openingMatch = isFenInAllDatabases(postMovefen);
-
-          if (openingMatch) {
+          if (openingMatch ) {
             gameStates.push({
               activePlayer: activePlayer,
               preMoveWinRate: preMoveWinRate,
@@ -293,7 +320,7 @@ const useGameReview = (
               sanBestMove: sanNotation,
               openingMatch: true,
             });
-
+          }
             const phase1Progress =
               ((ply + 1) / totalMoves) * phase1Weight * 100;
             setGameReviewProgress(Math.round(phase1Progress));
@@ -323,13 +350,12 @@ const useGameReview = (
             sanBestMove = moveObjSan ? moveObjSan.san : undefined;
           } else {
             preMoveWinRate = percentToNumber(chessDbEvals[0].winrate);
-            evalMove = normalizeChessDBScore( Number(chessDbEvals[0].score || 0), activePlayer)
-            secondBestWinRate = percentToNumber(chessDbEvals[0].winrate);
+            evalMove = normalizeChessDBScore(Number(chessDbEvals[0].score || 0), activePlayer);
+            secondBestWinRate = chessDbEvals[1] ? percentToNumber(chessDbEvals[1].winrate) : undefined;
             bestMove = chessDbEvals[0].uci;
             sanBestMove = chessDbEvals[0].san;
           }
 
-         
           gameStates.push({
             activePlayer: activePlayer,
             preMoveWinRate: preMoveWinRate,
@@ -349,6 +375,7 @@ const useGameReview = (
           setGameReviewProgress(Math.round(phase1Progress));
         }
 
+        // Phase 2: Classify all moves
         for (let ply = 0; ply < gameStates.length; ply++) {
           const currentState = gameStates[ply];
           const {
@@ -425,6 +452,7 @@ const useGameReview = (
             continue;
           }
 
+          // Check if played move matches best move
           if (playedMove === engineChoice) {
             moveEvaluations.push({
               plyNumber: plyIndex,
@@ -445,7 +473,8 @@ const useGameReview = (
             continue;
           }
 
-          const qualityRating = assessMoveQuality(
+          // Get basic classification (Good, Dubious, Mistake, Blunder)
+          const qualityRating = getMoveBasicClassification(
             preMoveWinRate,
             postMoveWinRate,
             isWhitePlaying
@@ -478,7 +507,7 @@ const useGameReview = (
         setGameReviewLoading(false);
       }
     },
-    [stockfishEngine, searchDepth]
+    [stockfishEngine, searchDepth, fetchChessDBData]
   );
 
   return {

@@ -186,6 +186,11 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     false
   );
 
+  const [graderMode, setGraderMode] = useLocalStorage<boolean>(
+    "agine_grader_mode",
+    false
+  )
+
   const [selfEvalMode, setSelfEvalMode] = useLocalStorage<boolean>(
     "agine_selfEval_mode",
     false
@@ -1042,6 +1047,31 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                 hallucinations check
               </Typography>
             </Stack>
+             <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ flexWrap: "wrap" }}
+            >
+              <Typography
+                variant="caption"
+                sx={{  fontWeight: 500 }}
+              >
+                Grader
+              </Typography>
+              <Switch
+                checked={graderMode}
+                onChange={(e) => setGraderMode(e.target.checked)}
+                size="small"
+              
+              />
+              <Typography
+                variant="caption"
+                sx={{  fontSize: "11px" }}
+              >
+                Grade your eval
+              </Typography>
+            </Stack>
             <Box sx={{ flexGrow: 1 }} />
             {chatMessages.length > 0 && (
               <Button
@@ -1063,46 +1093,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
           </Stack>
         )}
 
-        {(playMode) && (
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            spacing={1.5}
-          >
-            <Chip
-              label={modeTitle}
-              size="small"
-              sx={{
-              
-                fontWeight: 500,
-                fontSize: "11px",
-              }}
-            />
-            <Typography
-              variant="caption"
-              sx={{ fontSize: "10px" }}
-            >
-              {modeDescription}
-            </Typography>
-            <Box sx={{ flexGrow: 1 }} />
-            {chatMessages.length > 0 && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={clearChatHistory}
-                sx={{
-                  borderColor: "rgba(255,255,255,0.3)",
-                  fontSize: "11px",
-                  py: 0.5,
-                  px: 1,
-                  
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </Stack>
-        )}
       </Paper>
 
       {/* Chat Messages */}
@@ -1152,7 +1142,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               }}
             />
 
-            {/* Disclaimer */}
             <Paper
               sx={{
                 p: 1.5,
@@ -1178,60 +1167,86 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               </Typography>
             </Paper>
 
-            {/* Quick Start Prompts */}
             <Box sx={{ width: "100%" }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  mb: 2,
-                  display: "block",
-                  opacity: 0.8,
-                  textAlign: "center",
-                  fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                }}
-              >
-                Quick start - try one of these:
-              </Typography>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 1,
-                  justifyContent: "center",
-                }}
-              >
-                {currentPrompts.slice(0, 4).map((prompt, index) => (
-                  <Chip
-                    key={index}
-                    label={prompt}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handlePromptSelect(prompt)}
-                    sx={{
-                 
-                      borderColor: "rgba(156, 39, 176, 0.5)",
-                      cursor: "pointer",
-                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                      transition: "all 0.2s ease",
-                    
-                    }}
-                  />
-                ))}
-              </Box>
-              <Box sx={{ textAlign: "center", mt: 2 }}>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => setDrawerOpen(true)}
+              {questionMode ? (
+                <Typography
+                  variant="caption"
                   sx={{
-                    color: "#9c27b0",
+                    mb: 2,
+                    display: "block",
+                    opacity: 0.8,
+                    textAlign: "center",
                     fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                    
                   }}
                 >
-                  More conversation starters →
-                </Button>
-              </Box>
+                  I will question your understanding of the position.
+                </Typography>
+              ) : graderMode ? (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    mb: 2,
+                    display: "block",
+                    opacity: 0.8,
+                    textAlign: "center",
+                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                  }}
+                >
+                  I will grade your position analysis.
+                </Typography>
+              ) : (
+                <>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      mb: 2,
+                      display: "block",
+                      opacity: 0.8,
+                      textAlign: "center",
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                    }}
+                  >
+                    Quick start - try one of these:
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 1,
+                      justifyContent: "center",
+                    }}
+                  >
+                    {currentPrompts.slice(0, 4).map((prompt, index) => (
+                      <Chip
+                        key={index}
+                        label={prompt}
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handlePromptSelect(prompt)}
+                        sx={{
+                          borderColor: "rgba(156, 39, 176, 0.5)",
+                          cursor: "pointer",
+                          fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                          transition: "all 0.2s ease",
+                        }}
+                      />
+                    ))}
+                  </Box>
+                  <Box sx={{ textAlign: "center", mt: 2 }}>
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => setDrawerOpen(true)}
+                      sx={{
+                        color: "#9c27b0",
+                        fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                      }}
+                    >
+                      More conversation starters →
+                    </Button>
+                  </Box>
+                </>
+              )}
             </Box>
           </Box>
         ) : (
@@ -1246,7 +1261,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
                   alignItems: "flex-start",
                 }}
               >
-                {/* Avatar for assistant messages */}
                 {message.role === "assistant" && (
                   <Avatar
                     src="/static/images/agineowl.png"
@@ -1542,13 +1556,17 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             multiline
             maxRows={3}
             placeholder={
-              playMode
-                ? "What are you thinking?"
-                : puzzleMode
-                ? "Want to brainstorm this puzzle?"
-                : sessionMode
-                ? "What's on your mind about this position?"
-                : "Let's talk chess..."
+              questionMode
+          ? "Write your analysis here so I can question you"
+          : graderMode
+          ? "Write your analysis here so I can grade your analysis"
+          : playMode
+          ? "What are you thinking?"
+          : puzzleMode
+          ? "Want to brainstorm this puzzle?"
+          : sessionMode
+          ? "What's on your mind about this position?"
+          : "Let's talk chess..."
             }
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
@@ -1557,9 +1575,9 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             size="small"
             slotProps={{
               input: {
-                sx: {
-                  fontSize: `${fontSize}px`,
-                },
+          sx: {
+            fontSize: `${fontSize}px`,
+          },
               },
             }}
           />
@@ -1568,15 +1586,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             size="small"
             onClick={() =>
               sendChatMessage(
-                gameInfo,
-                currentMove,
-                puzzleMode,
-                puzzleQuery,
-                playMode,
+          gameInfo,
+          currentMove,
+          puzzleMode,
+          puzzleQuery,
+          playMode,
               )
             }
             disabled={chatLoading || !chatInput.trim()}
-         
           >
             <Send fontSize="small" />
           </Button>
