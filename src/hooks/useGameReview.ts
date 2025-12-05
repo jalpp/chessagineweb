@@ -300,12 +300,10 @@ const useGameReview = (
           let secondBestWinRate: number | undefined = 0;
           let bestMove;
           let evalMove = 0.0;
-          
-          if(ply <= 20){
           const fetchMasterDb = await getOpeningStats(postMovefen);
           const openingMatch = isFenInAllDatabases(postMovefen) || (fetchMasterDb && fetchMasterDb.topGames.length > 0);
 
-          if (openingMatch ) {
+          if (openingMatch) {
             gameStates.push({
               activePlayer: activePlayer,
               preMoveWinRate: preMoveWinRate,
@@ -320,7 +318,7 @@ const useGameReview = (
               sanBestMove: sanNotation,
               openingMatch: true,
             });
-          }
+
             const phase1Progress =
               ((ply + 1) / totalMoves) * phase1Weight * 100;
             setGameReviewProgress(Math.round(phase1Progress));
