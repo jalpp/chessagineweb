@@ -40,7 +40,13 @@ function createAgineCloudModel(runtimeContext: RuntimeContext) {
     apiKey: apiKey
   })
 
-  return agineCloudRouter(`${modelName}:free` as AgineCloudModel);
+  if(modelName !== "google/gemini-3-pro-preview"){
+      return agineCloudRouter(`${modelName}:free` as AgineCloudModel);
+  }
+
+  return agineCloudRouter(modelName as AgineCloudModel);
+
+  
 }
 
 function createAgentInstruction(runtimeContext: RuntimeContext) {

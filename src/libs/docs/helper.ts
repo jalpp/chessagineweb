@@ -118,8 +118,9 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'nvidia/nemotron-nano-9b-v2',
       'mistralai/mistral-small-3.1-24b-instruct',
       'meta-llama/llama-3.3-70b-instruct',
-      'meta-llama/llama-4-maverick'
-
+      'meta-llama/llama-4-maverick',
+      'amazon/nova-2-lite-v1',
+      'google/gemini-3-pro-preview'
     ],
     keyPrefix: '',
     website: 'https://www.chessagine.com/docs',
@@ -157,6 +158,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'o1', 
       'o4-mini',
       'gpt-5',
+      'gpt-5.1',
       'gpt-5-mini',
       'gpt-5-nano',
       'gpt-4.1',
@@ -171,13 +173,10 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   anthropic: {
     name: 'Anthropic Claude',
     models: [
-      'claude-sonnet-4-20250514',
-      'claude-opus-4-20250514',
-      'claude-3-5-sonnet-latest',
-      'claude-3-5-haiku-latest',
-      'claude-3.7-sonnet',
-      'claude-opus-4.1',
-      'claude-sonnet-4.5'
+      'claude-sonnet-4-5',
+      'claude-opus-4-1',
+      'claude-opus-4-5',
+      'claude-haiku-4-5'
     ],
     keyPrefix: 'sk-ant-',
     website: 'https://console.anthropic.com/settings/keys',
@@ -192,14 +191,14 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'gemini-2.0-flash',
       'gemini-2.0-flash-lite',
       'gemini-2.5-flash',
-      'gemini-2.5-pro'
+      'gemini-2.5-pro',
+      'gemini-3-pro-preview'
     ],
     keyPrefix: 'AIza',
     website: 'https://aistudio.google.com/app/apikey',
     docsUrl: 'https://ai.google.dev/docs',
     supportsRouting: true,
   },
-  
 };
 
 export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
