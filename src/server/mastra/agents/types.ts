@@ -2,7 +2,6 @@
 export type OpenAIModel =
   | "gpt-4"
   | "gpt-4-turbo"
-  | "gpt-3.5-turbo"
   | "gpt-4o"
   | "gpt-4o-mini"
   | "o3"
@@ -13,18 +12,16 @@ export type OpenAIModel =
   | "gpt-5"
   | "gpt-5-mini"
   | "gpt-5-nano"
+  | "gpt-5.1"
   | "gpt-4.1"
   | "gpt-4.1-mini"
   | "gpt-4.1-nano";
 
 export type AnthropicModel =
-  | "claude-sonnet-4-20250514"
-  | "claude-opus-4-20250514"
-  | "claude-3-5-sonnet-latest"
-  | 'claude-3.7-sonnet'
-  | 'claude-opus-4.1'
-  | 'claude-sonnet-4.5'
-  | "claude-3-5-haiku-latest";
+  | "claude-sonnet-4-5"
+  | 'claude-opus-4-1'
+  | 'claude-opus-4-5'
+  | "claude-haiku-4-5"
 
 export type GoogleModel =
   | "gemini-1.5-pro"
@@ -32,7 +29,8 @@ export type GoogleModel =
   | "gemini-2.0-flash"
   | "gemini-2.0-flash-lite"
   | "gemini-2.5-flash"
-  | "gemini-2.5-pro";
+  | "gemini-2.5-pro"
+  | "gemini-3-pro-preview"
   
 export type OllamaModel =
   | "qwen3:8b"
@@ -53,6 +51,8 @@ export type AgineCloudModel =
   | "mistralai/mistral-small-3.1-24b-instruct:free"
   | "meta-llama/llama-3.3-70b-instruct:free"
   | "meta-llama/llama-4-maverick:free"
+  | "amazon/nova-2-lite-v1:free"
+  | "google/gemini-3-pro-preview"
 
 
 export type LanguageModel = OpenAIModel | AnthropicModel | GoogleModel | OllamaModel | AgineCloudModel;
