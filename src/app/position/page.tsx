@@ -61,7 +61,10 @@ export default function PositionPage() {
     evaluations,
     sanEvaluations,
     maiaError,
-    maiaIsLoading
+    maiaIsLoading,
+    scores,
+    themeScoreLoading,
+    themeScoreError
   } = useAgine(fen);
 
   if (!session.isLoaded) {
@@ -172,6 +175,9 @@ export default function PositionPage() {
             evaluations={sanEvaluations}
             isMaiaLoading={maiaIsLoading}
             maiaerror={maiaError}
+            scores={scores}
+            ThemeScoreerror={themeScoreError}
+            ThemeScoreloading={themeScoreLoading}
           />
         </Box>
       </Stack>

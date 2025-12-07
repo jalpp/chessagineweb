@@ -38,7 +38,6 @@ import { Chess } from "chess.js";
 import { useCallback, useEffect, useMemo } from "react";
 import { Square } from "chess.js";
 import { TabPanel } from "@/componets/tabs/tab";
-import StockfishAnalysisTab from "@/componets/tabs/StockfishTab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
@@ -65,6 +64,7 @@ import { useLocalStorage } from "usehooks-ts";
 import { PuzzleData, PuzzleQuery, PUZZLE_THEMES, DIFFICULTY_THEMES } from "@/libs/puzzle/helper";
 import Loader from "@/componets/loading/Loader";
 import Warning from "@/componets/loading/SignUpWarning";
+import GuessTheme from "@/componets/puzzle/GuessPtag";
 
 export default function PuzzlePage() {
   const theme = useTheme();
@@ -261,20 +261,16 @@ export default function PuzzlePage() {
     chatLoading,
     sessionMode,
     setSessionMode,
-    engineDepth,
-    setEngineDepth,
-    engineLines,
-    setEngineLines,
     engine,
     fetchOpeningData,
     sendChatMessage,
     handleChatKeyPress,
     clearChatHistory,
     analyzeWithStockfish,
-    formatEvaluation,
     abortChatMessage,
-    formatPrincipalVariation,
-    handleEngineLineClick,
+    scores,
+    themeScoreError,
+    themeScoreLoading
   } = useAgine(fen);
 
   const handleQuickThemeChange = useCallback((event: SelectChangeEvent<string>) => {
@@ -658,6 +654,7 @@ const handleSquareClick = useCallback(
                   
                 >
                   <Tab label="Puzzle Info" />
+                  <Tab label="Guess Theme Eval"/>
                   <Tab label="AI Chat" />
                 </Tabs>
               </Box>
@@ -862,6 +859,10 @@ const handleSquareClick = useCallback(
                 </TabPanel>
 
                 <TabPanel value={analysisTab} index={1}>
+                  <GuessTheme stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={themeScoreLoading} error={themeScoreError}/>
+                </TabPanel>
+
+                <TabPanel value={analysisTab} index={2}>
                   <ChatTab
                     chatMessages={chatMessages}
                     chatInput={chatInput}
@@ -1097,8 +1098,9 @@ const handleSquareClick = useCallback(
                       onChange={(_, newValue) => setAnalysisTab(newValue)}
                       variant="fullWidth"
                     >
-                      <Tab label="Info" icon={<Zap size={16} />} iconPosition="start" />
-                      <Tab label="AI Chat" icon={<Lightbulb size={16} />} iconPosition="start" />
+                      <Tab label="Info" iconPosition="start" />
+                      <Tab label="Guess Theme Eval"/>
+                      <Tab label="AI Chat"  iconPosition="start" />
                     </Tabs>
                   </CardContent>
                 </Card>
@@ -1128,6 +1130,9 @@ const handleSquareClick = useCallback(
                     )}
                   </TabPanel>
                   <TabPanel value={analysisTab} index={1}>
+                    <GuessTheme stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={themeScoreLoading} error={themeScoreError}/>
+                  </TabPanel>
+                  <TabPanel value={analysisTab} index={2}>
                     <ChatTab
                       chatMessages={chatMessages}
                       chatInput={chatInput}

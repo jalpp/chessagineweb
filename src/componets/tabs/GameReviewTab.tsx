@@ -28,6 +28,7 @@ import {
 import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
 import { GameReviewDialog} from "./GameReviewDialog";
 import { GameReviewTheme } from "@/libs/themes/helper";
+import { PositionEval } from "@/stockfish/engine/engine";
 export interface MoveStats {
   Best: number;
   "Very Good": number;
@@ -45,6 +46,7 @@ interface GameReviewTabProps {
   moves: string[];
   gameReviewLoading: boolean;
   gameReviewProgress: number;
+  stockfishAnalysisResult: PositionEval | null;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
@@ -110,6 +112,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   gameReview,
   generateGameReview,
   moves,
+  stockfishAnalysisResult,
   gameReviewLoading,
   currentMoveIndex,
   handleMoveCoachClick,
@@ -422,7 +425,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             </CardContent>
           </Card>
         )}
-        <GameReviewDialog gameReview={gameReviewTheme} currentMoveIndex={currentMoveIndex} moveAnalysis={gameReview}/>
+        <GameReviewDialog gameReview={gameReviewTheme} currentMoveIndex={currentMoveIndex} moveAnalysis={gameReview} stockfishAnalysisResult={stockfishAnalysisResult}/>
       </Stack>
     </Box>
   );

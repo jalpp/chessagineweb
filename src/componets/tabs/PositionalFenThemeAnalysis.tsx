@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -8,7 +8,8 @@ import {
   Stack,
   Alert,
   CircularProgress,
-  Button,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import {
   MonetizationOn,
@@ -17,21 +18,22 @@ import {
   Place,
   Shield,
   Bolt,
-  Refresh,
   Square,
   Speed,
+  Quiz,
+  Visibility,
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
-import { useThemeScore } from "@/hooks/useThemeScore";
-import { Color } from "chess.js";
 import { getThemeLabelColor, ThemeScore } from "@/libs/themes/helper";
+import { PositionEval} from "@/stockfish/engine/engine";
+import GuessTheme from "../puzzle/GuessPtag";
 
 interface PositionFenThemeAnalysisProps {
-  fen: string;
-  color?: Color; // Optional: defaults to 'w'
-  title?: string; // Optional: custom title for the analysis
+  stockfishAnalysisResult: PositionEval | null;
+  scores: ThemeScore | null;
+  loading: boolean;
+  error: string | null;
 }
-
 
 const formatThemeName = (theme: string) =>
   theme
@@ -41,32 +43,53 @@ const formatThemeName = (theme: string) =>
 
 export const getThemeIcon = (theme: keyof ThemeScore) => {
   switch (theme) {
-    case 'material': return <MonetizationOn />;
-    case 'mobility': return <DirectionsRun />;
-    case 'space': return <GridOn />;
-    case 'positional': return <Place />;
-    case 'kingSafety': return <Shield />;
-    case 'tactical': return <Bolt />;
-    case 'darksqaureControl': return <Square/>
-    case 'lightsqaureControl': return <Square/>
-    case 'tempo': return <Speed/>
-    default: return null;
+    case "material":
+      return <MonetizationOn />;
+    case "mobility":
+      return <DirectionsRun />;
+    case "space":
+      return <GridOn />;
+    case "positional":
+      return <Place />;
+    case "kingSafety":
+      return <Shield />;
+    case "tactical":
+      return <Bolt />;
+    case "darksqaureControl":
+      return <Square />;
+    case "lightsqaureControl":
+      return <Square />;
+    case "tempo":
+      return <Speed />;
+    default:
+      return null;
   }
 };
 
 export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> = ({
-  fen,
-  color = 'w',
-  title = 'Position Theme Analysis'
+  stockfishAnalysisResult,
+  scores,
+  loading,
+  error,
 }) => {
-  const { scores, loading, error, refetch } = useThemeScore(fen, color);
+ 
+  const [mode, setMode] = useState<"guess" | "show">("guess");
+
+  const handleModeChange = (
+    _event: React.SyntheticEvent,
+    newMode: "guess" | "show" | null
+  ) => {
+    if (newMode !== null) {
+      setMode(newMode);
+    }
+  };
 
   // Loading state
   if (loading) {
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4 }}>
             <CircularProgress />
             <Typography sx={{ ml: 2 }}>Analyzing position...</Typography>
           </Box>
@@ -78,13 +101,8 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
   // Error state
   if (error) {
     return (
-      <Alert 
-        severity="error" 
-        action={
-          <Button color="inherit" size="small" onClick={refetch} startIcon={<Refresh />}>
-            Retry
-          </Button>
-        }
+      <Alert
+        severity="error"
       >
         Error loading theme analysis: {error}
       </Alert>
@@ -101,23 +119,23 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
   }
 
   const themes = Object.keys(scores) as (keyof ThemeScore)[];
-  
+
   // Create radar chart series - each theme gets its own series
-  const radarSeries = themes.map(theme => {
-    const data = themes.map(t => t === theme ? scores[t] : 0);
+  const radarSeries = themes.map((theme) => {
+    const data = themes.map((t) => (t === theme ? scores[t] : 0));
     return {
       label: formatThemeName(theme),
       data: data,
-      valueFormatter: (v: number | null) => v !== null ? v.toFixed(2) : 'N/A',
+      valueFormatter: (v: number | null) => (v !== null ? v.toFixed(2) : "N/A"),
       color: getThemeLabelColor(theme),
       fillArea: true,
-      hideMark: true
+      hideMark: true,
     };
   });
-  
+
   // Create metrics with individual max/min for each theme
-  const metrics = themes.map(theme => {
-    const data = themes.map(t => t === theme ? scores[t] : 0);
+  const metrics = themes.map((theme) => {
+    const data = themes.map((t) => (t === theme ? scores[t] : 0));
     const max = data.reduce((a, b) => Math.max(a, b));
     const min = data.reduce((a, b) => Math.min(a, b));
     const range = max - min;
@@ -125,67 +143,98 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
     return {
       name: formatThemeName(theme),
       max: Math.ceil(max + padding),
-      min: Math.floor(min - padding)
+      min: Math.floor(min - padding),
     };
   });
-
-  
 
   return (
     <Box>
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Typography variant="h6">{title}</Typography>
-            <Button 
-              size="small" 
-              onClick={refetch} 
-              startIcon={<Refresh />}
-              variant="outlined"
+          <Stack 
+            direction="row" 
+            spacing={2} 
+            sx={{ 
+              mb: 2, 
+              alignItems: "center", 
+              flexWrap: "wrap",
+              gap: 1 
+            }}
+          >
+             
+            <ToggleButtonGroup
+              value={mode}
+              exclusive
+              onChange={handleModeChange}
+              size="small"
+              aria-label="view mode"
+              sx={{ 
+                '& .MuiToggleButton-root': {
+                  touchAction: 'manipulation'
+                }
+              }}
             >
-              Refresh
-            </Button>
+              <ToggleButton value="guess" aria-label="guess mode">
+                <Quiz sx={{ mr: 1 }} fontSize="small" />
+                Guess Eval
+              </ToggleButton>
+              <ToggleButton value="show" aria-label="show mode">
+                <Visibility sx={{ mr: 1 }} fontSize="small" />
+                Show Eval
+              </ToggleButton>
+            </ToggleButtonGroup>
           </Stack>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-            <RadarChart
-              height={400}
-              highlight="series"
-              series={radarSeries}
-              radar={{
-                metrics: metrics,
-              }}
+          {mode === "guess" ? (
+            <GuessTheme
+              stockfishAnalysisResult={stockfishAnalysisResult}
+              scores={scores}
+              loading={loading}
+              error={error}
             />
-          </Box>
+          ) : (
+            <>
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+                <RadarChart
+                  height={400}
+                  highlight="series"
+                  series={radarSeries}
+                  radar={{
+                    metrics: metrics,
+                  }}
+                />
+              </Box>
+
+              <Grid container spacing={2}>
+                {themes.map((theme) => (
+                  <Grid sx={{xs: 12, sm: 6, md: 4}} key={theme}>
+                    <Card
+                      sx={{
+                        borderLeft: 4,
+                        borderColor: getThemeLabelColor(theme),
+                        transition: "transform 0.2s",
+                        "&:hover": { transform: "translateY(-4px)" },
+                      }}
+                    >
+                      <CardContent>
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                          <Box sx={{ color: getThemeLabelColor(theme) }}>{getThemeIcon(theme)}</Box>
+                          <Typography variant="subtitle2" color="textSecondary">
+                            {formatThemeName(theme)}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="h5" sx={{ color: getThemeLabelColor(theme) }}>
+                          {scores[theme].toFixed(2)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
         </CardContent>
       </Card>
-
-      <Grid container spacing={2}>
-        {themes.map((theme) => (
-          <Grid  sx={{xs: 12, sm: 6, md: 4}} key={theme}>
-            <Card sx={{ 
-              borderLeft: 4, 
-              borderColor: getThemeLabelColor(theme),
-              transition: 'transform 0.2s',
-              '&:hover': { transform: 'translateY(-4px)' }
-            }}>
-              <CardContent>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                  <Box sx={{ color: getThemeLabelColor(theme)}}>
-                    {getThemeIcon(theme)}
-                  </Box>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    {formatThemeName(theme)}
-                  </Typography>
-                </Stack>
-                <Typography variant="h5" sx={{ color: getThemeLabelColor(theme)}}>
-                  {scores[theme].toFixed(2)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
     </Box>
   );
 };

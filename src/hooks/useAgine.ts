@@ -18,6 +18,7 @@ import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELA
 import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
 import { useMaiaEngine } from "./useMaiaEngine";
 import { addMaiaAnalysisToQuery } from "@/libs/maia/maiaPrompter";
+import { useThemeScore } from "./useThemeScore";
 
 
 export default function useAgine(fen: string) {
@@ -58,6 +59,7 @@ export default function useAgine(fen: string) {
 
   const { session } = useSession();
   const engine = useEngine(true, enginePicked);
+  
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
   const {
     gameReview,
@@ -69,6 +71,9 @@ export default function useAgine(fen: string) {
     rootCurrentMove,
     setRootCurrentMove
   } = useGameReview(engine, engineDepth);
+  
+  const colorside = new Chess(fen).turn();
+  const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
 
    const { evaluations, sanEvaluations, isLoading: maiaIsLoading, error: maiaError } = useMaiaEngine({
     fen: fen
@@ -1359,6 +1364,11 @@ Be concise but thorough, and use clear chess language.`;
       refetch,
       requestAnalysis,
 
+      // themes
+      scores,
+      themeScoreLoading,
+      themeScoreError,
+
       // Loading States
       llmLoading: state.llmLoading,
       setLlmLoading: (loading: boolean) => updateState({ llmLoading: loading }),
@@ -1445,6 +1455,9 @@ Be concise but thorough, and use clear chess language.`;
       setEngineLines,
       engine,
       gameReview,
+      scores,
+      themeScoreError,
+      themeScoreLoading,
       rootCurrentMove,
       setRootCurrentMove,
       setGameReview,

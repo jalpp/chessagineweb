@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -10,17 +10,26 @@ import {
   Alert,
   useTheme,
   useMediaQuery,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
+import {
+  Quiz,
+  Visibility,
+} from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 import { MoveAnalysis, MoveQuality } from "@/hooks/useGameReview";
 import { getMoveClassificationStyle } from "./GameReviewTab";
 import { ThemeScore, GameReviewTheme, getThemeLabelColor } from "@/libs/themes/helper";
 import { getThemeIcon } from "./PositionalFenThemeAnalysis";
+import GuessTheme from "../puzzle/GuessPtag";
+import { PositionEval} from "@/stockfish/engine/engine";
 
 
 interface CurrentPositionAnalysisProps {
   gameReview: GameReviewTheme;
   currentMoveIndex: number;
+  stockfishAnalysisResult: PositionEval | null;
   moveAnalysis: MoveAnalysis[];
 }
 
@@ -38,11 +47,22 @@ const getMoveQualityColor = (quality: string) => {
 export const PositionRadarAnalysis: React.FC<CurrentPositionAnalysisProps> = ({
   gameReview,
   currentMoveIndex,
-  moveAnalysis
+  moveAnalysis,
+  stockfishAnalysisResult,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [mode, setMode] = useState<"guess" | "show">("guess");
+
+  const handleModeChange = useCallback((
+    _event: React.SyntheticEvent,
+    newMode: "guess" | "show" | null
+  ) => {
+    if (newMode !== null) {
+      setMode(newMode);
+    }
+  }, []);
 
   if (!moveAnalysis || moveAnalysis.length === 0 || currentMoveIndex < 0) {
     return (
@@ -145,109 +165,142 @@ export const PositionRadarAnalysis: React.FC<CurrentPositionAnalysisProps> = ({
               size={isMobile ? "small" : "medium"}
               sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}
             />
-            <Chip 
-              label={`Eval: ${(currentMove.evalMove / 100) > 0 ? '+' : ''}${(currentMove.evalMove / 100).toFixed(2)}`}
-              color={(currentMove.evalMove / 100) > 0 ? 'success' : (currentMove.evalMove / 100) < 0 ? 'error' : 'default'}
-              size={isMobile ? "small" : "medium"}
-              sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}
-            />
+            
           </Stack>
 
-          <Typography 
-            variant="h6" 
-            gutterBottom 
-            sx={{ 
-              mt: 2,
-              fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              mb: 2,
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1
             }}
           >
-            Position Theme Analysis
-          </Typography>
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center',
-            width: '100%',
-            overflow: 'hidden'
-          }}>
-            <RadarChart
-              height={isSmallMobile ? 300 : isMobile ? 350 : 400}
-              width={isSmallMobile ? 300 : undefined}
-              highlight="series"
-              series={radarSeries}
-              radar={{
-                metrics: metrics,
-              }}
-              margin={
-                isSmallMobile 
-                  ? { top: 20, right: 20, bottom: 20, left: 20 }
-                  : isMobile
-                  ? { top: 30, right: 30, bottom: 30, left: 30 }
-                  : { top: 50, right: 50, bottom: 50, left: 50 }
-              }
-              sx={{
-                '& .MuiChartsLegend-root': {
-                  fontSize: { xs: '0.7rem', md: '0.875rem' }
+    
+            <ToggleButtonGroup
+              value={mode}
+              exclusive
+              onChange={handleModeChange}
+              size="small"
+              aria-label="view mode"
+              sx={{ 
+                '& .MuiToggleButton-root': {
+                  touchAction: 'manipulation',
+                  fontSize: { xs: '0.75rem', md: '0.875rem' },
+                  px: { xs: 1, md: 1.5 },
+                  py: { xs: 0.5, md: 0.75 }
                 }
               }}
+            >
+              <ToggleButton value="guess" aria-label="guess mode">
+                <Quiz sx={{ mr: { xs: 0.5, md: 1 } }} fontSize="small" />
+                Guess
+              </ToggleButton>
+              <ToggleButton value="show" aria-label="show mode">
+                <Visibility sx={{ mr: { xs: 0.5, md: 1 } }} fontSize="small" />
+                Show
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+
+          {mode === "guess" ? (
+            <GuessTheme
+              scores={currentThemeScores}
+              loading={false}
+              error={null}
+              stockfishAnalysisResult={stockfishAnalysisResult}
             />
-          </Box>
+          ) : (
+            <>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center',
+                width: '100%',
+                overflow: 'hidden'
+              }}>
+                <RadarChart
+                  height={isSmallMobile ? 300 : isMobile ? 350 : 400}
+                  width={isSmallMobile ? 300 : undefined}
+                  highlight="series"
+                  series={radarSeries}
+                  radar={{
+                    metrics: metrics,
+                  }}
+                  margin={
+                    isSmallMobile 
+                      ? { top: 20, right: 20, bottom: 20, left: 20 }
+                      : isMobile
+                      ? { top: 30, right: 30, bottom: 30, left: 30 }
+                      : { top: 50, right: 50, bottom: 50, left: 50 }
+                  }
+                  sx={{
+                    '& .MuiChartsLegend-root': {
+                      fontSize: { xs: '0.7rem', md: '0.875rem' }
+                    }
+                  }}
+                />
+              </Box>
+
+              <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mt: 2 }}>
+                {themes.map((theme) => (
+                  <Grid sx={{xs: 12, sm: 6, md: 4}} key={theme}>
+                    <Card sx={{ 
+                      borderLeft: { xs: 3, md: 4 },
+                      borderColor: getThemeLabelColor(theme),
+                      transition: 'transform 0.2s',
+                      '&:hover': { transform: 'translateY(-4px)' },
+                      height: '100%'
+                    }}>
+                      <CardContent sx={{ 
+                        p: { xs: 1.5, md: 2 },
+                        '&:last-child': { pb: { xs: 1.5, md: 2 } }
+                      }}>
+                        <Stack 
+                          direction="row" 
+                          spacing={{ xs: 0.5, md: 1 }}
+                          alignItems="center" 
+                          sx={{ mb: { xs: 0.5, md: 1 } }}
+                        >
+                          <Box sx={{ 
+                            color: getThemeLabelColor(theme),
+                            fontSize: { xs: '1.25rem', md: '1.5rem' },
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            {getThemeIcon(theme)}
+                          </Box>
+                          <Typography 
+                            variant="subtitle2" 
+                            color="textSecondary"
+                            sx={{ 
+                              fontSize: { xs: '0.75rem', sm: '0.8rem', md: '0.875rem' },
+                              lineHeight: 1.2
+                            }}
+                          >
+                            {formatThemeName(theme)}
+                          </Typography>
+                        </Stack>
+                        <Typography 
+                          variant="h5" 
+                          sx={{ 
+                            color: getThemeLabelColor(theme),
+                            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                            fontWeight: 600
+                          }}
+                        >
+                          {currentThemeScores[theme].toFixed(2)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
         </CardContent>
       </Card>
-
-      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-        {themes.map((theme) => (
-          <Grid  sx={{xs: 12, sm: 6, md: 4}} key={theme}>
-            <Card sx={{ 
-              borderLeft: { xs: 3, md: 4 },
-              borderColor: getThemeLabelColor(theme),
-              transition: 'transform 0.2s',
-              '&:hover': { transform: 'translateY(-4px)' },
-              height: '100%'
-            }}>
-              <CardContent sx={{ 
-                p: { xs: 1.5, md: 2 },
-                '&:last-child': { pb: { xs: 1.5, md: 2 } }
-              }}>
-                <Stack 
-                  direction="row" 
-                  spacing={{ xs: 0.5, md: 1 }}
-                  alignItems="center" 
-                  sx={{ mb: { xs: 0.5, md: 1 } }}
-                >
-                  <Box sx={{ 
-                    color: getThemeLabelColor(theme),
-                    fontSize: { xs: '1.25rem', md: '1.5rem' },
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}>
-                    {getThemeIcon(theme)}
-                  </Box>
-                  <Typography 
-                    variant="subtitle2" 
-                    color="textSecondary"
-                    sx={{ 
-                      fontSize: { xs: '0.75rem', sm: '0.8rem', md: '0.875rem' },
-                      lineHeight: 1.2
-                    }}
-                  >
-                    {formatThemeName(theme)}
-                  </Typography>
-                </Stack>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    color: getThemeLabelColor(theme),
-                    fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
-                    fontWeight: 600
-                  }}
-                >
-                  {currentThemeScores[theme].toFixed(2)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
     </Box>
   );
 };

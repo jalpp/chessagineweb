@@ -32,7 +32,7 @@ import { CandidateMove } from "../tabs/Chessdb";
 import { ChatMessage } from "@/libs/agine/helper";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { GameReviewTheme } from "@/libs/themes/helper";
+import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
@@ -86,6 +86,9 @@ interface BaseAnalysisViewProps {
   sessionMode: boolean;
   setSessionMode: (mode: boolean) => void;
   llmLoading: boolean;
+  scores: ThemeScore | null;
+  ThemeScoreloading: boolean;
+  ThemeScoreerror: string | null;
 }
 
 interface GameReviewProps {
@@ -177,6 +180,9 @@ function AgineAnalysisView({
   evaluations,
   isMaiaLoading,
   maiaerror,
+  scores,
+  ThemeScoreerror,
+  ThemeScoreloading
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useState<number>(0);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<number>(0);
@@ -312,6 +318,7 @@ function AgineAnalysisView({
                     handleMoveCoachClick={handleMoveCoachClick!}
                     chatLoading={chatLoading}
                     gameReview={gameReview!}
+                    stockfishAnalysisResult={stockfishAnalysisResult}
                   />
 
                   <Divider/>
@@ -362,6 +369,7 @@ function AgineAnalysisView({
                     currentMoveIndex !== undefined && (
                       <PositionRadarAnalysis
                         moveAnalysis={gameReview}
+                        stockfishAnalysisResult={stockfishAnalysisResult}
                         currentMoveIndex={currentMoveIndex}
                         gameReview={gameReviewTheme}
                       />
@@ -400,7 +408,7 @@ function AgineAnalysisView({
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  <PositionFenThemeAnalysis fen={fen ?? ""} />
+                  <PositionFenThemeAnalysis stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={ThemeScoreloading} error={ThemeScoreerror}/>
                 </AccordionDetails>
               </Accordion>
             )}
