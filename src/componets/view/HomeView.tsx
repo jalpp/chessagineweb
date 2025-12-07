@@ -13,21 +13,27 @@ import {
   Grid,
   useTheme,
   useMediaQuery,
+  Chip,
 } from "@mui/material";
 import ViewBoardIcon from "@mui/icons-material/Bolt";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { FaPuzzlePiece, FaQuestion } from "react-icons/fa6";
-
+import { useLocalStorage } from "usehooks-ts";
 
 export default function HomeView() {
   const { isSignedIn, isLoaded, user } = useUser();
   const router = useRouter();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+  const [userPuzzleRating] = useLocalStorage<number>(
+    "agine_user_puzzle_rating",
+    1500
+  );
 
   // Dashboard for logged-in users
   if (isSignedIn && isLoaded) {
@@ -58,15 +64,15 @@ export default function HomeView() {
         title: "Documentation",
         description: "Learn how to use ChessAgine and set up your API key.",
         path: "/docs",
-        color: theme.palette.info?.main || '#2196f3',
+        color: theme.palette.info?.main || "#2196f3",
       },
     ];
 
     return (
       <main>
         {/* Hero Section */}
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             py: { xs: 4, sm: 6, md: 8 },
             background: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
           }}
@@ -82,21 +88,35 @@ export default function HomeView() {
                 }}
                 src="/static/images/agineowl.png"
               />
-              <Typography 
-                variant={isMobile ? "h5" : isTablet ? "h4" : "h3"} 
-                fontWeight="bold" 
+              <Typography
+                variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
+                fontWeight="bold"
                 textAlign="center"
               >
                 Welcome back, {user?.firstName || "Chess Player"}!
               </Typography>
-              <Typography 
-                variant={isMobile ? "body1" : "h6"} 
-                sx={{ opacity: 0.85 }} 
+              <Typography
+                variant={isMobile ? "body1" : "h6"}
+                sx={{ opacity: 0.85 }}
                 textAlign="center"
                 px={{ xs: 2, sm: 4 }}
               >
                 Ready to improve your chess with AI-powered analysis?
               </Typography>
+              
+              {/* Puzzle Rating Display */}
+              <Chip
+                icon={<EmojiEventsIcon />}
+                label={`Puzzle Rating: ${userPuzzleRating}`}
+                color="primary"
+                variant="outlined"
+                sx={{
+                  fontSize: { xs: "0.875rem", md: "1rem" },
+                  fontWeight: 600,
+                  py: { xs: 2, md: 2.5 },
+                  px: { xs: 1, md: 2 },
+                }}
+              />
             </Stack>
           </Container>
         </Box>
@@ -104,14 +124,13 @@ export default function HomeView() {
         {/* Features Grid */}
         <Box sx={{ py: { xs: 4, sm: 6, md: 8 } }}>
           <Container maxWidth="lg">
-            <Grid 
-              container 
+            <Grid
+              container
               spacing={{ xs: 2, sm: 3, md: 4 }}
               justifyContent="center"
             >
               {features.map((feature) => (
-                <Grid 
-                  
+                <Grid
                   sx={{xs: 12, sm: 6, md: 6, lg: 3}}
                   key={feature.title}
                 >
@@ -137,7 +156,10 @@ export default function HomeView() {
                         transition: "transform 0.3s ease",
                       },
                       "&:hover": {
-                        transform: { xs: "translateY(-4px)", md: "translateY(-8px)" },
+                        transform: {
+                          xs: "translateY(-4px)",
+                          md: "translateY(-8px)",
+                        },
                         boxShadow: theme.shadows[8],
                         "&::before": {
                           transform: "scaleX(1)",
@@ -161,14 +183,14 @@ export default function HomeView() {
                         textAlign: "center",
                       }}
                     >
-                      <Box 
-                        sx={{ 
+                      <Box
+                        sx={{
                           color: feature.color,
                           mb: { xs: 1, md: 2 },
                           transition: "transform 0.3s ease",
                           ".MuiCard-root:hover &": {
                             transform: "scale(1.1)",
-                          }
+                          },
                         }}
                       >
                         {feature.icon}
@@ -182,7 +204,7 @@ export default function HomeView() {
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ 
+                        sx={{
                           opacity: 0.85,
                           mb: { xs: 1, md: 2 },
                           minHeight: { xs: "auto", md: "48px" },
@@ -213,8 +235,8 @@ export default function HomeView() {
         </Box>
 
         {/* Quick Tips Section */}
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             py: { xs: 4, sm: 6, md: 8 },
             backgroundColor: theme.palette.background.paper,
           }}
@@ -228,23 +250,24 @@ export default function HomeView() {
                 textAlign: "center",
               }}
             >
-              <Typography 
-                variant={isMobile ? "h6" : "h5"} 
-                fontWeight="bold" 
+              <Typography
+                variant={isMobile ? "h6" : "h5"}
+                fontWeight="bold"
                 gutterBottom
               >
                 💡 Getting Started
               </Typography>
-              <Typography 
-                variant="body1" 
+              <Typography
+                variant="body1"
                 sx={{ opacity: 0.85, mb: 3 }}
                 px={{ xs: 0, sm: 4 }}
               >
-                New to ChessAgine? Start with the Position Board to explore how AI analysis works, 
-                or jump into Game Analysis to review your recent games.
+                New to ChessAgine? Start with the Position Board to explore how
+                AI analysis works, or jump into Game Analysis to review your
+                recent games.
               </Typography>
-              <Stack 
-                direction={{ xs: "column", sm: "row" }} 
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
                 spacing={2}
                 justifyContent="center"
               >
@@ -252,7 +275,7 @@ export default function HomeView() {
                   variant="contained"
                   size={isMobile ? "medium" : "large"}
                   onClick={() => router.push("/position")}
-                  sx={{ 
+                  sx={{
                     borderRadius: 2,
                     px: { xs: 3, md: 4 },
                   }}
@@ -263,7 +286,7 @@ export default function HomeView() {
                   variant="outlined"
                   size={isMobile ? "medium" : "large"}
                   onClick={() => router.push("/docs")}
-                  sx={{ 
+                  sx={{
                     borderRadius: 2,
                     px: { xs: 3, md: 4 },
                   }}
