@@ -112,6 +112,9 @@ export default function PGNUploaderPage() {
     sanEvaluations,
     maiaError,
     maiaIsLoading,
+    scores,
+    themeScoreError,
+    themeScoreLoading
   } = useAgine(fen);
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -587,6 +590,9 @@ export default function PGNUploaderPage() {
                   pgnText={pgnText}
                   currentMove={moves[currentMoveIndex]}
                   fen={fen}
+                  scores={scores}
+                  ThemeScoreerror={themeScoreError}
+                  ThemeScoreloading={themeScoreLoading}
                 />
               )}
               {chapters.length > 0 && (
