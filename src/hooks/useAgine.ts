@@ -72,7 +72,7 @@ export default function useAgine(fen: string) {
     setRootCurrentMove
   } = useGameReview(engine, engineDepth);
   
-  const colorside = new Chess(fen).turn();
+  const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
 
    const { evaluations, sanEvaluations, isLoading: maiaIsLoading, error: maiaError } = useMaiaEngine({
