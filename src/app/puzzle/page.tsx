@@ -43,7 +43,6 @@ import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { useSession } from "@clerk/nextjs";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
-
 import {
   Lightbulb,
   Star,
@@ -56,7 +55,7 @@ import {
   ChevronUp,
   Menu,
   X,
-  Zap,
+  User2,
 } from "lucide-react";
 import { Refresh, SkipNext } from "@mui/icons-material";
 import Slider from "@/componets/stockfish/Slider";
@@ -102,6 +101,7 @@ export default function PuzzlePage() {
   const [puzzleComplete, setPuzzleComplete] = useState(false);
   const [puzzleFailed, setPuzzleFailed] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
+  const [puzzleReseted, setPuzzleReseted] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [puzzleLevel, setPuzzleLevel] = useLocalStorage<number>("puzzleLevel", 1500);
 
@@ -110,11 +110,38 @@ export default function PuzzlePage() {
   const [solutionViewIndex, setSolutionViewIndex] = useState(0);
   const [solutionGameState, setSolutionGameState] = useState<Chess | null>(null);
 
+  // rating
+
+  const [userPuzzleRating, setUserPuzzleRating] = useLocalStorage<number>(
+    "agine_user_puzzle_rating",
+    1500
+  )
+
   const showSnackbar = (message: string, severity: "success" | "error" | "info" = "info") => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
+
+  function calculateExpectedScore(puzzleRating: number): number {
+  const ratingDifference = puzzleRating - userPuzzleRating;
+
+  const denominator = 1 + Math.pow(10, ratingDifference / 400);
+
+  const expectedScore = 1 / denominator;
+
+  return expectedScore;
+}
+
+  const calculateUserRating = (puzzleRating: number, isCompleted: boolean) => {
+    if(!puzzleReseted){
+    const actualScore = isCompleted ? 1 : 0;
+    const Kfactor = userPuzzleRating === 1500 ? 40 : 100;
+    const expectedScore = calculateExpectedScore(puzzleRating);
+    const newRating = Math.round(userPuzzleRating + Kfactor * (actualScore - expectedScore));
+    setUserPuzzleRating(newRating);
+    }
+  }
 
   const createPuzzlePrompt = useCallback((query: PuzzleQuery): string => {
     const themesText = query.themes.length > 0 ? `This puzzle focuses on: ${query.themes.join(", ")}. themes` : "";
@@ -220,6 +247,7 @@ export default function PuzzlePage() {
         setPuzzleQueryString(queryString);
         setPuzzleComplete(false);
         setPuzzleFailed(false);
+        setPuzzleReseted(false);
         setHintUsed(false);
         setShowHint(false);
         setShowingSolution(false);
@@ -240,7 +268,7 @@ export default function PuzzlePage() {
   );
 
   useEffect(() => {
-    fetchPuzzle([], puzzleLevel, puzzleLevel + 500);
+    fetchPuzzle([], userPuzzleRating, userPuzzleRating + 500);
   }, []);
 
   const {
@@ -390,6 +418,7 @@ export default function PuzzlePage() {
         if (currentSolutionIndex === solutionMoves.length - 1) {
           setPuzzleComplete(true);
           showSnackbar(hintUsed ? "Puzzle complete! (Hint used)" : "Perfect! Puzzle solved!", "success");
+          calculateUserRating(puzzleData?.rating || 1500, true);
         } else {
           setTimeout(() => {
             const nextMove = solutionMoves[currentSolutionIndex + 1];
@@ -413,7 +442,8 @@ export default function PuzzlePage() {
           [source]: "rgba(255, 0, 0, 0.41)",
           [target]: "rgba(255, 0, 0, 0.41)",
         });
-        showSnackbar("Wrong move! Try again or view the solution", "error");
+        showSnackbar("Wrong move! please view the solution", "error");
+        calculateUserRating(puzzleData?.rating || 1500, false);
       }
       return true;
     } catch (error) {
@@ -513,6 +543,7 @@ const handleSquareClick = useCallback(
     setFen(puzzleData.FEN);
     setCurrentSolutionIndex(0);
     setPuzzleComplete(false);
+    setPuzzleReseted(true);
     setPuzzleFailed(false);
     setHintUsed(false);
     setShowHint(false);
@@ -561,6 +592,12 @@ const handleSquareClick = useCallback(
               <Card >
                 <CardContent sx={{ py: 1.5 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Chip
+                      icon={<User2 size={18} />}
+                      label={`Your Rating: ${userPuzzleRating}`}
+                      color="secondary"
+                      size="small"
+                    />
                     <Chip
                       icon={<Star size={18} />}
                       label={`Rating: ${puzzleData.rating}`}
@@ -725,6 +762,12 @@ const handleSquareClick = useCallback(
                           <CardContent>
                             <Stack direction="row" justifyContent="center" spacing={2}>
                               <Chip
+                                icon={<User2 />}
+                                label={`Your Rating: ${userPuzzleRating}`}
+                                color="secondary"
+                                sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
+                              />
+                              <Chip
                                 icon={<Star />}
                                 label={`Rating: ${puzzleData.rating}`}
                                 color="primary"
@@ -748,6 +791,22 @@ const handleSquareClick = useCallback(
                               <Typography variant="h6" sx={{ textAlign: "center" }}>
                                 Solution View ({solutionViewIndex}/{solutionMoves.length})
                               </Typography>
+                              <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+                                <Chip
+                                  label={`Your Rating: ${userPuzzleRating}`}
+                                  color="secondary"
+                                  icon={<User2 />}
+                                  sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
+                                />
+                                {puzzleData && (
+                                  <Chip
+                                    label={`Puzzle Rating: ${puzzleData.rating}`}
+                                    color="primary"
+                                    icon={<Star />}
+                                    sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
+                                  />
+                                )}
+                              </Stack>
                               <Stack direction="row" spacing={2}>
                                 <Button
                                   variant="outlined"
@@ -816,7 +875,7 @@ const handleSquareClick = useCallback(
                               <Button
                                 variant="contained"
                                 startIcon={<SkipNext />}
-                                onClick={() => fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500)}
+                                onClick={() => fetchPuzzle(selectedThemes, userPuzzleRating, userPuzzleRating + 500)}
                                 disabled={loading}
                                 fullWidth
                                 size="large"
@@ -919,7 +978,7 @@ const handleSquareClick = useCallback(
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h6">Puzzle Controls</Typography>
                 <IconButton onClick={() => setBottomDrawerOpen(false)}>
-                  <X />
+                  <X/>
                 </IconButton>
               </Stack>
 
@@ -930,6 +989,22 @@ const handleSquareClick = useCallback(
                     <Typography variant="subtitle2"  sx={{ mb: 1 }}>
                       Solution Navigation ({solutionViewIndex}/{solutionMoves.length})
                     </Typography>
+                     <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+                            <Chip
+                                  label={`Your Rating: ${Math.round(userPuzzleRating)}`}
+                                  color="secondary"
+                                  icon={<User2 />}
+                                  sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
+                                />
+                                {puzzleData && (
+                                  <Chip
+                                    label={`Puzzle Rating: ${puzzleData.rating}`}
+                                    color="primary"
+                                    icon={<Star />}
+                                    sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
+                                  />
+                                )}
+                              </Stack>
                     <Stack direction="row" spacing={1}>
                       <Button
                         variant="outlined"
@@ -1005,7 +1080,7 @@ const handleSquareClick = useCallback(
                       variant="contained"
                       startIcon={<SkipNext />}
                       onClick={() => {
-                        fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500);
+                        fetchPuzzle(selectedThemes, userPuzzleRating, userPuzzleRating + 500);
                         setBottomDrawerOpen(false);
                       }}
                       disabled={loading}
