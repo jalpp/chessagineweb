@@ -30,11 +30,13 @@ import { MoveAnalysis } from "@/hooks/useGameReview";
 import { PositionRadarAnalysis } from "./PositionRadarAnalysis";
 import { GameReviewTheme, getThemeLabelColor} from "@/libs/themes/helper";
 import { ThemeScore } from "@/libs/themes/helper";
+import { PositionEval } from "@/stockfish/engine/engine";
 
 
 interface GameReviewDialogProps {
   gameReview: GameReviewTheme | null;
   currentMoveIndex: number;
+  stockfishAnalysisResult: PositionEval | null;
   moveAnalysis: MoveAnalysis[];
 }
 
@@ -43,6 +45,7 @@ interface GameReviewDialogProps {
 export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
   gameReview,
   currentMoveIndex,
+  stockfishAnalysisResult,
   moveAnalysis,
 }) => {
   const [open, setOpen] = useState(false);
@@ -288,6 +291,7 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
           {tabValue === 0 && (
             <PositionRadarAnalysis
               gameReview={gameReview}
+              stockfishAnalysisResult={stockfishAnalysisResult}
               currentMoveIndex={currentMoveIndex}
               moveAnalysis={moveAnalysis}
             />

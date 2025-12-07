@@ -16,6 +16,7 @@ import { User, Clock, Calendar, Trophy, Info } from "lucide-react";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { GameReviewTheme } from "@/libs/themes/helper";
+import { PositionEval } from "@/stockfish/engine/engine";
 
 export interface GameInfoTabProp {
   moves: string[];
@@ -26,6 +27,7 @@ export interface GameInfoTabProp {
   generateGameReview: (moves: string[]) => void;
   gameReviewLoading: boolean;
   gameReview: MoveAnalysis[];
+  stockfishAnalysisResult: PositionEval | null;
   gameReviewProgress: number;
   gameInfo: Record<string, string>;
   chatLoading: boolean;
@@ -49,6 +51,7 @@ function GameInfoTab({
   handleGameReviewClick,
   gameReviewProgress,
   chatLoading,
+  stockfishAnalysisResult,
 }: GameInfoTabProp) {
   const [gameInfoOpen, setGameInfoOpen] = useState(false);
 
@@ -209,6 +212,7 @@ function GameInfoTab({
         <GameReviewTab
           gameReview={gameReview}
           generateGameReview={async () => generateGameReview(moves)}
+          stockfishAnalysisResult={stockfishAnalysisResult}
           moves={moves}
           gameReviewTheme={gameReviewTheme}
           handleMoveCoachClick={handleMoveCoachClick}
