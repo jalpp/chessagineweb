@@ -129,7 +129,7 @@ export default function PositionPage() {
             flex: 1,
             width: { xs: '100%', lg: 'auto' },
             maxWidth: '100%',
-            minWidth: 0 // Important for flex child overflow
+            minWidth: 0 
           }}
         >
           <AgineAnalysisView

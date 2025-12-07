@@ -645,7 +645,16 @@ const handleSquareClick = useCallback(
           /* Desktop Layout */
           <Stack direction="row" spacing={4}>
             {/* Left Side - Chessboard */}
-            <Box sx={{ flex: '0 0 auto', minWidth: '500px', maxWidth: '600px' }}>
+            <Box 
+            sx={{ 
+            flex: { xs: "1 1 auto", lg: "0 0 auto" },
+            width: { xs: '100%', lg: 'auto' },
+            maxWidth: '100%',
+            display: 'flex',
+            justifyContent: { xs: 'center', lg: 'flex-start' },
+            px: { xs: 0, sm: 1 }
+          }}
+            >
               <AiChessboardPanel
                 game={game}
                 fen={fen}
@@ -674,15 +683,12 @@ const handleSquareClick = useCallback(
           
             <Paper
               elevation={3}
-              sx={{
-                p: 3,
-                flex: 1,
-                minHeight: 600,
-                maxHeight: "85vh",
-                overflow: "auto",
-                display: 'flex',
-                flexDirection: 'column',
-              }}
+               sx={{ 
+            flex: 1,
+            width: { xs: '100%', lg: 'auto' },
+            maxWidth: '100%',
+            minWidth: 0 
+          }}
             >
               <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                 <Tabs
