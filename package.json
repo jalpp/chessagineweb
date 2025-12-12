@@ -26,7 +26,7 @@
     "chess.js": "^1.4.0",
     "chess.ts": "^0.16.2",
     "lucide-react": "^0.555.0",
-    "next": "^16.0.0",
+    "next": "^16.0.10",
     "ollama-ai-provider-v2": "^1.5.1",
     "onnxruntime-web": "^1.23.2",
     "react": "^19.2.0",
