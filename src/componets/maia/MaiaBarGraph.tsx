@@ -11,7 +11,6 @@ interface MaiaProbabilityChartProps {
 }
 
 
-
 export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ moves }) => {
   const maia = useContext(MaiaEngineContext);
   const [moveEvaluations, setMoveEvaluations] = useState<Array<{

@@ -8,6 +8,8 @@ import NavBar from "@/componets/Navbar";
 import { ThemeProvider } from "@/context/ThemeContext";
 import BodyWrapper from "@/componets/BodyWrapper";
 import { MaiaEngineContextProvider } from "@/context/MaiaEngineContext";
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,12 +23,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ChessAgine",
-  description: "Plug-and-play chess training with your choice of AI provider. Convert OpenAI, Claude, or Gemini model into chess-aware Chessbuddy and get personalized live chat training. ChessAgine integrates with Stockfish 17.1 engine, chess databases and to better align with position context, making LLMs chess aware.",
+  description: "A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the chess community",
   
 
   openGraph: {
     title: "ChessAgine - AI-Powered Chess Training",
-    description: "Transform any AI model into your personal chessbuddy. Get live training with OpenAI, Claude, or Gemini integrated with Stockfish 17.1 engine.",
+    description: "A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the chess community",
     url: "https://www.chessagine.com/", 
     siteName: "ChessAgine",
     images: [
@@ -44,7 +46,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "ChessAgine",
-    description: "Transform any AI model into your personal chess coach. Get live training with OpenAI, Claude, or Gemini integrated with Stockfish 17.1.",
+    description: "A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the chess community",
     images: ["static/images/agineowl-og.png"],
   },
 
@@ -57,6 +59,8 @@ export const metadata: Metadata = {
     "Stockfish",
     "chess engine",
     "chess AI",
+    "maia chess",
+    "stockfish",
     "chess tutor",
     "chess learning",
     "chess engine",
@@ -101,6 +105,8 @@ export default function RootLayout({
               <NavBar/>
               <MaiaEngineContextProvider>
                 {children}
+                <Analytics/>
+                <SpeedInsights/>
               </MaiaEngineContextProvider>
             </BodyWrapper>
           </ThemeProvider>
