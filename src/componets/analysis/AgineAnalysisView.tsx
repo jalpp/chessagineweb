@@ -39,6 +39,8 @@ import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 import { DownloadModelModal } from "../maia/DownloadMaiaModel";
 import EvalGraph from "../tabs/EvalGraph";
+import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
+
 
 
 interface BaseAnalysisViewProps {
@@ -324,7 +326,10 @@ function AgineAnalysisView({
                   <Divider/>
 
                   {gameReview && (
+                    <>
                     <EvalGraph moves={gameReview!}/>
+                    
+                    </>
                   )}
  
                 </AccordionDetails>
@@ -526,11 +531,21 @@ function AgineAnalysisView({
                     />
                   </Box>
                 ) : (
+                  <>
+                  
+                  
                   <MaiaResults
                     evaluations={evaluations}
                     isMaiaLoading={isMaiaLoading}
                     maiaerror={maiaerror}
                   />
+                   {gameReview && (
+                    <>
+                    <MaiaProbabilityChart moves={gameReview!}/>                    
+                    </>
+                  )}
+                  </>
+                  
                 )}
               </AccordionDetails>
             </Accordion>

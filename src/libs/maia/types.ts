@@ -35,3 +35,7 @@ export interface MaiaEvaluation {
   value: number
   policy: { [key: string]: number }
 }
+
+export function getPolicyValue(evaluation: MaiaEvaluation, moveKey: string): number {
+  return evaluation.policy[moveKey] ?? 0;
+}
