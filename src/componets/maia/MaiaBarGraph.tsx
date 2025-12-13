@@ -2,99 +2,24 @@ import React, { useState, useEffect, useMemo, useContext, useRef } from "react";
 import { Box, Typography, CircularProgress, Alert, ToggleButtonGroup, ToggleButton, Chip } from "@mui/material";
 import { BarChart } from '@mui/x-charts/BarChart';
 import { MaiaEngineContext } from '@/context/MaiaEngineContext';
-import { MAIA_MODELS } from '@/libs/maia/types';
+import { categorizeMove, CATEGORY_COLORS, CATEGORY_LABELS, MAIA_MODELS, MaiaEvaluation, MoveWithProbability, uciToSan } from '@/libs/maia/types';
+import { MoveAnalysis } from "@/hooks/useGameReview";
 
-interface MoveAnalysis {
-  plyNumber: number;
-  notation: string;
-  sanNotation: string | undefined;
-  quality: 'Best' | 'Very Good' | 'Good' | 'Dubious' | 'Mistake' | 'Blunder' | 'Book';
-  arrowMove: any;
-  evalMove: number;
-  fen: string;
-  currenFen: string;
-  player: 'w' | 'b';
-}
 
 interface MaiaProbabilityChartProps {
   moves: MoveAnalysis[];
 }
 
-interface SanMaiaEvaluation {
-  value: number;
-  policy: { [key: string]: number };
-}
 
-// Convert UCI move to SAN notation
-const uciToSan = (uci: string, fen: string): string => {
-  try {
-    const Chess = require('chess.js').Chess;
-    const chess = new Chess(fen);
-    const move = chess.move({
-      from: uci.substring(0, 2),
-      to: uci.substring(2, 4),
-      promotion: uci.length > 4 ? uci[4] : undefined,
-    });
-    return move ? move.san : uci;
-  } catch {
-    return uci;
-  }
-};
-
-type MoveCategory = 'brilliant' | 'tricky' | 'normal' | 'book';
-
-interface MoveWithProbability {
-  moveNumber: number;
-  notation: string;
-  quality: string;
-  probability: number;
-  category: MoveCategory;
-  isGoodMove: boolean;
-}
-
-// Categorize moves based on Maia probability and Stockfish quality
-const categorizeMove = (
-  probability: number,
-  quality: string,
-  improbableThreshold: number
-): MoveCategory => {
-  if (quality === 'Book') return 'book';
-  
-  const isGoodMove = ['Best', 'Very Good', 'Good'].includes(quality);
-  const isBadMove = ['Mistake', 'Blunder'].includes(quality);
-  const isImprobable = probability < improbableThreshold;
-  
-  // Brilliant: Improbable + Good (human wouldn't likely find it, but it's objectively good)
-  if (isImprobable && isGoodMove) return 'brilliant';
-  
-  // Tricky: Probable + Bad (human likely to play it, but it's objectively bad)
-  if (!isImprobable && isBadMove) return 'tricky';
-  
-  return 'normal';
-};
-
-const CATEGORY_COLORS = {
-  brilliant: '#4ade80', // Green - improbable good moves
-  tricky: '#f87171', // Red - probable bad moves (tricky positions)
-  normal: '#60a5fa', // Blue - normal moves
-  book: '#9ca3af', // Gray - book moves
-};
-
-const CATEGORY_LABELS = {
-  brilliant: 'Brilliant (Improbable + Good)',
-  tricky: 'Tricky (Probable + Bad)',
-  normal: 'Normal',
-  book: 'Book',
-};
 
 export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ moves }) => {
   const maia = useContext(MaiaEngineContext);
   const [moveEvaluations, setMoveEvaluations] = useState<Array<{
-    [key: string]: SanMaiaEvaluation;
+    [key: string]: MaiaEvaluation;
   } | null>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('maia_kdd_1500');
+  const [selectedModel, setSelectedModel] = useState<string>('maia_kdd_1900');
   const [improbableThreshold, setImprobableThreshold] = useState<number>(0.1);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -132,7 +57,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
           throw new Error('Maia engine not ready');
         }
 
-        const allEvaluations: Array<{ [key: string]: SanMaiaEvaluation } | null> = [];
+        const allEvaluations: Array<{ [key: string]: MaiaEvaluation } | null> = [];
 
         for (const move of moveData) {
           if (currentAbortController.signal.aborted) return;
@@ -148,7 +73,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
             [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900]
           );
 
-          const sanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
+          const sanEvaluations: { [key: string]: MaiaEvaluation } = {};
 
           MAIA_MODELS.forEach((model, index) => {
             const uciEval = result[index];
@@ -376,8 +301,8 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
 
       <Box sx={{ mt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-          💡 Brilliant moves are objectively good but improbable for humans to find. 
-          ⚠️ Tricky positions show probable moves that are objectively bad - great for finding opponent traps in your opening repertoire!
+          Brilliant moves are objectively good but improbable for humans to find. 
+          Tricky positions show probable moves that are objectively bad - great for finding opponent traps in your opening repertoire!
         </Typography>
       </Box>
 
@@ -432,10 +357,10 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
           {trickyCount > 0 && (
             <Box>
               <Typography variant="subtitle2" sx={{ color: CATEGORY_COLORS.tricky, mb: 1, fontWeight: 'bold' }}>
-                ⚠️ Tricky Positions ({trickyCount})
+                Tricky Positions ({trickyCount})
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 1 }}>
-                These moves are objectively bad but humans at this rating level often play them - great positions to exploit in your repertoire:
+                These moves are objectively bad but humans at this rating level often play them, great positions to exploit
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {movesWithCategories
