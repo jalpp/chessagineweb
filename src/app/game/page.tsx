@@ -13,16 +13,12 @@ import { Refresh as RefreshIcon, Save as SaveIcon } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/hooks/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
-import { useSession } from "@clerk/nextjs";
 import UserGameSelect from "@/componets/lichess/UserGameSelect";
-import UserPGNUploader from "@/componets/lichess/UserPGNUpload";
+import UserPGNUploader from "@/componets/game/UserPGNUpload";
 import PGNView from "@/componets/tabs/PgnView";
 import ResizableChapterSelector from "@/componets/tabs/ChaptersTab";
 import { extractMovesWithComments, extractGameInfo } from "@/libs/game/helper";
-
 import { useGameTheme } from "@/hooks/useGameTheme";
-import Loader from "@/componets/loading/Loader";
-import Warning from "@/componets/loading/SignUpWarning";
 import SaveGameReviewDialog, {
   SavedGameReview,
 } from "@/componets/game/SaveGameReviewDialog";
@@ -33,9 +29,9 @@ import LoadLichessGameUrl, {
 } from "@/componets/game/LoadLichessGameUrl";
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
+import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
 
 export default function PGNUploaderPage() {
-  const session = useSession();
 
   const [pgnText, setPgnText] = useState("");
   const [game, setGame] = useState(new Chess());
@@ -50,6 +46,10 @@ export default function PGNUploaderPage() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [comment, setComment] = useState("");
   const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
+
+  // Multi-game navigation state
+  const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
+  const [currentGameHash, setCurrentGameHash] = useState<string>("");
 
   // Game review history state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -238,14 +238,14 @@ export default function PGNUploaderPage() {
     }
   };
 
-  const loadUserPGN = (pgn: string) => {
+  const loadUserPGN = (pgn: string, gameHash?: string) => {
     try {
       const tempGame = new Chess();
-      tempGame.loadPgn(pgn);
+      const cleanPgn = cleanPGN(pgn);
+      tempGame.loadPgn(cleanPgn);
       const moveList = tempGame.history();
       const parsed = extractMovesWithComments(pgn);
       const info = extractGameInfo(pgn);
-
       setMoves(moveList);
       setParsedMovesWithComments(parsed);
       setGameInfo(info);
@@ -258,13 +258,24 @@ export default function PGNUploaderPage() {
       setLlmAnalysisResult(null);
       setComment("");
       setGameReview([]);
+      
+      // Set current game hash if provided
+      if (gameHash) {
+        setCurrentGameHash(gameHash);
+      }
+      
       generateGameReview(moveList);
-      analyzeGameTheme(pgn);
+      analyzeGameTheme(cleanPgn);
       setInputsVisible(false);
     } catch (err) {
       console.log(err);
       alert("Invalid PGN input");
     }
+  };
+
+  // Handler for multi-game navigation
+  const handleMultiGameSelect = (game: ParsedPGN) => {
+    loadUserPGN(game.pgn, game.hash);
   };
 
   const goToMove = (index: number) => {
@@ -285,15 +296,13 @@ export default function PGNUploaderPage() {
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 4 },
-
-        minHeight: "100vh",
+   
       }}
     >
       {inputsVisible && (
         <Card
           sx={{
             mb: { xs: 2, sm: 3, md: 4 },
-
             borderRadius: { xs: 2, md: 3 },
             boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
           }}
@@ -377,7 +386,10 @@ export default function PGNUploaderPage() {
                 </Typography>
                 <UserGameSelect loadPGN={loadUserPGN} />
                 <Box sx={{ mt: 2 }}>
-                  <UserPGNUploader loadPGN={loadUserPGN} />
+                  <UserPGNUploader 
+                    loadPGN={(pgn) => loadUserPGN(pgn)} 
+                    setMultiGameList={setMultiGameList}
+                  />
                 </Box>
               </Box>
             </Stack>
@@ -458,6 +470,15 @@ export default function PGNUploaderPage() {
                 />
               </Box>
 
+              {/* Multi-Game Navigator */}
+              {multiGameList.length > 1 && (
+                <MultiGameNavigator
+                  games={multiGameList}
+                  currentGameHash={currentGameHash}
+                  onGameSelect={handleMultiGameSelect}
+                />
+              )}
+
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={2}
@@ -493,6 +514,9 @@ export default function PGNUploaderPage() {
                     setGameInfo({});
                     setLlmAnalysisResult(null);
                     setComment("");
+                    setMultiGameList([]);
+                    setGameReview([]);
+                    setCurrentGameHash("");
                     const reset = new Chess();
                     setGame(reset);
                     setFen(reset.fen());

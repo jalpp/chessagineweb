@@ -10,8 +10,7 @@ interface LoadPGNProp {
 }
 
 function LoadPGNGame({pgnText, setPgnText, loadPGN, setInputsVisible}: LoadPGNProp) {
-
-
+  
   return (
     <Box>
       <Typography
