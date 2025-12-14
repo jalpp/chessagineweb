@@ -72,29 +72,8 @@ export default function NavBar() {
     }
   };
 
-
-  const publicNavLinks = [
-    { 
-      label: "Docs", 
-      href: "/docs", 
-      icon: <FaBook />,
-      isExternal: false
-    },
-    {
-      label: "Github",
-      href: "https://github.com/jalpp/chessagineweb",
-      icon: <GitHub/>,
-      isExternal: true
-    },
-    {
-      label: "Discord",
-      href: "https://discord.gg/NwZb6JJAkS",
-      icon: <FaDiscord />,
-      isExternal: true
-    },
-  ];
-
-  const authNavLinks = [
+  
+  const navLinks = [
     { 
       label: "Analyze Position", 
       href: "/position", 
@@ -119,6 +98,24 @@ export default function NavBar() {
       icon: <FaGear />,
       isExternal: false
     },
+    { 
+      label: "Docs", 
+      href: "/docs", 
+      icon: <FaBook />,
+      isExternal: false
+    },
+    {
+      label: "Github",
+      href: "https://github.com/jalpp/chessagineweb",
+      icon: <GitHub/>,
+      isExternal: true
+    },
+    {
+      label: "Discord",
+      href: "https://discord.gg/NwZb6JJAkS",
+      icon: <FaDiscord />,
+      isExternal: true
+    },
   ];
 
   return (
@@ -137,19 +134,15 @@ export default function NavBar() {
             }}
             onClick={handleLogoClick}
           >
-            <Typography
-              variant="h6"
-              
-            >
+            <Typography variant="h6">
               ChessAgine
             </Typography>
           </Box>
 
-          {/* Navigation Links - Center/Left */}
+          {/* Desktop Navigation */}
           {!isMobile && (
-            <Box sx={{ display: "flex", alignItems: "left", gap: 0.5, ml: 4 }}>
-              {/* Public links */}
-              {publicNavLinks.map((link) => (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, ml: 4 }}>
+              {navLinks.map((link) => (
                 <Button
                   key={link.href}
                   color="inherit"
@@ -167,45 +160,11 @@ export default function NavBar() {
                   {link.label}
                 </Button>
               ))}
-
-              {/* Authenticated links */}
-              <SignedIn>
-                <Divider
-                  orientation="vertical"
-                  flexItem
-                  sx={{
-                    mx: 1,
-                    bgcolor: "rgba(255, 255, 255, 0.2)",
-                    height: "24px",
-                    alignSelf: "center",
-                  }}
-                />
-                {authNavLinks.map((link) => (
-                  <Button
-                    key={link.href}
-                    color="inherit"
-                    onClick={() => handleNavigation(link.href, link.isExternal)}
-                    startIcon={link.icon}
-                    sx={{
-                      textTransform: "none",
-                      fontSize: "0.95rem",
-                      px: 2,
-                      "&:hover": {
-                        bgcolor: "rgba(255, 255, 255, 0.1)",
-                      },
-                    }}
-                  >
-                    {link.label}
-                  </Button>
-                ))}
-              </SignedIn>
             </Box>
           )}
 
-          {/* Spacer for mobile to push items to edges */}
           <Box sx={{ flexGrow: 1, display: { md: "none" } }} />
 
-          {/* Auth Section - Right */}
           {isMobile ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <SignedIn>
@@ -233,11 +192,6 @@ export default function NavBar() {
                     textTransform: "none",
                     fontSize: "0.95rem",
                     px: 2.5,
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                    "&:hover": {
-                      bgcolor: "rgba(255, 255, 255, 0.1)",
-                      borderColor: "rgba(255, 255, 255, 0.5)",
-                    },
                   }}
                 >
                   Sign In
@@ -249,10 +203,6 @@ export default function NavBar() {
                     textTransform: "none",
                     fontSize: "0.95rem",
                     px: 2.5,
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    "&:hover": {
-                      background: "linear-gradient(135deg, #5568d3 0%, #653a8a 100%)",
-                    },
                   }}
                 >
                   Sign Up
@@ -294,8 +244,8 @@ export default function NavBar() {
           onClick={toggleDrawer(false)}
         >
           <List>
-            {/* Public navigation items */}
-            {publicNavLinks.map((link) => (
+            {/* All navigation items */}
+            {navLinks.map((link) => (
               <ListItem
                 key={link.href}
                 onClick={() => handleNavigation(link.href, link.isExternal)}
@@ -312,31 +262,6 @@ export default function NavBar() {
                 <ListItemText primary={link.label} />
               </ListItem>
             ))}
-
-            {/* Authenticated navigation items */}
-            <SignedIn>
-              <Divider sx={{ my: 1, bgcolor: "rgba(255, 255, 255, 0.3)" }} />
-
-              {authNavLinks.map((link) => (
-                <ListItem
-                  key={link.href}
-                  onClick={() => handleNavigation(link.href, link.isExternal)}
-                  sx={{
-                    cursor: "pointer",
-                    "&:hover": {
-                      bgcolor: "rgba(255, 255, 255, 0.1)",
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
-                    {link.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={link.label} />
-                </ListItem>
-              ))}
-
-              <Divider sx={{ my: 1, bgcolor: "rgba(255, 255, 255, 0.3)" }} />
-            </SignedIn>
 
             {/* Auth section for signed out users */}
             <SignedOut>

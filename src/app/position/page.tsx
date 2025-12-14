@@ -67,13 +67,6 @@ export default function PositionPage() {
     themeScoreError
   } = useAgine(fen);
 
-  if (!session.isLoaded) {
-    return <Loader />;
-  }
-
-  if (!session.isSignedIn) {
-    return <Warning />;
-  }
 
   return (
     <Box

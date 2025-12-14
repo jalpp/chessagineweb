@@ -57,7 +57,7 @@ export type AgineCloudModel =
 
 export type LanguageModel = OpenAIModel | AnthropicModel | GoogleModel | OllamaModel | AgineCloudModel;
 
-export type Provider = "openai" | "anthropic" | "google" | "ollama" | "aginecloud"
+export type Provider = "openai" | "anthropic" | "google" | "ollama" | "agineCloud"
 
 export type ApiSetting = {
   provider: Provider;

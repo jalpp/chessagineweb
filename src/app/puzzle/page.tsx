@@ -567,14 +567,6 @@ const handleSquareClick = useCallback(
     setMoveSquares({});
   }, [puzzleData]);
 
-  if (!session.isLoaded) {
-    return <Loader />;
-  }
-
-  if (!session.isSignedIn) {
-    return <Warning />;
-  }
-
   return (
     <>
       <Box sx={{ 
