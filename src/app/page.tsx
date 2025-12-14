@@ -8,7 +8,6 @@ import {
   Paper,
   Stack,
   Card,
-  CardContent,
   Avatar,
   Chip,
   CardMedia,
@@ -26,7 +25,6 @@ import CodeIcon from "@mui/icons-material/Code";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { FaPuzzlePiece } from "react-icons/fa6";
 import { Cloud, Extension, SmartToy, SwapCallsOutlined } from "@mui/icons-material";
 import HomeView from "@/componets/view/HomeView";
 
@@ -178,7 +176,7 @@ export default function HomePage() {
                 }}
                 onClick={() => clerk.openSignUp()}
               >
-                Start Chatting with ChessAgine
+                Start Chatting with ChessAgine via AgineCloud
               </Button>
               <Button
                 variant="outlined"
