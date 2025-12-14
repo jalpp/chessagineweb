@@ -296,7 +296,7 @@ export default function PGNUploaderPage() {
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 4 },
-        minHeight: "100vh",
+   
       }}
     >
       {inputsVisible && (
@@ -515,6 +515,7 @@ export default function PGNUploaderPage() {
                     setLlmAnalysisResult(null);
                     setComment("");
                     setMultiGameList([]);
+                    setGameReview([]);
                     setCurrentGameHash("");
                     const reset = new Chess();
                     setGame(reset);
