@@ -203,6 +203,49 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 
 export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
  
+  // FREE AgineCloud Models
+  {
+    provider: 'AgineCloud',
+    model: 'google/gemini-3-pro-preview',
+    useCase: 'Free advanced reasoning analysis',
+    cost: 'Free',
+    performance: 'Best',
+    reasoning: 'Latest Gemini 3 Pro - community-hosted premium model with excellent reasoning'
+  },
+  {
+    provider: 'AgineCloud',
+    model: 'google/gemini-2.0-flash-exp',
+    useCase: 'Free fast cloud analysis',
+    cost: 'Free',
+    performance: 'Better',
+    reasoning: 'Google\'s experimental model, completely free with excellent performance'
+  },
+  {
+    provider: 'AgineCloud',
+    model: 'openai/gpt-oss-20b',
+    useCase: 'Free balanced cloud analysis',
+    cost: 'Free',
+    performance: 'Better',
+    reasoning: 'Solid all-around free model for comprehensive chess analysis'
+  },
+  {
+    provider: 'AgineCloud',
+    model: 'nvidia/nemotron-nano-9b-v2',
+    useCase: 'Free lightweight cloud analysis',
+    cost: 'Free',
+    performance: 'Good',
+    reasoning: 'Efficient NVIDIA model for quick analysis without any costs'
+  },
+  {
+    provider: 'AgineCloud',
+    model: 'mistralai/mistral-small-3.1-24b-instruct',
+    useCase: 'Free European cloud analysis',
+    cost: 'Free',
+    performance: 'Better',
+    reasoning: 'Mistral\'s powerful small model, completely free for chess analysis'
+  },
+  
+  // FREE Ollama Cloud Models
   {
     provider: 'Ollama',
     model: 'gpt-oss:20b-cloud',
@@ -253,54 +296,15 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     performance: 'Better',
     reasoning: 'Powerful local model for serious study - requires more RAM but fully private'
   },
-  {
-    provider: 'agineCloud',
-    model: 'google/gemini-2.0-flash-exp',
-    useCase: 'Free fast cloud analysis',
-    cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Google\'s latest experimental model, completely free with excellent performance'
-  },
-  {
-    provider: 'agineCloud',
-    model: 'google/gemini-3-pro-preview',
-    useCase: 'Reasoning based analysis',
-    cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Google\'s latest best reasoning model, completely free with excellent performance'
-  },
-  {
-    provider: 'agineCloud',
-    model: 'openai/gpt-oss-20b',
-    useCase: 'Free balanced cloud analysis',
-    cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Solid all-around free model for comprehensive chess analysis'
-  },
-  {
-    provider: 'agineCloud',
-    model: 'nvidia/nemotron-nano-9b-v2',
-    useCase: 'Free lightweight cloud analysis',
-    cost: 'Free',
-    performance: 'Good',
-    reasoning: 'Efficient NVIDIA model for quick analysis without any costs'
-  },
-  {
-    provider: 'agineCloud',
-    model: 'mistralai/mistral-small-3.1-24b-instruct',
-    useCase: 'Free European cloud analysis',
-    cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Mistral\'s powerful small model, completely free for chess analysis'
-  },
- 
+  
+  // Budget Paid Models
   {
     provider: 'OpenAI',
     model: 'gpt-5-nano',
     useCase: 'Quick analysis and chat about a game',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Extremely affordable with solid chess understanding for beginners'
+    reasoning: 'Extremely affordable at $0.05/$0.40 per million tokens with solid chess understanding'
   },
   {
     provider: 'OpenAI',
@@ -308,15 +312,15 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     useCase: 'Budget-friendly cloud analysis',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Great balance of cost and chess understanding'
+    reasoning: 'Great balance at $0.15/$0.60 per million tokens with good chess understanding'
   },
   {
     provider: 'Claude',
-    model: 'claude-3-5-haiku',
+    model: 'claude-haiku-4.5',
     useCase: 'Quick analysis and hints',
     cost: 'Low',
-    performance: 'Good',
-    reasoning: 'Fast responses with solid chess knowledge'
+    performance: 'Better',
+    reasoning: 'Fast responses at $1/$5 per million tokens with near-frontier performance'
   },
   {
     provider: 'Gemini',
@@ -324,7 +328,7 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     useCase: 'Ultra-fast casual games',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Quickest responses for rapid gameplay'
+    reasoning: 'Quickest responses at $0.10/$0.40 per million tokens for rapid gameplay'
   },
   
   // Balanced Models
@@ -333,16 +337,16 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     model: 'gpt-5',
     useCase: 'Advanced chess analysis',
     cost: 'Medium',
-    performance: 'Better',
-    reasoning: 'Latest model with superior reasoning capabilities'
+    performance: 'Best',
+    reasoning: 'Latest model at $1.25/$10 per million tokens with superior reasoning'
   },
   {
     provider: 'Claude',
-    model: 'claude-sonnet-4',
+    model: 'claude-sonnet-4.5',
     useCase: 'Balanced performance',
     cost: 'Medium',
-    performance: 'Better',
-    reasoning: 'Excellent reasoning with good cost efficiency'
+    performance: 'Best',
+    reasoning: 'Excellent reasoning at $3/$15 per million tokens with coding strength'
   },
   {
     provider: 'Gemini',
@@ -350,7 +354,7 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     useCase: 'Deep position analysis',
     cost: 'Medium',
     performance: 'Best',
-    reasoning: 'Advanced analysis with 1M token context window'
+    reasoning: 'Advanced analysis at $1.25/$10 per million tokens with 1M token context window'
   },
   
   // Premium Models
@@ -360,20 +364,29 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     useCase: 'Deep chess training',
     cost: 'High',
     performance: 'Best',
-    reasoning: 'Exceptional reasoning and strategic depth for complex positions'
+    reasoning: 'Exceptional reasoning at $15/$60 per million tokens for complex positions'
   },
   {
     provider: 'Claude',
-    model: 'claude-opus-4',
+    model: 'claude-opus-4.5',
     useCase: 'Ultimate chess analysis',
     cost: 'High',
     performance: 'Best',
-    reasoning: 'Latest and most capable Claude model for complex analysis'
+    reasoning: 'Most capable at $5/$25 per million tokens for maximum intelligence'
+  },
+  {
+    provider: 'Gemini',
+    model: 'gemini-3-pro',
+    useCase: 'Cutting-edge reasoning',
+    cost: 'High',
+    performance: 'Best',
+    reasoning: 'Latest flagship at $2/$12 per million tokens with advanced multimodal reasoning'
   }
 ];
 
-// Pricing data (current as of August 2025, verified from official provider pricing pages)
+// Pricing data (current as of December 2025, verified from official provider pricing pages)
 export const MODEL_PRICING: ModelPricing[] = [
+  // Ollama Models (All Free)
   { provider: 'Ollama', model: 'qwen3:4b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'qwen3:8b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'qwen3:30b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
@@ -382,14 +395,15 @@ export const MODEL_PRICING: ModelPricing[] = [
   { provider: 'Ollama', model: 'deepseek-v3.1:671b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'gpt-oss:120b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'gpt-oss:20b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
-  { provider: 'AgineCloud', model: "google/gemini-3-pro-preview", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: "google/gemini-2.0-flash-exp", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+  
+  // AgineCloud Models (All Free)
+  { provider: 'AgineCloud', model: 'google/gemini-3-pro-preview', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+  { provider: 'AgineCloud', model: 'google/gemini-2.0-flash-exp', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+  { provider: 'AgineCloud', model: 'openai/gpt-oss-20b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+  { provider: 'AgineCloud', model: 'nvidia/nemotron-nano-9b-v2', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+  { provider: 'AgineCloud', model: 'mistralai/mistral-small-3.1-24b-instruct', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
 
-  { provider: 'AgineCloud', model: "openai/gpt-oss-20b", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: "nvidia/nemotron-nano-9b-v2", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: "mistralai/mistral-small-3.1-24b-instruct", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-
-  // OpenAI Models (Standard tier pricing)
+  // OpenAI Models (per million tokens)
   { provider: 'OpenAI', model: 'gpt-5-nano', inputPrice: 0.05, outputPrice: 0.40, costPer200Requests: 0.09, tier: 'Budget' },
   { provider: 'OpenAI', model: 'gpt-4o-mini', inputPrice: 0.15, outputPrice: 0.60, costPer200Requests: 0.18, tier: 'Budget' },
   { provider: 'OpenAI', model: 'gpt-5-mini', inputPrice: 0.25, outputPrice: 2.00, costPer200Requests: 0.45, tier: 'Budget' },
@@ -404,20 +418,25 @@ export const MODEL_PRICING: ModelPricing[] = [
   { provider: 'OpenAI', model: 'o3', inputPrice: 2.00, outputPrice: 8.00, costPer200Requests: 2.00, tier: 'Balanced' },
   { provider: 'OpenAI', model: 'o1', inputPrice: 15.00, outputPrice: 60.00, costPer200Requests: 15.00, tier: 'Premium' },
   
-  // Claude Models (Standard API pricing)
+  // Claude Models (per million tokens)
   { provider: 'Claude', model: 'claude-3-haiku', inputPrice: 0.25, outputPrice: 1.25, costPer200Requests: 0.35, tier: 'Budget' },
   { provider: 'Claude', model: 'claude-3-5-haiku', inputPrice: 0.80, outputPrice: 4.00, costPer200Requests: 0.96, tier: 'Budget' },
+  { provider: 'Claude', model: 'claude-haiku-4.5', inputPrice: 1.00, outputPrice: 5.00, costPer200Requests: 1.20, tier: 'Budget' },
   { provider: 'Claude', model: 'claude-sonnet-3.7', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
   { provider: 'Claude', model: 'claude-sonnet-4', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
+  { provider: 'Claude', model: 'claude-sonnet-4.5', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
   { provider: 'Claude', model: 'claude-opus-4', inputPrice: 15.00, outputPrice: 75.00, costPer200Requests: 18.00, tier: 'Premium' },
+  { provider: 'Claude', model: 'claude-opus-4.1', inputPrice: 15.00, outputPrice: 75.00, costPer200Requests: 18.00, tier: 'Premium' },
+  { provider: 'Claude', model: 'claude-opus-4.5', inputPrice: 5.00, outputPrice: 25.00, costPer200Requests: 6.00, tier: 'Premium' },
   
-  // Google Gemini Models
-  { provider: 'Gemini', model: 'gemini-2.5-flash-lite', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.28, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-2.0-flash', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.28, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-1.5-flash', inputPrice: 0.35, outputPrice: 1.05, costPer200Requests: 0.91, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-2.5-flash', inputPrice: 0.30, outputPrice: 2.50, costPer200Requests: 0.56, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-1.5-pro', inputPrice: 3.50, outputPrice: 10.50, costPer200Requests: 2.80, tier: 'Balanced' },
+  // Google Gemini Models (per million tokens)
+  { provider: 'Gemini', model: 'gemini-2.5-flash-lite', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.10, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-2.0-flash', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.10, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-1.5-flash', inputPrice: 0.35, outputPrice: 1.05, costPer200Requests: 0.28, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-2.5-flash', inputPrice: 0.30, outputPrice: 1.20, costPer200Requests: 0.30, tier: 'Budget' },
+  { provider: 'Gemini', model: 'gemini-1.5-pro', inputPrice: 1.25, outputPrice: 5.00, costPer200Requests: 1.25, tier: 'Balanced' },
   { provider: 'Gemini', model: 'gemini-2.5-pro', inputPrice: 1.25, outputPrice: 10.00, costPer200Requests: 2.25, tier: 'Balanced' },
+  { provider: 'Gemini', model: 'gemini-3-pro', inputPrice: 2.00, outputPrice: 12.00, costPer200Requests: 2.80, tier: 'Premium' },
 ];
 
 
@@ -437,7 +456,6 @@ export const FAQ_ITEMS: FAQItem[] = [
     answer: "ChessAgine is your AI chess buddy, not a formal coach. Think of it as a knowledgeable friend who's always available to chat about chess, analyze positions, explain concepts, and help you explore the game. Unlike a structured coaching program, ChessAgine adapts to your curiosity and provides conversational, friendly guidance whenever you need it.",
     category: "general"
   },
-
   {
     question: "Is ChessAgine suitable for beginners?",
     answer: "Absolutely! ChessAgine is designed to be helpful for players of all levels. It can explain basic rules, teach fundamental concepts, suggest beginner-friendly openings, and provide encouragement. The AI adapts its explanations to your level and asks clarifying questions to better understand what you want to learn.",
@@ -445,17 +463,22 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "Can I use ChessAgine completely free?",
-    answer: "Yes! ChessAgine Cloud provides free usage to open source models, Ollama is another option where you can use local LLM models",
+    answer: "Yes! ChessAgine offers multiple free options: AgineCloud provides instant access to free community-hosted models including Gemini 3 Pro preview and other open-source models. Just select AgineCloud in settings and start analyzing. Alternatively, Ollama offers both cloud models (instant, no setup) and local models (offline, maximum privacy). Both are completely free forever!",
     category: "cost"
   },
   {
-    question: "What's the difference between Ollama Cloud and Ollama Local models?",
-    answer: "Ollama Cloud models (with '-cloud' suffix) run on Ollama's free servers - you just connect ChessAgine and start analyzing, no setup required. Local models run on your own computer, giving you offline access and maximum privacy but requiring installation and adequate RAM. Both are completely free! Cloud models are easier to start with, while local models work without internet and keep everything private.",
+    question: "What is AgineCloud and how do I use it?",
+    answer: "AgineCloud is a ChessAgine-hosted, community-driven cloud provider that's free to use. It runs affordable open-source models and some premium models like Gemini 3 Pro that run on community donations, so everyone shares the resources. To use it: simply select AgineCloud in the settings tab and start using it immediately - no API keys or setup required. Since it's in beta, you might encounter rate limits that reset every 24 hours.",
     category: "technical"
   },
   {
-    question: "What is Ollama and how do I use it with ChessAgine?",
-    answer: "Ollama provides free AI models in two ways: Cloud models are the easiest - just select an Ollama cloud model in ChessAgine and start using it immediately with no setup. For local models: 1) Install Ollama from ollama.com, 2) Download a model (like qwen3:8b), 3) Connect ChessAgine to your local Ollama instance. Cloud models are perfect for getting started instantly, while local models give you offline access.",
+    question: "What's the difference between AgineCloud, Ollama, and paid API models?",
+    answer: "AgineCloud: Free cloud-based provider hosted by ChessAgine. Select it in settings and start immediately - perfect for instant access. Ollama: Free models you run on your own device. Requires installation and setup following instructions, but gives you offline access and complete privacy. Paid APIs (OpenAI, Anthropic, Google): You insert your own API key from these providers and pay only for what you use. Generally faster with more advanced models, but costs money based on usage.",
+    category: "technical"
+  },
+  {
+    question: "What's the difference between Ollama Cloud and Ollama Local models?",
+    answer: "Ollama Cloud models (with '-cloud' suffix) run on Ollama's free servers - you just connect ChessAgine and start analyzing, no setup required. Local models run on your own computer after installing Ollama from ollama.com, giving you offline access and maximum privacy but requiring adequate RAM. Both are completely free! Cloud models are easier to start with, while local models work without internet and keep everything private.",
     category: "technical"
   },
   {
@@ -465,17 +488,17 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "Can ChessAgine make mistakes or give incorrect analysis?",
-    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1, GPT-5, or Claude Opus-4. Free local models (Ollama) may have more limitations than premium cloud models.",
+    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1, GPT-5, Claude Opus-4.5, or Gemini 3 Pro. Free models may have more limitations than premium ones.",
     category: "technical"
   },
   {
     question: "Is ChessAgine trained on millions of chess games?",
-    answer: "ChessAgine itself is not specially trained - it uses the base model's existing training to predict responses. ChessAgine applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, but ChessAgine enhances their chess capabilities through prompt engineering and integration techniques.",
+    answer: "ChessAgine itself is not specially trained - it uses base AI models' existing training. ChessAgine is FOSS (free and open-source software) that applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, but ChessAgine enhances their chess capabilities through prompt engineering and integration techniques. You can even fork ChessAgine and run it locally if you want!",
     category: "technical"
   },
   {
     question: "How can I get more accurate results from ChessAgine?",
-    answer: "To improve accuracy: 1) Use higher-tier models (like GPT-5, Claude Opus-4, or o1) which generally provide better reasoning, 2) Be specific in your questions, 3) Ask follow-up questions if something seems unclear, 4) Cross-reference important analysis with multiple sources. For free options, larger Ollama models (like gpt-oss:20b or qwen3:30b) typically perform better than smaller ones, though they require more RAM.",
+    answer: "To improve accuracy: 1) Use higher-tier models (like GPT-5, Claude Opus-4.5, Gemini 3 Pro, or o1) which generally provide better reasoning, 2) Be specific in your questions, 3) Ask follow-up questions if something seems unclear, 4) Cross-reference important analysis with multiple sources. For free options, larger models typically perform better - AgineCloud's Gemini 3 Pro or Ollama's larger models (like gpt-oss:120b) give better results.",
     category: "technical"
   },
   {
@@ -485,42 +508,37 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "Do different AI models give different quality results?",
-    answer: "Absolutely! More advanced models (like o1, GPT-5, Claude Opus-4) generally provide more accurate analysis, better strategic understanding, and fewer mistakes compared to budget or free models. Free Ollama models are great for learning and casual analysis, but premium cloud models offer superior reasoning for serious chess study. If you need reliable analysis for important games, investing in a premium model can make a significant difference.",
+    answer: "Absolutely! More advanced models (like o1, GPT-5, Claude Opus-4.5, Gemini 3 Pro) generally provide more accurate analysis, better strategic understanding, and fewer mistakes compared to budget or free models. Free models from AgineCloud and Ollama are great for learning and casual analysis. If you need reliable analysis for important games, investing in a premium model can make a significant difference.",
     category: "technical"
   },
   {
-    question: "What is ChessAgine Cloud?",
-    answer: "ChessAgine Cloud uses open source small models to support user queries, its a free alternative to Ollama but cloud based so you just login and start using ChessAgine. Since ChessAgine Cloud is in beta, users might experience rate limits, but ratelimit reset every 24 hours.",
+    question: "Should I use free models or paid API models?",
+    answer: "It depends on your needs! Free options (AgineCloud/Ollama) are perfect for: learning basics, casual analysis, unlimited practice without cost concerns, and offline use (Ollama local). Paid APIs are better for: faster responses, more sophisticated analysis, heavy usage without rate limits, and professional-level chess study. Many users start with free options and upgrade to paid models for important analysis.",
     category: "cost"
   },
   {
-    question: "Should I use ChessAgine Cloud/Ollama or paid API models?",
-    answer: "It depends on your needs! AgineCloud is perfect for: learning basics, casual analysis, unlimited practice without cost concerns, Ollama is great for offline use. Paid APIs are better for: faster responses, more sophisticated analysis, limited computer resources, and professional-level chess study. Many users start with Ollama and upgrade to paid models for important analysis.",
-    category: "cost"
-  },
-  {
-    question: "How much does it typically cost to use ChessAgine?",
-    answer: "With Ollama and ChessAgine Cloud: $0 - completely free! With cloud APIs: Costs vary by model and usage. For casual use (a few analyses per day), expect $0.50-$3 per month. Heavy users might spend $5-$15 monthly. The cost analysis tab shows detailed breakdowns for different usage patterns and models.",
+    question: "How much does it typically cost to use ChessAgine with paid APIs?",
+    answer: "With AgineCloud and Ollama: $0 - completely free! With paid APIs: Costs vary by model and usage. Budget models like GPT-5-nano ($0.05/$0.40 per million tokens) or Gemini Flash-Lite ($0.10/$0.40): expect $0.50-$2 per month for casual use. Mid-tier models like GPT-5 or Claude Sonnet: $2-$10 monthly for regular use. Premium models: $10-$30+ for heavy usage. The cost analysis tab shows detailed breakdowns for different patterns.",
     category: "cost"
   },
   {
     question: "Where do I set up payment information to use ChessAgine?",
-    answer: "For Ollama/ChessAgine Cloud models: No payment needed - they're completely free. For cloud APIs: You set up payment directly with the AI provider (OpenAI, Anthropic, or Google), not within the ChessAgine UI. Visit your chosen provider's billing interface to add payment methods.",
+    answer: "For AgineCloud/Ollama models: No payment needed - they're completely free. For paid APIs: You set up payment directly with the AI provider (OpenAI, Anthropic, or Google), not within ChessAgine. Visit your chosen provider's website, create an account, add payment methods, generate an API key, then insert that key into ChessAgine settings.",
     category: "cost"
   },
   {
     question: "Is my chess data and conversation history private?",
-    answer: "Your privacy depends on the provider you choose. With Ollama, everything runs locally on your computer - maximum privacy. With cloud APIs, ChessAgine doesn't store your conversations - they go directly between your browser and the AI provider. Check each provider's privacy policy for details on data handling and retention.",
+    answer: "Privacy depends on your provider: AgineCloud: Conversations are processed through community-hosted servers. Ollama Local: Maximum privacy - everything runs on your computer, nothing leaves your device. Ollama Cloud: Processed on Ollama's servers. Paid APIs: ChessAgine doesn't store conversations - they go directly between your browser and the provider. Check each provider's privacy policy for details on data handling.",
     category: "privacy"
   },
   {
     question: "Can I use multiple AI providers with ChessAgine?",
-    answer: "Yes! You can set up Ollama for free local models AND add API keys for cloud providers, then switch between them. This lets you use different models for different purposes - perhaps Ollama for quick questions and a powerful cloud model for deep analysis. Mix and match based on your needs!",
+    answer: "Yes! You can set up AgineCloud for instant free access, install Ollama for local free models, AND add API keys for OpenAI, Anthropic, and Google, then switch between them. This lets you use different models for different purposes - perhaps AgineCloud for quick questions, Ollama for offline study, and a powerful paid model for deep analysis. Mix and match based on your needs!",
     category: "technical"
   },
   {
     question: "What happens if I run out of API credits for paid models?",
-    answer: "If your API credits are exhausted, you'll need to add more funds to your provider account. ChessAgine will show you the error message from the provider, and you can add credits directly through their platform. Alternatively, switch to Ollama models which never run out since they're free and local.",
+    answer: "If your API credits are exhausted, you'll need to add more funds to your provider account. ChessAgine will show you the error message from the provider. You can add credits directly through their platform. Alternatively, switch to AgineCloud or Ollama models which never run out since they're free.",
     category: "cost"
   },
   {
@@ -529,8 +547,13 @@ export const FAQ_ITEMS: FAQItem[] = [
     category: "technical"
   },
   {
-    question: "What computer specs do I need to run Ollama models?",
-    answer: "It varies by model size: qwen3:4b needs ~4GB RAM, qwen3:8b needs ~8GB RAM, and larger models like gpt-oss:120b need 64GB+ RAM. Most modern computers can run the smaller models (4b-8b) just fine. Start with a smaller model and upgrade if you have the resources and want better analysis quality. You can use ChessAgine Cloud without worrying about ollama setup but you might encounter rate limits",
+    question: "What computer specs do I need to run Ollama local models?",
+    answer: "It varies by model size: qwen3:4b needs ~4GB RAM, qwen3:8b needs ~8GB RAM, gpt-oss:20b needs ~20GB RAM, and larger models like gpt-oss:120b need 64GB+ RAM. Most modern computers can run the smaller models (4b-8b) just fine. Start with a smaller model and upgrade if you have the resources and want better analysis quality. If you don't want to worry about local setup, use AgineCloud or Ollama Cloud models instead!",
+    category: "technical"
+  },
+  {
+    question: "Is ChessAgine open source? Can I run it myself?",
+    answer: "Yes! ChessAgine is FOSS (free and open-source software). You can fork the project on GitHub and run it locally if you want complete control over your setup. This gives you full customization options and the ability to modify it for your specific needs. Most users prefer the hosted version at chessagine.com for convenience, but the option to self-host is always available.",
     category: "technical"
   }
 ];
