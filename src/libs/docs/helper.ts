@@ -263,6 +263,14 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
   },
   {
     provider: 'agineCloud',
+    model: 'google/gemini-3-pro-preview',
+    useCase: 'Reasoning based analysis',
+    cost: 'Free',
+    performance: 'Better',
+    reasoning: 'Google\'s latest best reasoning model, completely free with excellent performance'
+  },
+  {
+    provider: 'agineCloud',
     model: 'openai/gpt-oss-20b',
     useCase: 'Free balanced cloud analysis',
     cost: 'Free',
@@ -285,8 +293,7 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     performance: 'Better',
     reasoning: 'Mistral\'s powerful small model, completely free for chess analysis'
   },
-  
-  // Budget Cloud Models
+ 
   {
     provider: 'OpenAI',
     model: 'gpt-5-nano',
@@ -375,7 +382,9 @@ export const MODEL_PRICING: ModelPricing[] = [
   { provider: 'Ollama', model: 'deepseek-v3.1:671b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'gpt-oss:120b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'gpt-oss:20b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: "google/gemini-3-pro-preview", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
   { provider: 'AgineCloud', model: "google/gemini-2.0-flash-exp", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+
   { provider: 'AgineCloud', model: "openai/gpt-oss-20b", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
   { provider: 'AgineCloud', model: "nvidia/nemotron-nano-9b-v2", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
   { provider: 'AgineCloud', model: "mistralai/mistral-small-3.1-24b-instruct", inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},

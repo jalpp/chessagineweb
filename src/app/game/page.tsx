@@ -281,14 +281,6 @@ export default function PGNUploaderPage() {
     setStockfishAnalysisResult(null);
   };
 
-  if (!session.isLoaded) {
-    return <Loader />;
-  }
-
-  if (!session.isSignedIn) {
-    return <Warning />;
-  }
-
   return (
     <Box
       sx={{

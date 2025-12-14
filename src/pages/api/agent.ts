@@ -79,15 +79,15 @@ export default async function handler(
   try {
     const { isAuthenticated } = getAuth(req);
 
-    if (!isAuthenticated) {
-      return res.status(401).json({ message: "Unauthorized" });
-      
-    }
 
   
     const { query, fen, mode, apiSettings } = req.body;
 
     const rawApiSettings = apiSettings as ApiSetting;
+
+    if (rawApiSettings.provider === "agineCloud" && !isAuthenticated) {
+      return res.status(401).json({ message: "Please sign up to use agineCloud models. You need an account because agineCloud models run on community donated resources. You can optionally direct insert an API key for Google, OpenAI, Anthropic in chat settings or run models locally via Ollama. You can read more about set up in docs page." });
+    }
 
     if (!rawApiSettings || !rawApiSettings.provider || !rawApiSettings.model) {
       return res.status(400).json({
@@ -101,9 +101,17 @@ export default async function handler(
       });
     }
 
-    if (rawApiSettings.provider == "ollama" && !rawApiSettings.ollamaBaseUrl) {
+    if (
+      rawApiSettings.provider === "ollama" &&
+      (
+      !rawApiSettings.ollamaBaseUrl ||
+      typeof rawApiSettings.ollamaBaseUrl !== "string" ||
+      !rawApiSettings.ollamaBaseUrl.trim() ||
+      !/^https:\/\/.+/i.test(rawApiSettings.ollamaBaseUrl)
+      )
+    ) {
       return res.status(400).json({
-        message: "Ollama base ngrok endpoint required, please set up the URL by reading chessAgine docs",
+      message: "Ollama base ngrok endpoint required and must be a valid https:// URL. Please set up the URL by reading chessAgine docs",
       });
     }
 
