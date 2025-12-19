@@ -58,6 +58,7 @@ import {
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
 import { MaiaEvaluation } from "@/libs/maia/types";
+import { MaiaEngineAnalysis } from "@/hooks/useMaiaEngine";
 
 export type BoardOrientation = "white" | "black";
 
@@ -93,7 +94,7 @@ interface AiChessboardPanelProps {
   gameStatus?: string;
   playerSide?: "white" | "black";
   engineThinking?: boolean;
-  evaluations?: { [key: string]: MaiaEvaluation } | null;
+  evaluations?: MaiaEngineAnalysis
 }
 
 export default function AiChessboardPanel({
@@ -558,7 +559,7 @@ const handleSquareClick = useCallback(
     setFen,
     safeGameMutate,
     clearAnalysis,
-    handlePlayerMove, // Add this dependency
+    handlePlayerMove, 
   ]
 );
 
@@ -570,7 +571,6 @@ const handleSquareClick = useCallback(
 
     const arrows: Arrow[] = [];
 
-    // Only show review arrow if reviewMove exists and corresponds to current position
     if (reviewMove) {
       const reviewArrow: Arrow = {
         startSquare: reviewMove.arrowMove.from as Square,
@@ -579,7 +579,6 @@ const handleSquareClick = useCallback(
       };
       arrows.push(reviewArrow);
 
-      // Only add engine arrow if reviewMove quality is not "Best"
       if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
         const bestLine = stockfishAnalysisResult.lines[0]?.pv;
         if (bestLine && bestLine.length > 0) {
@@ -620,10 +619,11 @@ const handleSquareClick = useCallback(
         }
       }
     }
-
+  console.log("boardevals", evaluations)
     // Add Maia 1900 top move arrow (human-like move)
-    if (evaluations) {
-      const maia1900 = evaluations["maia_kdd_1900"];
+    if (evaluations && evaluations.maia2) {
+    
+      const maia1900 = evaluations.maia2["maia_kdd_1900"];
       if (maia1900 && maia1900.policy) {
         const topMaiaMove = Object.entries(maia1900.policy).sort(
           ([, a], [, b]) => b - a

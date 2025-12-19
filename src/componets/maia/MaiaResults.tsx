@@ -6,22 +6,27 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  Tabs,
-  Tab,
   LinearProgress,
   Chip,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import { TrendingUp, TrendingDown } from '@mui/icons-material'
-import { MaiaEvaluation } from '@/libs/maia/types'
+import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/maia/types'
 
 export interface MaiaResultsProps {
-  evaluations: { [key: string]: MaiaEvaluation } | null
+  evaluations: {
+    maia2?: { [key: string]: MaiaEvaluation } | null
+    maia2200?: MaiaEvaluation | null
+    elitemaia?: MaiaEvaluation | null
+  }
   isMaiaLoading: boolean
   maiaerror: Error | null
+  activeModels: ModelType[]
 }
 
 const MAIA_MODELS = [
@@ -57,22 +62,121 @@ const getValueIcon = (value: number) => {
   return null
 }
 
+const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) => {
+  const topMoves = Object.entries(policy)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+
+  return (
+    <Box display="flex" flexDirection="column" gap={1.5}>
+      {topMoves.map(([move, probability], index) => (
+        <Box
+          key={move}
+          display="flex"
+          alignItems="center"
+          gap={2}
+        >
+          <Chip
+            label={index + 1}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              minWidth: 28,
+            }}
+          />
+          <Typography
+            sx={{
+              fontWeight: 500,
+              fontFamily: 'monospace',
+              fontSize: '1rem',
+            }}
+          >
+            {move}
+          </Typography>
+          <Box flex={1} mx={2}>
+            <LinearProgress
+              variant="determinate"
+              value={probability * 100}
+              sx={{
+                height: 6,
+                borderRadius: 3,
+              }}
+            />
+          </Box>
+          <Typography
+            sx={{
+              fontWeight: 600,
+              minWidth: 50,
+              textAlign: 'right',
+            }}
+          >
+            {(probability * 100).toFixed(1)}%
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+const EvaluationDisplay: React.FC<{ evaluation: MaiaEvaluation }> = ({ evaluation }) => {
+  return (
+    <>
+      <Box mb={3}>
+        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+          <Typography variant="subtitle2">
+            Position Evaluation
+          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            {getValueIcon(evaluation.value)}
+            <Chip
+              label={formatValue(evaluation.value)}
+              size="small"
+              sx={{
+                bgcolor: getValueColor(evaluation.value),
+                fontWeight: 600,
+              }}
+            />
+          </Box>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={evaluation.value * 100}
+          sx={{
+            height: 8,
+            borderRadius: 4,
+            '& .MuiLinearProgress-bar': {
+              bgcolor: getValueColor(evaluation.value),
+            },
+          }}
+        />
+      </Box>
+
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 2 }}>
+          Top Moves
+        </Typography>
+        <MovesList policy={evaluation.policy} />
+      </Box>
+    </>
+  )
+}
+
 export const MaiaResults: React.FC<MaiaResultsProps> = ({
   evaluations,
   isMaiaLoading,
   maiaerror,
+  activeModels,
 }) => {
-  const [selectedModel, setSelectedModel] = useState(0)
+  const [selectedMaia2Model, setSelectedMaia2Model] = useState(0)
+  const [selectedTab, setSelectedTab] = useState<ModelType>('maia2')
 
   if (isMaiaLoading) {
     return (
       <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <CardContent>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-          </Box>
           <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={4}>
             <CircularProgress size={40} />
-            <Typography >
+            <Typography>
               Analyzing position...
             </Typography>
           </Box>
@@ -83,11 +187,9 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
 
   if (maiaerror) {
     return (
-      <Card >
+      <Card>
         <CardContent>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-          </Box>
-          <Alert severity="error" >
+          <Alert severity="error">
             {maiaerror.message}
           </Alert>
         </CardContent>
@@ -95,147 +197,85 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
     )
   }
 
-  if (!evaluations) {
+  if (!evaluations || activeModels.length === 0) {
     return (
-      <Card sx={{  border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+      <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <CardContent>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-          </Box>
           <Typography sx={{ textAlign: 'center', py: 4 }}>
-            No analysis available
+            No models loaded. Please download a model to see analysis.
           </Typography>
         </CardContent>
       </Card>
     )
   }
 
-  const currentModel = MAIA_MODELS[selectedModel]
-  const currentEvaluation = evaluations[currentModel]
-
-  if (!currentEvaluation) {
-    return null
-  }
-
-  const topMoves = Object.entries(currentEvaluation.policy)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
+  // Ensure selectedTab is in activeModels
+  const currentTab = activeModels.includes(selectedTab) ? selectedTab : activeModels[0]
 
   return (
-    <Card sx={{  border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+    <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
       <CardContent>
         <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <Typography variant="h6" >
-            Human Moves
+          <Typography variant="h6">
+            Human Moves Analysis
           </Typography>
         </Box>
 
-       
-        <Box sx={{ borderBottom: 1, mb: 3 }}>
-        <FormControl fullWidth variant="standard" sx={{ mb: 2 }}>
-            <InputLabel id="maia-model-select-label" >
-                Model
-            </InputLabel>
-            <Select
-                labelId="maia-model-select-label"
-                value={selectedModel}
-                label="Model"
-                onChange={(e) => setSelectedModel(Number(e.target.value))}
-                
-            >
-                {MAIA_MODELS.map((model, idx) => (
-                    <MenuItem key={model} value={idx}>
-                        {formatModelName(model)}
-                    </MenuItem>
-                ))}
-            </Select>
-        </FormControl>
-        </Box>
-
-        {/* Position Evaluation */}
-        <Box mb={3}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-            <Typography variant="subtitle2" >
-              Position Evaluation
-            </Typography>
-            <Box display="flex" alignItems="center" gap={1}>
-              {getValueIcon(currentEvaluation.value)}
-              <Chip
-                label={formatValue(currentEvaluation.value)}
-                size="small"
-                sx={{
-                  bgcolor: getValueColor(currentEvaluation.value),
-                  fontWeight: 600,
-                }}
+        {/* Model Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs
+            value={currentTab}
+            onChange={(_, newValue) => setSelectedTab(newValue)}
+            variant="fullWidth"
+          >
+            {activeModels.map((modelType) => (
+              <Tab
+                key={modelType}
+                label={MODEL_CONFIGS[modelType].name}
+                value={modelType}
               />
-            </Box>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={currentEvaluation.value * 100}
-            sx={{
-              height: 8,
-              borderRadius: 4,
-              '& .MuiLinearProgress-bar': {
-                bgcolor: getValueColor(currentEvaluation.value),
-              },
-            }}
-          />
-        </Box>
-
-
-        <Box>
-          <Typography variant="subtitle2" sx={{ mb: 2 }}>
-            Top Moves
-          </Typography>
-          <Box display="flex" flexDirection="column" gap={1.5}>
-            {topMoves.map(([move, probability], index) => (
-              <Box
-                key={move}
-                display="flex"
-                alignItems="center"
-                gap={2}
-              >
-                <Chip
-                  label={index + 1}
-                  size="small"
-                  sx={{
-                    fontWeight: 600,
-                    minWidth: 28,
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontWeight: 500,
-                    fontFamily: 'monospace',
-                    fontSize: '1rem',
-                  }}
-                >
-                  {move}
-                </Typography>
-                <Box flex={1} mx={2}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={probability * 100}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-
-                    }}
-                  />
-                </Box>
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    minWidth: 50,
-                    textAlign: 'right',
-                  }}
-                >
-                  {(probability * 100).toFixed(1)}%
-                </Typography>
-              </Box>
             ))}
-          </Box>
+          </Tabs>
         </Box>
+
+        {/* Maia 2 with Rating Level Selector */}
+        {currentTab === 'maia2' && evaluations.maia2 && (
+          <>
+            <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>
+              <InputLabel id="maia-model-select-label">
+                Rating Level
+              </InputLabel>
+              <Select
+                labelId="maia-model-select-label"
+                value={selectedMaia2Model}
+                label="Rating Level"
+                onChange={(e) => setSelectedMaia2Model(Number(e.target.value))}
+              >
+                {MAIA_MODELS.map((model, idx) => (
+                  <MenuItem key={model} value={idx}>
+                    {formatModelName(model)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {evaluations.maia2[MAIA_MODELS[selectedMaia2Model]] && (
+              <EvaluationDisplay
+                evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
+              />
+            )}
+          </>
+        )}
+
+        {/* Maia 2200 */}
+        {currentTab === 'maia2200' && evaluations.maia2200 && (
+          <EvaluationDisplay evaluation={evaluations.maia2200} />
+        )}
+
+        {/* Elite Maia */}
+        {currentTab === 'elitemaia' && evaluations.elitemaia && (
+          <EvaluationDisplay evaluation={evaluations.elitemaia} />
+        )}
       </CardContent>
     </Card>
   )

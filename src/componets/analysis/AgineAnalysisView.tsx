@@ -35,13 +35,13 @@ import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
-import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
+import { MaiaResults } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 import { DownloadModelModal } from "../maia/DownloadMaiaModel";
 import EvalGraph from "../tabs/EvalGraph";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
-
-
+import { MaiaEvaluation, ModelType } from "@/libs/maia/types";
+import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -117,11 +117,14 @@ interface GameReviewProps {
   currentMove?: string;
 }
 
+interface MaiaProps extends UseMaiaEngineResult {
+  
+}
 
 interface AgineAnalysisViewProps
   extends GameReviewProps,
     BaseAnalysisViewProps,
-    MaiaResultsProps {
+    MaiaProps {
   isGameReviewMode: boolean;
 }
 
@@ -180,8 +183,9 @@ function AgineAnalysisView({
   pgnText,
   currentMove,
   evaluations,
-  isMaiaLoading,
-  maiaerror,
+  lichessData,
+  Maiaerror,
+  isLoading,
   scores,
   ThemeScoreerror,
   ThemeScoreloading
@@ -194,7 +198,7 @@ function AgineAnalysisView({
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { status, progress, downloadModel } = useContext(MaiaEngineContext);
 
-  const shouldShowDownloadModal = status === "no-cache" || status === "error";
+  
 
   return (
     <Card
@@ -413,7 +417,12 @@ function AgineAnalysisView({
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  <PositionFenThemeAnalysis stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={ThemeScoreloading} error={ThemeScoreerror}/>
+                  <PositionFenThemeAnalysis 
+                    stockfishAnalysisResult={stockfishAnalysisResult} 
+                    scores={scores} 
+                    loading={ThemeScoreloading} 
+                    error={ThemeScoreerror}
+                  />
                 </AccordionDetails>
               </Accordion>
             )}
@@ -506,47 +515,19 @@ function AgineAnalysisView({
                   p: { xs: 1.5, md: 2 },
                 }}
               >
-                {shouldShowDownloadModal ? (
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight="300px"
-                  >
-                    <DownloadModelModal
-                      progress={progress}
-                      download={downloadModel}
+                    <MaiaResults
+                      evaluations={evaluations}
+                      isMaiaLoading={isLoading}
+                      maiaerror={Maiaerror}
+                      activeModels={["elitemaia", "maia2", "maia2200"]}
                     />
-                  </Box>
-                ) : status === "downloading" ? (
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight="300px"
-                  >
-                    <DownloadModelModal
-                      progress={progress}
-                      download={downloadModel}
-                    />
-                  </Box>
-                ) : (
-                  <>
-                  
-                  
-                  <MaiaResults
-                    evaluations={evaluations}
-                    isMaiaLoading={isMaiaLoading}
-                    maiaerror={maiaerror}
-                  />
-                   {gameReview && (
-                    <>
-                    <MaiaProbabilityChart moves={gameReview!}/>                    
-                    </>
-                  )}
-                  </>
-                  
-                )}
+                    {gameReview && (
+                      <>
+                        <Divider sx={{ my: 3 }} />
+                        <MaiaProbabilityChart moves={gameReview!} />
+                      </>
+                    )}
+                
               </AccordionDetails>
             </Accordion>
 

@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Stack } from "@mui/material";
+import { Box, Stack, Drawer, Fab, useMediaQuery, useTheme, Typography, Button } from "@mui/material";
+import { Analytics as AnalyticsIcon, Close as CloseIcon } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
-import { useSession } from "@clerk/nextjs";
-import Loader from "@/componets/loading/Loader";
-import Warning from "@/componets/loading/SignUpWarning";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 
 export default function PositionPage() {
-  const session = useSession();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
+  
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
 
@@ -64,15 +65,72 @@ export default function PositionPage() {
     maiaIsLoading,
     scores,
     themeScoreLoading,
-    themeScoreError
+    themeScoreError,
+    isInBook,
+    lichessData
   } = useAgine(fen);
 
+  const AnalysisContent = () => (
+    <AgineAnalysisView
+      isGameReviewMode={false}
+      stockfishAnalysisResult={stockfishAnalysisResult}
+      stockfishLoading={stockfishLoading}
+      handleEngineLineClick={handleEngineLineClick}
+      engineDepth={engineDepth}
+      fen={fen}
+      lichessData={lichessData}
+      isInBook={isInBook}
+      sanEvaluations={sanEvaluations}
+      engineLines={engineLines}
+      engine={engine}
+      analyzeWithStockfish={analyzeWithStockfish}
+      formatEvaluation={formatEvaluation}
+      formatPrincipalVariation={formatPrincipalVariation}
+      setEngineDepth={setEngineDepth}
+      setEngineLines={setEngineLines}
+      openingLoading={openingLoading}
+      openingData={openingData}
+      lichessOpeningData={lichessOpeningData}
+      lichessOpeningLoading={lichessOpeningLoading}
+      handleOpeningMoveClick={handleOpeningMoveClick}
+      chessdbdata={chessdbdata}
+      handleMoveClick={handleMoveClick}
+      queueing={queueing}
+      error={error}
+      loading={loading}
+      refetch={refetch}
+      requestAnalysis={requestAnalysis}
+      legalMoves={legalMoves}
+      handleFutureMoveLegalClick={handleFutureMoveLegalClick}
+      chatMessages={chatMessages}
+      chatInput={chatInput}
+      setChatInput={setChatInput}
+      sendChatMessage={sendChatMessage}
+      chatLoading={chatLoading}
+      abortChatMessage={abortChatMessage}
+      handleChatKeyPress={handleChatKeyPress}
+      clearChatHistory={clearChatHistory}
+      sessionMode={sessionMode}
+      gameReviewTheme={null}
+      setSessionMode={setSessionMode}
+      llmLoading={llmLoading}
+      evaluations={sanEvaluations}
+      isLoading={maiaIsLoading}
+      Maiaerror={maiaError}
+      scores={scores}
+      ThemeScoreerror={themeScoreError}
+      ThemeScoreloading={themeScoreLoading}
+    />
+  );
 
   return (
     <Box
       sx={{
         p: { xs: 1, sm: 2, md: 4 }, 
         minHeight: "100vh",
+        height: "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
       }}
     >
       <Stack 
@@ -81,7 +139,7 @@ export default function PositionPage() {
         sx={{
           width: '100%',
           maxWidth: '100%',
-          overflow: 'hidden' 
+          overflow: 'visible'
         }}
       >
         {/* Chessboard Section */}
@@ -116,63 +174,97 @@ export default function PositionPage() {
           />
         </Box>
 
-        {/* Analysis Section */}
-        <Box 
-          sx={{ 
-            flex: 1,
-            width: { xs: '100%', lg: 'auto' },
-            maxWidth: '100%',
-            minWidth: 0 
+        {/* Desktop Analysis View */}
+        {!isMobile && (
+          <Box 
+            sx={{ 
+              flex: 1,
+                  width: { xs: "100%", lg: "auto" },
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflowY: "auto",
+                  maxHeight: "calc(100vh - 100px)",
+            }}
+          >
+            <AnalysisContent />
+          </Box>
+        )}
+
+        {/* Mobile Floating Action Button */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            aria-label="analysis"
+            onClick={() => setAnalysisDrawerOpen(true)}
+            sx={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+            }}
+          >
+            <AnalyticsIcon />
+          </Fab>
+        )}
+
+        {/* Mobile Analysis Drawer */}
+        <Drawer
+          anchor="bottom"
+          open={analysisDrawerOpen}
+          onClose={() => setAnalysisDrawerOpen(false)}
+          sx={{
+            "& .MuiDrawer-paper": {
+              height: "85vh",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              overflow: "hidden",
+            },
           }}
         >
-          <AgineAnalysisView
-            isGameReviewMode={false}
-            stockfishAnalysisResult={stockfishAnalysisResult}
-            stockfishLoading={stockfishLoading}
-            handleEngineLineClick={handleEngineLineClick}
-            engineDepth={engineDepth}
-            fen={fen}
-            engineLines={engineLines}
-            engine={engine}
-            analyzeWithStockfish={analyzeWithStockfish}
-            formatEvaluation={formatEvaluation}
-            formatPrincipalVariation={formatPrincipalVariation}
-            setEngineDepth={setEngineDepth}
-            setEngineLines={setEngineLines}
-            openingLoading={openingLoading}
-            openingData={openingData}
-            lichessOpeningData={lichessOpeningData}
-            lichessOpeningLoading={lichessOpeningLoading}
-            handleOpeningMoveClick={handleOpeningMoveClick}
-            chessdbdata={chessdbdata}
-            handleMoveClick={handleMoveClick}
-            queueing={queueing}
-            error={error}
-            loading={loading}
-            refetch={refetch}
-            requestAnalysis={requestAnalysis}
-            legalMoves={legalMoves}
-            handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-            chatMessages={chatMessages}
-            chatInput={chatInput}
-            setChatInput={setChatInput}
-            sendChatMessage={sendChatMessage}
-            chatLoading={chatLoading}
-            abortChatMessage={abortChatMessage}
-            handleChatKeyPress={handleChatKeyPress}
-            clearChatHistory={clearChatHistory}
-            sessionMode={sessionMode}
-            gameReviewTheme={null}
-            setSessionMode={setSessionMode}
-            llmLoading={llmLoading}
-            evaluations={sanEvaluations}
-            isMaiaLoading={maiaIsLoading}
-            maiaerror={maiaError}
-            scores={scores}
-            ThemeScoreerror={themeScoreError}
-            ThemeScoreloading={themeScoreLoading}
-          />
-        </Box>
+          <Box
+            sx={{
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            {/* Drawer Header */}
+            <Box
+              sx={{
+                p: 2,
+                borderBottom: 1,
+                borderColor: "divider",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexShrink: 0,
+              }}
+            >
+              <Typography variant="h6" fontWeight={600}>
+                Analysis
+              </Typography>
+              <Button
+                onClick={() => setAnalysisDrawerOpen(false)}
+                startIcon={<CloseIcon />}
+                size="small"
+              >
+                Close
+              </Button>
+            </Box>
+
+            {/* Drawer Content */}
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: "auto",
+                p: 2,
+              }}
+            >
+              <AnalysisContent />
+            </Box>
+          </Box>
+        </Drawer>
       </Stack>
     </Box>
   );

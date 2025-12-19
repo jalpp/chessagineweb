@@ -1,24 +1,28 @@
 import React, { useState, useEffect, useMemo, useContext, useRef } from "react";
-import { Box, Typography, CircularProgress, Alert, ToggleButtonGroup, ToggleButton, Chip } from "@mui/material";
+import { Box, Typography, CircularProgress, Alert, ToggleButtonGroup, ToggleButton, Chip, Tabs, Tab } from "@mui/material";
 import { BarChart } from '@mui/x-charts/BarChart';
 import { MaiaEngineContext } from '@/context/MaiaEngineContext';
-import { categorizeMove, CATEGORY_COLORS, CATEGORY_LABELS, MAIA_MODELS, MaiaEvaluation, MoveWithProbability, uciToSan } from '@/libs/maia/types';
+import { categorizeMove, CATEGORY_COLORS, CATEGORY_LABELS, MAIA_MODELS, MaiaEvaluation, MoveWithProbability, uciToSan, ModelType, MODEL_CONFIGS } from '@/libs/maia/types';
 import { MoveAnalysis } from "@/hooks/useGameReview";
-
 
 interface MaiaProbabilityChartProps {
   moves: MoveAnalysis[];
 }
 
-
 export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ moves }) => {
-  const maia = useContext(MaiaEngineContext);
-  const [moveEvaluations, setMoveEvaluations] = useState<Array<{
+  const { maia2, maia2200, elitemaia, status, activeModels } = useContext(MaiaEngineContext);
+  
+  // State for evaluations from different models
+  const [maia2Evaluations, setMaia2Evaluations] = useState<Array<{
     [key: string]: MaiaEvaluation;
   } | null>>([]);
+  const [maia2200Evaluations, setMaia2200Evaluations] = useState<Array<MaiaEvaluation | null>>([]);
+  const [elitemaiaEvaluations, setElitemaiaEvaluations] = useState<Array<MaiaEvaluation | null>>([]);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('maia_kdd_1900');
+  const [selectedModelType, setSelectedModelType] = useState<ModelType>('maia2');
+  const [selectedMaia2Level, setSelectedMaia2Level] = useState<string>('maia_kdd_1900');
   const [improbableThreshold, setImprobableThreshold] = useState<number>(0.1);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -33,67 +37,116 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
     }));
   }, [moves]);
 
-  // Analyze all positions with Maia
+  // Set default model type to first active model
+  useEffect(() => {
+    if (activeModels.length > 0 && !activeModels.includes(selectedModelType)) {
+      setSelectedModelType(activeModels[0]);
+    }
+  }, [activeModels, selectedModelType]);
+
+  // Analyze all positions with all active models
   useEffect(() => {
     abortControllerRef.current = new AbortController();
     const currentAbortController = abortControllerRef.current;
 
     const analyzeAllMoves = async () => {
-      if (moveData.length === 0) return;
+      if (moveData.length === 0 || activeModels.length === 0) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
-        let retries = 0;
-        while (retries < 30 && maia.status !== 'ready') {
-          if (currentAbortController.signal.aborted) return;
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          retries++;
-        }
+        // Analyze with Maia 2
+        if (activeModels.includes('maia2') && maia2 && status.maia2 === 'ready') {
+          const allMaia2Evals: Array<{ [key: string]: MaiaEvaluation } | null> = [];
 
-        if (maia.status !== 'ready' || !maia.maia) {
-          throw new Error('Maia engine not ready');
-        }
+          for (const move of moveData) {
+            if (currentAbortController.signal.aborted) return;
 
-        const allEvaluations: Array<{ [key: string]: MaiaEvaluation } | null> = [];
+           
 
-        for (const move of moveData) {
-          if (currentAbortController.signal.aborted) return;
+            const { result } = await maia2.batchEvaluate(
+              Array(9).fill(move.fen),
+              [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
+              [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900]
+            );
 
-          if (move.isBook) {
-            allEvaluations.push(null);
-            continue;
+            const sanEvaluations: { [key: string]: MaiaEvaluation } = {};
+
+            MAIA_MODELS.forEach((model, index) => {
+              const uciEval = result[index];
+              const sanPolicy: { [key: string]: number } = {};
+              Object.entries(uciEval.policy).forEach(([uciMove, probability]) => {
+                const sanMove = uciToSan(uciMove, move.fen);
+                sanPolicy[sanMove] = probability;
+              });
+
+              sanEvaluations[model] = {
+                value: uciEval.value,
+                policy: sanPolicy,
+              };
+            });
+
+            allMaia2Evals.push(sanEvaluations);
           }
 
-          const { result } = await maia.maia.batchEvaluate(
-            Array(9).fill(move.fen),
-            [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
-            [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900]
-          );
+          if (!currentAbortController.signal.aborted) {
+            setMaia2Evaluations(allMaia2Evals);
+          }
+        }
 
-          const sanEvaluations: { [key: string]: MaiaEvaluation } = {};
+        // Analyze with Maia 2200
+        if (activeModels.includes('maia2200') && maia2200 && status.maia2200 === 'ready') {
+          const allMaia2200Evals: Array<MaiaEvaluation | null> = [];
 
-          MAIA_MODELS.forEach((model, index) => {
-            const uciEval = result[index];
+          for (const move of moveData) {
+            if (currentAbortController.signal.aborted) return;
+
+         
+
+            const uciEval = await maia2200.evaluate(move.fen, 2200, 2200);
             const sanPolicy: { [key: string]: number } = {};
             Object.entries(uciEval.policy).forEach(([uciMove, probability]) => {
               const sanMove = uciToSan(uciMove, move.fen);
               sanPolicy[sanMove] = probability;
             });
 
-            sanEvaluations[model] = {
+            allMaia2200Evals.push({
               value: uciEval.value,
               policy: sanPolicy,
-            };
-          });
+            });
+          }
 
-          allEvaluations.push(sanEvaluations);
+          if (!currentAbortController.signal.aborted) {
+            setMaia2200Evaluations(allMaia2200Evals);
+          }
         }
 
-        if (!currentAbortController.signal.aborted) {
-          setMoveEvaluations(allEvaluations);
+        // Analyze with Elite Maia
+        if (activeModels.includes('elitemaia') && elitemaia && status.elitemaia === 'ready') {
+          const allElitemaiaEvals: Array<MaiaEvaluation | null> = [];
+
+          for (const move of moveData) {
+            if (currentAbortController.signal.aborted) return;
+
+            const uciEval = await elitemaia.evaluate(move.fen, 2500, 2500);
+            const sanPolicy: { [key: string]: number } = {};
+            Object.entries(uciEval.policy).forEach(([uciMove, probability]) => {
+              const sanMove = uciToSan(uciMove, move.fen);
+              sanPolicy[sanMove] = probability;
+            });
+
+            allElitemaiaEvals.push({
+              value: uciEval.value,
+              policy: sanPolicy,
+            });
+          }
+
+          if (!currentAbortController.signal.aborted) {
+            setElitemaiaEvaluations(allElitemaiaEvals);
+          }
         }
+
       } catch (err) {
         if (!currentAbortController.signal.aborted) {
           const error = err instanceof Error ? err : new Error('Unknown error');
@@ -112,14 +165,25 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [moveData, maia.status, maia.maia]);
+  }, [moveData, activeModels, maia2, maia2200, elitemaia, status]);
+
+  // Get current evaluations based on selected model
+  const currentEvaluations = useMemo(() => {
+    if (selectedModelType === 'maia2') {
+      return maia2Evaluations.map(eval1 => eval1 ? eval1[selectedMaia2Level] : null);
+    } else if (selectedModelType === 'maia2200') {
+      return maia2200Evaluations;
+    } else {
+      return elitemaiaEvaluations;
+    }
+  }, [selectedModelType, selectedMaia2Level, maia2Evaluations, maia2200Evaluations, elitemaiaEvaluations]);
 
   // Prepare chart data
   const { chartData, movesWithCategories } = useMemo(() => {
     const movesWithCategories: MoveWithProbability[] = [];
     
     const chartData = moveData.map((move, index) => {
-      const evaluation = moveEvaluations[index];
+      const evaluation = currentEvaluations[index];
       const moveNumber = Math.floor((move.plyNumber + 1) / 2);
       
       if (!evaluation) {
@@ -139,7 +203,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
         };
       }
       
-      const probability = evaluation[selectedModel]?.policy[move.notation] || 0;
+      const probability = evaluation.policy[move.notation] || 0;
       const isGoodMove = ['Best', 'Very Good', 'Good'].includes(move.quality);
       const category = categorizeMove(probability, move.quality, improbableThreshold);
       
@@ -160,7 +224,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
     });
     
     return { chartData, movesWithCategories };
-  }, [moveData, moveEvaluations, selectedModel, improbableThreshold]);
+  }, [moveData, currentEvaluations, improbableThreshold]);
 
   // Count interesting moves
   const brilliantCount = movesWithCategories.filter(m => m.category === 'brilliant').length;
@@ -180,6 +244,16 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
       <Box p={2}>
         <Alert severity="error">
           Error analyzing moves: {error.message}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (activeModels.length === 0) {
+    return (
+      <Box p={2}>
+        <Alert severity="info">
+          Please download at least one Maia model to see move probability analysis.
         </Alert>
       </Box>
     );
@@ -214,21 +288,41 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
         </Box>
       </Box>
 
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography variant="body2">Rating Level:</Typography>
-        <ToggleButtonGroup
-          value={selectedModel}
-          exclusive
-          onChange={(e, value) => value && setSelectedModel(value)}
-          size="small"
+      {/* Model Selection Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs
+          value={selectedModelType}
+          onChange={(_, value) => setSelectedModelType(value)}
+          variant="fullWidth"
         >
-          {MAIA_MODELS.map(model => (
-            <ToggleButton key={model} value={model}>
-              {model.replace('maia_kdd_', '')}
-            </ToggleButton>
+          {activeModels.map((modelType) => (
+            <Tab
+              key={modelType}
+              label={MODEL_CONFIGS[modelType].name}
+              value={modelType}
+            />
           ))}
-        </ToggleButtonGroup>
+        </Tabs>
       </Box>
+
+      {/* Maia 2 Rating Level Selector */}
+      {selectedModelType === 'maia2' && (
+        <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Typography variant="body2">Rating Level:</Typography>
+          <ToggleButtonGroup
+            value={selectedMaia2Level}
+            exclusive
+            onChange={(e, value) => value && setSelectedMaia2Level(value)}
+            size="small"
+          >
+            {MAIA_MODELS.map(model => (
+              <ToggleButton key={model} value={model}>
+                {model.replace('maia_kdd_', '')}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Box>
+      )}
 
       <Box sx={{ mb: 2 }}>
         <Typography variant="body2" gutterBottom>
@@ -269,9 +363,8 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
                 const move = movesWithCategories[context.dataIndex];
                 return `${move.notation} (${move.quality}): ${(value * 100).toFixed(1)}% - ${CATEGORY_LABELS[move.category]}`;
               }
-              return `${(value ?? 0 * 100).toFixed(1)}%`;
+              return `${((value ?? 0) * 100).toFixed(1)}%`;
             },
-
           },
         ]}
         height={500}
@@ -300,6 +393,9 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
 
       <Box sx={{ mt: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+          {selectedModelType === 'maia2' && `Analyzing from ${selectedMaia2Level.replace('maia_kdd_', '')} rating perspective. `}
+          {selectedModelType === 'maia2200' && 'Analyzing from 2200-2299 rating perspective. '}
+          {selectedModelType === 'elitemaia' && 'Analyzing from elite player (2500+) perspective. '}
           Brilliant moves are objectively good but improbable for humans to find. 
           Tricky positions show probable moves that are objectively bad - great for finding opponent traps in your opening repertoire!
         </Typography>
@@ -318,7 +414,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
                 💎 Brilliant Moves ({brilliantCount})
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 1 }}>
-                These moves are objectively strong but humans at this rating level rarely find them:
+                These moves are objectively strong but humans at this level rarely find them:
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {movesWithCategories
@@ -356,10 +452,10 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({ move
           {trickyCount > 0 && (
             <Box>
               <Typography variant="subtitle2" sx={{ color: CATEGORY_COLORS.tricky, mb: 1, fontWeight: 'bold' }}>
-                Tricky Positions ({trickyCount})
+                ⚠️ Tricky Positions ({trickyCount})
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 1 }}>
-                These moves are objectively bad but humans at this rating level often play them, great positions to exploit
+                These moves are objectively bad but humans at this level often play them - great positions to exploit!
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {movesWithCategories

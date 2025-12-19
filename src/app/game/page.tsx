@@ -8,8 +8,17 @@ import {
   Divider,
   Card,
   CardContent,
+  Drawer,
+  Fab,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { Refresh as RefreshIcon, Save as SaveIcon } from "@mui/icons-material";
+import {
+  Refresh as RefreshIcon,
+  Save as SaveIcon,
+  Analytics as AnalyticsIcon,
+  Close as CloseIcon,
+} from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/hooks/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -32,6 +41,9 @@ import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
 
 export default function PGNUploaderPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
 
   const [pgnText, setPgnText] = useState("");
   const [game, setGame] = useState(new Chess());
@@ -112,9 +124,11 @@ export default function PGNUploaderPage() {
     sanEvaluations,
     maiaError,
     maiaIsLoading,
+    isInBook,
     scores,
     themeScoreError,
-    themeScoreLoading
+    themeScoreLoading,
+    lichessData,
   } = useAgine(fen);
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -165,46 +179,31 @@ export default function PGNUploaderPage() {
     }
   };
 
-  // Function to clean PGN by removing advanced annotations
   const cleanPGN = (pgnText: string) => {
     let cleaned = pgnText;
-
-    // Remove all content within curly braces (annotations like {[%clk 1:00:00]})
     cleaned = cleaned.replace(/\{[^}]*\}/g, "");
-
-    // Remove extra whitespace that might be left behind
     cleaned = cleaned.replace(/\s+/g, " ");
-
-    // Clean up any double spaces around moves
     cleaned = cleaned.replace(/\s+(\d+\.)/g, " $1");
-
-    // Remove any trailing whitespace from lines
     cleaned = cleaned
       .split("\n")
       .map((line: string) => line.trim())
       .join("\n");
 
-    // Remove empty lines between moves (but keep header spacing)
     const lines = cleaned.split("\n");
     let inHeader = true;
     const result = [];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-
-      // Check if we're still in the header section
       if (line.startsWith("[") && line.endsWith("]")) {
         result.push(line);
         inHeader = true;
       } else if (line.trim() === "" && inHeader) {
-        // Keep empty lines in header section
         result.push(line);
       } else if (line.trim() !== "") {
-        // We're in the moves section now
         inHeader = false;
         result.push(line);
       }
-      // Skip empty lines in moves section
     }
 
     return result.join("\n").trim();
@@ -258,12 +257,11 @@ export default function PGNUploaderPage() {
       setLlmAnalysisResult(null);
       setComment("");
       setGameReview([]);
-      
-      // Set current game hash if provided
+
       if (gameHash) {
         setCurrentGameHash(gameHash);
       }
-      
+
       generateGameReview(moveList);
       analyzeGameTheme(cleanPgn);
       setInputsVisible(false);
@@ -273,7 +271,6 @@ export default function PGNUploaderPage() {
     }
   };
 
-  // Handler for multi-game navigation
   const handleMultiGameSelect = (game: ParsedPGN) => {
     loadUserPGN(game.pgn, game.hash);
   };
@@ -292,11 +289,94 @@ export default function PGNUploaderPage() {
     setStockfishAnalysisResult(null);
   };
 
+  const AnalysisContent = () => (
+    <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
+      {moves.length > 0 && (
+        <AgineAnalysisView
+          isGameReviewMode={true}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+          stockfishLoading={stockfishLoading}
+          handleEngineLineClick={handleEngineLineClick}
+          engineDepth={engineDepth}
+          engineLines={engineLines}
+          engine={engine}
+          Maiaerror={maiaError}
+          isLoading={maiaIsLoading}
+          evaluations={sanEvaluations}
+          analyzeWithStockfish={analyzeWithStockfish}
+          formatEvaluation={formatEvaluation}
+          formatPrincipalVariation={formatPrincipalVariation}
+          setEngineDepth={setEngineDepth}
+          setEngineLines={setEngineLines}
+          openingLoading={openingLoading}
+          openingData={openingData}
+          lichessOpeningData={lichessOpeningData}
+          lichessOpeningLoading={lichessOpeningLoading}
+          handleOpeningMoveClick={handleOpeningMoveClick}
+          chessdbdata={chessdbdata}
+          handleMoveClick={handleMoveClick}
+          queueing={queueing}
+          error={error}
+          lichessData={lichessData}
+          loading={loading}
+          refetch={refetch}
+          requestAnalysis={requestAnalysis}
+          legalMoves={legalMoves}
+          handleFutureMoveLegalClick={handleFutureMoveLegalClick}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          setChatInput={setChatInput}
+          sendChatMessage={sendChatMessage}
+          chatLoading={chatLoading}
+          abortChatMessage={abortChatMessage}
+          handleChatKeyPress={handleChatKeyPress}
+          clearChatHistory={clearChatHistory}
+          sessionMode={sessionMode}
+          setSessionMode={setSessionMode}
+          llmLoading={llmLoading}
+          moves={moves}
+          currentMoveIndex={currentMoveIndex}
+          goToMove={goToMove}
+          comment={comment}
+          gameInfo={gameInfo}
+          gameReviewTheme={gameReviewTheme}
+          generateGameReview={generateGameReview}
+          gameReviewLoading={gameReviewLoading}
+          gameReviewProgress={gameReviewProgress}
+          handleGameReviewSummaryClick={handleGameReviewSummaryClick}
+          handleMoveAnnontateClick={handleMoveAnnontateClick}
+          handleMoveCoachClick={handleMoveCoachClick}
+          gameReview={gameReview}
+          pgnText={pgnText}
+          currentMove={moves[currentMoveIndex]}
+          fen={fen}
+          sanEvaluations={sanEvaluations}
+          isInBook={isInBook}
+          scores={scores}
+          ThemeScoreerror={themeScoreError}
+          ThemeScoreloading={themeScoreLoading}
+        />
+      )}
+      {chapters.length > 0 && (
+        <ResizableChapterSelector
+          chapters={chapters}
+          onChapterSelect={(pgn) => {
+            setPgnText(pgn);
+            setTimeout(() => loadPGN(), 0);
+          }}
+        />
+      )}
+    </Stack>
+  );
+
   return (
     <Box
       sx={{
+        minHeight: "100vh",
+        height: "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
         p: { xs: 1, sm: 2, md: 4 },
-   
       }}
     >
       {inputsVisible && (
@@ -305,6 +385,8 @@ export default function PGNUploaderPage() {
             mb: { xs: 2, sm: 3, md: 4 },
             borderRadius: { xs: 2, md: 3 },
             boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
+            maxHeight: { xs: "70vh", sm: "75vh", md: "80vh" },
+            overflowY: "auto",
           }}
         >
           <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
@@ -386,8 +468,8 @@ export default function PGNUploaderPage() {
                 </Typography>
                 <UserGameSelect loadPGN={loadUserPGN} />
                 <Box sx={{ mt: 2 }}>
-                  <UserPGNUploader 
-                    loadPGN={(pgn) => loadUserPGN(pgn)} 
+                  <UserPGNUploader
+                    loadPGN={(pgn) => loadUserPGN(pgn)}
                     setMultiGameList={setMultiGameList}
                   />
                 </Box>
@@ -403,7 +485,7 @@ export default function PGNUploaderPage() {
         sx={{
           width: "100%",
           maxWidth: "100%",
-          overflow: "hidden",
+          overflow: "visible",
         }}
       >
         {!inputsVisible && (
@@ -470,7 +552,6 @@ export default function PGNUploaderPage() {
                 />
               </Box>
 
-              {/* Multi-Game Navigator */}
               {multiGameList.length > 1 && (
                 <MultiGameNavigator
                   games={multiGameList}
@@ -539,89 +620,99 @@ export default function PGNUploaderPage() {
         )}
 
         {!inputsVisible && (
-          <Box
-            sx={{
-              flex: 1,
-              width: { xs: "100%", lg: "auto" },
-              maxWidth: "100%",
-              minWidth: 0,
-            }}
-          >
-            <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
-              {moves.length > 0 && (
-                <AgineAnalysisView
-                  isGameReviewMode={true}
-                  stockfishAnalysisResult={stockfishAnalysisResult}
-                  stockfishLoading={stockfishLoading}
-                  handleEngineLineClick={handleEngineLineClick}
-                  engineDepth={engineDepth}
-                  engineLines={engineLines}
-                  engine={engine}
-                  maiaerror={maiaError}
-                  isMaiaLoading={maiaIsLoading}
-                  evaluations={sanEvaluations}
-                  analyzeWithStockfish={analyzeWithStockfish}
-                  formatEvaluation={formatEvaluation}
-                  formatPrincipalVariation={formatPrincipalVariation}
-                  setEngineDepth={setEngineDepth}
-                  setEngineLines={setEngineLines}
-                  openingLoading={openingLoading}
-                  openingData={openingData}
-                  lichessOpeningData={lichessOpeningData}
-                  lichessOpeningLoading={lichessOpeningLoading}
-                  handleOpeningMoveClick={handleOpeningMoveClick}
-                  chessdbdata={chessdbdata}
-                  handleMoveClick={handleMoveClick}
-                  queueing={queueing}
-                  error={error}
-                  loading={loading}
-                  refetch={refetch}
-                  requestAnalysis={requestAnalysis}
-                  legalMoves={legalMoves}
-                  handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-                  chatMessages={chatMessages}
-                  chatInput={chatInput}
-                  setChatInput={setChatInput}
-                  sendChatMessage={sendChatMessage}
-                  chatLoading={chatLoading}
-                  abortChatMessage={abortChatMessage}
-                  handleChatKeyPress={handleChatKeyPress}
-                  clearChatHistory={clearChatHistory}
-                  sessionMode={sessionMode}
-                  setSessionMode={setSessionMode}
-                  llmLoading={llmLoading}
-                  moves={moves}
-                  currentMoveIndex={currentMoveIndex}
-                  goToMove={goToMove}
-                  comment={comment}
-                  gameInfo={gameInfo}
-                  gameReviewTheme={gameReviewTheme}
-                  generateGameReview={generateGameReview}
-                  gameReviewLoading={gameReviewLoading}
-                  gameReviewProgress={gameReviewProgress}
-                  handleGameReviewSummaryClick={handleGameReviewSummaryClick}
-                  handleMoveAnnontateClick={handleMoveAnnontateClick}
-                  handleMoveCoachClick={handleMoveCoachClick}
-                  gameReview={gameReview}
-                  pgnText={pgnText}
-                  currentMove={moves[currentMoveIndex]}
-                  fen={fen}
-                  scores={scores}
-                  ThemeScoreerror={themeScoreError}
-                  ThemeScoreloading={themeScoreLoading}
-                />
-              )}
-              {chapters.length > 0 && (
-                <ResizableChapterSelector
-                  chapters={chapters}
-                  onChapterSelect={(pgn) => {
-                    setPgnText(pgn);
-                    setTimeout(() => loadPGN(), 0);
+          <>
+            {/* Desktop Analysis View */}
+            {!isMobile && (
+              <Box
+                sx={{
+                  flex: 1,
+                  width: { xs: "100%", lg: "auto" },
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflowY: "auto",
+                  maxHeight: "calc(100vh - 100px)",
+                }}
+              >
+                <AnalysisContent />
+              </Box>
+            )}
+
+            {/* Mobile Floating Action Button */}
+            {isMobile && (
+              <Fab
+                color="primary"
+                aria-label="analysis"
+                onClick={() => setAnalysisDrawerOpen(true)}
+                sx={{
+                  position: "fixed",
+                  bottom: 24,
+                  right: 24,
+                  zIndex: 1000,
+                }}
+              >
+                <AnalyticsIcon />
+              </Fab>
+            )}
+
+            {/* Mobile Analysis Drawer */}
+            <Drawer
+              anchor="bottom"
+              open={analysisDrawerOpen}
+              onClose={() => setAnalysisDrawerOpen(false)}
+              sx={{
+                "& .MuiDrawer-paper": {
+                  height: "85vh",
+                  borderTopLeftRadius: 16,
+                  borderTopRightRadius: 16,
+                  overflow: "hidden",
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Drawer Header */}
+                <Box
+                  sx={{
+                    p: 2,
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexShrink: 0,
                   }}
-                />
-              )}
-            </Stack>
-          </Box>
+                >
+                  <Typography variant="h6" fontWeight={600}>
+                    Analysis
+                  </Typography>
+                  <Button
+                    onClick={() => setAnalysisDrawerOpen(false)}
+                    startIcon={<CloseIcon />}
+                    size="small"
+                  >
+                    Close
+                  </Button>
+                </Box>
+
+                {/* Drawer Content */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflowY: "auto",
+                    p: 2,
+                  }}
+                >
+                  <AnalysisContent />
+                </Box>
+              </Box>
+            </Drawer>
+          </>
         )}
       </Stack>
 
