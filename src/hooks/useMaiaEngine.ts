@@ -34,11 +34,7 @@ interface LichessData {
   opening?: { eco: string; name: string }
 }
 
-export interface MaiaEngineAnalysis {
-    maia2?: { [key: string]: MaiaEvaluation } | null
-    maia2200?: MaiaEvaluation | null
-    elitemaia?: MaiaEvaluation | null
-}
+
 
 export interface UseMaiaEngineResult {
   evaluations:  MaiaEngineAnalysis

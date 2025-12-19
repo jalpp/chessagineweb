@@ -58,9 +58,15 @@ import {
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
 import { MaiaEvaluation } from "@/libs/maia/types";
-import { MaiaEngineAnalysis } from "@/hooks/useMaiaEngine";
 
 export type BoardOrientation = "white" | "black";
+
+
+export interface MaiaEngineAnalysis {
+    maia2?: { [key: string]: MaiaEvaluation } | null
+    maia2200?: MaiaEvaluation | null
+    elitemaia?: MaiaEvaluation | null
+}
 
 interface AiChessboardPanelProps {
   fen: string;
