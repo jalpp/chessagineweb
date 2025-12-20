@@ -21,7 +21,7 @@ import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/maia/types'
 export interface MaiaResultsProps {
   evaluations: {
     maia2?: { [key: string]: MaiaEvaluation } | null
-    maia2200?: MaiaEvaluation | null
+    bigLeela?: MaiaEvaluation | null
     elitemaia?: MaiaEvaluation | null
   }
   isMaiaLoading: boolean
@@ -66,6 +66,8 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) 
   const topMoves = Object.entries(policy)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
+
+    console.log(topMoves);
 
   return (
     <Box display="flex" flexDirection="column" gap={1.5}>
@@ -267,9 +269,9 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
           </>
         )}
 
-        {/* Maia 2200 */}
-        {currentTab === 'maia2200' && evaluations.maia2200 && (
-          <EvaluationDisplay evaluation={evaluations.maia2200} />
+       
+        {currentTab === 'bigLeela' && evaluations.bigLeela && (
+          <EvaluationDisplay evaluation={evaluations.bigLeela} />
         )}
 
         {/* Elite Maia */}

@@ -8,11 +8,11 @@ export type MaiaStatus =
   | 'ready'
   | 'error'
 
-export type ModelType = 'maia2' | 'maia2200' | 'elitemaia'
+export type ModelType = 'maia2' | 'bigLeela' | 'elitemaia'
 
 export interface MaiaEngine {
   maia2?: Maia
-  maia2200?: Maia
+  bigLeela?: Maia
   elitemaia?: Maia
   status: Record<ModelType, MaiaStatus>
   progress: Record<ModelType, number>
@@ -41,21 +41,21 @@ export const MODEL_CONFIGS = {
       'maia_kdd_1900',
     ]
   },
-  maia2200: {
-    id: 'maia2200',
-    name: 'Maia 2200',
-    description: 'Trained on 29M games from players rated 2200-2299',
-    path: '/static/maia2/maia2200.onnx',
-    size: '90mb',
+  bigLeela: {
+    id: 'bigLeela',
+    name: 'big Leela',
+    description: 'Leela used for smaller devices',
+    path: '/static/maia2/t1-256x10.onnx',
+    size: '75mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,
   },
   elitemaia: {
     id: 'elitemaia',
-    name: 'Elite Maia',
+    name: 'Elite Leela',
     description: 'Trained on 19.7M games from Lichess Elite Database',
     path: '/static/maia2/eliteleelav1.onnx',
-    size: '90mb',
+    size: '15mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,
   }

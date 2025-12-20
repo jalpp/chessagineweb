@@ -17,7 +17,6 @@ import { ApiSettings } from "../componets/tabs/ModelSetting";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
 import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
 import { useMaiaEngine } from "./useMaiaEngine";
-import { addMaiaAnalysisToQuery } from "@/libs/maia/maiaPrompter";
 import { useThemeScore } from "./useThemeScore";
 
 

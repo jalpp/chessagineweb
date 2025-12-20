@@ -517,7 +517,7 @@ function AgineAnalysisView({
                       evaluations={evaluations}
                       isMaiaLoading={isLoading}
                       maiaerror={Maiaerror}
-                      activeModels={["elitemaia", "maia2", "maia2200"]}
+                      activeModels={["elitemaia", "maia2", "bigLeela"]}
                     />
                     {gameReview && (
                       <>

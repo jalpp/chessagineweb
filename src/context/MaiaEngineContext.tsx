@@ -13,16 +13,16 @@ import toast from 'react-hot-toast'
 
 export const MaiaEngineContext = React.createContext<MaiaEngine>({
   maia2: undefined,
-  maia2200: undefined,
+  bigLeela: undefined,
   elitemaia: undefined,
   status: {
     maia2: 'loading',
-    maia2200: 'loading',
+    bigLeela: 'loading',
     elitemaia: 'loading',
   },
   progress: {
     maia2: 0,
-    maia2200: 0,
+    bigLeela: 0,
     elitemaia: 0,
   },
   activeModels: [],
@@ -38,31 +38,31 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [status, setStatus] = useState<Record<ModelType, MaiaStatus>>({
     maia2: 'loading',
-    maia2200: 'loading',
+    bigLeela: 'loading',
     elitemaia: 'loading',
   })
   
   const [progress, setProgress] = useState<Record<ModelType, number>>({
     maia2: 0,
-    maia2200: 0,
+    bigLeela: 0,
     elitemaia: 0,
   })
   
   const [error, setError] = useState<Record<ModelType, string | null>>({
     maia2: null,
-    maia2200: null,
+    bigLeela: null,
     elitemaia: null,
   })
 
   const toastIds = useRef<Record<ModelType, string | null>>({
     maia2: null,
-    maia2200: null,
+    bigLeela: null,
     elitemaia: null,
   })
 
   const hasTriggeredDownload = useRef<Record<ModelType, boolean>>({
     maia2: false,
-    maia2200: false,
+    bigLeela: false,
     elitemaia: false,
   })
 
@@ -76,12 +76,12 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({
         setProgress: (p: number) => setProgress(prev => ({ ...prev, maia2: p })),
         setError: (e: string) => setError(prev => ({ ...prev, maia2: e })),
       }),
-      maia2200: new Maia({
-        model: MODEL_CONFIGS.maia2200.path,
-        modelType: MODEL_CONFIGS.maia2200.modelType,
-        setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, maia2200: s })),
-        setProgress: (p: number) => setProgress(prev => ({ ...prev, maia2200: p })),
-        setError: (e: string) => setError(prev => ({ ...prev, maia2200: e })),
+      bigLeela: new Maia({
+        model: MODEL_CONFIGS.bigLeela.path,
+        modelType: MODEL_CONFIGS.bigLeela.modelType,
+        setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
+        setProgress: (p: number) => setProgress(prev => ({ ...prev, bigLeela: p })),
+        setError: (e: string) => setError(prev => ({ ...prev, bigLeela: e })),
       }),
       elitemaia: new Maia({
         model: MODEL_CONFIGS.elitemaia.path,
@@ -180,7 +180,7 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({
     <MaiaEngineContext.Provider
       value={{
         maia2: models.maia2,
-        maia2200: models.maia2200,
+        bigLeela: models.bigLeela,
         elitemaia: models.elitemaia,
         status,
         progress,

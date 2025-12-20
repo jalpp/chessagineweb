@@ -36,7 +36,7 @@ interface LichessData {
 
 export interface MaiaEngineAnalysis {
   maia2?: { [key: string]: MaiaEvaluation } | null
-  maia2200?: MaiaEvaluation | null
+  bigLeela?: MaiaEvaluation | null
   elitemaia?: MaiaEvaluation | null
 }
 
@@ -44,12 +44,12 @@ export interface UseMaiaEngineResult {
   evaluations: MaiaEngineAnalysis
   sanEvaluations: {
     maia2?: { [key: string]: SanMaiaEvaluation } | null
-    maia2200?: SanMaiaEvaluation | null
+    bigLeela?: SanMaiaEvaluation | null
     elitemaia?: SanMaiaEvaluation | null
   }
   lichessData: {
     maia2?: { [key: string]: LichessData } | null
-    maia2200?: LichessData | null
+    bigLeela?: LichessData | null
     elitemaia?: LichessData | null
   }
   isInBook: boolean
@@ -156,10 +156,10 @@ export const useMaiaEngine = ({
   maxRetries = 30,
   retryDelayMs = 100,
   enabledModels,
-  useLichessBook = true,
-  bookThreshold = 100,
+  useLichessBook = false,
+  bookThreshold = 21,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
-  const { maia2, maia2200, elitemaia, status, activeModels } =
+  const { maia2, bigLeela, elitemaia, status, activeModels } =
     useContext(MaiaEngineContext)
 
   const [evaluations, setEvaluations] = useState<
@@ -274,11 +274,11 @@ export const useMaiaEngine = ({
           newSanEvaluations.maia2 = maia2SanEvaluations
         }
 
-        // Maia 2200
+      
         if (
-          modelsToUse.includes('maia2200') &&
-          maia2200 &&
-          status.maia2200 === 'ready'
+          modelsToUse.includes('bigLeela') &&
+          bigLeela &&
+          status.bigLeela === 'ready'
         ) {
           if (currentAbortController.signal.aborted) return
 
@@ -291,21 +291,21 @@ export const useMaiaEngine = ({
             const totalGames =
               lichessResult.white + lichessResult.draws + lichessResult.black
 
-            newLichessData.maia2200 = lichessResult
+            newLichessData.bigLeela = lichessResult
 
             if (totalGames >= bookThreshold) {
               positionIsInBook = true
-              newSanEvaluations.maia2200 =
+              newSanEvaluations.bigLeela =
                 lichessToSanEvaluation(lichessResult)
             } else {
-              const uciEval = await maia2200.evaluate(fen, 2200, 2200)
-              newEvaluations.maia2200 = uciEval
-              newSanEvaluations.maia2200 = convertToSanEvaluation(uciEval, fen)
+              const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
+              newEvaluations.bigLeela = uciEval
+              newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
             }
           } else {
-            const uciEval = await maia2200.evaluate(fen, 2200, 2200)
-            newEvaluations.maia2200 = uciEval
-            newSanEvaluations.maia2200 = convertToSanEvaluation(uciEval, fen)
+            const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
+            newEvaluations.bigLeela = uciEval
+            newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
           }
         }
 
@@ -332,14 +332,13 @@ export const useMaiaEngine = ({
               positionIsInBook = true
               newSanEvaluations.elitemaia = lichessToSanEvaluation(lichessResult)
             } else {
-              // EliteMaia is a Leela model, so evaluate differently
-              // Note: eloSelf and eloOppo are not used for Leela models
-              const uciEval = await elitemaia.evaluate(fen, 2500, 2500)
+              
+              const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
               newEvaluations.elitemaia = uciEval
               newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
             }
           } else {
-            const uciEval = await elitemaia.evaluate(fen, 2500, 2500)
+            const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
             newEvaluations.elitemaia = uciEval
             newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
           }
@@ -400,10 +399,10 @@ export const useMaiaEngine = ({
   }, [
     fen,
     maia2,
-    maia2200,
+    bigLeela,
     elitemaia,
     status.maia2,
-    status.maia2200,
+    status.bigLeela,
     status.elitemaia,
     activeModels,
     enabledModels,
@@ -437,17 +436,3 @@ export const useMaia2Engine = (
   }
 }
 
-export const useSpecificMaiaModel = (
-  modelType: ModelType,
-  options: Omit<UseMaiaEngineOptions, 'enabledModels'>
-) => {
-  const result = useMaiaEngine({ ...options, enabledModels: [modelType] })
-  return {
-    evaluation: result.evaluations[modelType] ?? null,
-    sanEvaluation: result.sanEvaluations[modelType] ?? null,
-    lichessData: result.lichessData[modelType] ?? null,
-    isInBook: result.isInBook,
-    isLoading: result.isLoading,
-    error: result.Maiaerror,
-  }
-}

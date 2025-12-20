@@ -64,7 +64,7 @@ export type BoardOrientation = "white" | "black";
 
 export interface MaiaEngineAnalysis {
     maia2?: { [key: string]: MaiaEvaluation } | null
-    maia2200?: MaiaEvaluation | null
+    bigLeela?: MaiaEvaluation | null
     elitemaia?: MaiaEvaluation | null
 }
 
