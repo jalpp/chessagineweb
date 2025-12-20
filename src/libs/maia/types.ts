@@ -43,7 +43,7 @@ export const MODEL_CONFIGS = {
   },
   bigLeela: {
     id: 'bigLeela',
-    name: 'big Leela',
+    name: 'Leela T1-256',
     description: 'Leela used for smaller devices',
     path: '/static/maia2/t1-256x10.onnx',
     size: '75mb',
@@ -54,7 +54,7 @@ export const MODEL_CONFIGS = {
     id: 'elitemaia',
     name: 'Elite Leela',
     description: 'Trained on 19.7M games from Lichess Elite Database',
-    path: '/static/maia2/eliteleelav1.onnx',
+    path: '/static/maia2/eliteleelav2.onnx',
     size: '15mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,

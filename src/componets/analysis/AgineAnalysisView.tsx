@@ -12,6 +12,7 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -115,9 +116,7 @@ interface GameReviewProps {
   currentMove?: string;
 }
 
-interface MaiaProps extends UseMaiaEngineResult {
-  
-}
+interface MaiaProps extends UseMaiaEngineResult {}
 
 interface AgineAnalysisViewProps
   extends GameReviewProps,
@@ -186,7 +185,7 @@ function AgineAnalysisView({
   isLoading,
   scores,
   ThemeScoreerror,
-  ThemeScoreloading
+  ThemeScoreloading,
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useState<number>(0);
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<number>(0);
@@ -195,8 +194,6 @@ function AgineAnalysisView({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { maia2 } = useContext(MaiaEngineContext);
-
-  
 
   return (
     <Card
@@ -269,7 +266,6 @@ function AgineAnalysisView({
       >
         <TabPanel value={analysisTab} index={0}>
           <Stack spacing={{ xs: 2, md: 3 }}>
-        
             {isGameReviewMode && (
               <Accordion
                 expanded={activeAnalysisTab === 0}
@@ -325,20 +321,21 @@ function AgineAnalysisView({
                     stockfishAnalysisResult={stockfishAnalysisResult}
                   />
 
-                  <Divider/>
+                  <Divider />
 
-                  {gameReview && (
-                    <>
-                    <EvalGraph moves={gameReview!}/>
-                    
-                    </>
-                  )}
- 
+                  {gameReviewLoading ? (
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", p: 3 }}
+                    >
+                      <CircularProgress/>
+                    </Box>
+                  ) : gameReview && gameReview.length > 0 ? (
+                    <EvalGraph moves={gameReview} />
+                  ) : null}
                 </AccordionDetails>
               </Accordion>
             )}
 
-         
             {isGameReviewMode ? (
               <Accordion
                 expanded={activeAnalysisTab === 1}
@@ -415,17 +412,16 @@ function AgineAnalysisView({
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  <PositionFenThemeAnalysis 
-                    stockfishAnalysisResult={stockfishAnalysisResult} 
-                    scores={scores} 
-                    loading={ThemeScoreloading} 
+                  <PositionFenThemeAnalysis
+                    stockfishAnalysisResult={stockfishAnalysisResult}
+                    scores={scores}
+                    loading={ThemeScoreloading}
                     error={ThemeScoreerror}
                   />
                 </AccordionDetails>
               </Accordion>
             )}
 
-           
             <Accordion
               expanded={activeAnalysisTab === 2}
               onChange={() =>
@@ -513,19 +509,18 @@ function AgineAnalysisView({
                   p: { xs: 1.5, md: 2 },
                 }}
               >
-                    <MaiaResults
-                      evaluations={evaluations}
-                      isMaiaLoading={isLoading}
-                      maiaerror={Maiaerror}
-                      activeModels={["elitemaia", "maia2", "bigLeela"]}
-                    />
-                    {gameReview && (
-                      <>
-                        <Divider sx={{ my: 3 }} />
-                        <MaiaProbabilityChart moves={gameReview!} maia2={maia2} />
-                      </>
-                    )}
-                
+                <MaiaResults
+                  evaluations={evaluations}
+                  isMaiaLoading={isLoading}
+                  maiaerror={Maiaerror}
+                  activeModels={["elitemaia", "maia2", "bigLeela"]}
+                />
+                {gameReview && (
+                  <>
+                    <Divider sx={{ my: 3 }} />
+                    <MaiaProbabilityChart moves={gameReview!} maia2={maia2} />
+                  </>
+                )}
               </AccordionDetails>
             </Accordion>
 
@@ -624,7 +619,7 @@ function AgineAnalysisView({
                 />
               </AccordionDetails>
             </Accordion>
-            
+
             <Accordion
               expanded={activeAnalysisTab === 6}
               onChange={() =>

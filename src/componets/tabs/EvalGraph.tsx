@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { MoveAnalysis } from "@/hooks/useGameReview";
@@ -7,39 +7,54 @@ interface EvalGraphProps {
   moves: MoveAnalysis[];
 }
 
-const EvalGraph: React.FC<EvalGraphProps> = ({ moves }) => {
-
+const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
   const theme = useTheme();
 
-  const allData = moves.map((m, idx) => {
-  
-    const evalm = Number(( m.evalMove / 100).toFixed(2));
-    
-    return {
-      moveNumber: Math.floor((m.plyNumber + 1) / 2),
-      eval: evalm,
-      player: m.player,
-      quality: m.quality,
-      notation: m.notation,
-      rawEval: m.evalMove,
-      index: idx,
-    };
-  });
+  const allData = useMemo(() => {
+    return moves.map((m, idx) => {
+      const evalm = Number((m.evalMove / 100).toFixed(2));
+      
+      return {
+        moveNumber: Math.floor((m.plyNumber + 1) / 2),
+        eval: evalm,
+        player: m.player,
+        quality: m.quality,
+        notation: m.notation,
+        rawEval: m.evalMove,
+        index: idx,
+      };
+    });
+  }, [moves]);
 
-  const xData = allData.map((d) => d.moveNumber);
-  const yData = allData.map((d) => d.eval);
+  const { xData, yData, criticalBlunderY, criticalMistakeY, criticalDubiousY, minEval, maxEval } = useMemo(() => {
+    const xData = allData.map((d) => d.moveNumber);
+    const yData = allData.map((d) => d.eval);
 
-  const getCriticalY = (label: string) =>
-    allData.map((d) => (d.quality === label ? d.eval : null));
+    const getCriticalY = (label: string) =>
+      allData.map((d) => (d.quality === label ? d.eval : null));
 
-  const criticalBlunderY = getCriticalY("Blunder");
-  const criticalMistakeY = getCriticalY("Mistake");
-  const criticalDubiousY = getCriticalY("Dubious");
+    const criticalBlunderY = getCriticalY("Blunder");
+    const criticalMistakeY = getCriticalY("Mistake");
+    const criticalDubiousY = getCriticalY("Dubious");
 
+    const minEval = Math.min(...yData);
+    const maxEval = Math.max(...yData);
 
-  const minEval = Math.min(...yData);
-  const maxEval = Math.max(...yData);
+    return { xData, yData, criticalBlunderY, criticalMistakeY, criticalDubiousY, minEval, maxEval };
+  }, [allData]);
+
   const padding = (maxEval - minEval) * 0.1 || 1;
+
+  // Show loading state when no moves
+  if (!moves || moves.length === 0) {
+    return (
+      <Box sx={{ width: "100%", height: 500, mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography variant="body1" color="text.secondary">
+          No game data available
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: "100%", height: 500, mt: 2 }}>
@@ -49,27 +64,27 @@ const EvalGraph: React.FC<EvalGraphProps> = ({ moves }) => {
       <LineChart
         xAxis={[
           {
-        data: xData,
-        label: "Move Number",
-        scaleType: "linear",
+            data: xData,
+            label: "Move Number",
+            scaleType: "linear",
           },
         ]}
         yAxis={[
           {
-        label: "Evaluation (White's Perspective)",
-        min: Math.max(-10, minEval - padding),
-        max: Math.min(10, maxEval + padding),
+            label: "Evaluation (White's Perspective)",
+            min: Math.max(-10, minEval - padding),
+            max: Math.min(10, maxEval + padding),
           },
         ]}
         series={[
           {
-        data: yData,
-        label: "Eval per Move",
-        color: theme.palette.text.primary,
-        showMark: false,
-        connectNulls: true,
-        curve: "linear",
-        valueFormatter: (value, context) => {
+            data: yData,
+            label: "Eval per Move",
+            color: theme.palette.text.primary,
+            showMark: false,
+            connectNulls: true,
+            curve: "linear",
+            valueFormatter: (value, context) => {
               if (value !== null && context.dataIndex !== undefined) {
                 const move = allData[context.dataIndex];
                 const prefix = move.eval > 0 ? "+" : "";
@@ -114,6 +129,12 @@ const EvalGraph: React.FC<EvalGraphProps> = ({ moves }) => {
       />
     </Box>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if moves array length or content actually changed
+  return prevProps.moves.length === nextProps.moves.length &&
+    prevProps.moves.every((move, idx) => move === nextProps.moves[idx]);
+});
+
+EvalGraph.displayName = 'EvalGraph';
 
 export default EvalGraph;
