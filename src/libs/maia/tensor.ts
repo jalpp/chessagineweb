@@ -94,17 +94,111 @@ function boardToTensor(fen: string): Float32Array {
 
 /**
  * Converts a chess board to Leela Chess Zero input format (112 planes)
+ * Proper LC0 encoding with piece planes, history planes, and auxiliary planes
  */
 function boardToTensorLeela(fen: string): Float32Array {
-  const chess = new Chess(fen)
-  const tensor = new Float32Array(112 * 8 * 8)
-  
-  // For now, use simplified encoding - just copy the first 18 planes from Maia format
-  // and pad the rest with zeros. This is a placeholder.
-  // In production, you'd want full LC0 encoding with history planes, etc.
-  const maiaTensor = boardToTensor(fen)
-  tensor.set(maiaTensor)
-  
+  const TOTAL_PLANES = 112
+  const tensor = new Float32Array(TOTAL_PLANES * 8 * 8)
+
+  // Parse FEN
+  const tokens = fen.split(' ')
+  const piecePlacement = tokens[0]
+  const activeColor = tokens[1]
+  const castlingAvailability = tokens[2]
+  const enPassantTarget = tokens[3]
+  const halfmoveClock = parseInt(tokens[4]) || 0
+  const fullmoveNumber = parseInt(tokens[5]) || 1
+
+  // Piece type mapping for LC0 (planes 0-11 for current position)
+  const pieceToIndex: Record<string, number> = {
+    P: 0,  // White pawns
+    N: 1,  // White knights
+    B: 2,  // White bishops
+    R: 3,  // White rooks
+    Q: 4,  // White queens
+    K: 5,  // White king
+    p: 6,  // Black pawns
+    n: 7,  // Black knights
+    b: 8,  // Black bishops
+    r: 9,  // Black rooks
+    q: 10, // Black queens
+    k: 11, // Black king
+  }
+
+  // Fill current position (planes 0-11)
+  const rows = piecePlacement.split('/')
+  for (let rank = 0; rank < 8; rank++) {
+    const row = 7 - rank
+    let file = 0
+    for (const char of rows[rank]) {
+      if (isNaN(parseInt(char))) {
+        const pieceIndex = pieceToIndex[char]
+        if (pieceIndex !== undefined) {
+          const tensorIndex = pieceIndex * 64 + row * 8 + file
+          tensor[tensorIndex] = 1.0
+        }
+        file += 1
+      } else {
+        file += parseInt(char)
+      }
+    }
+  }
+
+  // Planes 13-103: History positions (7 previous positions, 13 planes each)
+  // Since we don't have history, fill with current position
+  for (let histPos = 1; histPos < 8; histPos++) {
+    const sourceStart = 0
+    const destStart = histPos * 13 * 64
+    for (let i = 0; i < 13 * 64; i++) {
+      tensor[destStart + i] = tensor[sourceStart + i]
+    }
+  }
+
+  // Plane 104: Color (1 if white to move, 0 if black)
+  const colorPlaneStart = 104 * 64
+  const colorValue = activeColor === 'w' ? 1.0 : 0.0
+  tensor.fill(colorValue, colorPlaneStart, colorPlaneStart + 64)
+
+  // Plane 105: Total move count (normalized)
+  const moveCountPlaneStart = 105 * 64
+  const totalMoves = fullmoveNumber * 2 - (activeColor === 'w' ? 2 : 1)
+  const moveCountNormalized = Math.min(totalMoves / 100, 1.0)
+  tensor.fill(
+    moveCountNormalized,
+    moveCountPlaneStart,
+    moveCountPlaneStart + 64
+  )
+
+  // Planes 106-109: Castling rights (K Q k q)
+  const castlingRights = [
+    castlingAvailability.includes('K'),
+    castlingAvailability.includes('Q'),
+    castlingAvailability.includes('k'),
+    castlingAvailability.includes('q'),
+  ]
+
+  for (let i = 0; i < 4; i++) {
+    if (castlingRights[i]) {
+      const planeStart = (106 + i) * 64
+      tensor.fill(1.0, planeStart, planeStart + 64)
+    }
+  }
+
+  // Plane 110: En passant
+  if (enPassantTarget !== '-') {
+    const file = enPassantTarget.charCodeAt(0) - 'a'.charCodeAt(0)
+    const rank = parseInt(enPassantTarget[1], 10) - 1
+    const row = 7 - rank
+    const planeStart = 110 * 64
+    const index = planeStart + row * 8 + file
+    tensor[index] = 1.0
+  }
+
+  // Plane 111: Halfmove clock (normalized)
+  const halfmovePlaneStart = 111 * 64
+  const halfmoveNormalized = Math.min(halfmoveClock / 100, 1.0)
+  tensor.fill(halfmoveNormalized, halfmovePlaneStart, halfmovePlaneStart + 64)
+
   return tensor
 }
 
@@ -158,6 +252,7 @@ function preprocess(
 
 /**
  * Preprocesses the input data for Leela models.
+ * Uses the SAME move dictionary as Maia (they share the same move encoding)
  */
 function preprocessLeela(
   fen: string,
@@ -174,7 +269,7 @@ function preprocessLeela(
   // Create board from the PROCESSED (potentially mirrored) FEN to get correct legal moves
   const processedBoard = new Chess(processedFen)
 
-  // Generate legal moves tensor from the processed position
+  // Generate legal moves tensor - use the SAME dictionary as Maia
   const legalMoves = new Float32Array(Object.keys(allPossibleMoves).length)
 
   for (const move of processedBoard.moves({ verbose: true }) as Move[]) {

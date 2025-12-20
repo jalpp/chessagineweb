@@ -1,7 +1,13 @@
-import { MaiaStatus } from './types';
+import { MaiaStatus } from './types'
 import { InferenceSession, Tensor } from 'onnxruntime-web'
 
-import { mirrorMove, preprocess, allPossibleMovesReversed, preprocessLeela } from "./tensor";
+import {
+  mirrorMove,
+  preprocess,
+  preprocessLeela,
+  allPossibleMovesReversed,
+} from './tensor'
+
 import { MaiaModelStorage } from './storage'
 
 interface MaiaOptions {
@@ -14,17 +20,16 @@ interface MaiaOptions {
 
 class Maia {
   private model!: InferenceSession
-  private modelUrl: string
-  private options: MaiaOptions
-  private storage: MaiaModelStorage
-  private modelType: 'maia2' | 'leela'
+  private readonly modelUrl: string
+  private readonly options: MaiaOptions
+  private readonly storage = new MaiaModelStorage()
+  private readonly modelType: 'maia2' | 'leela'
 
   constructor(options: MaiaOptions) {
     this.modelUrl = options.model
     this.options = options
-    this.storage = new MaiaModelStorage()
-    this.modelType = options.modelType || 'maia2'
-    // Set initial status to loading to prevent popup
+    this.modelType = options.modelType ?? 'maia2'
+
     this.options.setStatus('loading')
     this.initialize()
   }
@@ -33,127 +38,94 @@ class Maia {
     try {
       await this.storage.requestPersistentStorage()
 
-      console.log('Checking for cached model...')
-      const buffer = await this.storage.getModel(this.modelUrl)
-
-      if (buffer) {
-        console.log('Cached model found, initializing...')
-        try {
-          await this.initializeModel(buffer)
-          console.log('Model initialized from cache successfully')
-          this.options.setStatus('ready')
-        } catch (e) {
-          console.error('Failed to initialize cached model:', e)
-          // If cached model fails, clear it and prompt for download
-          await this.storage.deleteModel()
-          this.options.setError('Cached model corrupted. Please re-download.')
-          this.options.setStatus('no-cache')
-        }
-      } else {
-        console.log('No cached model found')
+      const cached = await this.storage.getModel(this.modelUrl)
+      if (!cached) {
         this.options.setStatus('no-cache')
+        return
       }
-    } catch (error) {
-      console.error('Initialization error:', error)
-      this.options.setError('Failed to initialize storage')
-      this.options.setStatus('error')
+
+      await this.initializeModel(cached)
+      this.options.setStatus('ready')
+    } catch (err) {
+      console.error(err)
+      await this.storage.clearAllStorage()
+      this.options.setError('Failed to load model')
+      this.options.setStatus('no-cache')
     }
   }
 
-  public async downloadModel() {
+  async downloadModel() {
     try {
       this.options.setStatus('downloading')
       this.options.setProgress(0)
 
-      const response = await fetch(this.modelUrl)
-      if (!response.ok) throw new Error('Failed to fetch model')
+      const res = await fetch(this.modelUrl)
+      if (!res.ok || !res.body) throw new Error('Download failed')
 
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No response body')
+      const reader = res.body.getReader()
+      const len = Number(res.headers.get('Content-Length') ?? 0)
 
-      const contentLength = +(response.headers.get('Content-Length') ?? 0)
       const chunks: Uint8Array[] = []
       let received = 0
-      let lastProgress = 0
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         chunks.push(value)
         received += value.length
-        
-        const progress = Math.floor((received / contentLength) * 100)
-        if (progress >= lastProgress + 10) {
-          this.options.setProgress(progress)
-          lastProgress = progress
-        }
+        if (len) this.options.setProgress(Math.floor((received / len) * 100))
       }
 
       const buffer = new Uint8Array(received)
       let offset = 0
-      for (const chunk of chunks) {
-        buffer.set(chunk, offset)
-        offset += chunk.length
+      for (const c of chunks) {
+        buffer.set(c, offset)
+        offset += c.length
       }
 
-      console.log('Download complete, storing model...')
       await this.storage.storeModel(this.modelUrl, buffer.buffer)
-      
-      console.log('Model stored, initializing...')
       await this.initializeModel(buffer.buffer)
-      
-      console.log('Model ready')
+
       this.options.setStatus('ready')
-    } catch (error) {
-      console.error('Download failed:', error)
-      this.options.setError(error instanceof Error ? error.message : 'Download failed')
+    } catch (e) {
+      console.error(e)
+      this.options.setError('Download failed')
       this.options.setStatus('error')
     }
   }
 
-  public async getStorageInfo() {
-    return await this.storage.getStorageInfo()
-  }
-
-  public async clearStorage() {
-    return await this.storage.clearAllStorage()
-  }
-
-  public async initializeModel(buffer: ArrayBuffer) {
+  private async initializeModel(buffer: ArrayBuffer) {
     this.model = await InferenceSession.create(buffer)
-    console.log('Model inputs:', this.model.inputNames)
-    console.log('Model outputs:', this.model.outputNames)
+    console.log('ONNX inputs:', this.model.inputNames)
+    console.log('ONNX outputs:', this.model.outputNames)
   }
 
-  /**
-   * Evaluates a given chess position using the Maia model.
-   */
-  async evaluate(board: string, eloSelf: number, eloOppo: number) {
-    if (!this.model) throw new Error('Model not initialized')
+  /* ======================================================
+     Single evaluation
+  ====================================================== */
+
+  async evaluate(fen: string, eloSelf: number, eloOppo: number) {
+    if (!this.model) throw new Error('Model not ready')
 
     if (this.modelType === 'leela') {
-      const { boardInput, legalMoves } = preprocessLeela(board)
+      const { boardInput, legalMoves } = preprocessLeela(fen)
 
       const outputs = await this.model.run({
         '/input/planes': new Tensor('float32', boardInput, [1, 112, 8, 8]),
       })
 
-      const policyTensor = pickOutput(outputs, ['policy', '/output/policy'], 0)
-      const wdlTensor = outputs['/output/wdl']
+      const policyTensor = pickOutput(outputs, ['policy', '/output/policy'])
+      const wdlTensor = pickOutput(outputs, ['wdl', '/output/wdl'])
 
-      const value = wdlToWinProb(wdlTensor, board)
-      const { policy } = processOutputsLeela(
-        board,
-        policyTensor,
-        legalMoves,
-      )
+      const value = wdlToWinProb(wdlTensor, fen)
+      const policy = processLeelaPolicy(fen, policyTensor, legalMoves)
 
       return { policy, value }
     }
 
-    // MAIA 2 (unchanged)
+    // Maia 2
     const { boardInput, legalMoves, eloSelfCategory, eloOppoCategory } =
-      preprocess(board, eloSelf, eloOppo)
+      preprocess(fen, eloSelf, eloOppo)
 
     const outputs = await this.model.run({
       boards: new Tensor('float32', boardInput, [1, 18, 8, 8]),
@@ -161,158 +133,215 @@ class Maia {
       elo_oppo: new Tensor('int64', BigInt64Array.from([BigInt(eloOppoCategory)])),
     })
 
-    return processOutputsMaia2(board, outputs.logits_maia, outputs.logits_value, legalMoves)
+    return processMaiaPolicy(
+      fen,
+      outputs.logits_maia,
+      outputs.logits_value,
+      legalMoves,
+    )
   }
 
-  /**
-   * Evaluates a batch of chess positions.
-   */
-  async batchEvaluate(boards: string[], eloSelfs: number[], eloOppos: number[]) {
-    if (!this.model) throw new Error('Model not initialized')
+  async batchEval(
+    positions: {
+      fen: string
+      eloSelf: number
+      eloOppo: number
+    }[],
+  ) {
+    if (!this.model) throw new Error('Model not ready')
 
-    const batchSize = boards.length
-    const boardInputs: Float32Array[] = []
-    const legalMoves: Float32Array[] = []
-    const eloSelfCats: number[] = []
-    const eloOppoCats: number[] = []
+    // ---------- LEELA ----------
+    if (this.modelType === 'leela') {
+      const boards: Float32Array[] = []
+      const legalMovesList: Float32Array[] = []
+      const fens: string[] = []
 
-    // Preprocess all boards
-    for (let i = 0; i < batchSize; i++) {
-      if (this.modelType === 'leela') {
-        const r = preprocessLeela(boards[i])
-        boardInputs.push(r.boardInput)
-        legalMoves.push(r.legalMoves)
-      } else {
-        const r = preprocess(boards[i], eloSelfs[i], eloOppos[i])
-        boardInputs.push(r.boardInput)
-        legalMoves.push(r.legalMoves)
-        eloSelfCats.push(r.eloSelfCategory)
-        eloOppoCats.push(r.eloOppoCategory)
+      for (const p of positions) {
+        const { boardInput, legalMoves } = preprocessLeela(p.fen)
+        boards.push(boardInput)
+        legalMovesList.push(legalMoves)
+        fens.push(p.fen)
       }
+
+      const batch = boards.length
+      const input = new Float32Array(batch * 112 * 8 * 8)
+      boards.forEach((b, i) => input.set(b, i * b.length))
+
+      const outputs = await this.model.run({
+        '/input/planes': new Tensor('float32', input, [batch, 112, 8, 8]),
+      })
+
+      const policyTensor = pickOutput(outputs, ['policy', '/output/policy'])
+      const wdlTensor = pickOutput(outputs, ['wdl', '/output/wdl'])
+
+      const policyData = policyTensor.data as Float32Array
+      const wdlData = wdlTensor.data as Float32Array
+
+      const results = []
+
+      for (let i = 0; i < batch; i++) {
+        const policySlice = policyData.subarray(i * 4672, (i + 1) * 4672)
+        const wdlSlice = wdlData.subarray(i * 3, (i + 1) * 3)
+
+        const value = wdlToWinProb({ data: wdlSlice } as Tensor, fens[i])
+
+        const policy = processLeelaPolicy(
+          fens[i],
+          { data: policySlice } as Tensor,
+          legalMovesList[i],
+        )
+
+        results.push({ policy, value })
+      }
+
+      return results
     }
 
-    // Combine board inputs
-    const planes = this.modelType === 'leela' ? 112 : 18
-    const combined = new Float32Array(batchSize * planes * 64)
-    boardInputs.forEach((b, i) => combined.set(b, i * planes * 64))
+    // ---------- MAIA 2 ----------
+    const boards: Float32Array[] = []
+    const legalMovesList: Float32Array[] = []
+    const eloSelfArr: bigint[] = []
+    const eloOppoArr: bigint[] = []
+    const fens: string[] = []
 
-    const start = performance.now()
+    for (const p of positions) {
+      const { boardInput, legalMoves, eloSelfCategory, eloOppoCategory } =
+        preprocess(p.fen, p.eloSelf, p.eloOppo)
 
-    // Run model
-    const outputs =
-      this.modelType === 'leela'
-        ? await this.model.run({
-            '/input/planes': new Tensor('float32', combined, [batchSize, planes, 8, 8]),
-          })
-        : await this.model.run({
-            boards: new Tensor('float32', combined, [batchSize, planes, 8, 8]),
-            elo_self: new Tensor('int64', BigInt64Array.from(eloSelfCats.map(BigInt)), [batchSize]),
-            elo_oppo: new Tensor('int64', BigInt64Array.from(eloOppoCats.map(BigInt)), [batchSize]),
-          })
+      boards.push(boardInput)
+      legalMovesList.push(legalMoves)
+      eloSelfArr.push(BigInt(eloSelfCategory))
+      eloOppoArr.push(BigInt(eloOppoCategory))
+      fens.push(p.fen)
+    }
 
-    const end = performance.now()
+    const batch = boards.length
+    const boardTensor = new Float32Array(batch * 18 * 8 * 8)
+    boards.forEach((b, i) => boardTensor.set(b, i * b.length))
 
-    // Process outputs
+    const outputs = await this.model.run({
+      boards: new Tensor('float32', boardTensor, [batch, 18, 8, 8]),
+      elo_self: new Tensor('int64', BigInt64Array.from(eloSelfArr)),
+      elo_oppo: new Tensor('int64', BigInt64Array.from(eloOppoArr)),
+    })
+
+    const policyData = outputs.logits_maia.data as Float32Array
+    const valueData = outputs.logits_value.data as Float32Array
+
     const results = []
 
-    if (this.modelType === 'leela') {
-      const policyTensor = pickOutput(outputs, ['policy', '/output/policy'], 0)
-      const wdlTensor = outputs['/output/wdl']
+    for (let i = 0; i < batch; i++) {
+      const policySlice = policyData.subarray(i * 4672, (i + 1) * 4672)
+      const valueSlice = valueData.subarray(i, i + 1)
 
-      for (let i = 0; i < batchSize; i++) {
-        const logitsPer = policyTensor.data.length / batchSize
-        const policySlice = policyTensor.data.slice(
-          i * logitsPer,
-          (i + 1) * logitsPer,
-        ) as Float32Array
+      const res = processMaiaPolicy(
+        fens[i],
+        { data: policySlice } as Tensor,
+        { data: valueSlice } as Tensor,
+        legalMovesList[i],
+      )
 
-        const { policy } = processOutputsLeela(
-          boards[i],
-          new Tensor('float32', policySlice, [logitsPer]),
-          legalMoves[i],
-        )
-
-        // Extract WDL for this position
-        const wdlSlice = (wdlTensor.data as Float32Array).slice(i * 3, (i + 1) * 3)
-        const wdlSingleTensor = new Tensor('float32', wdlSlice, [3])
-        const value = wdlToWinProb(wdlSingleTensor, boards[i])
-
-        results.push({ policy, value })
-      }
-    } else {
-      // Maia2 batch processing
-      const policyTensor = outputs.logits_maia
-      const valueTensor = outputs.logits_value
-
-      for (let i = 0; i < batchSize; i++) {
-        const logitsPer = policyTensor.data.length / batchSize
-        const policySlice = policyTensor.data.slice(
-          i * logitsPer,
-          (i + 1) * logitsPer,
-        ) as Float32Array
-
-        const valueLogit = valueTensor.data[i] as number
-
-        const { policy, value } = processOutputsMaia2(
-          boards[i],
-          new Tensor('float32', policySlice, [logitsPer]),
-          new Tensor('float32', [valueLogit], [1]),
-          legalMoves[i],
-        )
-
-        results.push({ policy, value })
-      }
+      results.push(res)
     }
 
-    return {
-      result: results,
-      time: end - start,
-    }
+    return results
   }
 }
 
-/**
- * Pick the first available output tensor from a list of possible names
- */
+/* ======================================================
+   Helpers
+====================================================== */
+
 function pickOutput(
   outputs: Record<string, Tensor>,
   names: string[],
-  fallback: number,
 ): Tensor {
-  for (const n of names) {
-    if (outputs[n]) return outputs[n]
-  }
-  return Object.values(outputs)[fallback]
+  for (const n of names) if (outputs[n]) return outputs[n]
+  throw new Error(`Missing output: ${names.join(', ')}`)
 }
 
 /**
- * Convert WDL (Win-Draw-Loss) logits to win probability
+ * Convert WDL (Win/Draw/Loss) tensor to win probability for the side to move
  */
-function wdlToWinProb(wdlTensor: Tensor, fen: string): number {
-  const logits = wdlTensor.data as Float32Array
+function wdlToWinProb(wdl: Tensor, fen: string): number {
+  const data = wdl.data as Float32Array
   
-  // Softmax over WDL
-  const max = Math.max(...logits)
-  const exps = Array.from(logits).map((v) => Math.exp(v - max))
-  const sum = exps.reduce((a, b) => a + b, 0)
-  const probs = exps.map((v) => v / sum)
+  // Apply softmax to get probabilities
+  const max = Math.max(...data)
+  const exp = Array.from(data).map((v) => Math.exp(v - max))
+  const sum = exp.reduce((a, b) => a + b, 0)
+  const probs = exp.map((v) => v / sum)
   
-  // WDL format: [loss, draw, win] from white's perspective
-  const winWhite = probs[2] + 0.5 * probs[1]
+  // LC0 WDL format: [loss, draw, win] from white's perspective
+  const whiteLoss = probs[0]
+  const draw = probs[1]
+  const whiteWin = probs[2]
   
-  // Flip for black
-  return fen.split(' ')[1] === 'b' ? 1 - winWhite : winWhite
+  // Calculate white's win probability
+  const whiteWinProb = whiteWin + 0.5 * draw
+  
+  // If it's black's turn, invert the probability
+  const turn = fen.split(' ')[1]
+  return turn === 'b' ? 1 - whiteWinProb : whiteWinProb
 }
 
-/**
- * Process Leela model outputs (NO MIRRORING)
- */
-function processOutputsLeela(
+/* ======================================================
+   Leela policy processing
+====================================================== */
+
+function processLeelaPolicy(
   fen: string,
   logitsTensor: Tensor,
   legalMoves: Float32Array,
-) {
+): Record<string, number> {
   const logits = logitsTensor.data as Float32Array
+  const isBlack = fen.split(' ')[1] === 'b'
+
+  // Get indices of legal moves
+  const legalIndices: number[] = []
+  for (let i = 0; i < legalMoves.length; i++) {
+    if (legalMoves[i] > 0) {
+      legalIndices.push(i)
+    }
+  }
+
+  // Map to UCI moves (mirror if black)
+  const moves = legalIndices.map((i) => {
+    const move = allPossibleMovesReversed[i]
+    return isBlack ? mirrorMove(move) : move
+  })
+
+  // Apply softmax over legal moves only
+  const legalLogits = legalIndices.map((i) => logits[i])
+  const max = Math.max(...legalLogits)
+  const exp = legalLogits.map((v) => Math.exp(v - max))
+  const sum = exp.reduce((a, b) => a + b, 0)
+
+  // Build policy dictionary
+  const policy: Record<string, number> = {}
+  for (let i = 0; i < moves.length; i++) {
+    policy[moves[i]] = exp[i] / sum
+  }
+
+  return policy
+}
+
+/* ======================================================
+   Maia 2 policy + value
+====================================================== */
+
+export function processMaiaPolicy(
+  fen: string,
+  policyTensor: Tensor,
+  valueTensor: Tensor,
+  legalMoves: Float32Array,
+) {
+  const policyData = policyTensor.data as Float32Array
+  const valueData = valueTensor.data as Float32Array
+
+  // Maia value head outputs [-1, 1], convert to [0, 1]
+  const value = valueData[0] * 0.5 + 0.5
+
   const isBlack = fen.split(' ')[1] === 'b'
 
   // Get legal move indices
@@ -321,98 +350,37 @@ function processOutputsLeela(
     if (legalMoves[i] > 0) legalIdx.push(i)
   }
 
-  // Get moves (apply mirroring for black to match board representation)
+  // Map to UCI moves (mirror if black)
   const moves: string[] = legalIdx.map((i) => {
     const move = allPossibleMovesReversed[i] as string
     return isBlack ? mirrorMove(move) : move
   })
 
-  // Extract legal logits and compute softmax
-  const legalLogits = legalIdx.map((i) => logits[i])
-  const max = Math.max(...legalLogits)
-  const exps = legalLogits.map((l) => Math.exp(l - max))
-  const sum = exps.reduce((a, b) => a + b, 0)
+  // Softmax over legal moves only
+  let max = -Infinity
+  for (const i of legalIdx) {
+    if (policyData[i] > max) max = policyData[i]
+  }
 
-  // Build policy
+  let sum = 0
+  const expVals = new Float32Array(legalIdx.length)
+
+  for (let j = 0; j < legalIdx.length; j++) {
+    const v = Math.exp(policyData[legalIdx[j]] - max)
+    expVals[j] = v
+    sum += v
+  }
+
+  // Build policy map
   const policy: Record<string, number> = {}
   for (let i = 0; i < moves.length; i++) {
-    policy[moves[i]] = exps[i] / sum
+    policy[moves[i]] = expVals[i] / sum
   }
 
-  // Sort policy by probability
-  const sortedPolicy = Object.keys(policy)
-    .sort((a, b) => policy[b] - policy[a])
-    .reduce((acc, key) => {
-      acc[key] = policy[key]
-      return acc
-    }, {} as Record<string, number>)
-
-  return { policy: sortedPolicy }
+  return {
+    policy,
+    value,
+  }
 }
 
-/**
- * Process Maia2 model outputs (WITH MIRRORING)
- */
-function processOutputsMaia2(
-  fen: string,
-  logits_maia: Tensor,
-  logits_value: Tensor,
-  legalMoves: Float32Array,
-) {
-  const logits = logits_maia.data as Float32Array
-  const value = logits_value.data as Float32Array
-
-  let winProb = Math.min(Math.max((value[0] as number) / 2 + 0.5, 0), 1)
-
-  let black_flag = false
-  if (fen.split(' ')[1] === 'b') {
-    black_flag = true
-    winProb = 1 - winProb
-  }
-
-  winProb = Math.round(winProb * 10000) / 10000
-
-  // Get indices of legal moves
-  const legalMoveIndices = legalMoves
-    .map((value, index) => (value > 0 ? index : -1))
-    .filter((index) => index !== -1)
-
-  const legalMovesMirrored = []
-  for (const moveIndex of legalMoveIndices) {
-    let move = allPossibleMovesReversed[moveIndex] as string
-    if (black_flag) {
-      move = mirrorMove(move)
-    }
-
-    legalMovesMirrored.push(move)
-  }
-
-  // Extract logits for legal moves
-  const legalLogits = legalMoveIndices.map((idx) => logits[idx])
-
-  // Compute softmax over the legal logits
-  const maxLogit = Math.max(...legalLogits)
-  const expLogits = legalLogits.map((logit) => Math.exp(logit - maxLogit))
-  const sumExp = expLogits.reduce((a, b) => a + b, 0)
-  const probs = expLogits.map((expLogit) => expLogit / sumExp)
-
-  // Map the probabilities back to their move indices
-  const moveProbs: Record<string, number> = {}
-  for (let i = 0; i < legalMoveIndices.length; i++) {
-    moveProbs[legalMovesMirrored[i]] = probs[i]
-  }
-
-  const sortedMoveProbs = Object.keys(moveProbs)
-    .sort((a, b) => moveProbs[b] - moveProbs[a])
-    .reduce(
-      (acc, key) => {
-        acc[key] = moveProbs[key]
-        return acc
-      },
-      {} as Record<string, number>,
-    )
-
-  return { policy: sortedMoveProbs, value: winProb }
-}
-
-export default Maia;
+export default Maia

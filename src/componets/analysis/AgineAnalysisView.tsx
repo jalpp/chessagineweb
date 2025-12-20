@@ -37,10 +37,8 @@ import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { MaiaResults } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
-import { DownloadModelModal } from "../maia/DownloadMaiaModel";
 import EvalGraph from "../tabs/EvalGraph";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
-import { MaiaEvaluation, ModelType } from "@/libs/maia/types";
 import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
 
 interface BaseAnalysisViewProps {
@@ -196,7 +194,7 @@ function AgineAnalysisView({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { status, progress, downloadModel } = useContext(MaiaEngineContext);
+  const { maia2 } = useContext(MaiaEngineContext);
 
   
 
@@ -524,7 +522,7 @@ function AgineAnalysisView({
                     {gameReview && (
                       <>
                         <Divider sx={{ my: 3 }} />
-                        <MaiaProbabilityChart moves={gameReview!} />
+                        <MaiaProbabilityChart moves={gameReview!} maia2={maia2} />
                       </>
                     )}
                 
