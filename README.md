@@ -154,6 +154,10 @@ A huge thanks to everyone who helped make ChessAgine possible:
 
 * **Chessboardmagic devs** [Toan Hoang](https://github.com/HollowLeaf1981/ChessPieces) for free open source chess pieces.
 
+* **LeelaZero Devs** [LeelaZero](https://lczero.org/) for Leela model
+
+* **Viet-Anh Tran** [EliteLeela](https://github.com/CallOn84/LeelaNets) for Elite Leela nets (custom trained on Elite Lichess DB)
+
 * **NAKSTStudio Devs** [https://huggingface.co/NAKSTStudio](https://huggingface.co/NAKSTStudio/activity/likes) for Free open source chess commentary trained model
 
 ---
