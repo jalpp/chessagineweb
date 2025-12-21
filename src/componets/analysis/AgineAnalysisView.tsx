@@ -194,7 +194,7 @@ function AgineAnalysisView({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { maia2 } = useContext(MaiaEngineContext);
+  const { maia2, bigLeela, elitemaia } = useContext(MaiaEngineContext);
 
   return (
     <Card
@@ -511,7 +511,7 @@ function AgineAnalysisView({
                 {gameReview && (
                   <>
                     <Divider sx={{ my: 3 }} />
-                    <MaiaProbabilityChart moves={gameReview!} maia2={maia2} />
+                    <MaiaProbabilityChart moves={gameReview!} maia2={maia2} eliteLeela={elitemaia} bigLeela={bigLeela} />
                   </>
                 )}
               </AccordionDetails>

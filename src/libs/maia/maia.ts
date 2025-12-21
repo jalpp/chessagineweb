@@ -120,15 +120,15 @@ class Maia {
       const policyTensor = pickOutput(outputs, ['policy', '/output/policy'])
       const wdlTensor = pickOutput(outputs, ['wdl', '/output/wdl'])
 
-       console.log('=== LEELA SINGLE EVAL DEBUG ===')
-    console.log('FEN:', fen)
-    console.log('Policy tensor size:', policyTensor.size)
-    console.log('Policy tensor dims:', policyTensor.dims)
-    console.log('WDL tensor size:', wdlTensor.size)
-    console.log('WDL tensor dims:', wdlTensor.dims)
-    console.log('Legal moves count:', legalMoves.filter(m => m > 0).length)
-    console.log('allPossibleMovesReversed length:', Object.keys(allPossibleMovesReversed || {}).length)
-    console.log('================================')
+    // console.log('=== LEELA SINGLE EVAL DEBUG ===')
+    // console.log('FEN:', fen)
+    // console.log('Policy tensor size:', policyTensor.size)
+    // console.log('Policy tensor dims:', policyTensor.dims)
+    // console.log('WDL tensor size:', wdlTensor.size)
+    // console.log('WDL tensor dims:', wdlTensor.dims)
+    // console.log('Legal moves count:', legalMoves.filter(m => m > 0).length)
+    // console.log('allPossibleMovesReversed length:', Object.keys(allPossibleMovesReversed || {}).length)
+    // console.log('================================')
 
       const value = wdlToWinProb(wdlTensor, fen)
       const policy = processLeelaPolicy(fen, policyTensor, legalMoves)
@@ -215,22 +215,22 @@ async batchEval(
     const wdlData = wdlTensor.data as Float32Array
 
      // DEBUG: Log tensor information for Leela
-    console.log('=== LEELA BATCH DEBUG ===')
-    console.log('Batch size:', batch)
-    console.log('Policy tensor size:', policyTensor.size)
-    console.log('Policy tensor dims:', policyTensor.dims)
-    console.log('Policy data length:', policyData.length)
-    console.log('WDL tensor size:', wdlTensor.size)
-    console.log('WDL data length:', wdlData.length)
-    console.log('allPossibleMovesReversed length:', Object.keys(allPossibleMovesReversed || {}).length)
-    console.log('Calculated policy size per item:', policyTensor.size / batch)
-    console.log('Expected policy size (hardcoded): 4672')
-    console.log('========================')
+    // console.log('=== LEELA BATCH DEBUG ===')
+    // console.log('Batch size:', batch)
+    // console.log('Policy tensor size:', policyTensor.size)
+    // console.log('Policy tensor dims:', policyTensor.dims)
+    // console.log('Policy data length:', policyData.length)
+    // console.log('WDL tensor size:', wdlTensor.size)
+    // console.log('WDL data length:', wdlData.length)
+    // console.log('allPossibleMovesReversed length:', Object.keys(allPossibleMovesReversed || {}).length)
+    // console.log('Calculated policy size per item:', policyTensor.size / batch)
+    // console.log('Expected policy size (hardcoded): 1858')
+    // console.log('========================')
 
     const results = []
 
     for (let i = 0; i < batch; i++) {
-      const policySlice = policyData.subarray(i * 4672, (i + 1) * 4672)
+      const policySlice = policyData.subarray(i * 1858, (i + 1) * 1858)
       const wdlSlice = wdlData.subarray(i * 3, (i + 1) * 3)
 
       const value = wdlToWinProb({ data: wdlSlice } as Tensor, fens[i])
@@ -289,7 +289,7 @@ async batchEval(
 
   const results = []
   
-  // Maia 2 uses 1880 moves (not 4672 like Leela)
+ 
   const MAIA_POLICY_SIZE = 1880
 
   for (let i = 0; i < batch; i++) {

@@ -7,6 +7,9 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Button,
+  Chip,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
@@ -15,7 +18,6 @@ import {
   CATEGORY_LABELS,
   MAIA_MODELS,
   MaiaEvaluation,
-  MoveWithProbability,
   uciToSan,
 } from "@/libs/maia/types";
 import { MoveAnalysis } from "@/hooks/useGameReview";
@@ -24,25 +26,45 @@ import Maia from "@/libs/maia/maia";
 interface MaiaProbabilityChartProps {
   moves: MoveAnalysis[];
   maia2: Maia | undefined;
+  bigLeela: Maia | undefined;
+  eliteLeela: Maia | undefined;
 }
 
-/** maia_kdd_1100 → 1100 */
 const modelToElo = (model: string) =>
   Number(model.replace("maia_kdd_", ""));
+
+type EngineType = "maia2" | "bigLeela" | "eliteLeela";
 
 export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
   moves,
   maia2,
+  bigLeela,
+  eliteLeela,
 }) => {
   const [maia2Evaluations, setMaia2Evaluations] = useState<
     Array<{ [key: string]: MaiaEvaluation } | null>
   >([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [bigLeelaEvaluations, setBigLeelaEvaluations] = useState<
+    Array<MaiaEvaluation | null>
+  >([]);
+  const [eliteLeelaEvaluations, setEliteLeelaEvaluations] = useState<
+    Array<MaiaEvaluation | null>
+  >([]);
+  
+  const [isLoadingMaia2, setIsLoadingMaia2] = useState(false);
+  const [isLoadingBigLeela, setIsLoadingBigLeela] = useState(false);
+  const [isLoadingEliteLeela, setIsLoadingEliteLeela] = useState(false);
+  
   const [error, setError] = useState<Error | null>(null);
   const [selectedMaia2Level, setSelectedMaia2Level] =
     useState<string>("maia_kdd_1900");
   const [improbableThreshold, setImprobableThreshold] = useState(0.1);
-  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  
+  const [hasAnalyzedMaia2, setHasAnalyzedMaia2] = useState(false);
+  const [hasAnalyzedBigLeela, setHasAnalyzedBigLeela] = useState(false);
+  const [hasAnalyzedEliteLeela, setHasAnalyzedEliteLeela] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState<EngineType>("maia2");
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -59,22 +81,25 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
   );
 
   useEffect(() => {
-    setHasAnalyzed(false);
+    setHasAnalyzedMaia2(false);
+    setHasAnalyzedBigLeela(false);
+    setHasAnalyzedEliteLeela(false);
     setMaia2Evaluations([]);
+    setBigLeelaEvaluations([]);
+    setEliteLeelaEvaluations([]);
   }, [moves]);
 
-  const analyzeAllMoves = async () => {
-    if (!maia2 || moveData.length === 0 || isLoading) return;
+  const analyzeMaia2 = async () => {
+    if (!maia2 || moveData.length === 0 || isLoadingMaia2) return;
 
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
     const controller = abortControllerRef.current;
 
-    setIsLoading(true);
+    setIsLoadingMaia2(true);
     setError(null);
 
     try {
-      /** Build correct batch inputs: 1100 → 1900 per model */
       const batchInputs = moveData.flatMap((move) =>
         move.isBook
           ? []
@@ -120,39 +145,202 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
       }
 
       setMaia2Evaluations(evaluations);
-      setHasAnalyzed(true);
+      setHasAnalyzedMaia2(true);
     } catch (e) {
       if (!controller.signal.aborted) {
         setError(e instanceof Error ? e : new Error("Unknown error"));
       }
     } finally {
       if (!controller.signal.aborted) {
-        setIsLoading(false);
+        setIsLoadingMaia2(false);
       }
     }
   };
 
-  const { chartData } = useMemo(() => {
+  const analyzeBigLeela = async () => {
+    if (!bigLeela || moveData.length === 0 || isLoadingBigLeela) return;
+
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    const controller = abortControllerRef.current;
+
+    setIsLoadingBigLeela(true);
+    setError(null);
+
+    try {
+      const batchInputs = moveData
+        .filter((move) => !move.isBook)
+        .map((move) => ({
+          fen: move.fen,
+          eloSelf: 2800,
+          eloOppo: 2800,
+        }));
+
+      const rawResults = await bigLeela.batchEval(batchInputs);
+      if (controller.signal.aborted) return;
+
+      const results: Array<MaiaEvaluation | null> = [];
+      let cursor = 0;
+
+      for (const move of moveData) {
+        if (move.isBook) {
+          results.push(null);
+          continue;
+        }
+
+        const evalUci = rawResults[cursor++];
+        const sanPolicy: Record<string, number> = {};
+        
+        for (const [uci, prob] of Object.entries(evalUci.policy)) {
+          sanPolicy[uciToSan(uci, move.fen)] = prob;
+        }
+        
+        results.push({
+          value: evalUci.value,
+          policy: sanPolicy,
+        });
+      }
+
+      setBigLeelaEvaluations(results);
+      setHasAnalyzedBigLeela(true);
+    } catch (e) {
+      if (!controller.signal.aborted) {
+        setError(e instanceof Error ? e : new Error("Unknown error"));
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsLoadingBigLeela(false);
+      }
+    }
+  };
+
+  const analyzeEliteLeela = async () => {
+    if (!eliteLeela || moveData.length === 0 || isLoadingEliteLeela) return;
+
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    const controller = abortControllerRef.current;
+
+    setIsLoadingEliteLeela(true);
+    setError(null);
+
+    try {
+      const batchInputs = moveData
+        .filter((move) => !move.isBook)
+        .map((move) => ({
+          fen: move.fen,
+          eloSelf: 3000,
+          eloOppo: 3000,
+        }));
+
+      const rawResults = await eliteLeela.batchEval(batchInputs);
+      if (controller.signal.aborted) return;
+
+      const results: Array<MaiaEvaluation | null> = [];
+      let cursor = 0;
+
+      for (const move of moveData) {
+        if (move.isBook) {
+          results.push(null);
+          continue;
+        }
+
+        const evalUci = rawResults[cursor++];
+        const sanPolicy: Record<string, number> = {};
+        
+        for (const [uci, prob] of Object.entries(evalUci.policy)) {
+          sanPolicy[uciToSan(uci, move.fen)] = prob;
+        }
+        
+        results.push({
+          value: evalUci.value,
+          policy: sanPolicy,
+        });
+      }
+
+      setEliteLeelaEvaluations(results);
+      setHasAnalyzedEliteLeela(true);
+    } catch (e) {
+      if (!controller.signal.aborted) {
+        setError(e instanceof Error ? e : new Error("Unknown error"));
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsLoadingEliteLeela(false);
+      }
+    }
+  };
+
+  const { chartData, movesWithCategories } = useMemo(() => {
+    const movesWithCategories: Array<{
+      moveNumber: number;
+      notation: string;
+      quality: string;
+      probability: number;
+      category: string;
+      isGoodMove: boolean;
+    }> = [];
+
     const chart = moveData.map((move, idx) => {
-      const evalForMove = maia2Evaluations[idx]?.[selectedMaia2Level];
       const moveNumber = Math.floor((move.plyNumber + 1) / 2);
+      
+      let evalForMove: MaiaEvaluation | undefined;
+      
+      if (activeTab === "maia2") {
+        evalForMove = maia2Evaluations[idx]?.[selectedMaia2Level];
+      } else if (activeTab === "bigLeela") {
+        evalForMove = bigLeelaEvaluations[idx] ?? undefined;
+      } else if (activeTab === "eliteLeela") {
+        evalForMove = eliteLeelaEvaluations[idx] ?? undefined;
+      }
 
       if (!evalForMove) {
+        movesWithCategories.push({
+          moveNumber,
+          notation: move.notation,
+          quality: move.quality,
+          probability: 0,
+          category: "book",
+          isGoodMove: false,
+        });
         return { move: moveNumber, probability: 0, category: "book" };
       }
 
       const probability = evalForMove.policy[move.notation] ?? 0;
+      const isGoodMove = ["Best", "Very Good", "Good"].includes(move.quality);
       const category = categorizeMove(
         probability,
         move.quality,
         improbableThreshold
       );
 
+      movesWithCategories.push({
+        moveNumber,
+        notation: move.notation,
+        quality: move.quality,
+        probability,
+        category,
+        isGoodMove,
+      });
+
       return { move: moveNumber, probability, category };
     });
 
-    return { chartData: chart };
-  }, [moveData, maia2Evaluations, selectedMaia2Level, improbableThreshold]);
+    return { chartData: chart, movesWithCategories };
+  }, [moveData, maia2Evaluations, bigLeelaEvaluations, eliteLeelaEvaluations, selectedMaia2Level, improbableThreshold, activeTab]);
+
+  const brilliantCount = movesWithCategories.filter(
+    (m) => m.category === "brilliant"
+  ).length;
+  const trickyCount = movesWithCategories.filter(
+    (m) => m.category === "tricky"
+  ).length;
+
+  const isLoading = isLoadingMaia2 || isLoadingBigLeela || isLoadingEliteLeela;
+  const hasAnalyzed = 
+    (activeTab === "maia2" && hasAnalyzedMaia2) ||
+    (activeTab === "bigLeela" && hasAnalyzedBigLeela) ||
+    (activeTab === "eliteLeela" && hasAnalyzedEliteLeela);
 
   if (error) {
     return (
@@ -164,16 +352,80 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
 
   return (
     <Box sx={{ width: "100%", mt: 2 }}>
-      {/* Analyze Button */}
-      <Box sx={{ mb: 2 }}>
+      {/* Header with Chips */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Move Probability Analysis
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Shows predicted move probabilities (0 = unlikely, 1 = very likely)
+          </Typography>
+        </Box>
+        {hasAnalyzed && (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {brilliantCount > 0 && (
+              <Chip
+                label={`${brilliantCount} Brilliant`}
+                sx={{ bgcolor: CATEGORY_COLORS.brilliant, color: "white" }}
+                size="small"
+              />
+            )}
+            {trickyCount > 0 && (
+              <Chip
+                label={`${trickyCount} Tricky`}
+                sx={{ bgcolor: CATEGORY_COLORS.tricky, color: "white" }}
+                size="small"
+              />
+            )}
+          </Box>
+        )}
+      </Box>
+
+      {/* Engine Tabs */}
+      <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 2 }}>
+        <Tab label="Maia 2" value="maia2" />
+        <Tab label="Big Leela (2800)" value="bigLeela" />
+        <Tab label="Elite Leela (3000)" value="eliteLeela" />
+      </Tabs>
+
+      {/* Analyze Buttons */}
+      <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
         <Button
           variant="contained"
           color="primary"
-          disabled={isLoading || hasAnalyzed}
-          onClick={analyzeAllMoves}
-          startIcon={isLoading ? <CircularProgress size={18} /> : null}
+          disabled={isLoadingMaia2 || hasAnalyzedMaia2}
+          onClick={analyzeMaia2}
+          startIcon={isLoadingMaia2 ? <CircularProgress size={18} /> : null}
         >
-          {isLoading ? "Analyzing…" : "Analyze Move Probabilities"}
+          {isLoadingMaia2 ? "Analyzing Maia 2…" : hasAnalyzedMaia2 ? "Maia 2 Analyzed ✓" : "Analyze with Maia 2"}
+        </Button>
+        
+        <Button
+          variant="contained"
+          color="secondary"
+          disabled={isLoadingBigLeela || hasAnalyzedBigLeela}
+          onClick={analyzeBigLeela}
+          startIcon={isLoadingBigLeela ? <CircularProgress size={18} /> : null}
+        >
+          {isLoadingBigLeela ? "Analyzing Big Leela…" : hasAnalyzedBigLeela ? "Big Leela Analyzed ✓" : "Analyze with Big Leela"}
+        </Button>
+        
+        <Button
+          variant="contained"
+          color="secondary"
+          disabled={isLoadingEliteLeela || hasAnalyzedEliteLeela}
+          onClick={analyzeEliteLeela}
+          startIcon={isLoadingEliteLeela ? <CircularProgress size={18} /> : null}
+        >
+          {isLoadingEliteLeela ? "Analyzing Elite Leela…" : hasAnalyzedEliteLeela ? "Elite Leela Analyzed ✓" : "Analyze with Elite Leela"}
         </Button>
       </Box>
 
@@ -188,7 +440,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
         >
           <CircularProgress />
           <Typography sx={{ mt: 1 }}>
-            Analyzing with Maia…
+            Analyzing with {activeTab === "maia2" ? "Maia 2" : activeTab === "bigLeela" ? "Big Leela" : "Elite Leela"}…
           </Typography>
         </Box>
       )}
@@ -196,38 +448,86 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
       {/* Results */}
       {!isLoading && hasAnalyzed && (
         <>
-          <ToggleButtonGroup
-            value={selectedMaia2Level}
-            exclusive
-            onChange={(_, v) => v && setSelectedMaia2Level(v)}
-            size="small"
-            sx={{ mb: 2 }}
-          >
-            {MAIA_MODELS.map((m) => (
-              <ToggleButton key={m} value={m}>
-                {m.replace("maia_kdd_", "")}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+          {/* Maia 2 specific controls */}
+          {activeTab === "maia2" && (
+            <Box
+              sx={{
+                mb: 2,
+                display: "flex",
+                gap: 2,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <Typography variant="body2">Rating Level:</Typography>
+              <ToggleButtonGroup
+                value={selectedMaia2Level}
+                exclusive
+                onChange={(_, v) => v && setSelectedMaia2Level(v)}
+                size="small"
+              >
+                {MAIA_MODELS.map((m) => (
+                  <ToggleButton key={m} value={m}>
+                    {m.replace("maia_kdd_", "")}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
+          )}
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" gutterBottom>
+              Improbable Threshold: {(improbableThreshold * 100).toFixed(0)}%
+            </Typography>
+            <input
+              type="range"
+              min="0.01"
+              max="0.3"
+              step="0.01"
+              value={improbableThreshold}
+              onChange={(e) =>
+                setImprobableThreshold(parseFloat(e.target.value))
+              }
+              style={{ width: "300px" }}
+            />
+          </Box>
 
           <BarChart
             xAxis={[
               {
                 scaleType: "band",
                 data: chartData.map((d) => d.move.toString()),
+                label: "Move Number",
               },
             ]}
-            yAxis={[{ min: 0, max: 1 }]}
+            yAxis={[
+              {
+                min: 0,
+                max: 1,
+                label: "Move Probability",
+              },
+            ]}
             series={[
               {
                 data: chartData.map((d) => d.probability),
-                label: "Maia Probability",
+                label: "Move Probability",
+                valueFormatter: (value, context) => {
+                  if (value !== null && context.dataIndex !== undefined) {
+                    const move = movesWithCategories[context.dataIndex];
+                    return `${move.notation} (${move.quality}): ${(
+                      value * 100
+                    ).toFixed(1)}%`;
+                  }
+                  return `${((value ?? 0) * 100).toFixed(1)}%`;
+                },
               },
             ]}
             height={500}
+            margin={{ left: 70, right: 20, top: 20, bottom: 70 }}
+            grid={{ vertical: true, horizontal: true }}
           />
 
-          <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
+          <Box sx={{ mt: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
             {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
               <Box
                 key={k}
@@ -235,16 +535,180 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
               >
                 <Box
                   sx={{
-                    width: 14,
-                    height: 14,
+                    width: 16,
+                    height: 16,
                     bgcolor:
                       CATEGORY_COLORS[k as keyof typeof CATEGORY_COLORS],
+                    borderRadius: 0.5,
                   }}
                 />
                 <Typography variant="body2">{v}</Typography>
               </Box>
             ))}
           </Box>
+
+          <Box sx={{ mt: 2 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontStyle: "italic" }}
+            >
+              {activeTab === "maia2" 
+                ? "Brilliant moves are objectively good but improbable for humans to find. Tricky positions show probable moves that are objectively bad - great for finding opponent traps in your opening repertoire!"
+                : "Brilliant moves are objectively good but have low engine probability. Tricky positions show high probability moves that are objectively bad."}
+            </Typography>
+          </Box>
+
+          {/* Summary Report */}
+          {(brilliantCount > 0 || trickyCount > 0) && (
+            <Box
+              sx={{
+                mt: 3,
+                p: 2,
+                bgcolor: "background.paper",
+                borderRadius: 1,
+                border: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                Move Analysis Summary
+              </Typography>
+
+              {brilliantCount > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: CATEGORY_COLORS.brilliant,
+                      mb: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    💎 Brilliant Moves ({brilliantCount})
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                    sx={{ mb: 1 }}
+                  >
+                    {activeTab === "maia2"
+                      ? "These moves are objectively strong but humans at this rating level rarely find them:"
+                      : "These moves are objectively strong but have low engine probability:"}
+                  </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {movesWithCategories
+                      .filter((m) => m.category === "brilliant")
+                      .map((move, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            p: 1,
+                            bgcolor: "rgba(74, 222, 128, 0.1)",
+                            borderRadius: 1,
+                            borderLeft: 3,
+                            borderColor: CATEGORY_COLORS.brilliant,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: "bold", minWidth: 60 }}
+                          >
+                            Move {move.moveNumber}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: "bold", minWidth: 60 }}
+                          >
+                            {move.notation}
+                          </Typography>
+                          <Chip
+                            label={move.quality}
+                            size="small"
+                            sx={{ minWidth: 80 }}
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            Only {(move.probability * 100).toFixed(1)}%
+                            probability
+                          </Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                </Box>
+              )}
+
+              {trickyCount > 0 && (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: CATEGORY_COLORS.tricky,
+                      mb: 1,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ⚠️ Tricky Positions ({trickyCount})
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                    sx={{ mb: 1 }}
+                  >
+                    {activeTab === "maia2"
+                      ? "These moves are objectively bad but humans at this rating level often play them, great positions to exploit:"
+                      : "These moves are objectively bad but have high engine probability:"}
+                  </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {movesWithCategories
+                      .filter((m) => m.category === "tricky")
+                      .map((move, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            p: 1,
+                            bgcolor: "rgba(248, 113, 113, 0.1)",
+                            borderRadius: 1,
+                            borderLeft: 3,
+                            borderColor: CATEGORY_COLORS.tricky,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: "bold", minWidth: 60 }}
+                          >
+                            Move {move.moveNumber}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: "bold", minWidth: 60 }}
+                          >
+                            {move.notation}
+                          </Typography>
+                          <Chip
+                            label={move.quality}
+                            size="small"
+                            color="error"
+                            sx={{ minWidth: 80 }}
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            {(move.probability * 100).toFixed(1)}%{" "}
+                            {activeTab === "maia2" ? "of players fall for this" : "engine probability"}
+                          </Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
         </>
       )}
     </Box>

@@ -156,7 +156,7 @@ export const useMaiaEngine = ({
   maxRetries = 30,
   retryDelayMs = 100,
   enabledModels,
-  useLichessBook = false,
+  useLichessBook = true,
   bookThreshold = 21,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
   const { maia2, bigLeela, elitemaia, status, activeModels } =
@@ -282,31 +282,11 @@ export const useMaiaEngine = ({
         ) {
           if (currentAbortController.signal.aborted) return
 
-          if (useLichessBook) {
-            const lichessResult = await fetchLichessData(
-              fen,
-              2200,
-              currentAbortController.signal
-            )
-            const totalGames =
-              lichessResult.white + lichessResult.draws + lichessResult.black
-
-            newLichessData.bigLeela = lichessResult
-
-            if (totalGames >= bookThreshold) {
-              positionIsInBook = true
-              newSanEvaluations.bigLeela =
-                lichessToSanEvaluation(lichessResult)
-            } else {
-              const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
-              newEvaluations.bigLeela = uciEval
-              newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
-            }
-          } else {
+        
             const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
             newEvaluations.bigLeela = uciEval
             newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
-          }
+          
         }
 
         // Elite Maia (Leela model)
@@ -317,31 +297,10 @@ export const useMaiaEngine = ({
         ) {
           if (currentAbortController.signal.aborted) return
 
-          if (useLichessBook) {
-            const lichessResult = await fetchLichessData(
-              fen,
-              2500,
-              currentAbortController.signal
-            )
-            const totalGames =
-              lichessResult.white + lichessResult.draws + lichessResult.black
-
-            newLichessData.elitemaia = lichessResult
-
-            if (totalGames >= bookThreshold) {
-              positionIsInBook = true
-              newSanEvaluations.elitemaia = lichessToSanEvaluation(lichessResult)
-            } else {
-              
-              const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
-              newEvaluations.elitemaia = uciEval
-              newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
-            }
-          } else {
             const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
             newEvaluations.elitemaia = uciEval
             newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
-          }
+          
         }
 
         if (!currentAbortController.signal.aborted) {
