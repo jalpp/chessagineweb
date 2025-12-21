@@ -494,7 +494,7 @@ function AgineAnalysisView({
                     fontSize: { xs: "1rem", md: "1.25rem" },
                   }}
                 >
-                  Maia Analysis
+                  Neural Nets Analysis
                 </Typography>
               </AccordionSummary>
               <AccordionDetails
