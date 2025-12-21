@@ -172,8 +172,8 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
         .filter((move) => !move.isBook)
         .map((move) => ({
           fen: move.fen,
-          eloSelf: 2800,
-          eloOppo: 2800,
+          eloSelf: 3000,
+          eloOppo: 3000,
         }));
 
       const rawResults = await bigLeela.batchEval(batchInputs);
@@ -229,8 +229,8 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
         .filter((move) => !move.isBook)
         .map((move) => ({
           fen: move.fen,
-          eloSelf: 3000,
-          eloOppo: 3000,
+          eloSelf: 2800,
+          eloOppo: 2800,
         }));
 
       const rawResults = await eliteLeela.batchEval(batchInputs);
@@ -392,8 +392,8 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
       {/* Engine Tabs */}
       <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{ mb: 2 }}>
         <Tab label="Maia 2" value="maia2" />
-        <Tab label="Big Leela (2800)" value="bigLeela" />
-        <Tab label="Elite Leela (3000)" value="eliteLeela" />
+        <Tab label="Elite Leela (2800)" value="eliteLeela" />
+        <Tab label="Leela (3000) T1-256" value="bigLeela" />
       </Tabs>
 
       {/* Analyze Buttons */}
