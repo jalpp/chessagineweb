@@ -61,6 +61,13 @@ import { MaiaEvaluation } from "@/libs/maia/types";
 
 export type BoardOrientation = "white" | "black";
 
+
+export interface MaiaEngineAnalysis {
+    maia2?: { [key: string]: MaiaEvaluation } | null
+    bigLeela?: MaiaEvaluation | null
+    elitemaia?: MaiaEvaluation | null
+}
+
 interface AiChessboardPanelProps {
   fen: string;
   moveSquares: { [square: string]: string };
@@ -93,7 +100,7 @@ interface AiChessboardPanelProps {
   gameStatus?: string;
   playerSide?: "white" | "black";
   engineThinking?: boolean;
-  evaluations?: { [key: string]: MaiaEvaluation } | null;
+  evaluations?: MaiaEngineAnalysis
 }
 
 export default function AiChessboardPanel({
@@ -558,110 +565,125 @@ const handleSquareClick = useCallback(
     setFen,
     safeGameMutate,
     clearAnalysis,
-    handlePlayerMove, // Add this dependency
+    handlePlayerMove, 
   ]
 );
 
 
   const customArrows = useMemo((): Arrow[] => {
-    if (!showArrows) {
-      return [];
-    }
+    
+  if (!showArrows) {
+    return [];
+  }
 
-    const arrows: Arrow[] = [];
+  const arrows: Arrow[] = [];
 
-    // Only show review arrow if reviewMove exists and corresponds to current position
-    if (reviewMove) {
-      const reviewArrow: Arrow = {
-        startSquare: reviewMove.arrowMove.from as Square,
-        endSquare: reviewMove.arrowMove.to as Square,
-        color: getMoveClassificationStyle(reviewMove.quality).color,
-      };
-      arrows.push(reviewArrow);
+  if (reviewMove) {
+    const reviewArrow: Arrow = {
+      startSquare: reviewMove.arrowMove.from as Square,
+      endSquare: reviewMove.arrowMove.to as Square,
+      color: getMoveClassificationStyle(reviewMove.quality).color,
+    };
+    arrows.push(reviewArrow);
 
-      // Only add engine arrow if reviewMove quality is not "Best"
-      if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
-        const bestLine = stockfishAnalysisResult.lines[0]?.pv;
-        if (bestLine && bestLine.length > 0) {
-          const move = bestLine[0];
-          if (move && move.length >= 4) {
-            const from = move.substring(0, 2);
-            const to = move.substring(2, 4);
-
-            // Avoid duplicate arrows
-            const arrowKey = `${from}-${to}`;
-            const reviewArrowKey = `${reviewMove.arrowMove.from}-${reviewMove.arrowMove.to}`;
-
-            if (arrowKey !== reviewArrowKey) {
-              const engineArrow: Arrow = {
-                startSquare: from as Square,
-                endSquare: to as Square,
-                color: "#4caf50",
-              };
-              arrows.push(engineArrow);
-            }
-          }
-        }
-      }
-    } else if (!reviewMove && stockfishAnalysisResult?.lines) {
-      // Only show engine arrow if no reviewMove is present
+    if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
       const bestLine = stockfishAnalysisResult.lines[0]?.pv;
       if (bestLine && bestLine.length > 0) {
         const move = bestLine[0];
         if (move && move.length >= 4) {
           const from = move.substring(0, 2);
           const to = move.substring(2, 4);
-          const engineArrow: Arrow = {
-            startSquare: from as Square,
-            endSquare: to as Square,
-            color: "#4caf50",
-          };
-          arrows.push(engineArrow);
-        }
-      }
-    }
 
-    // Add Maia 1900 top move arrow (human-like move)
-    if (evaluations) {
-      const maia1900 = evaluations["maia_kdd_1900"];
-      if (maia1900 && maia1900.policy) {
-        const topMaiaMove = Object.entries(maia1900.policy).sort(
-          ([, a], [, b]) => b - a
-        )[0];
+          // Avoid duplicate arrows
+          const arrowKey = `${from}-${to}`;
+          const reviewArrowKey = `${reviewMove.arrowMove.from}-${reviewMove.arrowMove.to}`;
 
-        if (topMaiaMove) {
-          const [move] = topMaiaMove;
-          if (move.length >= 4) {
-            const from = move.substring(0, 2) as Square;
-            const to = move.substring(2, 4) as Square;
-
-            // Avoid duplicate arrows with existing arrows
-            const maiaArrowKey = `${from}-${to}`;
-            const existingArrow = arrows.find(
-              (a) => `${a.startSquare}-${a.endSquare}` === maiaArrowKey
-            );
-
-            if (!existingArrow) {
-              const maiaArrow: Arrow = {
-                startSquare: from,
-                endSquare: to,
-                color: "#7c3aed", // Dark purple
-              };
-              arrows.push(maiaArrow);
-            }
+          if (arrowKey !== reviewArrowKey) {
+            const engineArrow: Arrow = {
+              startSquare: from as Square,
+              endSquare: to as Square,
+              color: "#4caf50",
+            };
+            arrows.push(engineArrow);
           }
         }
       }
     }
+  } else if (!reviewMove && stockfishAnalysisResult?.lines) {
+    // Only show engine arrow if no reviewMove is present
+    const bestLine = stockfishAnalysisResult.lines[0]?.pv;
+    if (bestLine && bestLine.length > 0) {
+      const move = bestLine[0];
+      if (move && move.length >= 4) {
+        const from = move.substring(0, 2);
+        const to = move.substring(2, 4);
+        const engineArrow: Arrow = {
+          startSquare: from as Square,
+          endSquare: to as Square,
+          color: "#4caf50",
+        };
+        arrows.push(engineArrow);
+      }
+    }
+  }
 
-    return arrows;
-  }, [
-    showArrows,
-    reviewMove,
-    stockfishAnalysisResult,
-    currentMoveIndex,
-    evaluations,
-  ]);
+  console.log("boardevals", evaluations);
+
+  // Helper function to add arrow if move is valid and not duplicate
+  const addArrowIfValid = (
+    policy: Record<string, number> | undefined,
+    color: string
+  ) => {
+    if (!policy) return;
+
+    const topMove = Object.entries(policy).sort(([, a], [, b]) => b - a)[0];
+    if (!topMove) return;
+
+    const [move] = topMove;
+    if (move.length >= 4) {
+      const from = move.substring(0, 2) as Square;
+      const to = move.substring(2, 4) as Square;
+
+      // Avoid duplicate arrows
+      const arrowKey = `${from}-${to}`;
+      const existingArrow = arrows.find(
+        (a) => `${a.startSquare}-${a.endSquare}` === arrowKey
+      );
+
+      if (!existingArrow) {
+        arrows.push({
+          startSquare: from,
+          endSquare: to,
+          color,
+        });
+      }
+    }
+  };
+
+  // Add Maia 1900 top move arrow (human-like move)
+  if (evaluations?.maia2) {
+    const maia1900 = evaluations.maia2["maia_kdd_1900"];
+    addArrowIfValid(maia1900?.policy, "#7c3aed"); 
+  }
+
+  // Add BigLeela top move arrow (strong engine)
+  if (evaluations?.bigLeela) {
+    addArrowIfValid(evaluations.bigLeela.policy, "#400ac8ff"); 
+  }
+
+  // Add EliteMaia top move arrow (elite human-like)
+  if (evaluations?.elitemaia) {
+    addArrowIfValid(evaluations.elitemaia.policy, "#c60b75ff"); 
+  }
+
+  return arrows;
+}, [
+  showArrows,
+  reviewMove,
+  stockfishAnalysisResult,
+  currentMoveIndex,
+  evaluations,
+]);
 
   // Memoized custom square styles with piece highlighting
   const customSquareStyles = useMemo(() => {

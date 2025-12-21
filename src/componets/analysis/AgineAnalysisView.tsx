@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useState } from "react";
 import {
   Box,
   Stack,
@@ -12,6 +12,7 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -35,13 +36,10 @@ import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
-import { MaiaResults, MaiaResultsProps } from "../maia/MaiaResults";
+import { MaiaResults } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
-import { DownloadModelModal } from "../maia/DownloadMaiaModel";
-import EvalGraph from "../tabs/EvalGraph";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
-
-
+import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -117,12 +115,15 @@ interface GameReviewProps {
   currentMove?: string;
 }
 
+interface MaiaProps extends UseMaiaEngineResult {}
 
 interface AgineAnalysisViewProps
   extends GameReviewProps,
     BaseAnalysisViewProps,
-    MaiaResultsProps {
+    MaiaProps {
   isGameReviewMode: boolean;
+  activeAnalysisTab: number
+  setActiveAnalysisTab: Dispatch<SetStateAction<number>>
 }
 
 function AgineAnalysisView({
@@ -180,21 +181,20 @@ function AgineAnalysisView({
   pgnText,
   currentMove,
   evaluations,
-  isMaiaLoading,
-  maiaerror,
+  Maiaerror,
+  isLoading,
   scores,
   ThemeScoreerror,
-  ThemeScoreloading
+  ThemeScoreloading,
+  activeAnalysisTab,
+  setActiveAnalysisTab
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useState<number>(0);
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState<number>(0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { status, progress, downloadModel } = useContext(MaiaEngineContext);
-
-  const shouldShowDownloadModal = status === "no-cache" || status === "error";
+  const { maia2, bigLeela, elitemaia } = useContext(MaiaEngineContext);
 
   return (
     <Card
@@ -267,7 +267,6 @@ function AgineAnalysisView({
       >
         <TabPanel value={analysisTab} index={0}>
           <Stack spacing={{ xs: 2, md: 3 }}>
-        
             {isGameReviewMode && (
               <Accordion
                 expanded={activeAnalysisTab === 0}
@@ -323,20 +322,13 @@ function AgineAnalysisView({
                     stockfishAnalysisResult={stockfishAnalysisResult}
                   />
 
-                  <Divider/>
+                  <Divider />
 
-                  {gameReview && (
-                    <>
-                    <EvalGraph moves={gameReview!}/>
-                    
-                    </>
-                  )}
- 
+                
                 </AccordionDetails>
               </Accordion>
             )}
 
-         
             {isGameReviewMode ? (
               <Accordion
                 expanded={activeAnalysisTab === 1}
@@ -413,12 +405,16 @@ function AgineAnalysisView({
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  <PositionFenThemeAnalysis stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={ThemeScoreloading} error={ThemeScoreerror}/>
+                  <PositionFenThemeAnalysis
+                    stockfishAnalysisResult={stockfishAnalysisResult}
+                    scores={scores}
+                    loading={ThemeScoreloading}
+                    error={ThemeScoreerror}
+                  />
                 </AccordionDetails>
               </Accordion>
             )}
 
-           
             <Accordion
               expanded={activeAnalysisTab === 2}
               onChange={() =>
@@ -498,7 +494,7 @@ function AgineAnalysisView({
                     fontSize: { xs: "1rem", md: "1.25rem" },
                   }}
                 >
-                  Maia Analysis
+                  Neural Nets Analysis
                 </Typography>
               </AccordionSummary>
               <AccordionDetails
@@ -506,46 +502,17 @@ function AgineAnalysisView({
                   p: { xs: 1.5, md: 2 },
                 }}
               >
-                {shouldShowDownloadModal ? (
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight="300px"
-                  >
-                    <DownloadModelModal
-                      progress={progress}
-                      download={downloadModel}
-                    />
-                  </Box>
-                ) : status === "downloading" ? (
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    minHeight="300px"
-                  >
-                    <DownloadModelModal
-                      progress={progress}
-                      download={downloadModel}
-                    />
-                  </Box>
-                ) : (
+                <MaiaResults
+                  evaluations={evaluations}
+                  isMaiaLoading={isLoading}
+                  maiaerror={Maiaerror}
+                  activeModels={["elitemaia", "maia2", "bigLeela"]}
+                />
+                {gameReview && (
                   <>
-                  
-                  
-                  <MaiaResults
-                    evaluations={evaluations}
-                    isMaiaLoading={isMaiaLoading}
-                    maiaerror={maiaerror}
-                  />
-                   {gameReview && (
-                    <>
-                    <MaiaProbabilityChart moves={gameReview!}/>                    
-                    </>
-                  )}
+                    <Divider sx={{ my: 3 }} />
+                    <MaiaProbabilityChart moves={gameReview!} maia2={maia2} eliteLeela={elitemaia} bigLeela={bigLeela} />
                   </>
-                  
                 )}
               </AccordionDetails>
             </Accordion>
@@ -645,7 +612,7 @@ function AgineAnalysisView({
                 />
               </AccordionDetails>
             </Accordion>
-            
+
             <Accordion
               expanded={activeAnalysisTab === 6}
               onChange={() =>

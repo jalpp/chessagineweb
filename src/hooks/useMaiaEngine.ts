@@ -1,34 +1,133 @@
 import { useEffect, useState, useContext, useRef } from 'react'
 import { Chess } from 'chess.js'
 import { MaiaEngineContext } from '@/context/MaiaEngineContext'
-import { MAIA_MODELS, MaiaEvaluation } from '@/libs/maia/types'
+import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/maia/types'
 
 interface UseMaiaEngineOptions {
   fen: string
   maxRetries?: number
   retryDelayMs?: number
+  enabledModels?: ModelType[]
+  useLichessBook?: boolean // Whether to use Lichess opening book
+  bookThreshold?: number // Minimum games to consider position "in book"
 }
 
 interface SanMaiaEvaluation {
   value: number
-  policy: { [key: string]: number } // SAN moves as keys
+  policy: { [key: string]: number }
 }
 
-interface UseMaiaEngineResult {
-  evaluations: { [key: string]: MaiaEvaluation } | null // Raw UCI evaluations
-  sanEvaluations: { [key: string]: SanMaiaEvaluation } | null // SAN evaluations
+interface LichessMove {
+  uci: string
+  san: string
+  averageRating: number
+  white: number
+  draws: number
+  black: number
+}
+
+interface LichessData {
+  white: number
+  draws: number
+  black: number
+  moves: LichessMove[]
+  opening?: { eco: string; name: string }
+}
+
+export interface MaiaEngineAnalysis {
+  maia2?: { [key: string]: MaiaEvaluation } | null
+  bigLeela?: MaiaEvaluation | null
+  elitemaia?: MaiaEvaluation | null
+}
+
+export interface UseMaiaEngineResult {
+  evaluations: MaiaEngineAnalysis
+  sanEvaluations: {
+    maia2?: { [key: string]: SanMaiaEvaluation } | null
+    bigLeela?: SanMaiaEvaluation | null
+    elitemaia?: SanMaiaEvaluation | null
+  }
+  lichessData: {
+    maia2?: { [key: string]: LichessData } | null
+    bigLeela?: LichessData | null
+    elitemaia?: LichessData | null
+  }
+  isInBook: boolean
   isLoading: boolean
-  error: Error | null
+  Maiaerror: Error | null
 }
 
-// Convert UCI move to SAN notation
+// Map Maia ratings to Lichess rating groups
+const getRatingGroups = (maiaRating: number): number[] => {
+  if (maiaRating <= 1100) return [1000, 1200]
+  if (maiaRating <= 1200) return [1000, 1200]
+  if (maiaRating <= 1300) return [1200, 1400]
+  if (maiaRating <= 1400) return [1200, 1400]
+  if (maiaRating <= 1500) return [1400, 1600]
+  if (maiaRating <= 1600) return [1400, 1600, 1800]
+  if (maiaRating <= 1700) return [1600, 1800]
+  if (maiaRating <= 1800) return [1600, 1800, 2000]
+  if (maiaRating <= 1900) return [1800, 2000]
+  if (maiaRating <= 2200) return [2000, 2200]
+  return [2200, 2500]
+}
+
+// Fetch Lichess Explorer data
+const fetchLichessData = async (
+  fen: string,
+  rating: number,
+  signal?: AbortSignal
+): Promise<LichessData> => {
+  const ratings = getRatingGroups(rating)
+  const params = new URLSearchParams({
+    variant: 'standard',
+    fen: fen,
+    speeds: 'rapid,classical',
+    ratings: ratings.join(','),
+    moves: '12',
+  })
+
+  const response = await fetch(
+    `https://explorer.lichess.ovh/lichess?${params.toString()}`,
+    { signal }
+  )
+
+  if (!response.ok) {
+    throw new Error(`Lichess API error: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+// Convert Lichess data to SAN evaluation format
+const lichessToSanEvaluation = (data: LichessData): SanMaiaEvaluation => {
+  const totalGames = data.white + data.draws + data.black
+  const winRate = totalGames > 0 ? (data.white + data.draws * 0.5) / totalGames : 0.5
+
+  const policy: { [key: string]: number } = {}
+  const totalMoveGames = data.moves.reduce(
+    (sum, move) => sum + move.white + move.draws + move.black,
+    0
+  )
+
+  data.moves.forEach((move) => {
+    const moveGames = move.white + move.draws + move.black
+    policy[move.san] = totalMoveGames > 0 ? moveGames / totalMoveGames : 0
+  })
+
+  // Convert win rate to value format consistent with neural network output
+  const value = (winRate - 0.5) * 2
+
+  return { value, policy }
+}
+
 const uciToSan = (uci: string, fen: string): string => {
   try {
     const chess = new Chess(fen)
     const move = chess.move({
       from: uci.substring(0, 2),
       to: uci.substring(2, 4),
-      promotion: uci.length > 4 ? uci[4] : undefined,
+      promotion: uci.length > 4 ? (uci[4] as 'q' | 'r' | 'b' | 'n') : undefined,
     })
     return move ? move.san : uci
   } catch {
@@ -36,88 +135,185 @@ const uciToSan = (uci: string, fen: string): string => {
   }
 }
 
+const convertToSanEvaluation = (
+  uciEval: MaiaEvaluation,
+  fen: string
+): SanMaiaEvaluation => {
+  const sanPolicy: { [key: string]: number } = {}
+  Object.entries(uciEval.policy).forEach(([uciMove, probability]) => {
+    const sanMove = uciToSan(uciMove, fen)
+    sanPolicy[sanMove] = probability
+  })
+
+  return {
+    value: uciEval.value,
+    policy: sanPolicy,
+  }
+}
+
 export const useMaiaEngine = ({
   fen,
   maxRetries = 30,
   retryDelayMs = 100,
+  enabledModels,
+  useLichessBook = true,
+  bookThreshold = 21,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
-  const maia = useContext(MaiaEngineContext)
-  const [evaluations, setEvaluations] = useState<{
-    [key: string]: MaiaEvaluation
-  } | null>(null)
-  const [sanEvaluations, setSanEvaluations] = useState<{
-    [key: string]: SanMaiaEvaluation
-  } | null>(null)
+  const { maia2, bigLeela, elitemaia, status, activeModels } =
+    useContext(MaiaEngineContext)
+
+  const [evaluations, setEvaluations] = useState<
+    UseMaiaEngineResult['evaluations']
+  >({})
+  const [sanEvaluations, setSanEvaluations] = useState<
+    UseMaiaEngineResult['sanEvaluations']
+  >({})
+  const [lichessData, setLichessData] = useState<
+    UseMaiaEngineResult['lichessData']
+  >({})
+  const [isInBook, setIsInBook] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    // Create new abort controller for this analysis
     abortControllerRef.current = new AbortController()
     const currentAbortController = abortControllerRef.current
 
-    const analyzeMaia = async () => {
+    const analyzePosition = async () => {
       if (!fen) return
+
+      const modelsToUse = enabledModels
+        ? enabledModels.filter((m) => activeModels.includes(m))
+        : activeModels
+
+      if (modelsToUse.length === 0) {
+        setIsLoading(false)
+        return
+      }
 
       setIsLoading(true)
       setError(null)
 
       try {
-        // Wait for Maia to be ready
-        let retries = 0
-        while (retries < maxRetries && maia.status !== 'ready') {
+        const newEvaluations: UseMaiaEngineResult['evaluations'] = {}
+        const newSanEvaluations: UseMaiaEngineResult['sanEvaluations'] = {}
+        const newLichessData: UseMaiaEngineResult['lichessData'] = {}
+        let positionIsInBook = false
+
+        // Maia 2 (all rating levels)
+        if (
+          modelsToUse.includes('maia2') &&
+          maia2 &&
+          status.maia2 === 'ready'
+        ) {
           if (currentAbortController.signal.aborted) return
-          await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
-          retries++
-        }
 
-        if (maia.status !== 'ready') {
-          throw new Error('Maia engine not ready after waiting')
-        }
+          const maia2Evaluations: { [key: string]: MaiaEvaluation } = {}
+          const maia2SanEvaluations: { [key: string]: SanMaiaEvaluation } = {}
+          const maia2LichessData: { [key: string]: LichessData } = {}
 
-        if (!maia.maia) {
-          throw new Error('Maia engine not initialized')
-        }
+          if (useLichessBook) {
+            // Fetch Lichess data for all rating levels
+            const lichessPromises = MAIA_MODELS.map((model) =>
+              fetchLichessData(
+                fen,
+                parseInt(model),
+                currentAbortController.signal
+              )
+            )
+            const lichessResults = await Promise.all(lichessPromises)
 
-        if (currentAbortController.signal.aborted) return
+            MAIA_MODELS.forEach((model, index) => {
+              const lichessResult = lichessResults[index]
+              const totalGames =
+                lichessResult.white +
+                lichessResult.draws +
+                lichessResult.black
 
-        // Batch evaluate all Maia models
-        const { result } = await maia.maia.batchEvaluate(
-          Array(9).fill(fen),
-          [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
-          [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900],
-        )
+              maia2LichessData[model] = lichessResult
 
-        if (currentAbortController.signal.aborted) return
+              if (totalGames >= bookThreshold) {
+                positionIsInBook = true
+                maia2SanEvaluations[model] =
+                  lichessToSanEvaluation(lichessResult)
+              }
+            })
 
-        const maiaEvaluations: { [key: string]: MaiaEvaluation } = {}
-        const maiaSanEvaluations: { [key: string]: SanMaiaEvaluation } = {}
-
-        MAIA_MODELS.forEach((model, index) => {
-          const uciEval = result[index]
-          maiaEvaluations[model] = uciEval
-
-          // Convert UCI policy to SAN policy
-          const sanPolicy: { [key: string]: number } = {}
-          Object.entries(uciEval.policy).forEach(([uciMove, probability]) => {
-            const sanMove = uciToSan(uciMove, fen)
-            sanPolicy[sanMove] = probability
-          })
-
-          maiaSanEvaluations[model] = {
-            value: uciEval.value,
-            policy: sanPolicy,
+            newLichessData.maia2 = maia2LichessData
           }
-        })
 
-        setEvaluations(maiaEvaluations)
-        setSanEvaluations(maiaSanEvaluations)
+          // If not in book, use Maia neural network
+          if (!positionIsInBook) {
+            // Create batch positions array with proper structure
+            const positions = [
+              { fen, eloSelf: 1100, eloOppo: 1100 },
+              { fen, eloSelf: 1200, eloOppo: 1200 },
+              { fen, eloSelf: 1300, eloOppo: 1300 },
+              { fen, eloSelf: 1400, eloOppo: 1400 },
+              { fen, eloSelf: 1500, eloOppo: 1500 },
+              { fen, eloSelf: 1600, eloOppo: 1600 },
+              { fen, eloSelf: 1700, eloOppo: 1700 },
+              { fen, eloSelf: 1800, eloOppo: 1800 },
+              { fen, eloSelf: 1900, eloOppo: 1900 },
+            ]
+
+            const results = await maia2.batchEval(positions)
+
+            if (currentAbortController.signal.aborted) return
+
+            MAIA_MODELS.forEach((model, index) => {
+              const uciEval = results[index]
+              maia2Evaluations[model] = uciEval
+              maia2SanEvaluations[model] = convertToSanEvaluation(uciEval, fen)
+            })
+
+            newEvaluations.maia2 = maia2Evaluations
+          }
+
+          newSanEvaluations.maia2 = maia2SanEvaluations
+        }
+
+      
+        if (
+          modelsToUse.includes('bigLeela') &&
+          bigLeela &&
+          status.bigLeela === 'ready'
+        ) {
+          if (currentAbortController.signal.aborted) return
+
+        
+            const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
+            newEvaluations.bigLeela = uciEval
+            newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
+          
+        }
+
+        // Elite Maia (Leela model)
+        if (
+          modelsToUse.includes('elitemaia') &&
+          elitemaia &&
+          status.elitemaia === 'ready'
+        ) {
+          if (currentAbortController.signal.aborted) return
+
+            const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
+            newEvaluations.elitemaia = uciEval
+            newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
+          
+        }
+
+        if (!currentAbortController.signal.aborted) {
+          setEvaluations(newEvaluations)
+          setSanEvaluations(newSanEvaluations)
+          setLichessData(newLichessData)
+          setIsInBook(positionIsInBook)
+        }
       } catch (err) {
         if (!currentAbortController.signal.aborted) {
           const error = err instanceof Error ? err : new Error('Unknown error')
           setError(error)
-          console.error('Maia analysis error:', error)
+          console.error('Analysis error:', error)
         }
       } finally {
         if (!currentAbortController.signal.aborted) {
@@ -126,10 +322,32 @@ export const useMaiaEngine = ({
       }
     }
 
-    // Delay analysis to prevent rapid fire when FEN changes quickly
+    const waitForModels = async () => {
+      let retries = 0
+      while (retries < maxRetries) {
+        if (currentAbortController.signal.aborted) return
+
+        const modelsToUse = enabledModels
+          ? enabledModels.filter((m) => activeModels.includes(m))
+          : activeModels
+
+        if (modelsToUse.length > 0) {
+          await analyzePosition()
+          return
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
+        retries++
+      }
+
+      if (!currentAbortController.signal.aborted) {
+        setIsLoading(false)
+      }
+    }
+
     const timeoutId = setTimeout(() => {
       if (!currentAbortController.signal.aborted) {
-        analyzeMaia()
+        waitForModels()
       }
     }, 100)
 
@@ -137,12 +355,43 @@ export const useMaiaEngine = ({
       clearTimeout(timeoutId)
       abortControllerRef.current?.abort()
     }
-  }, [fen, maia.status, maia.maia, maxRetries, retryDelayMs])
+  }, [
+    fen,
+    maia2,
+    bigLeela,
+    elitemaia,
+    status.maia2,
+    status.bigLeela,
+    status.elitemaia,
+    activeModels,
+    enabledModels,
+    useLichessBook,
+    bookThreshold,
+    maxRetries,
+    retryDelayMs,
+  ])
 
   return {
     evaluations,
     sanEvaluations,
+    lichessData,
+    isInBook,
     isLoading,
-    error,
+    Maiaerror: error,
   }
 }
+
+export const useMaia2Engine = (
+  options: Omit<UseMaiaEngineOptions, 'enabledModels'>
+) => {
+  const result = useMaiaEngine({ ...options, enabledModels: ['maia2'] })
+  return {
+    evaluations: result.evaluations.maia2 ?? null,
+    sanEvaluations: result.sanEvaluations.maia2 ?? null,
+    lichessData: result.lichessData.maia2 ?? null,
+    isInBook: result.isInBook,
+    isLoading: result.isLoading,
+    error: result.Maiaerror,
+  }
+}
+

@@ -17,7 +17,6 @@ import { ApiSettings } from "../componets/tabs/ModelSetting";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
 import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
 import { useMaiaEngine } from "./useMaiaEngine";
-import { addMaiaAnalysisToQuery } from "@/libs/maia/maiaPrompter";
 import { useThemeScore } from "./useThemeScore";
 
 
@@ -75,7 +74,7 @@ export default function useAgine(fen: string) {
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
 
-   const { evaluations, sanEvaluations, isLoading: maiaIsLoading, error: maiaError } = useMaiaEngine({
+   const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useMaiaEngine({
     fen: fen
   })
 
@@ -558,9 +557,9 @@ ${formattedEngineLines}
 </engine_analysis>`;
       }
 
-      if(sanEvaluations){
-        query += addMaiaAnalysisToQuery(sanEvaluations);
-      }
+      // if(sanEvaluations){
+      //   query += addMaiaAnalysisToQuery(sanEvaluations.maia2);
+      // }
 
       if (state.openingData) {
         const openingSpeech = getOpeningStatSpeech(state.openingData);
@@ -1379,6 +1378,7 @@ Be concise but thorough, and use clear chess language.`;
       lichessOpeningData: state.lichessOpeningData,
       lichessOpeningLoading: state.lichessOpeningLoading,
       setLichessOpeningLoading: (loading: boolean) => updateState({ lichessOpeningLoading: loading }),
+      lichessData,
 
       // UI State
       moveSquares: state.moveSquares,
@@ -1417,6 +1417,7 @@ Be concise but thorough, and use clear chess language.`;
       sanEvaluations,
       maiaError,
       maiaIsLoading,
+      isInBook,
 
       // Functions
       fetchOpeningData,
@@ -1467,6 +1468,8 @@ Be concise but thorough, and use clear chess language.`;
       sanEvaluations,
       maiaError,
       maiaIsLoading,
+      lichessData,
+      isInBook,
       setGameReviewLoading,
       generateGameReview,
       fetchOpeningData,

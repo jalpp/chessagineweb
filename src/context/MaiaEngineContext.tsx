@@ -1,6 +1,6 @@
 "use client";
 import Maia from '@/libs/maia/maia'
-import { MaiaStatus, MaiaEngine } from '@/libs/maia/types'
+import { MaiaStatus, MaiaEngine, ModelType, MODEL_CONFIGS } from '@/libs/maia/types'
 import React, {
   ReactNode,
   useState,
@@ -12,9 +12,20 @@ import React, {
 import toast from 'react-hot-toast'
 
 export const MaiaEngineContext = React.createContext<MaiaEngine>({
-  maia: undefined,
-  status: 'loading',
-  progress: 0,
+  maia2: undefined,
+  bigLeela: undefined,
+  elitemaia: undefined,
+  status: {
+    maia2: 'loading',
+    bigLeela: 'loading',
+    elitemaia: 'loading',
+  },
+  progress: {
+    maia2: 0,
+    bigLeela: 0,
+    elitemaia: 0,
+  },
+  activeModels: [],
   downloadModel: async () => {
     throw new Error('poorly provided MaiaEngineContext, missing downloadModel')
   },
@@ -25,40 +36,95 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({
 }: {
   children: ReactNode
 }) => {
-  const [status, setStatus] = useState<MaiaStatus>('loading')
-  const [progress, setProgress] = useState(0)
-  const [error, setError] = useState<string | null>(null)
-  const toastId = useRef<string | null>(null)
+  const [status, setStatus] = useState<Record<ModelType, MaiaStatus>>({
+    maia2: 'loading',
+    bigLeela: 'loading',
+    elitemaia: 'loading',
+  })
+  
+  const [progress, setProgress] = useState<Record<ModelType, number>>({
+    maia2: 0,
+    bigLeela: 0,
+    elitemaia: 0,
+  })
+  
+  const [error, setError] = useState<Record<ModelType, string | null>>({
+    maia2: null,
+    bigLeela: null,
+    elitemaia: null,
+  })
 
-  const maia = useMemo(() => {
-    const model = new Maia({
-      model: '/static/maia2/maia_rapid.onnx',
-      setStatus: setStatus,
-      setProgress: setProgress,
-      setError: setError,
-    })
-    return model
+  const toastIds = useRef<Record<ModelType, string | null>>({
+    maia2: null,
+    bigLeela: null,
+    elitemaia: null,
+  })
+
+  const hasTriggeredDownload = useRef<Record<ModelType, boolean>>({
+    maia2: false,
+    bigLeela: false,
+    elitemaia: false,
+  })
+
+  // Create all three model instances
+  const models = useMemo(() => {
+    return {
+      maia2: new Maia({
+        model: MODEL_CONFIGS.maia2.path,
+        modelType: MODEL_CONFIGS.maia2.modelType,
+        setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, maia2: s })),
+        setProgress: (p: number) => setProgress(prev => ({ ...prev, maia2: p })),
+        setError: (e: string) => setError(prev => ({ ...prev, maia2: e })),
+      }),
+      bigLeela: new Maia({
+        model: MODEL_CONFIGS.bigLeela.path,
+        modelType: MODEL_CONFIGS.bigLeela.modelType,
+        setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
+        setProgress: (p: number) => setProgress(prev => ({ ...prev, bigLeela: p })),
+        setError: (e: string) => setError(prev => ({ ...prev, bigLeela: e })),
+      }),
+      elitemaia: new Maia({
+        model: MODEL_CONFIGS.elitemaia.path,
+        modelType: MODEL_CONFIGS.elitemaia.modelType,
+        setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, elitemaia: s })),
+        setProgress: (p: number) => setProgress(prev => ({ ...prev, elitemaia: p })),
+        setError: (e: string) => setError(prev => ({ ...prev, elitemaia: e })),
+      }),
+    }
   }, [])
 
-  const downloadModel = useCallback(async () => {
+  const downloadModel = useCallback(async (modelType: ModelType) => {
     try {
-      setStatus('downloading')
-      await maia.downloadModel()
+      setStatus(prev => ({ ...prev, [modelType]: 'downloading' }))
+      await models[modelType].downloadModel()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download model')
-      setStatus('error')
+      setError(prev => ({
+        ...prev,
+        [modelType]: err instanceof Error ? err.message : 'Failed to download model'
+      }))
+      setStatus(prev => ({ ...prev, [modelType]: 'error' }))
     }
-  }, [maia])
+  }, [models])
 
-  const getStorageInfo = useCallback(async () => {
-    return await maia.getStorageInfo()
-  }, [maia])
+  // Auto-download models when status is 'no-cache'
+  useEffect(() => {
+    (Object.keys(status) as ModelType[]).forEach(modelType => {
+      if (status[modelType] === 'no-cache' && !hasTriggeredDownload.current[modelType]) {
+        hasTriggeredDownload.current[modelType] = true
+        console.log(`Auto-downloading ${modelType}...`)
+        downloadModel(modelType)
+      }
+    })
+  }, [status, downloadModel])
 
-  const clearStorage = useCallback(async () => {
-    return await maia.clearStorage()
-  }, [maia])
+  // Get list of models that are ready
+  const activeModels = useMemo(() => {
+    return (Object.keys(status) as ModelType[]).filter(
+      modelType => status[modelType] === 'ready'
+    )
+  }, [status])
 
-  // Toast notifications for Maia model status
+  // Toast notifications for each model
   useEffect(() => {
     return () => {
       toast.dismiss()
@@ -66,36 +132,60 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({
   }, [])
 
   useEffect(() => {
-    if (status === 'loading' && !toastId.current) {
-      toastId.current = toast.loading('Loading Maia Model...')
-    } else if (status === 'ready') {
-      if (toastId.current) {
-        toast.success('Loaded Maia! Analysis is ready', {
-          id: toastId.current,
-        })
-        toastId.current = null
-      } else {
-        toast.success('Loaded Maia! Analysis is ready')
+    (Object.keys(status) as ModelType[]).forEach(modelType => {
+      const modelStatus = status[modelType]
+      const modelName = MODEL_CONFIGS[modelType].name
+
+      if (modelStatus === 'loading' && !toastIds.current[modelType]) {
+        toastIds.current[modelType] = toast.loading(`Loading ${modelName}...`)
+      } else if (modelStatus === 'downloading') {
+        const downloadProgress = progress[modelType]
+        if (toastIds.current[modelType]) {
+          toast.loading(
+            `Downloading ${modelName}... ${downloadProgress}%`,
+            { id: toastIds.current[modelType]! }
+          )
+        } else {
+          toastIds.current[modelType] = toast.loading(
+            `Downloading ${modelName}... ${downloadProgress}%`
+          )
+        }
+      } else if (modelStatus === 'ready') {
+        if (toastIds.current[modelType]) {
+          toast.success(`${modelName} loaded! Analysis is ready`, {
+            id: toastIds.current[modelType]!,
+          })
+          toastIds.current[modelType] = null
+        }
+      } else if (modelStatus === 'error') {
+        if (toastIds.current[modelType]) {
+          toast.error(`Failed to load ${modelName}`, {
+            id: toastIds.current[modelType]!,
+          })
+          toastIds.current[modelType] = null
+        } else {
+          toast.error(`Failed to load ${modelName}`)
+        }
+      } else if (modelStatus === 'no-cache') {
+        // Clear loading toast when transitioning to no-cache
+        if (toastIds.current[modelType]) {
+          toast.dismiss(toastIds.current[modelType]!)
+          toastIds.current[modelType] = null
+        }
       }
-    } else if (status === 'error') {
-      if (toastId.current) {
-        toast.error('Failed to load Maia model', {
-          id: toastId.current,
-        })
-        toastId.current = null
-      } else {
-        toast.error('Failed to load Maia model')
-      }
-    }
-  }, [status])
+    })
+  }, [status, progress])
 
   return (
     <MaiaEngineContext.Provider
       value={{
-        maia,
+        maia2: models.maia2,
+        bigLeela: models.bigLeela,
+        elitemaia: models.elitemaia,
         status,
         progress,
         downloadModel,
+        activeModels,
       }}
     >
       {children}
