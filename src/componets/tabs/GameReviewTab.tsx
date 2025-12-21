@@ -29,6 +29,7 @@ import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
 import { GameReviewDialog} from "./GameReviewDialog";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionEval } from "@/stockfish/engine/engine";
+import EvalGraph from "./EvalGraph";
 export interface MoveStats {
   Best: number;
   "Very Good": number;
@@ -425,6 +426,14 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
             </CardContent>
           </Card>
         )}
+          {gameReview && gameReview.length > 0 && (
+                            <>
+                              <EvalGraph
+                                moves={gameReview}
+                                key={`eval-graph-${gameReview.length}`} 
+                              />
+                            </>
+                          )}
         <GameReviewDialog gameReview={gameReviewTheme} currentMoveIndex={currentMoveIndex} moveAnalysis={gameReview} stockfishAnalysisResult={stockfishAnalysisResult}/>
       </Stack>
     </Box>

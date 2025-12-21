@@ -7,11 +7,13 @@ import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
+import { useSessionStorage } from "usehooks-ts";
 
 export default function PositionPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_active_board_tab", 0);
   
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
@@ -73,6 +75,8 @@ export default function PositionPage() {
   const AnalysisContent = () => (
     <AgineAnalysisView
       isGameReviewMode={false}
+      activeAnalysisTab={activeAnalysisTab}
+      setActiveAnalysisTab={setActiveAnalysisTab}
       stockfishAnalysisResult={stockfishAnalysisResult}
       stockfishLoading={stockfishLoading}
       handleEngineLineClick={handleEngineLineClick}

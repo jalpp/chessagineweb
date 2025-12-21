@@ -45,23 +45,14 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
 
   const padding = (maxEval - minEval) * 0.1 || 1;
 
-  // Show loading state when no moves
-  if (!moves || moves.length === 0) {
-    return (
-      <Box sx={{ width: "100%", height: 500, mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography variant="body1" color="text.secondary">
-          No game data available
-        </Typography>
-      </Box>
-    );
-  }
-
+ 
   return (
     <Box sx={{ width: "100%", height: 500, mt: 2 }}>
       <Typography variant="h6" color="text.primary" sx={{ mb: 2 }}>
         Game Evaluation Graph
       </Typography>
       <LineChart
+      
         xAxis={[
           {
             data: xData,
@@ -69,6 +60,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
             scaleType: "linear",
           },
         ]}
+        skipAnimation
         yAxis={[
           {
             label: "Evaluation (White's Perspective)",

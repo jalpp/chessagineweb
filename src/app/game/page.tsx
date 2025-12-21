@@ -39,6 +39,7 @@ import LoadLichessGameUrl, {
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
+import { useSessionStorage } from "usehooks-ts";
 
 export default function PGNUploaderPage() {
   const theme = useTheme();
@@ -66,6 +67,7 @@ export default function PGNUploaderPage() {
   // Game review history state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_active_game_tab", 0);
 
   const {
     setLlmAnalysisResult,
@@ -293,6 +295,8 @@ export default function PGNUploaderPage() {
     <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
       {moves.length > 0 && (
         <AgineAnalysisView
+          activeAnalysisTab={activeAnalysisTab}
+          setActiveAnalysisTab={setActiveAnalysisTab}
           isGameReviewMode={true}
           stockfishAnalysisResult={stockfishAnalysisResult}
           stockfishLoading={stockfishLoading}

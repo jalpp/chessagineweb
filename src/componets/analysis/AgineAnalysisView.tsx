@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { Dispatch, SetStateAction, useContext, useState } from "react";
 import {
   Box,
   Stack,
@@ -38,7 +38,6 @@ import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { MaiaResults } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
-import EvalGraph from "../tabs/EvalGraph";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
 import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
 
@@ -123,6 +122,8 @@ interface AgineAnalysisViewProps
     BaseAnalysisViewProps,
     MaiaProps {
   isGameReviewMode: boolean;
+  activeAnalysisTab: number
+  setActiveAnalysisTab: Dispatch<SetStateAction<number>>
 }
 
 function AgineAnalysisView({
@@ -180,15 +181,15 @@ function AgineAnalysisView({
   pgnText,
   currentMove,
   evaluations,
-  lichessData,
   Maiaerror,
   isLoading,
   scores,
   ThemeScoreerror,
   ThemeScoreloading,
+  activeAnalysisTab,
+  setActiveAnalysisTab
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useState<number>(0);
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState<number>(0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -323,15 +324,7 @@ function AgineAnalysisView({
 
                   <Divider />
 
-                  {gameReviewLoading ? (
-                    <Box
-                      sx={{ display: "flex", justifyContent: "center", p: 3 }}
-                    >
-                      <CircularProgress/>
-                    </Box>
-                  ) : gameReview && gameReview.length > 0 ? (
-                    <EvalGraph moves={gameReview} />
-                  ) : null}
+                
                 </AccordionDetails>
               </Accordion>
             )}
