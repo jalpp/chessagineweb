@@ -133,7 +133,7 @@ export default function PositionPage() {
         p: { xs: 1, sm: 2, md: 4 }, 
         minHeight: "100vh",
         height: "100%",
-        overflowY: "auto",
+        // overflowY: "auto",
         overflowX: "hidden",
       }}
     >
@@ -182,12 +182,12 @@ export default function PositionPage() {
         {!isMobile && (
           <Box 
             sx={{ 
-              flex: 1,
+              flex: { xs: "1 1 auto", lg: "0 0 auto" },
                   width: { xs: "100%", lg: "auto" },
                   maxWidth: "100%",
-                  minWidth: 0,
-                  overflowY: "auto",
-                  maxHeight: "calc(100vh - 100px)",
+                  display: "flex",
+                  justifyContent: { xs: "center", lg: "flex-start" },
+                  px: { xs: 0, sm: 1 },
             }}
           >
             <AnalysisContent />

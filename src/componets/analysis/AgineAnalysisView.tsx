@@ -12,7 +12,6 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
-  CircularProgress,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -40,6 +39,7 @@ import { MaiaResults } from "../maia/MaiaResults";
 import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
 import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
+import { useSessionStorage } from "usehooks-ts";
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -189,7 +189,7 @@ function AgineAnalysisView({
   activeAnalysisTab,
   setActiveAnalysisTab
 }: AgineAnalysisViewProps) {
-  const [analysisTab, setAnalysisTab] = useState<number>(0);
+  const [analysisTab, setAnalysisTab] = useSessionStorage<number>("analysis_tab_agine",0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -265,7 +265,7 @@ function AgineAnalysisView({
           maxHeight: "100%",
         }}
       >
-        <TabPanel value={analysisTab} index={0}>
+        <TabPanel value={analysisTab} index={0} grow={true}>
           <Stack spacing={{ xs: 2, md: 3 }}>
             {isGameReviewMode && (
               <Accordion
@@ -658,7 +658,7 @@ function AgineAnalysisView({
           </Stack>
         </TabPanel>
 
-        <TabPanel value={analysisTab} index={1}>
+        <TabPanel value={analysisTab} index={1} grow={false} >
           <ChatTab
             chatMessages={chatMessages}
             chatInput={chatInput}
