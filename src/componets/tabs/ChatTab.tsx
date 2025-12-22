@@ -649,7 +649,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       <Box
         sx={{
           flex: 1,
-          overflowY: "auto",
+          // overflowY: "auto",
          
         }}
       >
@@ -1100,8 +1100,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         ref={chatContainerRef}
         sx={{
           flex: 1,
-          overflowY: "auto",
-        
+       
+          overflowAnchor: "none", 
           position: "relative",
           px: 1.5,
           py: 1,
@@ -1555,6 +1555,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             fullWidth
             multiline
             maxRows={3}
+
             placeholder={
               questionMode
           ? "Write your analysis here so I can question you"
