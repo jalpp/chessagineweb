@@ -116,6 +116,8 @@ interface AgineAnalysisViewProps
     BaseAnalysisViewProps,
     MaiaProps {
   isGameReviewMode: boolean;
+  activeAnalysisTab: number;
+  setActiveAnalysisTab: Dispatch<SetStateAction<number>>
 }
 
 function AgineAnalysisView({
@@ -130,7 +132,6 @@ function AgineAnalysisView({
   formatPrincipalVariation,
   setEngineDepth,
   setEngineLines,
-  fen,
   openingLoading,
   openingData,
   lichessOpeningData,
@@ -171,13 +172,14 @@ function AgineAnalysisView({
   scores,
   ThemeScoreerror,
   ThemeScoreloading,
+  activeAnalysisTab,
+  setActiveAnalysisTab
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useSessionStorage<number>("agine_current_tab",0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [activeAnalysisTab, setActiveAnalysisTab] = useState(0); 
 
   
 
