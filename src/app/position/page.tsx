@@ -15,7 +15,7 @@ export default function PositionPage() {
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
   
   const [game, setGame] = useState(new Chess());
-  const [fen, setFen] = useState(game.fen());
+  const [fen, setFen] = useState(game.fen()); 
 
   const {
     setLlmAnalysisResult,
@@ -115,8 +115,8 @@ export default function PositionPage() {
         p: { xs: 1, sm: 2, md: 4 }, 
         minHeight: "100vh",
         height: "100%",
-        // overflowY: "auto",
-        overflowX: "hidden",
+        overflowY: "auto",
+        overflowX: "auto",
       }}
     >
       <Stack 
