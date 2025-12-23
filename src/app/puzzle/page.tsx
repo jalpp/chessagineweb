@@ -61,14 +61,12 @@ import { Refresh, SkipNext } from "@mui/icons-material";
 import Slider from "@/componets/stockfish/Slider";
 import { useLocalStorage } from "usehooks-ts";
 import { PuzzleData, PuzzleQuery, PUZZLE_THEMES, DIFFICULTY_THEMES } from "@/libs/puzzle/helper";
-import Loader from "@/componets/loading/Loader";
-import Warning from "@/componets/loading/SignUpWarning";
 import GuessTheme from "@/componets/puzzle/GuessPtag";
+import { useChatContext } from "@/context/ChatContext";
 
 export default function PuzzlePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const session = useSession();
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
@@ -283,17 +281,10 @@ export default function PuzzlePage() {
     setMoveSquares,
     analysisTab,
     setAnalysisTab,
-    chatMessages,
-    chatInput,
-    setChatInput,
-    chatLoading,
-    sessionMode,
-    setSessionMode,
     engine,
     fetchOpeningData,
     sendChatMessage,
     handleChatKeyPress,
-    clearChatHistory,
     analyzeWithStockfish,
     abortChatMessage,
     scores,
@@ -921,18 +912,11 @@ const handleSquareClick = useCallback(
 
                 <TabPanel value={analysisTab} index={2}>
                   <ChatTab
-                    chatMessages={chatMessages}
-                    chatInput={chatInput}
-                    setChatInput={setChatInput}
                     abortChatMessage={abortChatMessage}
                     sendChatMessage={sendChatMessage}
-                    chatLoading={chatLoading}
                     puzzleMode={true}
                     puzzleQuery={puzzleQueryString}
                     handleChatKeyPress={handleChatKeyPress}
-                    clearChatHistory={clearChatHistory}
-                    sessionMode={sessionMode}
-                    setSessionMode={setSessionMode}
                   />
                 </TabPanel>
               </Box>
@@ -1206,20 +1190,13 @@ const handleSquareClick = useCallback(
                     <GuessTheme stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={themeScoreLoading} error={themeScoreError}/>
                   </TabPanel>
                   <TabPanel value={analysisTab} index={2}>
-                    <ChatTab
-                      chatMessages={chatMessages}
-                      chatInput={chatInput}
-                      setChatInput={setChatInput}
-                      abortChatMessage={abortChatMessage}
-                      sendChatMessage={sendChatMessage}
-                      chatLoading={chatLoading}
-                      puzzleMode={true}
-                      puzzleQuery={puzzleQueryString}
-                      handleChatKeyPress={handleChatKeyPress}
-                      clearChatHistory={clearChatHistory}
-                      sessionMode={sessionMode}
-                      setSessionMode={setSessionMode}
-                    />
+                       <ChatTab
+                    abortChatMessage={abortChatMessage}
+                    sendChatMessage={sendChatMessage}
+                    puzzleMode={true}
+                    puzzleQuery={puzzleQueryString}
+                    handleChatKeyPress={handleChatKeyPress}
+                  />
                   </TabPanel>
                 </Box>
               </Stack>
