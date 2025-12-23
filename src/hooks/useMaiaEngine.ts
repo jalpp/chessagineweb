@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { MaiaEngineContext } from '@/context/MaiaEngineContext'
+import { MaiaEngineContext, useMaiaEngineModels, useMaiaStatus } from '@/context/MaiaEngineContext'
 import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/maia/types'
 
 interface UseMaiaEngineOptions {
@@ -159,8 +159,8 @@ export const useMaiaEngine = ({
   useLichessBook = true,
   bookThreshold = 21,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
-  const { maia2, bigLeela, elitemaia, status, activeModels } =
-    useContext(MaiaEngineContext)
+  const { maia2, bigLeela, elitemaia } = useMaiaEngineModels();
+  const { status, activeModels} = useMaiaStatus();
 
   const [evaluations, setEvaluations] = useState<
     UseMaiaEngineResult['evaluations']
@@ -381,17 +381,4 @@ export const useMaiaEngine = ({
   }
 }
 
-export const useMaia2Engine = (
-  options: Omit<UseMaiaEngineOptions, 'enabledModels'>
-) => {
-  const result = useMaiaEngine({ ...options, enabledModels: ['maia2'] })
-  return {
-    evaluations: result.evaluations.maia2 ?? null,
-    sanEvaluations: result.sanEvaluations.maia2 ?? null,
-    lichessData: result.lichessData.maia2 ?? null,
-    isInBook: result.isInBook,
-    isLoading: result.isLoading,
-    error: result.Maiaerror,
-  }
-}
 

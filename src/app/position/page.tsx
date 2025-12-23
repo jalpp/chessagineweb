@@ -7,13 +7,12 @@ import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
-import { useSessionStorage } from "usehooks-ts";
+import { useMaiaEngine } from "@/hooks/useMaiaEngine";
 
 export default function PositionPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
-  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_active_board_tab", 0);
   
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
@@ -31,14 +30,9 @@ export default function PositionPage() {
     handleFutureMoveLegalClick,
     moveSquares,
     setMoveSquares,
-    chatMessages,
-    chatInput,
-    setChatInput,
-    chatLoading,
-    sessionMode,
+
     lichessOpeningData,
     lichessOpeningLoading,
-    setSessionMode,
     engineDepth,
     setEngineDepth,
     engineLines,
@@ -47,7 +41,6 @@ export default function PositionPage() {
     fetchOpeningData,
     sendChatMessage,
     handleChatKeyPress,
-    clearChatHistory,
     analyzeWithStockfish,
     formatEvaluation,
     formatPrincipalVariation,
@@ -61,27 +54,26 @@ export default function PositionPage() {
     error,
     refetch,
     requestAnalysis,
-    evaluations,
-    sanEvaluations,
-    maiaError,
-    maiaIsLoading,
     scores,
     themeScoreLoading,
     themeScoreError,
-    isInBook,
-    lichessData
   } = useAgine(fen);
+
+    const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useMaiaEngine({
+    fen: fen
+  })
 
   const AnalysisContent = () => (
     <AgineAnalysisView
       isGameReviewMode={false}
-      activeAnalysisTab={activeAnalysisTab}
-      setActiveAnalysisTab={setActiveAnalysisTab}
       stockfishAnalysisResult={stockfishAnalysisResult}
       stockfishLoading={stockfishLoading}
       handleEngineLineClick={handleEngineLineClick}
       engineDepth={engineDepth}
       fen={fen}
+      abortChatMessage={abortChatMessage}
+      handleChatKeyPress={handleChatKeyPress}
+      sendChatMessage={sendChatMessage}
       lichessData={lichessData}
       isInBook={isInBook}
       sanEvaluations={sanEvaluations}
@@ -106,17 +98,7 @@ export default function PositionPage() {
       requestAnalysis={requestAnalysis}
       legalMoves={legalMoves}
       handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-      chatMessages={chatMessages}
-      chatInput={chatInput}
-      setChatInput={setChatInput}
-      sendChatMessage={sendChatMessage}
-      chatLoading={chatLoading}
-      abortChatMessage={abortChatMessage}
-      handleChatKeyPress={handleChatKeyPress}
-      clearChatHistory={clearChatHistory}
-      sessionMode={sessionMode}
       gameReviewTheme={null}
-      setSessionMode={setSessionMode}
       llmLoading={llmLoading}
       evaluations={sanEvaluations}
       isLoading={maiaIsLoading}

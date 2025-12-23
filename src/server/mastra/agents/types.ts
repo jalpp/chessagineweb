@@ -18,10 +18,12 @@ export type OpenAIModel =
   | "gpt-4.1-nano";
 
 export type AnthropicModel =
-  | "claude-sonnet-4-5"
+  | "claude-sonnet-4-5" //claude sonnect 4 5 
   | 'claude-opus-4-1'
   | 'claude-opus-4-5'
   | "claude-haiku-4-5"
+
+
 
 export type GoogleModel =
   | "gemini-1.5-pro"

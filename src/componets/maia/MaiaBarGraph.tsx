@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useContext } from "react";
 import {
   Box,
   Typography,
@@ -22,12 +22,10 @@ import {
 } from "@/libs/maia/types";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import Maia from "@/libs/maia/maia";
+import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 
 interface MaiaProbabilityChartProps {
   moves: MoveAnalysis[];
-  maia2: Maia | undefined;
-  bigLeela: Maia | undefined;
-  eliteLeela: Maia | undefined;
 }
 
 const modelToElo = (model: string) =>
@@ -37,10 +35,10 @@ type EngineType = "maia2" | "bigLeela" | "eliteLeela";
 
 export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
   moves,
-  maia2,
-  bigLeela,
-  eliteLeela,
+
 }) => {
+
+  const { maia2, bigLeela, elitemaia } = useContext(MaiaEngineContext);
   const [maia2Evaluations, setMaia2Evaluations] = useState<
     Array<{ [key: string]: MaiaEvaluation } | null>
   >([]);
@@ -215,7 +213,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
   };
 
   const analyzeEliteLeela = async () => {
-    if (!eliteLeela || moveData.length === 0 || isLoadingEliteLeela) return;
+    if (!elitemaia || moveData.length === 0 || isLoadingEliteLeela) return;
 
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
@@ -233,7 +231,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
           eloOppo: 2800,
         }));
 
-      const rawResults = await eliteLeela.batchEval(batchInputs);
+      const rawResults = await elitemaia.batchEval(batchInputs);
       if (controller.signal.aborted) return;
 
       const results: Array<MaiaEvaluation | null> = [];

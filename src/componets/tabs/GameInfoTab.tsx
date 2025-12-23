@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   Box,
   Stack,
@@ -17,6 +17,7 @@ import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionEval } from "@/stockfish/engine/engine";
+import { useChatContext } from "@/context/ChatContext";
 
 export interface GameInfoTabProp {
   moves: string[];
@@ -30,7 +31,6 @@ export interface GameInfoTabProp {
   stockfishAnalysisResult: PositionEval | null;
   gameReviewProgress: number;
   gameInfo: Record<string, string>;
-  chatLoading: boolean;
   handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
   handleGameReviewClick: (gameReview: MoveAnalysis[], gameInfo: string) => void;
@@ -50,9 +50,10 @@ function GameInfoTab({
   handleMoveAnnontateClick,
   handleGameReviewClick,
   gameReviewProgress,
-  chatLoading,
   stockfishAnalysisResult,
 }: GameInfoTabProp) {
+
+  const {chatLoading} = useChatContext();
   const [gameInfoOpen, setGameInfoOpen] = useState(false);
 
   const formatTimeControl = (timeControl: string) => {

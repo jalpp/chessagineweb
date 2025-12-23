@@ -64,21 +64,15 @@ import {
   DEFAULT_CHAT_SPEECH_VOLUME,
   DEFAULT_CHAT_TECHNICAL_INFO,
 } from "@/libs/setting/helper";
+import { useChatContext } from "@/context/ChatContext";
 
 export interface ChatTabProps {
-  sessionMode: boolean;
-  setSessionMode: (checked: boolean) => void;
-  clearChatHistory: () => void;
-  chatMessages: ChatMessage[];
-  chatLoading: boolean;
   gameInfo?: string;
   currentMove?: string;
   currentMoveIndex?: number;
-  chatInput: string;
   puzzleMode?: boolean;
   playMode?: boolean;
   puzzleQuery?: string;
-  setChatInput: (value: string) => void;
   handleChatKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   sendChatMessage: (gameInfo?: string | undefined, currentMove?: string | undefined, puzzleMode?: boolean | undefined, puzzleQuery?: string | undefined, playMode?: boolean | undefined, currentMoveIndex?: number | undefined) => void;
   abortChatMessage?: () => void;
@@ -152,13 +146,6 @@ const chatPrompts = [
 ];
 
 export const ChatTab: React.FC<ChatTabProps> = ({
-  sessionMode,
-  setSessionMode,
-  clearChatHistory,
-  chatMessages,
-  chatLoading,
-  chatInput,
-  setChatInput,
   handleChatKeyPress,
   sendChatMessage,
   abortChatMessage,
@@ -168,6 +155,50 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   playMode = false,
   puzzleQuery,
 }) => {
+
+   const {
+      chatMessages,
+      chatInput,
+      chatLoading,
+      setChatInput,
+      clearChatHistory
+    } = useChatContext()
+
+    // LOCAL state for typing
+  const [localInput, setLocalInput] = useState(chatInput);
+
+  // Sync when external input changes (like when cleared after send)
+  useEffect(() => {
+    setLocalInput(chatInput);
+  }, [chatInput]);
+
+  // Handle input change locally only
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalInput(e.target.value);
+    // Don't update parent on every keystroke
+  };
+
+  // Handle key press
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      // Sync to parent before sending
+      setChatInput(localInput);
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode);
+      }, 0);
+    }
+  };
+
+  // Handle send button
+  const handleSend = () => {
+    setChatInput(localInput);
+    setTimeout(() => {
+      sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode);
+    }, 0);
+  };  
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copySnackbar, setCopySnackbar] = useState(false);
@@ -176,6 +207,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   );
   const [chessboardModalOpen, setChessboardModalOpen] = useState(false);
   const [selectedFen, setSelectedFen] = useState<string>("");
+
 
   const [savedPositions, setSavedPositions] = useLocalStorage<SavedPosition[]>(
     "agine_position_library",
@@ -244,6 +276,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     SpeechSynthesisVoice[]
   >([]);
   const [speechEnabled, setSpeechEnabled] = useState(true);
+
+  console.log("test")
+
+  
 
   // Resize functionality
   const [dimensions, setDimensions] = useLocalStorage<{
@@ -544,11 +580,10 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   };
 
   // Determine which prompts to show based on mode
-  let currentPrompts = sessionMode ? sessionPrompts : chatPrompts;
-  let modeTitle = sessionMode ? "Chess Buddy Analysis" : "Chess Chat";
-  let modeDescription = sessionMode
-    ? "🤔 Let's look at this position together (I might miss things too!)"
-    : "♟️ Just chatting about chess - no pressure, no perfect answers";
+  let currentPrompts = sessionPrompts 
+  let modeTitle = "Chess Buddy Analysis" 
+  let modeDescription = "Let's look at this position together (I might miss things too!)"
+  
 
   if (puzzleMode) {
     currentPrompts = puzzlePrompts;
@@ -649,7 +684,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       <Box
         sx={{
           flex: 1,
-          // overflowY: "auto",
+           overflowY: "auto",
          
         }}
       >
@@ -968,33 +1003,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
             alignItems={{ xs: "flex-start", sm: "center" }}
             spacing={1.5}
           >
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              sx={{ flexWrap: "wrap" }}
-            >
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 500 }}
-              >
-                Position Context
-              </Typography>
-              <Switch
-                checked={sessionMode}
-                onChange={(e) => setSessionMode(e.target.checked)}
-                size="small"
-               
-              />
-              <Typography
-                variant="caption"
-                sx={{  fontSize: "11px" }}
-              >
-                {sessionMode
-                  ? "Looking at the board together"
-                  : "General chess chat"}
-              </Typography>
-            </Stack>
+           
             <Stack
               direction="row"
               alignItems="center"
@@ -1100,7 +1109,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         ref={chatContainerRef}
         sx={{
           flex: 1,
-       
+          overflowY: "auto", 
+          overflowX: "hidden", 
           overflowAnchor: "none", 
           position: "relative",
           px: 1.5,
@@ -1552,52 +1562,31 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       >
         <Stack direction="row" spacing={1}>
           <TextField
-            fullWidth
-            multiline
-            maxRows={3}
-
-            placeholder={
-              questionMode
-          ? "Write your analysis here so I can question you"
-          : graderMode
-          ? "Write your analysis here so I can grade your analysis"
-          : playMode
-          ? "What are you thinking?"
-          : puzzleMode
-          ? "Want to brainstorm this puzzle?"
-          : sessionMode
-          ? "What's on your mind about this position?"
-          : "Let's talk chess..."
-            }
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={handleChatKeyPress}
-            disabled={chatLoading}
-            size="small"
-            slotProps={{
-              input: {
-          sx: {
-            fontSize: `${fontSize}px`,
+        fullWidth
+        multiline
+        maxRows={3}
+        value={localInput} 
+        onChange={handleInputChange}
+        onKeyDown={handleKeyPress} 
+        disabled={chatLoading}
+        size="small"
+        slotProps={{
+          input: {
+            sx: {
+              fontSize: `${fontSize}px`,
+            },
           },
-              },
-            }}
-          />
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() =>
-              sendChatMessage(
-          gameInfo,
-          currentMove,
-          puzzleMode,
-          puzzleQuery,
-          playMode,
-              )
-            }
-            disabled={chatLoading || !chatInput.trim()}
-          >
-            <Send fontSize="small" />
-          </Button>
+        }}
+      />
+      <Button
+        variant="contained"
+        size="small"
+        onClick={handleSend} // Use local handler
+        disabled={chatLoading || !localInput.trim()}
+      >
+        <Send fontSize="small" />
+      </Button>
+  
         </Stack>
       </Paper>
 

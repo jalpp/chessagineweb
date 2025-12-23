@@ -16,11 +16,26 @@ import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { ApiSettings } from "../componets/tabs/ModelSetting";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
 import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
-import { useMaiaEngine } from "./useMaiaEngine";
+
 import { useThemeScore } from "./useThemeScore";
+import { useChatContext } from "@/context/ChatContext";
+import { useMaiaEngine } from "./useMaiaEngine";
+import { addMaiaAnalysisToQuery } from "@/libs/maia/maiaPrompter";
 
 
 export default function useAgine(fen: string) {
+
+  
+
+  const {
+    chatMessages,
+    chatInput,
+    chatLoading,
+    setChatMessages,
+    addChatMessage,
+    setChatInput,
+    setChatLoading,
+  } = useChatContext()
  
   const [state, setState] = useState<AgineState>({
     llmAnalysisResult: null,
@@ -33,10 +48,7 @@ export default function useAgine(fen: string) {
     lichessOpeningLoading: false,
     moveSquares: {},
     analysisTab: 0,
-    chatMessages: [],
-    chatInput: "",
-    chatLoading: false,
-    sessionMode: true,
+  
   });
 
   // Engine settings with localStorage
@@ -48,6 +60,8 @@ export default function useAgine(fen: string) {
     "engineLines", 
     DEFAULT_ENGINE_LINES
   );
+
+  const {sanEvaluations} = useMaiaEngine({fen: fen});
 
   
 
@@ -74,9 +88,7 @@ export default function useAgine(fen: string) {
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
 
-   const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useMaiaEngine({
-    fen: fen
-  })
+
 
 
   const currentFenRef = useRef(fen);
@@ -152,11 +164,7 @@ export default function useAgine(fen: string) {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  const addChatMessage = useCallback((message: ChatMessage) => {
-    updateState({ 
-      chatMessages: [...state.chatMessages, message] 
-    });
-  }, [state.chatMessages, updateState]);
+
 
 
   const makeApiRequest = useCallback(
@@ -291,7 +299,7 @@ export default function useAgine(fen: string) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
 
-      updateState({ chatLoading: false });
+      setChatLoading(false);
       addChatMessage(createChatMessage("assistant", "","Message generation was cancelled.", ));
     }
   }, [updateState, addChatMessage]);
@@ -418,7 +426,7 @@ Instructions:
         query += `
 
 <mode>
-Type: ${state.sessionMode ? 'Analysis Mode' : 'Chat Mode'}
+Type: Analysis Mode
 </mode>`;
       }
 
@@ -557,9 +565,9 @@ ${formattedEngineLines}
 </engine_analysis>`;
       }
 
-      // if(sanEvaluations){
-      //   query += addMaiaAnalysisToQuery(sanEvaluations.maia2);
-      // }
+      if(sanEvaluations){
+        query += addMaiaAnalysisToQuery(sanEvaluations);
+      }
 
       if (state.openingData) {
         const openingSpeech = getOpeningStatSpeech(state.openingData);
@@ -587,7 +595,7 @@ ${candidateMoves}
 
       return query;
     },
-    [state.sessionMode, state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
+    [state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
   );
 
 const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
@@ -603,18 +611,19 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
     playMode?: boolean,
 
   ): Promise<void> => {
-    if (!state.chatInput.trim()) return;
+    if (!chatInput.trim()) return;
 
     console.time("SEND_MESSAGE_TOTAL");
 
-    const userMessage = createChatMessage("user", fen, state.chatInput);
-    const currentInput = state.chatInput;
+    const userMessage = createChatMessage("user", fen, chatInput);
+    const currentInput = chatInput;
 
-    updateState({
-      chatMessages: [...state.chatMessages, userMessage],
-      chatInput: "",
-      chatLoading: true
-    });
+    setChatInput("");
+
+
+   
+    setChatMessages([...chatMessages, userMessage])
+    setChatLoading(true)
 
     const currentFen = currentFenRef.current;
 
@@ -666,7 +675,7 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
         (Date.now() + 1).toString()
       );
 
-      let newChatMessages = [...state.chatMessages, userMessage, assistantMessage];
+      let newChatMessages = [...chatMessages, userMessage, assistantMessage];
       const selfevalMode = getSelfEvalMode();
       console.log(selfevalMode)
 
@@ -679,10 +688,8 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
         );
         newChatMessages = [...newChatMessages, selfEvalUserMessage];
 
-        updateState({
-          chatMessages: newChatMessages,
-          chatLoading: true
-        });
+        setChatMessages(newChatMessages);
+        setChatLoading(true)
 
         const evalQuery = `
         mode: ${mode}
@@ -703,18 +710,16 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
 
         newChatMessages = [...newChatMessages, correctedMessage];
 
-        updateState({
-          chatMessages: newChatMessages,
-          chatLoading: false
-        });
+     
+        setChatMessages(newChatMessages);
+        setChatLoading(false)
 
         return;
       }
 
-      updateState({
-        chatMessages: newChatMessages,
-        chatLoading: false
-      });
+      setChatMessages(newChatMessages);
+      setChatLoading(false)
+
 
     } catch (error) {
       console.error("Error sending chat message:", error);
@@ -722,16 +727,14 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
       if (!(error instanceof Error && error.message === "Request cancelled")) {
         const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
         const errorMessage = createChatMessage("assistant", "", errorMsg);
-        updateState({
-          chatMessages: [...state.chatMessages, userMessage, errorMessage],
-          chatLoading: false
-        });
+        setChatMessages([...chatMessages, userMessage, errorMessage])
+        setChatLoading(false);
       }
     }
 
     console.timeEnd("SEND_MESSAGE_TOTAL");
   },
-  [state.chatInput, state.chatMessages, buildChatQuery, makeApiRequest, updateState]
+  [chatInput, chatMessages, buildChatQuery, makeApiRequest, updateState]
 );
 
 
@@ -745,16 +748,14 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
     [sendChatMessage]
   );
 
-  const clearChatHistory = useCallback((): void => {
-    updateState({ chatMessages: [] });
-  }, [updateState]);
 
   // ==================== CLICK HANDLERS ====================
   const createAnalysisHandler = useCallback(
     (analysisType: string) => async (data: AnalysisData, customQuery?: string): Promise<void | AgentMessage> => {
-      if (state.llmLoading || state.chatLoading) return;
+      if (state.llmLoading || chatLoading) return;
 
-      updateState({ chatLoading: true, analysisTab: 1 });
+      setChatLoading(true);
+      updateState({analysisTab: 1 });
 
       try {
         // Build query based on analysis type
@@ -1070,16 +1071,14 @@ ${customQuery}
 
 
         if(analysisType === "moveCoach"){
-          const chathistory: ChatMessage[] = state.chatMessages;
+          const chathistory: ChatMessage[] = chatMessages;
           chathistory.push(userMessage);
           chathistory.push(assistantMessage);
-          updateState({ chatMessages: chathistory });
+          setChatMessages(chathistory)
         }
 
-        updateState({ 
-          chatMessages: [...state.chatMessages, userMessage, assistantMessage],
-          chatLoading: false 
-        });
+        setChatMessages([...chatMessages, userMessage, assistantMessage])
+        setChatLoading(false);
 
         return analysisType === "annotation" ? result : undefined;
       } catch (error) {
@@ -1094,10 +1093,9 @@ ${customQuery}
             undefined,
             (Date.now() + 1).toString()
           );
-          updateState({ 
-            chatMessages: [...state.chatMessages, errorMessage],
-            chatLoading: false 
-          });
+         
+          setChatMessages([...chatMessages, errorMessage]);
+          setChatLoading(false)
         }
         
       }
@@ -1105,8 +1103,8 @@ ${customQuery}
     [
       fen,
       state.llmLoading, 
-      state.chatLoading, 
-      state.chatMessages, 
+      chatLoading, 
+      chatMessages, 
       state.openingData, 
       state.stockfishAnalysisResult,
       chessdbdata, 
@@ -1146,9 +1144,10 @@ ${customQuery}
  
   const handleFutureMoveLegalClick = useCallback(
     async (move: string): Promise<void> => {
-      if (state.llmLoading || state.chatLoading) return;
+      if (state.llmLoading || chatLoading) return;
 
-      updateState({ chatLoading: true, analysisTab: 1 });
+      updateState({ analysisTab: 1 });
+      setChatLoading(true);
 
       try {
         const currentFen = currentFenRef.current;
@@ -1199,10 +1198,8 @@ Be concise but thorough, and use clear chess language.`;
         const assistantMessage = createChatMessage("assistant", fen, result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
 
 
-        updateState({ 
-          chatMessages: [...state.chatMessages, userMessage, assistantMessage],
-          chatLoading: false 
-        });
+        setChatMessages([...chatMessages, userMessage, assistantMessage])
+        setChatLoading(false);
       } catch (error) {
         console.error("Error analyzing future move:", error);
         if (!(error instanceof Error && error.message === "Request cancelled")) {
@@ -1211,17 +1208,15 @@ Be concise but thorough, and use clear chess language.`;
             "",
             "Sorry, there was an error analyzing the move. Please try again."
           );
-          updateState({ 
-            chatMessages: [...state.chatMessages, errorMessage],
-            chatLoading: false 
-          });
+          setChatMessages([...chatMessages, errorMessage])
+          setChatLoading(false);
         }
       }
     },
     [
       state.llmLoading, 
-      state.chatLoading, 
-      state.chatMessages,
+      chatLoading, 
+      chatMessages,
       engine, 
       engineDepth, 
       engineLines,
@@ -1247,7 +1242,7 @@ Be concise but thorough, and use clear chess language.`;
 
   const handleGameReviewSummaryClick = useCallback(
     async (review: MoveAnalysis[], gameInfo: string): Promise<void> => {
-      if (state.chatLoading) return;
+      if (chatLoading) return;
 
       const findMovesByQuality = (quality: MoveQuality, player: "w" | "b") => {
         return review.filter(move => move.quality === quality && move.player === player);
@@ -1272,9 +1267,9 @@ Be concise but thorough, and use clear chess language.`;
         fen,
         `Starting game review analysis for ${keyMoves.length} key moves from: ${gameInfo}`
       );
-      const chathistory: ChatMessage[] = state.chatMessages;
+      const chathistory: ChatMessage[] = chatMessages;
       chathistory.push(summaryMessage);
-      updateState({ chatMessages: chathistory });
+      setChatMessages(chathistory)
 
       
       for (let i = 0; i < keyMoves.length; i++) {
@@ -1301,11 +1296,11 @@ Be concise but thorough, and use clear chess language.`;
         (Date.now() + keyMoves.length + 1).toString()
       );
 
-      updateState({ 
-        chatMessages: [...state.chatMessages, finalMessage]
-      });
+      
+      setChatMessages([...chatMessages, finalMessage])
+      setChatLoading(false);
     },
-    [state.chatLoading, state.chatMessages, handleMoveCoachClick, updateState]
+    [chatLoading, chatMessages, handleMoveCoachClick, updateState]
   );
 
   
@@ -1346,8 +1341,7 @@ Be concise but thorough, and use clear chess language.`;
   }, []);
 
 
-  return useMemo(
-    () => ({
+  return {
       // Analysis Results
       llmAnalysisResult: state.llmAnalysisResult,
       setLlmAnalysisResult: (result: string | null) => updateState({ llmAnalysisResult: result }),
@@ -1378,7 +1372,6 @@ Be concise but thorough, and use clear chess language.`;
       lichessOpeningData: state.lichessOpeningData,
       lichessOpeningLoading: state.lichessOpeningLoading,
       setLichessOpeningLoading: (loading: boolean) => updateState({ lichessOpeningLoading: loading }),
-      lichessData,
 
       // UI State
       moveSquares: state.moveSquares,
@@ -1386,15 +1379,6 @@ Be concise but thorough, and use clear chess language.`;
       analysisTab: state.analysisTab,
       setAnalysisTab: (tab: number) => updateState({ analysisTab: tab }),
 
-      // Chat State
-      chatMessages: state.chatMessages,
-      setChatMessages: (messages: ChatMessage[]) => updateState({ chatMessages: messages }),
-      chatInput: state.chatInput,
-      setChatInput: (input: string) => updateState({ chatInput: input }),
-      chatLoading: state.chatLoading,
-      setChatLoading: (loading: boolean) => updateState({ chatLoading: loading }),
-      sessionMode: state.sessionMode,
-      setSessionMode: (mode: boolean) => updateState({ sessionMode: mode }),
 
       // Engine Settings
       engineDepth,
@@ -1413,12 +1397,6 @@ Be concise but thorough, and use clear chess language.`;
       rootCurrentMove,
       setRootCurrentMove,
 
-      evaluations,
-      sanEvaluations,
-      maiaError,
-      maiaIsLoading,
-      isInBook,
-
       // Functions
       fetchOpeningData,
       fetchLichessOpeningData,
@@ -1426,7 +1404,6 @@ Be concise but thorough, and use clear chess language.`;
       sendChatMessage,
       abortChatMessage,
       handleChatKeyPress,
-      clearChatHistory,
       handleEngineLineClick,
       handleOpeningMoveClick,
       handleMoveClick,
@@ -1440,57 +1417,5 @@ Be concise but thorough, and use clear chess language.`;
       formatEvaluation,
       formatPrincipalVariation,
       formatLineForLLM,
-    }),
-    [
-      state,
-      chessdbdata,
-      loading,
-      error,
-      queueing,
-      legalMoves,
-      refetch,
-      requestAnalysis,
-      engineDepth,
-      setEngineDepth,
-      engineLines,
-      setEngineLines,
-      engine,
-      gameReview,
-      scores,
-      themeScoreError,
-      themeScoreLoading,
-      rootCurrentMove,
-      setRootCurrentMove,
-      setGameReview,
-      gameReviewLoading,
-      gameReviewProgress,
-      evaluations,
-      sanEvaluations,
-      maiaError,
-      maiaIsLoading,
-      lichessData,
-      isInBook,
-      setGameReviewLoading,
-      generateGameReview,
-      fetchOpeningData,
-      fetchLichessOpeningData,
-      analyzeWithStockfish,
-      sendChatMessage,
-      abortChatMessage,
-      handleChatKeyPress,
-      clearChatHistory,
-      handleEngineLineClick,
-      handleOpeningMoveClick,
-      handleMoveClick,
-      handleMoveCoachClick,
-      handleMoveAnnontateClick,
-      handleGameReviewSummaryClick,
-      handleMovePGNAnnotateClick,
-      handleFutureMoveLegalClick,
-      formatEvaluation,
-      formatPrincipalVariation,
-      formatLineForLLM,
-      updateState,
-    ]
-  );
+    }
 }

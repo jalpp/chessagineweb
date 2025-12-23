@@ -3,137 +3,75 @@ interface SanMaiaEvaluation {
   policy: { [key: string]: number }
 }
 
+interface MaiaEvaluations {
+  maia2?: { [key: string]: SanMaiaEvaluation } | null
+  bigLeela?: SanMaiaEvaluation | null
+  elitemaia?: SanMaiaEvaluation | null
+}
 
 export const getMaiaAnalysisSpeech = (
-  sanEvaluations: { [key: string]: SanMaiaEvaluation } | null
+  sanEvaluations: MaiaEvaluations
 ): string => {
   if (!sanEvaluations) {
     return ''
   }
 
-  const allModels = [
-    'maia_kdd_1100', 'maia_kdd_1200', 'maia_kdd_1300',
-    'maia_kdd_1400', 'maia_kdd_1500', 'maia_kdd_1600',
-    'maia_kdd_1700', 'maia_kdd_1800', 'maia_kdd_1900'
-  ]
+  let speech = ''
 
-  let speech = `Maia Human-Like Analysis (All Rating Levels):
-
-Position Evaluation (White Win Probability):
-┌──────────┬───────────┐
-│  Rating  │  Win %    │
-├──────────┼───────────┤
-`
-
-  allModels.forEach(model => {
-    const rating = model.replace('maia_kdd_', '')
-    const evaluation = sanEvaluations[model]
-    if (evaluation) {
-      const winRate = (evaluation.value * 100).toFixed(1)
-      speech += `│  ${rating}  │   ${winRate.padStart(5)}%  │\n`
-    }
-  })
-
-  speech += `└──────────┴───────────┘
-
-`
-
-  
-  const allMoves = new Set<string>()
-  allModels.forEach(model => {
-    const evaluation = sanEvaluations[model]
-    if (evaluation) {
-      Object.keys(evaluation.policy).forEach(move => allMoves.add(move))
-    }
-  })
-
-
-  const topMovesPerModel: { [key: string]: [string, number][] } = {}
-  allModels.forEach(model => {
-    const evaluation = sanEvaluations[model]
-    if (evaluation) {
-      topMovesPerModel[model] = Object.entries(evaluation.policy)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-    }
-  })
-
-
-  speech += `Top 5 Human-Like Moves by Rating Level:
-┌──────────┬────────────────────────────────────────────────────────────────────────────┐
-│  Rating  │  Move 1      Move 2      Move 3      Move 4      Move 5                  │
-├──────────┼────────────────────────────────────────────────────────────────────────────┤
-`
-
-  allModels.forEach(model => {
-    const rating = model.replace('maia_kdd_', '')
-    const topMoves = topMovesPerModel[model] || []
-    
-    let movesLine = '│  ' + rating.padEnd(6) + ' │  '
-    
-    for (let i = 0; i < 5; i++) {
-      if (i < topMoves.length) {
-        const [move, prob] = topMoves[i]
-        const percentage = (prob * 100).toFixed(1)
-        movesLine += `${move}(${percentage}%)`.padEnd(12) + ' '
-      } else {
-        movesLine += ''.padEnd(13)
-      }
-    }
-    
-    movesLine += '│'
-    speech += movesLine + '\n'
-  })
-
-  speech += `└──────────┴────────────────────────────────────────────────────────────────────────┘
-
-`
-  const move1900 = sanEvaluations['maia_kdd_1900']
-  if (move1900) {
-    const topMoves = Object.entries(move1900.policy)
+  // Maia 1900 Analysis (most relevant skill level)
+  const maia1900 = sanEvaluations.maia2?.['maia_kdd_1900']
+  if (maia1900) {
+    const winRate = (maia1900.value * 100).toFixed(1)
+    const topMoves = Object.entries(maia1900.policy)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
+      .slice(0, 5)
+      .map(([move, prob]) => `${move}(${(prob * 100).toFixed(1)}%)`)
+      .join(', ')
 
-    speech += `Move Popularity Across All Rating Levels (Top 3 Moves):
-
-`
-
-    topMoves.forEach(([move], moveIndex) => {
-      speech += `Move: ${move}
-┌──────────┬───────────┐
-│  Rating  │  Prob %   │
-├──────────┼───────────┤
-`
-
-      allModels.forEach(model => {
-        const rating = model.replace('maia_kdd_', '')
-        const evaluation = sanEvaluations[model]
-        if (evaluation) {
-          const prob = evaluation.policy[move]
-          if (prob !== undefined) {
-            const percentage = (prob * 100).toFixed(1)
-            speech += `│  ${rating}  │   ${percentage.padStart(5)}%  │\n`
-          } else {
-            speech += `│  ${rating}  │     0.0%  │\n`
-          }
-        }
-      })
-
-      speech += `└──────────┴───────────┘
-`
-
-      if (moveIndex < topMoves.length - 1) {
-        speech += '\n'
-      }
-    })
+    speech += `Maia-1900 (Human-like ~1900 ELO):\nWin%: ${winRate}% | Top moves: ${topMoves}\n\n`
   }
 
-  return speech
+  // Big Leela Analysis (Strong engine)
+  if (sanEvaluations.bigLeela) {
+    const winRate = (sanEvaluations.bigLeela.value * 100).toFixed(1)
+    const topMoves = Object.entries(sanEvaluations.bigLeela.policy)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([move, prob]) => `${move}(${(prob * 100).toFixed(1)}%)`)
+      .join(', ')
+
+    speech += `<leela> Leela (Strong Neural Network):\nWin%: ${winRate}% | Top moves: ${topMoves}\n\n </leela>`
+  }
+
+  // Elite Maia Analysis (Top human-like play)
+  if (sanEvaluations.elitemaia) {
+    const winRate = (sanEvaluations.elitemaia.value * 100).toFixed(1)
+    const topMoves = Object.entries(sanEvaluations.elitemaia.policy)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([move, prob]) => `${move}(${(prob * 100).toFixed(1)}%)`)
+      .join(', ')
+
+    speech += `<eliteLeela> Elite Leela (Expert Human-like):\nWin%: ${winRate}% | Top moves: ${topMoves}\n\n </eliteleela>`
+  }
+
+  // Compare move preferences if multiple models available
+  if (maia1900 && sanEvaluations.bigLeela) {
+    const maia1900Top = Object.entries(maia1900.policy)
+      .sort(([, a], [, b]) => b - a)[0]
+    const leelaTop = Object.entries(sanEvaluations.bigLeela.policy)
+      .sort(([, a], [, b]) => b - a)[0]
+
+    if (maia1900Top[0] !== leelaTop[0]) {
+      speech += `<maia> Note: Human players (~1900) prefer ${maia1900Top[0]}, while strong engines prefer ${leelaTop[0]}\n<maia/>`
+    }
+  }
+
+  return speech.trim()
 }
 
-
 export const addMaiaAnalysisToQuery = (
-  sanEvaluations: { [key: string]: SanMaiaEvaluation } | null
+  sanEvaluations: MaiaEvaluations
 ): string => {
   const maiaAnalysis = getMaiaAnalysisSpeech(sanEvaluations)
   
@@ -141,7 +79,5 @@ export const addMaiaAnalysisToQuery = (
     return "";
   }
 
-
-  return `\n<maia_analysis>\n${maiaAnalysis}\n</maia_analysis>\n` 
-       
+  return `\n<neural_nets_analysis>\n${maiaAnalysis}\n</neural_nets_analysis>\n`
 }
