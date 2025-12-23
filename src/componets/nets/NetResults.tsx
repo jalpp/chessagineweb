@@ -230,7 +230,7 @@ const ModelDownloadPrompt: React.FC<{
       >
         {downloading ? 'Downloading...' : `Download ${config.name}`}
       </Button>
-      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+      <Typography variant="caption" >
         Size: {config.size}
       </Typography>
     </Box>
@@ -469,7 +469,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
         )}
 
         {/* Maia 2 with Rating Level Selector */}
-        {isCurrentModelReady && currentTab === 'maia2' && evaluations.maia2 && (
+        {currentTab === 'maia2' && evaluations.maia2 && (
           <>
             <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>
               <InputLabel id="maia-model-select-label">
@@ -498,11 +498,11 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
         )}
 
    
-        {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && (
+        {currentTab === 'bigLeela' && evaluations.bigLeela && (
           <EvaluationDisplay evaluation={evaluations.bigLeela} />
         )}
 
-        {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && (
+        {currentTab === 'elitemaia' && evaluations.elitemaia && (
           <EvaluationDisplay evaluation={evaluations.elitemaia} />
         )}
       </CardContent>
