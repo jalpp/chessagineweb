@@ -41,7 +41,6 @@ import { TabPanel } from "@/componets/tabs/tab";
 import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
-import { useSession } from "@clerk/nextjs";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import {
   Lightbulb,
@@ -62,7 +61,7 @@ import Slider from "@/componets/stockfish/Slider";
 import { useLocalStorage } from "usehooks-ts";
 import { PuzzleData, PuzzleQuery, PUZZLE_THEMES, DIFFICULTY_THEMES } from "@/libs/puzzle/helper";
 import GuessTheme from "@/componets/puzzle/GuessPtag";
-import { useChatContext } from "@/context/ChatContext";
+
 
 export default function PuzzlePage() {
   const theme = useTheme();

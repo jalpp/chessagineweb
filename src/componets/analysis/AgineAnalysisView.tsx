@@ -29,7 +29,6 @@ import ChatTab from "../tabs/ChatTab";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
 import { CandidateMove } from "../tabs/Chessdb";
-import { ChatMessage } from "@/libs/agine/helper";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
@@ -39,6 +38,7 @@ import { MaiaResults } from "../maia/MaiaResults";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
 import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
 import { useSessionStorage } from "usehooks-ts";
+
 
 
 interface BaseAnalysisViewProps {
@@ -177,7 +177,6 @@ function AgineAnalysisView({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeAnalysisTab, setActiveAnalysisTab] = useState(0); 
- 
 
   
 
@@ -490,7 +489,6 @@ function AgineAnalysisView({
                   evaluations={evaluations}
                   isMaiaLoading={isLoading}
                   maiaerror={Maiaerror}
-                  activeModels={["elitemaia", "maia2", "bigLeela"]}
                 />
                 {gameReview && (
                   <>

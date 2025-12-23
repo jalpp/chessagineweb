@@ -92,7 +92,7 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ c
       setProgress: (p: number) => setProgress(prev => ({ ...prev, elitemaia: p })),
       setError: (e: string) => setError(prev => ({ ...prev, elitemaia: e })),
     }),
-  }), []); // Empty deps - create once
+  }), []); 
 
   const downloadModel = useCallback(async (modelType: ModelType) => {
     try {
@@ -107,15 +107,6 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ c
     }
   }, [models]);
 
-  // Auto-download
-  useEffect(() => {
-    (Object.keys(status) as ModelType[]).forEach(modelType => {
-      if (status[modelType] === 'no-cache' && !hasTriggeredDownload.current[modelType]) {
-        hasTriggeredDownload.current[modelType] = true;
-        downloadModel(modelType);
-      }
-    });
-  }, [status, downloadModel]);
 
   const activeModels = useMemo(() => {
     return (Object.keys(status) as ModelType[]).filter(

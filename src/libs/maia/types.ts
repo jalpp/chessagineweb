@@ -24,7 +24,8 @@ export const MODEL_CONFIGS = {
   maia2: {
     id: 'maia2',
     name: 'Maia 2',
-    description: 'Human-like chess analysis at different rating levels (1100-1900)',
+    description:
+      'Human-style chess analysis that mimics real players from 1100–1900 Elo. Best for understanding typical human mistakes, plans, and practical decision-making at different skill levels.',
     path: '/static/maia2/maia_rapid.onnx',
     size: '90mb',
     hasRatingLevels: true,
@@ -39,27 +40,32 @@ export const MODEL_CONFIGS = {
       'maia_kdd_1700',
       'maia_kdd_1800',
       'maia_kdd_1900',
-    ]
+    ],
   },
+
   bigLeela: {
     id: 'bigLeela',
     name: 'Leela T1-256',
-    description: 'Leela used for smaller devices',
+    description:
+      'A lightweight Leela Chess Zero network optimized for performance on low-resource devices. Provides strong positional evaluations with fast response times.',
     path: '/static/maia2/t1-256x10.onnx',
     size: '75mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,
   },
+
   elitemaia: {
     id: 'elitemaia',
     name: 'Elite Leela',
-    description: 'Trained on 19.7M games from Lichess Elite Database',
+    description:
+      'A high-skill Leela network trained on nearly 20 million elite Lichess games. Excels at precise tactics, deep positional understanding, and near–top-level play.',
     path: '/static/maia2/eliteleelav2.onnx',
     size: '15mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,
-  }
+  },
 } as const
+
 
 export const MAIA_MODELS = MODEL_CONFIGS.maia2.ratingLevels
 

@@ -14,9 +14,11 @@ import {
   MenuItem,
   Tabs,
   Tab,
+  Button,
 } from '@mui/material'
-import { TrendingUp, TrendingDown } from '@mui/icons-material'
+import { TrendingUp, TrendingDown, Download, CloudDownload } from '@mui/icons-material'
 import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/maia/types'
+import { useMaiaStatus, useMaiaEngineModels } from '@/context/MaiaEngineContext'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -26,7 +28,6 @@ export interface MaiaResultsProps {
   }
   isMaiaLoading: boolean
   maiaerror: Error | null
-  activeModels: ModelType[]
 }
 
 const MAIA_MODELS = [
@@ -51,9 +52,9 @@ const formatValue = (value: number) => {
 }
 
 const getValueColor = (value: number) => {
-  if (value > 0.55) return '#4caf50' // Green
-  if (value < 0.30) return '#f44336' // Red
-  return '#ff9800' // Orange
+  if (value > 0.55) return '#4caf50'
+  if (value < 0.30) return '#f44336'
+  return '#ff9800'
 }
 
 const getValueIcon = (value: number) => {
@@ -66,8 +67,6 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) 
   const topMoves = Object.entries(policy)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
-
-    console.log(topMoves);
 
   return (
     <Box display="flex" flexDirection="column" gap={1.5}>
@@ -163,12 +162,236 @@ const EvaluationDisplay: React.FC<{ evaluation: MaiaEvaluation }> = ({ evaluatio
   )
 }
 
+const ModelDownloadPrompt: React.FC<{ 
+  modelType: ModelType
+  downloadModel: (modelType: ModelType) => Promise<void>
+}> = ({ modelType, downloadModel }) => {
+  const { status, progress } = useMaiaStatus()
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const modelStatus = status[modelType]
+  const modelProgress = progress[modelType] || 0
+  const config = MODEL_CONFIGS[modelType]
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    try {
+      await downloadModel(modelType)
+    } catch (error) {
+      console.error('Download failed:', error)
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  const downloading = isDownloading || modelStatus === 'downloading'
+
+  return (
+    <Box 
+      display="flex" 
+      flexDirection="column" 
+      alignItems="center" 
+      gap={2} 
+      py={4}
+    >
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        {config.name} Not Available
+      </Typography>
+      <Typography sx={{ mb: 2, textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)' }}>
+        {config.description}
+      </Typography>
+      
+      {downloading && modelProgress > 0 && (
+        <Box sx={{ width: '100%', maxWidth: 300, mb: 2 }}>
+          <Box display="flex" justifyContent="space-between" mb={1}>
+            <Typography variant="body2">Downloading...</Typography>
+            <Typography variant="body2">{Math.round(modelProgress)}%</Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={modelProgress}
+            sx={{
+              height: 8,
+              borderRadius: 4,
+            }}
+          />
+        </Box>
+      )}
+      
+      <Button
+        variant="contained"
+        startIcon={<Download />}
+        onClick={handleDownload}
+        disabled={downloading}
+        sx={{
+          textTransform: 'none',
+          fontWeight: 500,
+        }}
+      >
+        {downloading ? 'Downloading...' : `Download ${config.name}`}
+      </Button>
+      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+        Size: {config.size}
+      </Typography>
+    </Box>
+  )
+}
+
+const DownloadAllModelsPrompt: React.FC<{
+  downloadModel: (modelType: ModelType) => Promise<void>
+}> = ({ downloadModel }) => {
+  const { status, progress } = useMaiaStatus()
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false)
+
+  const allModelTypes = Object.keys(MODEL_CONFIGS) as ModelType[]
+  
+  // Check which models need downloading
+  const modelsToDownload = allModelTypes.filter(
+    modelType => status[modelType] !== 'ready'
+  )
+
+  const handleDownloadAll = async () => {
+    setIsDownloadingAll(true)
+    try {
+      // Download all models sequentially
+      for (const modelType of modelsToDownload) {
+        await downloadModel(modelType)
+      }
+    } catch (error) {
+      console.error('Download all failed:', error)
+    } finally {
+      setIsDownloadingAll(false)
+    }
+  }
+
+  const anyDownloading = allModelTypes.some(
+    modelType => status[modelType] === 'downloading'
+  )
+  const downloading = isDownloadingAll || anyDownloading
+
+  return (
+    <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+      <CardContent>
+        <Box display="flex" flexDirection="column" alignItems="center" gap={3} py={4}>
+          <CloudDownload sx={{ fontSize: 48, color: 'primary.main' }} />
+          <Typography variant="h5" sx={{ textAlign: 'center' }}>
+            Download Models to Start Analysis
+          </Typography>
+          <Typography sx={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', maxWidth: 500 }}>
+            Download all analysis models to get comprehensive insights into chess positions
+            from different skill levels and perspectives.
+          </Typography>
+
+          {/* Show progress for each model being downloaded */}
+          {downloading && (
+            <Box sx={{ width: '100%', maxWidth: 500 }}>
+              {allModelTypes.map(modelType => {
+                const modelStatus = status[modelType]
+                const modelProgress = progress[modelType] || 0
+                const config = MODEL_CONFIGS[modelType]
+                
+                if (modelStatus !== 'downloading' && modelProgress === 0) return null
+
+                return (
+                  <Box key={modelType} sx={{ mb: 2 }}>
+                    <Box display="flex" justifyContent="space-between" mb={1}>
+                      <Typography variant="body2">{config.name}</Typography>
+                      <Typography variant="body2">{Math.round(modelProgress)}%</Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={modelProgress}
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                      }}
+                    />
+                  </Box>
+                )
+              })}
+            </Box>
+          )}
+
+          <Box display="flex" gap={2}>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<CloudDownload />}
+              onClick={handleDownloadAll}
+              disabled={downloading || modelsToDownload.length === 0}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 500,
+                px: 4,
+              }}
+            >
+              {downloading ? 'Downloading...' : 'Download All Models'}
+            </Button>
+          </Box>
+
+          {/* Individual model cards */}
+          <Box sx={{ width: '100%', maxWidth: 600, mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, textAlign: 'center' }}>
+              Or download individual models:
+            </Typography>
+            <Box display="flex" flexDirection="column" gap={2}>
+              {allModelTypes.map((modelType) => {
+                const config = MODEL_CONFIGS[modelType]
+                const modelStatus = status[modelType]
+                const modelProgress = progress[modelType] || 0
+                const isReady = modelStatus === 'ready'
+                const isDownloading = modelStatus === 'downloading'
+
+                return (
+                  <Card key={modelType} sx={{ border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <CardContent>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Box flex={1}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {config.name}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                            {config.size}
+                          </Typography>
+                        </Box>
+                        
+                        {isReady ? (
+                          <Chip label="Ready" color="success" size="small" />
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<Download />}
+                            onClick={() => downloadModel(modelType)}
+                            disabled={isDownloading || downloading}
+                            sx={{
+                              textTransform: 'none',
+                              minWidth: 120,
+                            }}
+                          >
+                            {isDownloading ? `${Math.round(modelProgress)}%` : 'Download'}
+                          </Button>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </Box>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  )
+}
+
 export const MaiaResults: React.FC<MaiaResultsProps> = ({
   evaluations,
   isMaiaLoading,
   maiaerror,
-  activeModels,
 }) => {
+  const { status, activeModels } = useMaiaStatus()
+  const { downloadModel } = useMaiaEngineModels()
   const [selectedMaia2Model, setSelectedMaia2Model] = useState(0)
   const [selectedTab, setSelectedTab] = useState<ModelType>('maia2')
 
@@ -199,20 +422,16 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
     )
   }
 
-  if (!evaluations || activeModels.length === 0) {
-    return (
-      <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-        <CardContent>
-          <Typography sx={{ textAlign: 'center', py: 4 }}>
-            No models loaded. Please download a model to see analysis.
-          </Typography>
-        </CardContent>
-      </Card>
-    )
+  // If no models are active, show download all prompt
+  if (activeModels.length === 0) {
+    return <DownloadAllModelsPrompt downloadModel={downloadModel} />
   }
 
-  // Ensure selectedTab is in activeModels
-  const currentTab = activeModels.includes(selectedTab) ? selectedTab : activeModels[0]
+
+  const currentTab = selectedTab
+
+  // Check if current tab model is ready
+  const isCurrentModelReady = status[currentTab] === 'ready'
 
   return (
     <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
@@ -230,7 +449,7 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
             onChange={(_, newValue) => setSelectedTab(newValue)}
             variant="fullWidth"
           >
-            {activeModels.map((modelType) => (
+            {(Object.keys(MODEL_CONFIGS) as ModelType[]).map((modelType) => (
               <Tab
                 key={modelType}
                 label={MODEL_CONFIGS[modelType].name}
@@ -240,8 +459,13 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
           </Tabs>
         </Box>
 
+        {/* Show download prompt if selected model is not ready */}
+        {!isCurrentModelReady && (
+          <ModelDownloadPrompt modelType={currentTab} downloadModel={downloadModel} />
+        )}
+
         {/* Maia 2 with Rating Level Selector */}
-        {currentTab === 'maia2' && evaluations.maia2 && (
+        {isCurrentModelReady && currentTab === 'maia2' && evaluations.maia2 && (
           <>
             <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>
               <InputLabel id="maia-model-select-label">
@@ -269,13 +493,13 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
           </>
         )}
 
-       
-        {currentTab === 'bigLeela' && evaluations.bigLeela && (
+        {/* Big Leela */}
+        {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && (
           <EvaluationDisplay evaluation={evaluations.bigLeela} />
         )}
 
         {/* Elite Maia */}
-        {currentTab === 'elitemaia' && evaluations.elitemaia && (
+        {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && (
           <EvaluationDisplay evaluation={evaluations.elitemaia} />
         )}
       </CardContent>
