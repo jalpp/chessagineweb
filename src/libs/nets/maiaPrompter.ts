@@ -9,7 +9,7 @@ interface MaiaEvaluations {
   elitemaia?: SanMaiaEvaluation | null
 }
 
-export const getMaiaAnalysisSpeech = (
+export const getNetAnalysisSpeech = (
   sanEvaluations: MaiaEvaluations
 ): string => {
   if (!sanEvaluations) {
@@ -70,10 +70,10 @@ export const getMaiaAnalysisSpeech = (
   return speech.trim()
 }
 
-export const addMaiaAnalysisToQuery = (
+export const addNetAnalysisToQuery = (
   sanEvaluations: MaiaEvaluations
 ): string => {
-  const maiaAnalysis = getMaiaAnalysisSpeech(sanEvaluations)
+  const maiaAnalysis = getNetAnalysisSpeech(sanEvaluations)
   
   if (!maiaAnalysis) {
     return "";

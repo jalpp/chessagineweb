@@ -1,14 +1,16 @@
 "use client";
 import React, { ReactNode, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import Maia from '@/libs/maia/maia';
-import { MaiaStatus, MaiaEngine, ModelType, MODEL_CONFIGS } from '@/libs/maia/types';
-import toast from 'react-hot-toast';
 
-// Stable context for models and methods
-export const MaiaEngineContext = React.createContext<{
-  maia2: Maia | undefined;
-  bigLeela: Maia | undefined;
-  elitemaia: Maia | undefined;
+import { NetStatus, ModelType, MODEL_CONFIGS } from '@/libs/nets/types';
+import toast from 'react-hot-toast';
+import { MaiaModel } from '@/libs/nets/MaiaModel';
+import { LeelaModel } from '@/libs/nets/LeelaModel';
+
+
+export const NetModelContext = React.createContext<{
+  maia2: MaiaModel | undefined;
+  bigLeela: LeelaModel | undefined;
+  elitemaia: LeelaModel | undefined;
   downloadModel: (modelType: ModelType) => Promise<void>;
 }>({
   maia2: undefined,
@@ -20,8 +22,8 @@ export const MaiaEngineContext = React.createContext<{
 });
 
 // Separate context for frequently-changing state
-export const MaiaStatusContext = React.createContext<{
-  status: Record<ModelType, MaiaStatus>;
+export const NetModelStatusContext = React.createContext<{
+  status: Record<ModelType, NetStatus>;
   progress: Record<ModelType, number>;
   activeModels: ModelType[];
 }>({
@@ -38,8 +40,8 @@ export const MaiaStatusContext = React.createContext<{
   activeModels: [],
 });
 
-export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [status, setStatus] = useState<Record<ModelType, MaiaStatus>>({
+export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [status, setStatus] = useState<Record<ModelType, NetStatus>>({
     maia2: 'loading',
     bigLeela: 'loading',
     elitemaia: 'loading',
@@ -71,28 +73,28 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ c
 
   // Memoize models - they never change
   const models = useMemo(() => ({
-    maia2: new Maia({
+    maia2: new MaiaModel({
       model: MODEL_CONFIGS.maia2.path,
       modelType: MODEL_CONFIGS.maia2.modelType,
-      setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, maia2: s })),
+      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, maia2: s })),
       setProgress: (p: number) => setProgress(prev => ({ ...prev, maia2: p })),
       setError: (e: string) => setError(prev => ({ ...prev, maia2: e })),
     }),
-    bigLeela: new Maia({
+    bigLeela: new LeelaModel({
       model: MODEL_CONFIGS.bigLeela.path,
       modelType: MODEL_CONFIGS.bigLeela.modelType,
-      setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
+      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
       setProgress: (p: number) => setProgress(prev => ({ ...prev, bigLeela: p })),
       setError: (e: string) => setError(prev => ({ ...prev, bigLeela: e })),
     }),
-    elitemaia: new Maia({
+    elitemaia: new LeelaModel({
       model: MODEL_CONFIGS.elitemaia.path,
       modelType: MODEL_CONFIGS.elitemaia.modelType,
-      setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, elitemaia: s })),
+      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, elitemaia: s })),
       setProgress: (p: number) => setProgress(prev => ({ ...prev, elitemaia: p })),
       setError: (e: string) => setError(prev => ({ ...prev, elitemaia: e })),
     }),
-  }), []); // Empty deps - create once
+  }), []); 
 
   const downloadModel = useCallback(async (modelType: ModelType) => {
     try {
@@ -107,15 +109,6 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ c
     }
   }, [models]);
 
-  // Auto-download
-  useEffect(() => {
-    (Object.keys(status) as ModelType[]).forEach(modelType => {
-      if (status[modelType] === 'no-cache' && !hasTriggeredDownload.current[modelType]) {
-        hasTriggeredDownload.current[modelType] = true;
-        downloadModel(modelType);
-      }
-    });
-  }, [status, downloadModel]);
 
   const activeModels = useMemo(() => {
     return (Object.keys(status) as ModelType[]).filter(
@@ -190,27 +183,27 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ c
   }), [status, progress, activeModels]);
 
   return (
-    <MaiaEngineContext.Provider value={engineValue}>
-      <MaiaStatusContext.Provider value={statusValue}>
+    <NetModelContext.Provider value={engineValue}>
+      <NetModelStatusContext.Provider value={statusValue}>
         {children}
-      </MaiaStatusContext.Provider>
-    </MaiaEngineContext.Provider>
+      </NetModelStatusContext.Provider>
+    </NetModelContext.Provider>
   );
 };
 
 // Custom hooks
-export const useMaiaEngineModels = () => {
-  const context = React.useContext(MaiaEngineContext);
+export const useNetModels = () => {
+  const context = React.useContext(NetModelContext);
   if (!context) {
-    throw new Error('useMaiaEngine must be used within MaiaEngineContextProvider');
+    throw new Error('useNetModel must be used within NetModelContextProvider');
   }
   return context;
 };
 
-export const useMaiaStatus = () => {
-  const context = React.useContext(MaiaStatusContext);
+export const useNetStatus = () => {
+  const context = React.useContext(NetModelStatusContext);
   if (!context) {
-    throw new Error('useMaiaStatus must be used within MaiaEngineContextProvider');
+    throw new Error('useNetStatus must be used within NetModelContextProvider');
   }
   return context;
 };

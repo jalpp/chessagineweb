@@ -1,7 +1,7 @@
-import { useEffect, useState, useContext, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { MaiaEngineContext, useMaiaEngineModels, useMaiaStatus } from '@/context/MaiaEngineContext'
-import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/maia/types'
+import { useNetModels, useNetStatus } from '@/context/NetContext'
+import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/nets/types'
 
 interface UseMaiaEngineOptions {
   fen: string
@@ -151,7 +151,7 @@ const convertToSanEvaluation = (
   }
 }
 
-export const useMaiaEngine = ({
+export const useNets = ({
   fen,
   maxRetries = 30,
   retryDelayMs = 100,
@@ -159,8 +159,8 @@ export const useMaiaEngine = ({
   useLichessBook = true,
   bookThreshold = 21,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
-  const { maia2, bigLeela, elitemaia } = useMaiaEngineModels();
-  const { status, activeModels} = useMaiaStatus();
+  const { maia2, bigLeela, elitemaia } = useNetModels()
+  const { status, activeModels} = useNetStatus()
 
   const [evaluations, setEvaluations] = useState<
     UseMaiaEngineResult['evaluations']
@@ -283,7 +283,7 @@ export const useMaiaEngine = ({
           if (currentAbortController.signal.aborted) return
 
         
-            const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
+            const uciEval = await bigLeela.evaluate(fen)
             newEvaluations.bigLeela = uciEval
             newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
           
@@ -297,7 +297,7 @@ export const useMaiaEngine = ({
         ) {
           if (currentAbortController.signal.aborted) return
 
-            const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
+            const uciEval = await elitemaia.evaluate(fen)
             newEvaluations.elitemaia = uciEval
             newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
           

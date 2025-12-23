@@ -19,9 +19,8 @@ import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, A
 
 import { useThemeScore } from "./useThemeScore";
 import { useChatContext } from "@/context/ChatContext";
-import { useMaiaEngine } from "./useMaiaEngine";
-import { addMaiaAnalysisToQuery } from "@/libs/maia/maiaPrompter";
-
+import { useNets } from "./useNets";
+import { addNetAnalysisToQuery } from "@/libs/nets/maiaPrompter";
 
 export default function useAgine(fen: string) {
 
@@ -61,9 +60,7 @@ export default function useAgine(fen: string) {
     DEFAULT_ENGINE_LINES
   );
 
-  const {sanEvaluations} = useMaiaEngine({fen: fen});
-
-  
+  const {sanEvaluations} = useNets({fen: fen});
 
   const [enginePicked] = useLocalStorage<EngineName>(
     "stockfish-engine-picked",
@@ -566,7 +563,7 @@ ${formattedEngineLines}
       }
 
       if(sanEvaluations){
-        query += addMaiaAnalysisToQuery(sanEvaluations);
+        query += addNetAnalysisToQuery(sanEvaluations);
       }
 
       if (state.openingData) {

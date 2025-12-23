@@ -57,7 +57,7 @@ import {
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
-import { MaiaEvaluation } from "@/libs/maia/types";
+import { MaiaEvaluation } from "@/libs/nets/types";
 
 export type BoardOrientation = "white" | "black";
 

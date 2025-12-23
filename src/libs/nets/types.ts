@@ -1,7 +1,7 @@
 import { Chess } from "chess.js"
-import Maia from "./maia"
+import NetModel from "./NetModel"
 
-export type MaiaStatus =
+export type NetStatus =
   | 'loading'
   | 'no-cache'
   | 'downloading'
@@ -11,10 +11,10 @@ export type MaiaStatus =
 export type ModelType = 'maia2' | 'bigLeela' | 'elitemaia'
 
 export interface MaiaEngine {
-  maia2?: Maia
-  bigLeela?: Maia
-  elitemaia?: Maia
-  status: Record<ModelType, MaiaStatus>
+  maia2?: NetModel
+  bigLeela?: NetModel
+  elitemaia?: NetModel
+  status: Record<ModelType, NetStatus>
   progress: Record<ModelType, number>
   downloadModel: (modelType: ModelType) => Promise<void>
   activeModels: ModelType[]
@@ -24,8 +24,9 @@ export const MODEL_CONFIGS = {
   maia2: {
     id: 'maia2',
     name: 'Maia 2',
-    description: 'Human-like chess analysis at different rating levels (1100-1900)',
-    path: '/static/maia2/maia_rapid.onnx',
+    description:
+      'Human-style chess analysis that mimics real players from 1100–1900 Elo. Best for understanding typical human mistakes, plans, and practical decision-making at different skill levels.',
+    path: '/static/nets/maia_rapid.onnx',
     size: '90mb',
     hasRatingLevels: true,
     modelType: 'maia2' as const,
@@ -39,27 +40,32 @@ export const MODEL_CONFIGS = {
       'maia_kdd_1700',
       'maia_kdd_1800',
       'maia_kdd_1900',
-    ]
+    ],
   },
+
   bigLeela: {
     id: 'bigLeela',
     name: 'Leela T1-256',
-    description: 'Leela used for smaller devices',
-    path: '/static/maia2/t1-256x10.onnx',
+    description:
+      'A lightweight Leela Chess Zero network optimized for performance on low-resource devices. Provides strong positional evaluations with fast response times.',
+    path: '/static/nets/t1-256x10.onnx',
     size: '75mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,
   },
+
   elitemaia: {
     id: 'elitemaia',
     name: 'Elite Leela',
-    description: 'Trained on 19.7M games from Lichess Elite Database',
-    path: '/static/maia2/eliteleelav2.onnx',
+    description:
+      'A high-skill Leela network trained on nearly 20 million elite Lichess games. Excels at precise tactics, deep positional understanding, and near–top-level play.',
+    path: '/static/nets/eliteleelav2.onnx',
     size: '15mb',
     hasRatingLevels: false,
     modelType: 'leela' as const,
-  }
+  },
 } as const
+
 
 export const MAIA_MODELS = MODEL_CONFIGS.maia2.ratingLevels
 

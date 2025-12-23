@@ -7,7 +7,7 @@ import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
-import { useMaiaEngine } from "@/hooks/useMaiaEngine";
+import { useNets } from "@/hooks/useNets";
 
 export default function PositionPage() {
   const theme = useTheme();
@@ -15,7 +15,7 @@ export default function PositionPage() {
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
   
   const [game, setGame] = useState(new Chess());
-  const [fen, setFen] = useState(game.fen());
+  const [fen, setFen] = useState(game.fen()); 
 
   const {
     setLlmAnalysisResult,
@@ -59,7 +59,7 @@ export default function PositionPage() {
     themeScoreError,
   } = useAgine(fen);
 
-    const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useMaiaEngine({
+    const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useNets({
     fen: fen
   })
 
@@ -115,8 +115,8 @@ export default function PositionPage() {
         p: { xs: 1, sm: 2, md: 4 }, 
         minHeight: "100vh",
         height: "100%",
-        // overflowY: "auto",
-        overflowX: "hidden",
+        overflowY: "auto",
+        overflowX: "auto",
       }}
     >
       <Stack 

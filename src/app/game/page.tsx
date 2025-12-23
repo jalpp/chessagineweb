@@ -39,8 +39,7 @@ import LoadLichessGameUrl, {
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
-import { useSessionStorage } from "usehooks-ts";
-import { useMaiaEngine } from "@/hooks/useMaiaEngine";
+import {  useNets } from "@/hooks/useNets";
 
 export default function PGNUploaderPage() {
   const theme = useTheme();
@@ -120,7 +119,7 @@ export default function PGNUploaderPage() {
     themeScoreLoading,
   } = useAgine(fen);
 
-     const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useMaiaEngine({
+     const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useNets({
     fen: fen
   })
 
