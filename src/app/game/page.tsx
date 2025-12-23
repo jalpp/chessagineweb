@@ -40,6 +40,7 @@ import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
 import { useSessionStorage } from "usehooks-ts";
+import { useMaiaEngine } from "@/hooks/useMaiaEngine";
 
 export default function PGNUploaderPage() {
   const theme = useTheme();
@@ -67,7 +68,6 @@ export default function PGNUploaderPage() {
   // Game review history state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_active_game_tab", 0);
 
   const {
     setLlmAnalysisResult,
@@ -81,12 +81,6 @@ export default function PGNUploaderPage() {
     lichessOpeningLoading,
     openingLoading,
     moveSquares,
-    chatMessages,
-    chatInput,
-    setChatInput,
-    chatLoading,
-    sessionMode,
-    setSessionMode,
     engineDepth,
     setEngineDepth,
     engineLines,
@@ -102,7 +96,6 @@ export default function PGNUploaderPage() {
     handleMoveAnnontateClick,
     handleChatKeyPress,
     setMoveSquares,
-    clearChatHistory,
     analyzeWithStockfish,
     formatEvaluation,
     formatPrincipalVariation,
@@ -122,16 +115,14 @@ export default function PGNUploaderPage() {
     legalMoves,
     handleFutureMoveLegalClick,
     setRootCurrentMove,
-    evaluations,
-    sanEvaluations,
-    maiaError,
-    maiaIsLoading,
-    isInBook,
     scores,
     themeScoreError,
     themeScoreLoading,
-    lichessData,
   } = useAgine(fen);
+
+     const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useMaiaEngine({
+    fen: fen
+  })
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
 
@@ -295,14 +286,15 @@ export default function PGNUploaderPage() {
     <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
       {moves.length > 0 && (
         <AgineAnalysisView
-          activeAnalysisTab={activeAnalysisTab}
-          setActiveAnalysisTab={setActiveAnalysisTab}
           isGameReviewMode={true}
           stockfishAnalysisResult={stockfishAnalysisResult}
           stockfishLoading={stockfishLoading}
           handleEngineLineClick={handleEngineLineClick}
           engineDepth={engineDepth}
           engineLines={engineLines}
+          sendChatMessage={sendChatMessage}
+          abortChatMessage={abortChatMessage}
+          handleChatKeyPress={handleChatKeyPress}
           engine={engine}
           Maiaerror={maiaError}
           isLoading={maiaIsLoading}
@@ -327,16 +319,6 @@ export default function PGNUploaderPage() {
           requestAnalysis={requestAnalysis}
           legalMoves={legalMoves}
           handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-          chatMessages={chatMessages}
-          chatInput={chatInput}
-          setChatInput={setChatInput}
-          sendChatMessage={sendChatMessage}
-          chatLoading={chatLoading}
-          abortChatMessage={abortChatMessage}
-          handleChatKeyPress={handleChatKeyPress}
-          clearChatHistory={clearChatHistory}
-          sessionMode={sessionMode}
-          setSessionMode={setSessionMode}
           llmLoading={llmLoading}
           moves={moves}
           currentMoveIndex={currentMoveIndex}

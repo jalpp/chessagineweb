@@ -35,10 +35,6 @@ export interface AgineState {
   lichessOpeningLoading: boolean;
   moveSquares: { [square: string]: string };
   analysisTab: number;
-  chatMessages: ChatMessage[];
-  chatInput: string;
-  chatLoading: boolean;
-  sessionMode: boolean;
 }
 
 // Analysis data types

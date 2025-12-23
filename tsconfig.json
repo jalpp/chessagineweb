@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "es2020",
     "lib": [
       "dom",
       "dom.iterable",
@@ -37,7 +37,7 @@
     ".next\\dev/types/**/*.ts",
     ".next\\dev/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "src/stockfish/engine/lc0.js"  ],
   "exclude": [
     "node_modules",
     "src/stockfish/engine/sf17-79.js"

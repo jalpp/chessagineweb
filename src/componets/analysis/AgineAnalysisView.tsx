@@ -36,10 +36,10 @@ import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { MaiaResults } from "../maia/MaiaResults";
-import { MaiaEngineContext } from "@/context/MaiaEngineContext";
 import { MaiaProbabilityChart } from "../maia/MaiaBarGraph";
 import { UseMaiaEngineResult } from "@/hooks/useMaiaEngine";
 import { useSessionStorage } from "usehooks-ts";
+
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -68,9 +68,6 @@ interface BaseAnalysisViewProps {
   requestAnalysis: () => void;
   legalMoves: string[];
   handleFutureMoveLegalClick: (move: string) => Promise<void>;
-  chatMessages: ChatMessage[];
-  chatInput: string;
-  setChatInput: (input: string) => void;
   sendChatMessage: (
     gameInfo?: string | undefined,
     currentMove?: string | undefined,
@@ -79,12 +76,8 @@ interface BaseAnalysisViewProps {
     playMode?: boolean | undefined,
     currentMoveIndex?: number | undefined
   ) => Promise<void>;
-  chatLoading: boolean;
   abortChatMessage: () => void;
   handleChatKeyPress: (e: React.KeyboardEvent) => void;
-  clearChatHistory: () => void;
-  sessionMode: boolean;
-  setSessionMode: (mode: boolean) => void;
   llmLoading: boolean;
   scores: ThemeScore | null;
   ThemeScoreloading: boolean;
@@ -122,8 +115,6 @@ interface AgineAnalysisViewProps
     BaseAnalysisViewProps,
     MaiaProps {
   isGameReviewMode: boolean;
-  activeAnalysisTab: number
-  setActiveAnalysisTab: Dispatch<SetStateAction<number>>
 }
 
 function AgineAnalysisView({
@@ -153,16 +144,9 @@ function AgineAnalysisView({
   requestAnalysis,
   legalMoves,
   handleFutureMoveLegalClick,
-  chatMessages,
-  chatInput,
-  setChatInput,
   sendChatMessage,
-  chatLoading,
   abortChatMessage,
   handleChatKeyPress,
-  clearChatHistory,
-  sessionMode,
-  setSessionMode,
   llmLoading,
   isGameReviewMode = false,
   moves,
@@ -186,15 +170,16 @@ function AgineAnalysisView({
   scores,
   ThemeScoreerror,
   ThemeScoreloading,
-  activeAnalysisTab,
-  setActiveAnalysisTab
 }: AgineAnalysisViewProps) {
-  const [analysisTab, setAnalysisTab] = useSessionStorage<number>("analysis_tab_agine",0);
+  const [analysisTab, setAnalysisTab] = useSessionStorage<number>("agine_current_tab",0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { maia2, bigLeela, elitemaia } = useContext(MaiaEngineContext);
+  const [activeAnalysisTab, setActiveAnalysisTab] = useState(0); 
+ 
+
+  
 
   return (
     <Card
@@ -265,7 +250,7 @@ function AgineAnalysisView({
           maxHeight: "100%",
         }}
       >
-        <TabPanel value={analysisTab} index={0} grow={true}>
+        <TabPanel value={analysisTab} index={0}>
           <Stack spacing={{ xs: 2, md: 3 }}>
             {isGameReviewMode && (
               <Accordion
@@ -317,7 +302,6 @@ function AgineAnalysisView({
                     handleGameReviewClick={handleGameReviewSummaryClick!}
                     handleMoveAnnontateClick={handleMoveAnnontateClick!}
                     handleMoveCoachClick={handleMoveCoachClick!}
-                    chatLoading={chatLoading}
                     gameReview={gameReview!}
                     stockfishAnalysisResult={stockfishAnalysisResult}
                   />
@@ -511,7 +495,7 @@ function AgineAnalysisView({
                 {gameReview && (
                   <>
                     <Divider sx={{ my: 3 }} />
-                    <MaiaProbabilityChart moves={gameReview!} maia2={maia2} eliteLeela={elitemaia} bigLeela={bigLeela} />
+                    <MaiaProbabilityChart moves={gameReview!} />
                   </>
                 )}
               </AccordionDetails>
@@ -658,20 +642,13 @@ function AgineAnalysisView({
           </Stack>
         </TabPanel>
 
-        <TabPanel value={analysisTab} index={1} grow={false} >
+        <TabPanel value={analysisTab} index={1} >
           <ChatTab
-            chatMessages={chatMessages}
-            chatInput={chatInput}
-            setChatInput={setChatInput}
-            sendChatMessage={sendChatMessage}
-            chatLoading={chatLoading}
             currentMoveIndex={currentMoveIndex}
             abortChatMessage={abortChatMessage}
             puzzleMode={false}
+            sendChatMessage={sendChatMessage}
             handleChatKeyPress={handleChatKeyPress}
-            clearChatHistory={clearChatHistory}
-            sessionMode={sessionMode}
-            setSessionMode={setSessionMode}
             gameInfo={pgnText}
             currentMove={currentMove}
           />

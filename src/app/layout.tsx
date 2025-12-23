@@ -10,6 +10,7 @@ import BodyWrapper from "@/componets/BodyWrapper";
 import { MaiaEngineContextProvider } from "@/context/MaiaEngineContext";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { ChatProvider } from "@/context/ChatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,9 +105,9 @@ export default function RootLayout({
             <BodyWrapper>
               <NavBar/>
               <MaiaEngineContextProvider>
-                {children}
-                <Analytics/>
-                <SpeedInsights/>
+                <ChatProvider>
+                    {children}
+                </ChatProvider>
               </MaiaEngineContextProvider>
             </BodyWrapper>
           </ThemeProvider>

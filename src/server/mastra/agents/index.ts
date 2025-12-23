@@ -27,8 +27,18 @@ function createModelFromRouter(runtimeContext: RuntimeContext) {
     apiKey: apiKey,
   });
 
-  return openRouter(`${provider}/${modelName}`);
+  let openRouterName = ''
+
+  if(provider.toLocaleLowerCase() === "claude"){
+    const spliter = modelName.split("-");
+    openRouterName = `${spliter[0]}-${spliter[1]}-${spliter[2]}.${spliter[3]}`
+  }else{
+    openRouterName = `${provider}/${modelName}`;
+  }
+
+  return openRouter(openRouterName);
 }
+
 
 function createAgineCloudModel(runtimeContext: RuntimeContext) {
   const modelName = runtimeContext.get("model") as string;
