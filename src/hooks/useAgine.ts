@@ -20,8 +20,7 @@ import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, A
 import { useThemeScore } from "./useThemeScore";
 import { useChatContext } from "@/context/ChatContext";
 import { useNets } from "./useNets";
-import { addMaiaAnalysisToQuery } from "@/libs/maia/maiaPrompter";
-
+import { addNetAnalysisToQuery } from "@/libs/nets/maiaPrompter";
 
 export default function useAgine(fen: string) {
 
@@ -564,7 +563,7 @@ ${formattedEngineLines}
       }
 
       if(sanEvaluations){
-        query += addMaiaAnalysisToQuery(sanEvaluations);
+        query += addNetAnalysisToQuery(sanEvaluations);
       }
 
       if (state.openingData) {

@@ -7,7 +7,7 @@ import "./globals.css";
 import NavBar from "@/componets/Navbar";
 import { ThemeProvider } from "@/context/ThemeContext";
 import BodyWrapper from "@/componets/BodyWrapper";
-import {NetModelContextProvider } from "@/context/MaiaEngineContext";
+import {NetModelContextProvider } from "@/context/NetContext";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { ChatProvider } from "@/context/ChatContext";

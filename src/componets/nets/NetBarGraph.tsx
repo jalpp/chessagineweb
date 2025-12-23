@@ -19,9 +19,9 @@ import {
   MAIA_MODELS,
   MaiaEvaluation,
   uciToSan,
-} from "@/libs/maia/types";
+} from "@/libs/nets/types";
 import { MoveAnalysis } from "@/hooks/useGameReview";
-import { useNetModels, useNetStatus } from "@/context/MaiaEngineContext";
+import { useNetModels, useNetStatus } from "@/context/NetContext";
 
 
 interface NetProbabilityChartProps {

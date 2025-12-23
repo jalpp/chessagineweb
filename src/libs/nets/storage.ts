@@ -6,8 +6,8 @@ interface ModelStorage {
   size: number
 }
 
-export class MaiaModelStorage {
-  private dbName = 'MaiaModels'
+export class NetModelStorage {
+  private dbName = 'NetModels'
   private storeName = 'models'
   private version = 1
   private db: IDBDatabase | null = null
@@ -213,4 +213,4 @@ export class MaiaModelStorage {
   }
 }
 
-export default MaiaModelStorage
+export default NetModelStorage

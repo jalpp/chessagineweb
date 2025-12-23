@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { useNetModels, useNetStatus } from '@/context/MaiaEngineContext'
-import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/maia/types'
+import { useNetModels, useNetStatus } from '@/context/NetContext'
+import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/nets/types'
 
 interface UseMaiaEngineOptions {
   fen: string
@@ -283,7 +283,7 @@ export const useNets = ({
           if (currentAbortController.signal.aborted) return
 
         
-            const uciEval = await bigLeela.evaluate(fen, 3000, 3000)
+            const uciEval = await bigLeela.evaluate(fen)
             newEvaluations.bigLeela = uciEval
             newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen)
           
@@ -297,7 +297,7 @@ export const useNets = ({
         ) {
           if (currentAbortController.signal.aborted) return
 
-            const uciEval = await elitemaia.evaluate(fen, 2800, 2800)
+            const uciEval = await elitemaia.evaluate(fen)
             newEvaluations.elitemaia = uciEval
             newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen)
           

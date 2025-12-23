@@ -17,8 +17,8 @@ import {
   Button,
 } from '@mui/material'
 import { TrendingUp, TrendingDown, Download, CloudDownload } from '@mui/icons-material'
-import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/maia/types'
-import { useNetStatus, useNetModels } from '@/context/MaiaEngineContext'
+import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/nets/types'
+import { useNetStatus, useNetModels } from '@/context/NetContext'
 
 export interface MaiaResultsProps {
   evaluations: {

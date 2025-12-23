@@ -1,7 +1,7 @@
 import { Chess } from "chess.js"
-import Maia from "./maia"
+import NetModel from "./NetModel"
 
-export type MaiaStatus =
+export type NetStatus =
   | 'loading'
   | 'no-cache'
   | 'downloading'
@@ -11,10 +11,10 @@ export type MaiaStatus =
 export type ModelType = 'maia2' | 'bigLeela' | 'elitemaia'
 
 export interface MaiaEngine {
-  maia2?: Maia
-  bigLeela?: Maia
-  elitemaia?: Maia
-  status: Record<ModelType, MaiaStatus>
+  maia2?: NetModel
+  bigLeela?: NetModel
+  elitemaia?: NetModel
+  status: Record<ModelType, NetStatus>
   progress: Record<ModelType, number>
   downloadModel: (modelType: ModelType) => Promise<void>
   activeModels: ModelType[]

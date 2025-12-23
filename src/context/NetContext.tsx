@@ -1,14 +1,16 @@
 "use client";
 import React, { ReactNode, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import Maia from '@/libs/maia/maia';
-import { MaiaStatus, ModelType, MODEL_CONFIGS } from '@/libs/maia/types';
+
+import { NetStatus, ModelType, MODEL_CONFIGS } from '@/libs/nets/types';
 import toast from 'react-hot-toast';
+import { MaiaModel } from '@/libs/nets/MaiaModel';
+import { LeelaModel } from '@/libs/nets/LeelaModel';
 
 
 export const NetModelContext = React.createContext<{
-  maia2: Maia | undefined;
-  bigLeela: Maia | undefined;
-  elitemaia: Maia | undefined;
+  maia2: MaiaModel | undefined;
+  bigLeela: LeelaModel | undefined;
+  elitemaia: LeelaModel | undefined;
   downloadModel: (modelType: ModelType) => Promise<void>;
 }>({
   maia2: undefined,
@@ -21,7 +23,7 @@ export const NetModelContext = React.createContext<{
 
 // Separate context for frequently-changing state
 export const NetModelStatusContext = React.createContext<{
-  status: Record<ModelType, MaiaStatus>;
+  status: Record<ModelType, NetStatus>;
   progress: Record<ModelType, number>;
   activeModels: ModelType[];
 }>({
@@ -39,7 +41,7 @@ export const NetModelStatusContext = React.createContext<{
 });
 
 export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [status, setStatus] = useState<Record<ModelType, MaiaStatus>>({
+  const [status, setStatus] = useState<Record<ModelType, NetStatus>>({
     maia2: 'loading',
     bigLeela: 'loading',
     elitemaia: 'loading',
@@ -71,24 +73,24 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
 
   // Memoize models - they never change
   const models = useMemo(() => ({
-    maia2: new Maia({
+    maia2: new MaiaModel({
       model: MODEL_CONFIGS.maia2.path,
       modelType: MODEL_CONFIGS.maia2.modelType,
-      setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, maia2: s })),
+      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, maia2: s })),
       setProgress: (p: number) => setProgress(prev => ({ ...prev, maia2: p })),
       setError: (e: string) => setError(prev => ({ ...prev, maia2: e })),
     }),
-    bigLeela: new Maia({
+    bigLeela: new LeelaModel({
       model: MODEL_CONFIGS.bigLeela.path,
       modelType: MODEL_CONFIGS.bigLeela.modelType,
-      setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
+      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
       setProgress: (p: number) => setProgress(prev => ({ ...prev, bigLeela: p })),
       setError: (e: string) => setError(prev => ({ ...prev, bigLeela: e })),
     }),
-    elitemaia: new Maia({
+    elitemaia: new LeelaModel({
       model: MODEL_CONFIGS.elitemaia.path,
       modelType: MODEL_CONFIGS.elitemaia.modelType,
-      setStatus: (s: MaiaStatus) => setStatus(prev => ({ ...prev, elitemaia: s })),
+      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, elitemaia: s })),
       setProgress: (p: number) => setProgress(prev => ({ ...prev, elitemaia: p })),
       setError: (e: string) => setError(prev => ({ ...prev, elitemaia: e })),
     }),
