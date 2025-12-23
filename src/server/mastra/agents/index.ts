@@ -29,9 +29,9 @@ function createModelFromRouter(runtimeContext: RuntimeContext) {
 
   let openRouterName = ''
 
-  if(provider.toLocaleLowerCase() === "claude"){
+  if(provider.toLocaleLowerCase() === "anthropic"){
     const spliter = modelName.split("-");
-    openRouterName = `${spliter[0]}-${spliter[1]}-${spliter[2]}.${spliter[3]}`
+    openRouterName = `${provider}/${spliter[0]}-${spliter[1]}-${spliter[2]}.${spliter[3]}`
   }else{
     openRouterName = `${provider}/${modelName}`;
   }

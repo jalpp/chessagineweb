@@ -8,6 +8,7 @@ import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import { useNets } from "@/hooks/useNets";
+import { useSessionStorage } from "usehooks-ts";
 
 export default function PositionPage() {
   const theme = useTheme();
@@ -63,8 +64,12 @@ export default function PositionPage() {
     fen: fen
   })
 
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_position_act_tab", 0);
+
   const AnalysisContent = () => (
     <AgineAnalysisView
+      activeAnalysisTab={activeAnalysisTab}
+      setActiveAnalysisTab={setActiveAnalysisTab}
       isGameReviewMode={false}
       stockfishAnalysisResult={stockfishAnalysisResult}
       stockfishLoading={stockfishLoading}
@@ -163,14 +168,14 @@ export default function PositionPage() {
         {/* Desktop Analysis View */}
         {!isMobile && (
           <Box 
-            sx={{ 
-              flex: { xs: "1 1 auto", lg: "0 0 auto" },
+            sx={{
+                  flex: 1,
                   width: { xs: "100%", lg: "auto" },
                   maxWidth: "100%",
-                  display: "flex",
-                  justifyContent: { xs: "center", lg: "flex-start" },
-                  px: { xs: 0, sm: 1 },
-            }}
+                  minWidth: 0,
+                  overflowY: "auto",
+                  maxHeight: "calc(100vh - 100px)",
+                }}
           >
             <AnalysisContent />
           </Box>

@@ -40,6 +40,7 @@ import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
 import {  useNets } from "@/hooks/useNets";
+import { useSessionStorage } from "usehooks-ts";
 
 export default function PGNUploaderPage() {
   const theme = useTheme();
@@ -122,6 +123,9 @@ export default function PGNUploaderPage() {
      const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useNets({
     fen: fen
   })
+
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
+
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
 
@@ -285,6 +289,8 @@ export default function PGNUploaderPage() {
     <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
       {moves.length > 0 && (
         <AgineAnalysisView
+          activeAnalysisTab={activeAnalysisTab}
+          setActiveAnalysisTab={setActiveAnalysisTab}
           isGameReviewMode={true}
           stockfishAnalysisResult={stockfishAnalysisResult}
           stockfishLoading={stockfishLoading}
