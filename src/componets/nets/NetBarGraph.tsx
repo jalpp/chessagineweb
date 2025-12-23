@@ -21,10 +21,10 @@ import {
   uciToSan,
 } from "@/libs/maia/types";
 import { MoveAnalysis } from "@/hooks/useGameReview";
-import Maia from "@/libs/maia/maia";
-import { MaiaEngineContext } from "@/context/MaiaEngineContext";
+import { useNetModels, useNetStatus } from "@/context/MaiaEngineContext";
 
-interface MaiaProbabilityChartProps {
+
+interface NetProbabilityChartProps {
   moves: MoveAnalysis[];
 }
 
@@ -33,12 +33,13 @@ const modelToElo = (model: string) =>
 
 type EngineType = "maia2" | "bigLeela" | "eliteLeela";
 
-export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
+export const NetProbabilityChart: React.FC<NetProbabilityChartProps> = ({
   moves,
 
 }) => {
 
-  const { maia2, bigLeela, elitemaia } = useContext(MaiaEngineContext);
+  const { maia2, bigLeela, elitemaia } = useNetModels();
+  const {status} = useNetStatus();
   const [maia2Evaluations, setMaia2Evaluations] = useState<
     Array<{ [key: string]: MaiaEvaluation } | null>
   >([]);
@@ -350,7 +351,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
 
   return (
     <Box sx={{ width: "100%", mt: 2 }}>
-      {/* Header with Chips */}
+    
       <Box
         sx={{
           display: "flex",
@@ -394,12 +395,12 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
         <Tab label="Leela (3000) T1-256" value="bigLeela" />
       </Tabs>
 
-      {/* Analyze Buttons */}
+     
       <Box sx={{ mb: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
         <Button
           variant="contained"
           color="primary"
-          disabled={isLoadingMaia2 || hasAnalyzedMaia2}
+          disabled={isLoadingMaia2 || hasAnalyzedMaia2 || status["maia2"] === "error" || status["maia2"] === "loading"}
           onClick={analyzeMaia2}
           startIcon={isLoadingMaia2 ? <CircularProgress size={18} /> : null}
         >
@@ -409,7 +410,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
         <Button
           variant="contained"
           color="secondary"
-          disabled={isLoadingBigLeela || hasAnalyzedBigLeela}
+          disabled={isLoadingBigLeela || hasAnalyzedBigLeela || status["bigLeela"] === "error" || status["bigLeela"] === "loading"}
           onClick={analyzeBigLeela}
           startIcon={isLoadingBigLeela ? <CircularProgress size={18} /> : null}
         >
@@ -419,7 +420,7 @@ export const MaiaProbabilityChart: React.FC<MaiaProbabilityChartProps> = ({
         <Button
           variant="contained"
           color="secondary"
-          disabled={isLoadingEliteLeela || hasAnalyzedEliteLeela}
+          disabled={isLoadingEliteLeela || hasAnalyzedEliteLeela || status["elitemaia"] === "error" || status["elitemaia"] === "loading"}
           onClick={analyzeEliteLeela}
           startIcon={isLoadingEliteLeela ? <CircularProgress size={18} /> : null}
         >

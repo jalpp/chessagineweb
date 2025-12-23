@@ -1,11 +1,11 @@
 "use client";
 import React, { ReactNode, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Maia from '@/libs/maia/maia';
-import { MaiaStatus, MaiaEngine, ModelType, MODEL_CONFIGS } from '@/libs/maia/types';
+import { MaiaStatus, ModelType, MODEL_CONFIGS } from '@/libs/maia/types';
 import toast from 'react-hot-toast';
 
-// Stable context for models and methods
-export const MaiaEngineContext = React.createContext<{
+
+export const NetModelContext = React.createContext<{
   maia2: Maia | undefined;
   bigLeela: Maia | undefined;
   elitemaia: Maia | undefined;
@@ -20,7 +20,7 @@ export const MaiaEngineContext = React.createContext<{
 });
 
 // Separate context for frequently-changing state
-export const MaiaStatusContext = React.createContext<{
+export const NetModelStatusContext = React.createContext<{
   status: Record<ModelType, MaiaStatus>;
   progress: Record<ModelType, number>;
   activeModels: ModelType[];
@@ -38,7 +38,7 @@ export const MaiaStatusContext = React.createContext<{
   activeModels: [],
 });
 
-export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [status, setStatus] = useState<Record<ModelType, MaiaStatus>>({
     maia2: 'loading',
     bigLeela: 'loading',
@@ -181,27 +181,27 @@ export const MaiaEngineContextProvider: React.FC<{ children: ReactNode }> = ({ c
   }), [status, progress, activeModels]);
 
   return (
-    <MaiaEngineContext.Provider value={engineValue}>
-      <MaiaStatusContext.Provider value={statusValue}>
+    <NetModelContext.Provider value={engineValue}>
+      <NetModelStatusContext.Provider value={statusValue}>
         {children}
-      </MaiaStatusContext.Provider>
-    </MaiaEngineContext.Provider>
+      </NetModelStatusContext.Provider>
+    </NetModelContext.Provider>
   );
 };
 
 // Custom hooks
-export const useMaiaEngineModels = () => {
-  const context = React.useContext(MaiaEngineContext);
+export const useNetModels = () => {
+  const context = React.useContext(NetModelContext);
   if (!context) {
-    throw new Error('useMaiaEngine must be used within MaiaEngineContextProvider');
+    throw new Error('useNetModel must be used within NetModelContextProvider');
   }
   return context;
 };
 
-export const useMaiaStatus = () => {
-  const context = React.useContext(MaiaStatusContext);
+export const useNetStatus = () => {
+  const context = React.useContext(NetModelStatusContext);
   if (!context) {
-    throw new Error('useMaiaStatus must be used within MaiaEngineContextProvider');
+    throw new Error('useNetStatus must be used within NetModelContextProvider');
   }
   return context;
 };

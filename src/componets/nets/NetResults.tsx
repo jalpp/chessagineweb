@@ -18,7 +18,7 @@ import {
 } from '@mui/material'
 import { TrendingUp, TrendingDown, Download, CloudDownload } from '@mui/icons-material'
 import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/maia/types'
-import { useMaiaStatus, useMaiaEngineModels } from '@/context/MaiaEngineContext'
+import { useNetStatus, useNetModels } from '@/context/MaiaEngineContext'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -166,7 +166,7 @@ const ModelDownloadPrompt: React.FC<{
   modelType: ModelType
   downloadModel: (modelType: ModelType) => Promise<void>
 }> = ({ modelType, downloadModel }) => {
-  const { status, progress } = useMaiaStatus()
+  const { status, progress } = useNetStatus()
   const [isDownloading, setIsDownloading] = useState(false)
 
   const modelStatus = status[modelType]
@@ -240,7 +240,7 @@ const ModelDownloadPrompt: React.FC<{
 const DownloadAllModelsPrompt: React.FC<{
   downloadModel: (modelType: ModelType) => Promise<void>
 }> = ({ downloadModel }) => {
-  const { status, progress } = useMaiaStatus()
+  const { status, progress } = useNetStatus()
   const [isDownloadingAll, setIsDownloadingAll] = useState(false)
 
   const allModelTypes = Object.keys(MODEL_CONFIGS) as ModelType[]
@@ -343,16 +343,20 @@ const DownloadAllModelsPrompt: React.FC<{
                 const isDownloading = modelStatus === 'downloading'
 
                 return (
-                  <Card key={modelType} sx={{ border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <Card key={modelType} >
                     <CardContent>
                       <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Box flex={1}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                             {config.name}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                          <Typography variant="caption" >
+                            {config.description}
+                          </Typography>
+                          <Typography variant="caption" >
                             {config.size}
                           </Typography>
+                        
                         </Box>
                         
                         {isReady ? (
@@ -385,13 +389,13 @@ const DownloadAllModelsPrompt: React.FC<{
   )
 }
 
-export const MaiaResults: React.FC<MaiaResultsProps> = ({
+export const NetResults: React.FC<MaiaResultsProps> = ({
   evaluations,
   isMaiaLoading,
   maiaerror,
 }) => {
-  const { status, activeModels } = useMaiaStatus()
-  const { downloadModel } = useMaiaEngineModels()
+  const { status, activeModels } = useNetStatus()
+  const { downloadModel } = useNetModels()
   const [selectedMaia2Model, setSelectedMaia2Model] = useState(0)
   const [selectedTab, setSelectedTab] = useState<ModelType>('maia2')
 
@@ -493,12 +497,11 @@ export const MaiaResults: React.FC<MaiaResultsProps> = ({
           </>
         )}
 
-        {/* Big Leela */}
+   
         {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && (
           <EvaluationDisplay evaluation={evaluations.bigLeela} />
         )}
 
-        {/* Elite Maia */}
         {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && (
           <EvaluationDisplay evaluation={evaluations.elitemaia} />
         )}

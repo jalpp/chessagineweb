@@ -1,6 +1,6 @@
-import { useEffect, useState, useContext, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { MaiaEngineContext, useMaiaEngineModels, useMaiaStatus } from '@/context/MaiaEngineContext'
+import { useNetModels, useNetStatus } from '@/context/MaiaEngineContext'
 import { MAIA_MODELS, MaiaEvaluation, ModelType } from '@/libs/maia/types'
 
 interface UseMaiaEngineOptions {
@@ -151,7 +151,7 @@ const convertToSanEvaluation = (
   }
 }
 
-export const useMaiaEngine = ({
+export const useNets = ({
   fen,
   maxRetries = 30,
   retryDelayMs = 100,
@@ -159,8 +159,8 @@ export const useMaiaEngine = ({
   useLichessBook = true,
   bookThreshold = 21,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
-  const { maia2, bigLeela, elitemaia } = useMaiaEngineModels();
-  const { status, activeModels} = useMaiaStatus();
+  const { maia2, bigLeela, elitemaia } = useNetModels()
+  const { status, activeModels} = useNetStatus()
 
   const [evaluations, setEvaluations] = useState<
     UseMaiaEngineResult['evaluations']
