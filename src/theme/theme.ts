@@ -899,3 +899,222 @@ export const neonCyberThemeConfig = createTheme({
     },
   },
 });
+
+export const christmasTheme = {
+  primary: '#DC143C',
+  primaryDark: '#B22222',
+  secondary: '#228B22',
+  accent: '#FFD700',
+  background: {
+    main: '#0d1a0d',
+    paper: '#1a0f0f',
+    card: '#2d1515',
+    input: '#3d1d1d'
+  },
+  text: {
+    primary: '#FFFFFF',
+    secondary: '#FFE4E1',
+    accent: '#FFD700'
+  },
+  success: "#228B22",
+};
+
+export const christmasThemeConfig = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: christmasTheme.primary,
+      dark: christmasTheme.primaryDark,
+    },
+    secondary: {
+      main: christmasTheme.secondary,
+    },
+    background: {
+      default: christmasTheme.background.main,
+      paper: christmasTheme.background.paper,
+    },
+    text: {
+      primary: christmasTheme.text.primary,
+      secondary: christmasTheme.text.secondary,
+    },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundImage: `
+            linear-gradient(180deg, 
+              rgba(220, 20, 60, 0.15) 0%, 
+              rgba(13, 26, 13, 1) 20%,
+              rgba(13, 26, 13, 1) 80%,
+              rgba(34, 139, 34, 0.2) 100%
+            ),
+            radial-gradient(ellipse at 50% 90%, 
+              rgba(139, 69, 19, 0.3) 0%,
+              transparent 30%
+            ),
+            radial-gradient(ellipse at 48% 85%, 
+              rgba(34, 139, 34, 0.4) 0%,
+              rgba(46, 125, 50, 0.3) 15%,
+              transparent 40%
+            ),
+            radial-gradient(ellipse at 50% 75%, 
+              rgba(34, 139, 34, 0.5) 0%,
+              rgba(56, 142, 60, 0.3) 20%,
+              transparent 45%
+            ),
+            radial-gradient(ellipse at 50% 65%, 
+              rgba(34, 139, 34, 0.6) 0%,
+              rgba(67, 160, 71, 0.4) 25%,
+              transparent 50%
+            ),
+            radial-gradient(ellipse at 50% 55%, 
+              rgba(46, 125, 50, 0.7) 0%,
+              rgba(76, 175, 80, 0.4) 30%,
+              transparent 55%
+            ),
+            radial-gradient(circle at 50% 45%, 
+              rgba(255, 215, 0, 0.3) 0%,
+              rgba(255, 215, 0, 0.1) 2%,
+              transparent 3%
+            )
+          `,
+          backgroundColor: christmasTheme.background.main,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: christmasTheme.background.card,
+          borderRadius: 12,
+          border: '2px solid',
+          borderImage: 'linear-gradient(135deg, #DC143C 0%, #228B22 50%, #FFD700 100%) 1',
+          boxShadow: '0 4px 20px rgba(220, 20, 60, 0.4), 0 0 40px rgba(34, 139, 34, 0.2)',
+          backgroundImage: `
+            repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 15px,
+              rgba(220, 20, 60, 0.05) 15px,
+              rgba(220, 20, 60, 0.05) 30px
+            ),
+            repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 15px,
+              rgba(34, 139, 34, 0.05) 15px,
+              rgba(34, 139, 34, 0.05) 30px
+            ),
+            linear-gradient(135deg,
+              rgba(220, 20, 60, 0.03) 0%,
+              transparent 50%,
+              rgba(34, 139, 34, 0.03) 100%
+            )
+          `,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: christmasTheme.background.paper,
+          borderRadius: 12,
+          backgroundImage: `
+            repeating-linear-gradient(
+              0deg,
+              rgba(220, 20, 60, 0.08),
+              rgba(220, 20, 60, 0.08) 3px,
+              rgba(34, 139, 34, 0.08) 3px,
+              rgba(34, 139, 34, 0.08) 6px,
+              rgba(255, 215, 0, 0.05) 6px,
+              rgba(255, 215, 0, 0.05) 9px,
+              rgba(220, 20, 60, 0.08) 9px,
+              rgba(220, 20, 60, 0.08) 12px
+            ),
+            linear-gradient(
+              135deg,
+              rgba(220, 20, 60, 0.1) 0%,
+              transparent 30%,
+              rgba(34, 139, 34, 0.1) 60%,
+              transparent 100%
+            )
+          `,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+          fontWeight: 700,
+          background: 'linear-gradient(135deg, #DC143C 0%, #228B22 100%)',
+          border: '1px solid rgba(255, 215, 0, 0.3)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #FF1744 0%, #2E7D32 100%)',
+            boxShadow: '0 4px 12px rgba(220, 20, 60, 0.5), 0 0 20px rgba(34, 139, 34, 0.3)',
+            border: '1px solid rgba(255, 215, 0, 0.6)',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          fontWeight: 600,
+          backgroundImage: 'linear-gradient(135deg, rgba(220, 20, 60, 0.2) 0%, rgba(34, 139, 34, 0.2) 100%)',
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: `1px solid ${christmasTheme.background.input}`,
+          color: christmasTheme.text.primary,
+        },
+        head: {
+          backgroundColor: christmasTheme.background.input,
+          fontWeight: 700,
+          backgroundImage: `
+            repeating-linear-gradient(
+              90deg,
+              rgba(220, 20, 60, 0.1),
+              rgba(220, 20, 60, 0.1) 10px,
+              rgba(34, 139, 34, 0.1) 10px,
+              rgba(34, 139, 34, 0.1) 20px
+            )
+          `,
+        },
+      },
+    },
+    MuiAccordion: {
+      styleOverrides: {
+        root: {
+          backgroundColor: christmasTheme.background.card,
+          backgroundImage: `
+            repeating-linear-gradient(
+              45deg,
+              transparent,
+              transparent 15px,
+              rgba(220, 20, 60, 0.04) 15px,
+              rgba(220, 20, 60, 0.04) 30px
+            ),
+            repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 15px,
+              rgba(34, 139, 34, 0.04) 15px,
+              rgba(34, 139, 34, 0.04) 30px
+            )
+          `,
+          border: '1px solid rgba(255, 215, 0, 0.2)',
+          '&:before': {
+            display: 'none',
+          },
+        },
+      },
+    },
+  },
+});

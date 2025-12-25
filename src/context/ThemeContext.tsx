@@ -11,7 +11,8 @@ import {
   discoThemeConfig,
   classicChessThemeConfig,
   marbleThemeConfig,
-  neonCyberThemeConfig
+  neonCyberThemeConfig,
+  christmasThemeConfig
 } from '@/theme/theme';
 
 export type ThemeType = 
@@ -24,7 +25,8 @@ export type ThemeType =
   | 'disco' 
   | 'classicChess' 
   | 'marble' 
-  | 'neonCyber';
+  | 'neonCyber'
+  | 'christmas';
 
 interface ThemeContextType {
   currentTheme: ThemeType;
@@ -56,10 +58,11 @@ const themeMap = {
   classicChess: classicChessThemeConfig,
   marble: marbleThemeConfig,
   neonCyber: neonCyberThemeConfig,
+  christmas: christmasThemeConfig
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>('dark');
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>('christmas');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
