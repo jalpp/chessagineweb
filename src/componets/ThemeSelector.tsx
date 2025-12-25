@@ -20,6 +20,7 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import DiamondIcon from '@mui/icons-material/Diamond';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
+import { CardGiftcard } from '@mui/icons-material';
 
 const ThemeSelector: React.FC = () => {
   const { currentTheme, setTheme } = useTheme();
@@ -39,6 +40,7 @@ const ThemeSelector: React.FC = () => {
     { value: 'classicChess', label: 'Classic Chess', icon: <CheckBoxIcon />, color: '#FFFFFF' },
     { value: 'marble', label: 'Marble', icon: <DiamondIcon />, color: '#757575' },
     { value: 'neonCyber', label: 'Neon Cyber', icon: <FlashOnIcon />, color: '#00FFFF' },
+    { value: 'christmas', label: 'Christmas', icon: <CardGiftcard />, color: '#C41E3A' },
   ];
 
   return (

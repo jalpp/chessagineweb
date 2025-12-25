@@ -73,6 +73,14 @@ export const BOARD_THEMES = {
     squareClickLegalColor: "rgba(46, 125, 50, 0.5)",
     selectedSquareColor: "rgba(255, 235, 59, 0.6)", // bright yellow
   },
+    christmas: {
+    name: "Christmas",
+    lightSquareColor: "#e81010ff",        // snowy white
+    darkSquareColor: "#2e7d32",         // deep pine green
+    bestMoveArrowColor: "#faf8f8ff",      // festive red
+    squareClickLegalColor: "rgba(198, 40, 40, 0.5)", // soft red highlight
+    selectedSquareColor: "rgba(255, 215, 0, 0.65)", // gold ornament glow
+  },
   gray: {
     name: "Modern",
     lightSquareColor: "#f5f5f5bc",
