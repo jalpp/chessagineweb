@@ -62,7 +62,7 @@ const themeMap = {
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>('christmas');
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>('dark');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
