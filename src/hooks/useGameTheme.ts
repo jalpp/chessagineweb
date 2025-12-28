@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { GameReviewTheme } from '@/libs/themes/helper';
+import { useSessionStorage } from 'usehooks-ts';
 
 interface UseGameThemeReturn {
   gameReviewTheme: GameReviewTheme | null;
@@ -10,7 +11,7 @@ interface UseGameThemeReturn {
 }
 
 export function useGameTheme(): UseGameThemeReturn {
-  const [gameReviewTheme, setGameReviewTheme] = useState<GameReviewTheme | null>(null);
+  const [gameReviewTheme, setGameReviewTheme] = useSessionStorage<GameReviewTheme | null>("agine_themes_game_review",null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -6,6 +6,7 @@ import { LineEval } from "@/stockfish/engine/engine";
 import { CandidateMove } from "../componets/tabs/Chessdb";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 import { getOpeningStats } from "@/libs/openingdatabase/helper";
+import { useSessionStorage } from "usehooks-ts";
 
 export type MoveQuality =
   | "Best"
@@ -45,7 +46,7 @@ const useGameReview = (
     console.log("invalid engine waiting for it to start");
   }
 
-  const [gameReview, setGameReview] = useState<MoveAnalysis[]>([]);
+  const [gameReview, setGameReview] = useSessionStorage<MoveAnalysis[]>("agine_current_game_review",[]);
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
   const [rootCurrentMove, setRootCurrentMove] = useState(0);

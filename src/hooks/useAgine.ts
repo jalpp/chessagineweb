@@ -24,7 +24,6 @@ import { addNetAnalysisToQuery } from "@/libs/nets/maiaPrompter";
 
 export default function useAgine(fen: string) {
 
-  
 
   const {
     chatMessages,

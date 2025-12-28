@@ -47,19 +47,19 @@ export default function PGNUploaderPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
 
-  const [pgnText, setPgnText] = useState("");
+  const [pgnText, setPgnText] = useSessionStorage("agine_game_page_pgn","");
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [moves, setMoves] = useState<string[]>([]);
-  const [parsedMovesWithComments, setParsedMovesWithComments] = useState<
+  const [moves, setMoves] = useSessionStorage<string[]>("agine_game_moves",[]);
+  const [parsedMovesWithComments, setParsedMovesWithComments] = useSessionStorage<
     ParsedComment[]
-  >([]);
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+  >("agine_parsed_comments",[]);
+  const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage("agine_game_current_move",0);
 
-  const [inputsVisible, setInputsVisible] = useState(true);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [comment, setComment] = useState("");
-  const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
+  const [inputsVisible, setInputsVisible] = useSessionStorage("agine_show_game",true);
+  const [chapters, setChapters] = useSessionStorage<Chapter[]>("agine_chapters",[]);
+  const [comment, setComment] = useSessionStorage("agine_comment","");
+  const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>("agine_game_info",{});
 
   // Multi-game navigation state
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
