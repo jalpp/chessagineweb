@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Color } from 'chess.js';
 import { ThemeScore } from '@/libs/themes/helper';
+import { getThemeScoreCache, setThemeScoreCache } from '@/libs/themes/cache';
 
 interface UseThemeScoreResult {
     scores: ThemeScore | null;
@@ -14,6 +15,8 @@ export function useThemeScore(fen: string | null, color: Color): UseThemeScoreRe
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
+    const cacheKey = fen && color ? `${fen}|${color}` : null;
+
     const fetchThemeScore = useCallback(async () => {
         if (!fen) {
             setScores(null);
@@ -25,11 +28,18 @@ export function useThemeScore(fen: string | null, color: Color): UseThemeScoreRe
         setError(null);
 
         try {
+            if (cacheKey) {
+                const cached = await getThemeScoreCache(cacheKey);
+                if (cached) {
+                    setScores(cached);
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const response = await fetch('/api/themescore', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fen, color }),
             });
 
@@ -40,13 +50,18 @@ export function useThemeScore(fen: string | null, color: Color): UseThemeScoreRe
 
             const data: ThemeScore = await response.json();
             setScores(data);
+
+            if (cacheKey) {
+                await setThemeScoreCache(cacheKey, data);
+            }
+
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred');
             setScores(null);
         } finally {
             setLoading(false);
         }
-    }, [fen, color]);
+    }, [fen, color, cacheKey]);
 
     useEffect(() => {
         fetchThemeScore();
@@ -59,4 +74,3 @@ export function useThemeScore(fen: string | null, color: Color): UseThemeScoreRe
         refetch: fetchThemeScore,
     };
 }
-

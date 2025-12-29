@@ -16,150 +16,16 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { Settings as SettingsIcon, Storage, Refresh, Queue } from "@mui/icons-material";
-import { validateFen } from "chess.js";
+import {
+  Settings as SettingsIcon,
+  Storage,
+  Refresh,
+  Queue,
+} from "@mui/icons-material";
+
 import { useLocalStorage } from "usehooks-ts";
+import { CandidateMove } from "@/libs/agine/helper";
 
-export interface CandidateMove {
-  uci: string;
-  san: string;
-  score: string;
-  winrate: string;
-  rank: string;
-  note: string;
-}
-
-// Custom hook for fetching ChessDB data
-export function useChessDB(fen: string) {
-  const [data, setData] = useState<CandidateMove[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [queueing, setQueueing] = useState<boolean>(false);
-
-  const fetchChessDBData = useCallback(async (fenString: string) => {
-    if (!fenString.trim()) {
-      setData([]);
-      setError(null);
-      return;
-    }
-
-    if (!validateFen(fenString)) {
-      setError("Invalid FEN provided");
-      setData([]);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const encodedFen = encodeURIComponent(fenString);
-      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&json=1`;
-
-      const response = await fetch(apiUrl);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch data`);
-      }
-
-      const responseData = await response.json();
-
-      if (responseData.status !== "ok") {
-        throw new Error(
-          `Position evaluation not available: ${responseData.status}`
-        );
-      }
-
-      const moves = responseData.moves;
-      if (!Array.isArray(moves)) {
-        throw new Error("Invalid response format: moves not found");
-      }
-
-      if (moves.length === 0) {
-        setData([]);
-        return;
-      }
-
-      const processedMoves = moves.map((move: CandidateMove) => {
-        const scoreNum = Number(move.score);
-        // Convert centipawns to pawns and format to 2 decimal places
-        const scoreStr = isNaN(scoreNum) ? "N/A" : (scoreNum / 100).toFixed(2);
-        return {
-          uci: move.uci || "N/A",
-          san: move.san || "N/A",
-          score: scoreStr,
-          winrate: move.winrate || "N/A",
-          rank: move.rank,
-          note: getChessDbNoteWord(move.note.split(" ")[0]),
-        };
-      });
-
-      setData(processedMoves);
-    } catch (err) {
-      console.log('error!', err)
-      setData([]);
-      setError(err instanceof Error ? err.message : "Failed to fetch data");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const queueAnalysis = useCallback(async (fenString: string) => {
-    if (!fenString.trim() || !validateFen(fenString)) {
-      return;
-    }
-
-    setQueueing(true);
-    try {
-      const encodedFen = encodeURIComponent(fenString);
-      const queueUrl = `https://www.chessdb.cn/cdb.php?action=queue&board=${encodedFen}&json=1`;
-
-      const response = await fetch(queueUrl);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to queue analysis`);
-      }
-
-      const responseData = await response.json();
-      
-      if (responseData.status !== "ok") {
-        throw new Error(`Failed to queue position: ${responseData.status}`);
-      }
-
-      // Optionally show success message or handle response
-      console.log('Position queued successfully');
-      
-    } catch (err) {
-      console.error('Failed to queue analysis:', err);
-      setError(err instanceof Error ? err.message : "Failed to queue analysis");
-    } finally {
-      setQueueing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchChessDBData(fen);
-  }, [fen, fetchChessDBData]);
-
-  const refetch = useCallback(() => {
-    fetchChessDBData(fen);
-  }, [fen, fetchChessDBData]);
-
-  const requestAnalysis = useCallback(() => {
-    queueAnalysis(fen);
-  }, [fen, queueAnalysis]);
-
-  return {
-    data,
-    loading,
-    error,
-    queueing,
-    refetch,
-    requestAnalysis,
-  };
-}
-
-// Component props interface
 export interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
   loading?: boolean;
@@ -173,30 +39,16 @@ export interface ChessDBDisplayProps {
   onRequestAnalysis?: () => void;
 }
 
-function getChessDbNoteWord(note: string): string {
-  switch(note){
-    case "!":
-      return "Best";
-    case "*": 
-      return "Good";
-    case "?": 
-      return "Bad"; 
-    default:
-      return "unknown";     
-  }
-}
-
 export function getChessDBSpeech(data: CandidateMove[]): string {
-   let query = 'Candidate Moves \n\n'
+  let query = "Candidate Moves \n\n";
 
-   for(let i = 0; i < data.length; i++){
-     query += `Move: ${data[i].san} Eval ${data[i].score} WinRate ${data[i].winrate} Note: ${data[i].note}\n`;
-   }
+  for (let i = 0; i < data.length; i++) {
+    query += `Move: ${data[i].san} Eval ${data[i].score} WinRate ${data[i].winrate} Note: ${data[i].note}\n`;
+  }
 
-   return query;
+  return query;
 }
 
-// Component for displaying ChessDB information
 export function ChessDBDisplay({
   data,
   loading = false,
@@ -208,19 +60,18 @@ export function ChessDBDisplay({
   onRequestAnalysis,
 }: ChessDBDisplayProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [chessDBEnabled, setChessDBEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showScores, setShowScores] = useLocalStorage<boolean>(
     "chessdb_ui_show_scores",
     true
-  )
+  );
   const [showWinrates, setShowWinrates] = useLocalStorage<boolean>(
     "chessdb_ui_show_winrate",
     true
-  )
+  );
 
   // Calculate maximum possible moves from current position
   const availableMoves = data ? data.length : 0;
@@ -236,10 +87,10 @@ export function ChessDBDisplay({
 
   const getScoreColor = (score: string) => {
     if (score === "N/A") return "grey.400";
-    const numScore = parseFloat(score) / 100; // Convert centipawns to pawns
-    if (numScore > 0.5) return "#4caf50";   // Green for advantage > 0.5 pawns
-    if (numScore < -0.5) return "#f44336";  // Red for disadvantage > 0.5 pawns
-    return "#ff9800";                       // Orange for roughly equal
+    const numScore = parseFloat(score) / 100;
+    if (numScore > 0.5) return "#4caf50";
+    if (numScore < -0.5) return "#f44336";
+    return "#ff9800";
   };
 
   const getWinrateColor = (winrate: string) => {
@@ -250,27 +101,36 @@ export function ChessDBDisplay({
     return "#ff9800";
   };
 
-  
   if (!chessDBEnabled) {
     return (
       <Paper
         sx={{
           p: isMobile ? 1.5 : 2,
-         
+
           borderRadius: 2,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} flexWrap="wrap">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={isMobile ? 1 : 2}
+          flexWrap="wrap"
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-             
               }}
             />
-            <Typography variant="subtitle2" sx={{  fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                fontSize: isMobile ? "0.8rem" : "0.875rem",
+              }}
+            >
               ChessDB Off
             </Typography>
           </Box>
@@ -278,55 +138,51 @@ export function ChessDBDisplay({
             checked={chessDBEnabled}
             onChange={handleChessDBToggle}
             size={isMobile ? "small" : "medium"}
-          
           />
           <Box sx={{ flexGrow: 1 }} />
           <IconButton
             onClick={() => setSettingsOpen(true)}
-            sx={{  p: 0.5 }}
+            sx={{ p: 0.5 }}
             size="small"
           >
             <SettingsIcon fontSize="small" />
           </IconButton>
         </Stack>
 
-       
         <Dialog
           open={settingsOpen}
           onClose={handleSettingsClose}
           fullScreen={isMobile}
           PaperProps={{
             sx: {
-              minWidth: isMobile ? 'auto' : 400
-            }
+              minWidth: isMobile ? "auto" : 400,
+            },
           }}
         >
           <DialogTitle>ChessDB Settings</DialogTitle>
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-                <Typography variant="caption" sx={{  mb: 1, display: "block" }}>
+                <Typography variant="caption" sx={{ mb: 1, display: "block" }}>
                   Available moves in this position: {actualMaxMoves}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="body2" sx={{  mb: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
                   Show Scores
                 </Typography>
                 <Switch
                   checked={showScores}
                   onChange={(e) => setShowScores(e.target.checked)}
-                
                 />
               </Box>
               <Box>
-                <Typography variant="body2" sx={{  mb: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
                   Show Win Rates
                 </Typography>
                 <Switch
                   checked={showWinrates}
                   onChange={(e) => setShowWinrates(e.target.checked)}
-                 
                 />
               </Box>
             </Stack>
@@ -341,30 +197,38 @@ export function ChessDBDisplay({
     );
   }
 
-  
   if (loading || (!data && chessDBEnabled)) {
     return (
       <Box>
-      
         <Paper
           sx={{
             p: isMobile ? 1.5 : 2,
-          
+
             borderRadius: 2,
-            mb: 2
+            mb: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} flexWrap="wrap">
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={isMobile ? 1 : 2}
+            flexWrap="wrap"
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box
                 sx={{
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                
                 }}
               />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: isMobile ? "0.8rem" : "0.875rem",
+                }}
+              >
                 ChessDB On
               </Typography>
             </Box>
@@ -372,7 +236,6 @@ export function ChessDBDisplay({
               checked={chessDBEnabled}
               onChange={handleChessDBToggle}
               size={isMobile ? "small" : "medium"}
-              
             />
             <Box sx={{ flexGrow: 1 }} />
             <IconButton
@@ -388,32 +251,31 @@ export function ChessDBDisplay({
         {/* Loading State */}
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
           <Stack alignItems="center" spacing={2}>
-            <CircularProgress 
-              size={40} 
-              sx={{ color: "#9c27b0" }} 
-            />
-            <Typography variant="body2" sx={{  fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+            <CircularProgress size={40} sx={{ color: "#9c27b0" }} />
+            <Typography
+              variant="body2"
+              sx={{ fontSize: isMobile ? "0.8rem" : "0.875rem" }}
+            >
               Querying ChessDB...
             </Typography>
           </Stack>
         </Box>
 
- 
         <Dialog
           open={settingsOpen}
           onClose={handleSettingsClose}
           fullScreen={isMobile}
           PaperProps={{
             sx: {
-              minWidth: isMobile ? 'auto' : 400
-            }
+              minWidth: isMobile ? "auto" : 400,
+            },
           }}
         >
           <DialogTitle>ChessDB Settings</DialogTitle>
           <DialogContent>
             <Stack spacing={3} sx={{ pt: 1 }}>
               <Box>
-                <Typography variant="caption" sx={{  mb: 1, display: "block" }}>
+                <Typography variant="caption" sx={{ mb: 1, display: "block" }}>
                   Available moves in this position: {actualMaxMoves}
                 </Typography>
               </Box>
@@ -424,7 +286,6 @@ export function ChessDBDisplay({
                 <Switch
                   checked={showScores}
                   onChange={(e) => setShowScores(e.target.checked)}
-                  
                 />
               </Box>
               <Box>
@@ -434,7 +295,6 @@ export function ChessDBDisplay({
                 <Switch
                   checked={showWinrates}
                   onChange={(e) => setShowWinrates(e.target.checked)}
-                  
                 />
               </Box>
             </Stack>
@@ -449,30 +309,38 @@ export function ChessDBDisplay({
     );
   }
 
-
   if (!data || data.length === 0) {
     return (
       <Box>
-        
         <Paper
           sx={{
             p: isMobile ? 1.5 : 2,
-           
+
             borderRadius: 2,
-            mb: 2
+            mb: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} flexWrap="wrap">
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={isMobile ? 1 : 2}
+            flexWrap="wrap"
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box
                 sx={{
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                 
                 }}
               />
-              <Typography variant="subtitle2" sx={{  fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: isMobile ? "0.8rem" : "0.875rem",
+                }}
+              >
                 ChessDB On
               </Typography>
             </Box>
@@ -480,12 +348,11 @@ export function ChessDBDisplay({
               checked={chessDBEnabled}
               onChange={handleChessDBToggle}
               size={isMobile ? "small" : "medium"}
-             
             />
             <Box sx={{ flexGrow: 1 }} />
             <IconButton
               onClick={() => setSettingsOpen(true)}
-              sx={{  p: 0.5 }}
+              sx={{ p: 0.5 }}
               size="small"
             >
               <SettingsIcon fontSize="small" />
@@ -493,20 +360,28 @@ export function ChessDBDisplay({
           </Stack>
         </Paper>
 
-        
         <Paper
           sx={{
             p: isMobile ? 2 : 4,
-          
+
             borderRadius: 2,
-            textAlign: "center"
+            textAlign: "center",
           }}
         >
-          <Typography variant="body2" sx={{  mb: 3, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
-            {error ? `Error: ${error}` : "No ChessDB data found for this position."}
+          <Typography
+            variant="body2"
+            sx={{ mb: 3, fontSize: isMobile ? "0.8rem" : "0.875rem" }}
+          >
+            {error
+              ? `Error: ${error}`
+              : "No ChessDB data found for this position."}
           </Typography>
-          
-          <Stack direction={isMobile ? "column" : "row"} spacing={2} justifyContent="center">
+
+          <Stack
+            direction={isMobile ? "column" : "row"}
+            spacing={2}
+            justifyContent="center"
+          >
             <Button
               variant="outlined"
               startIcon={queueing ? <CircularProgress size={16} /> : <Queue />}
@@ -514,25 +389,31 @@ export function ChessDBDisplay({
               disabled={queueing}
               size={isMobile ? "small" : "medium"}
               fullWidth={isMobile}
-             
             >
               {queueing ? "Queueing..." : "Request Analysis"}
             </Button>
-            
+
             <Button
               variant="contained"
               startIcon={<Refresh />}
               onClick={onRefresh}
               size={isMobile ? "small" : "medium"}
               fullWidth={isMobile}
-              
             >
               Refresh
             </Button>
           </Stack>
-          
-          <Typography variant="caption" sx={{  mt: 2, display: "block", fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
-            Request analysis to queue this position for evaluation, then refresh to check for results.
+
+          <Typography
+            variant="caption"
+            sx={{
+              mt: 2,
+              display: "block",
+              fontSize: isMobile ? "0.7rem" : "0.75rem",
+            }}
+          >
+            Request analysis to queue this position for evaluation, then refresh
+            to check for results.
           </Typography>
         </Paper>
       </Box>
@@ -545,10 +426,16 @@ export function ChessDBDisplay({
         sx={{
           p: isMobile ? 1.5 : 2,
           borderRadius: 2,
-          mb: 2
+          mb: 2,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} sx={{ mb: 2 }} flexWrap="wrap">
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={isMobile ? 1 : 2}
+          sx={{ mb: 2 }}
+          flexWrap="wrap"
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
@@ -557,7 +444,13 @@ export function ChessDBDisplay({
                 borderRadius: "50%",
               }}
             />
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 600,
+                fontSize: isMobile ? "0.8rem" : "0.875rem",
+              }}
+            >
               ChessDB On
             </Typography>
           </Box>
@@ -565,7 +458,6 @@ export function ChessDBDisplay({
             checked={chessDBEnabled}
             onChange={handleChessDBToggle}
             size={isMobile ? "small" : "medium"}
-           
           />
           <Box sx={{ flexGrow: 1 }} />
           {!isMobile && (
@@ -588,27 +480,38 @@ export function ChessDBDisplay({
         </Stack>
 
         {/* Database Info */}
-        <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2} sx={{ mb: 2 }} flexWrap="wrap">
-          <Typography variant="body2" sx={{  fontWeight: 500, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={isMobile ? 1 : 2}
+          sx={{ mb: 2 }}
+          flexWrap="wrap"
+        >
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 500, fontSize: isMobile ? "0.8rem" : "0.875rem" }}
+          >
             ChessDB Database
           </Typography>
-          <Chip 
-            label={`${data.length}`} 
-            size="small" 
-            sx={{ 
-             
-              fontSize: isMobile ? '0.65rem' : '0.7rem',
+          <Chip
+            label={`${data.length}`}
+            size="small"
+            sx={{
+              fontSize: isMobile ? "0.65rem" : "0.7rem",
               fontWeight: 600,
-              height: isMobile ? 20 : 24
-            }} 
+              height: isMobile ? 20 : 24,
+            }}
           />
-          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: isMobile ? '0.8rem' : '0.875rem' }}>
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 500, fontSize: isMobile ? "0.8rem" : "0.875rem" }}
+          >
             Moves present
           </Typography>
           {isMobile && (
             <IconButton
               onClick={onRefresh}
-              sx={{ p: 0.5, ml: 'auto !important' }}
+              sx={{ p: 0.5, ml: "auto !important" }}
               size="small"
               title="Refresh data"
             >
@@ -617,14 +520,13 @@ export function ChessDBDisplay({
           )}
         </Stack>
 
-       
         {!isMobile && (
           <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-            <Typography variant="caption" sx={{  minWidth: "80px" }}>
+            <Typography variant="caption" sx={{ minWidth: "80px" }}>
               Move
             </Typography>
             {showScores && (
-              <Typography variant="caption" sx={{  minWidth: "60px" }}>
+              <Typography variant="caption" sx={{ minWidth: "60px" }}>
                 Score
               </Typography>
             )}
@@ -633,10 +535,10 @@ export function ChessDBDisplay({
                 Win %
               </Typography>
             )}
-            <Typography variant="caption" sx={{  flex: 1 }}>
+            <Typography variant="caption" sx={{ flex: 1 }}>
               Rank
             </Typography>
-            <Typography variant="caption" sx={{  flex: 1 }}>
+            <Typography variant="caption" sx={{ flex: 1 }}>
               Note
             </Typography>
           </Stack>
@@ -651,13 +553,16 @@ export function ChessDBDisplay({
             onClick={() => analyzeMove(move)}
             sx={{
               p: isMobile ? 1.5 : 2,
-             
+
               borderRadius: 0,
-              borderLeft: index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
+              borderLeft:
+                index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
               cursor: llmLoading ? "not-allowed" : "pointer",
               transition: "background-color 0.2s ease",
               "&:hover": {
-                backgroundColor: llmLoading ? "#1a1a1a" : "rgba(156, 39, 176, 0.1)",
+                backgroundColor: llmLoading
+                  ? "#1a1a1a"
+                  : "rgba(156, 39, 176, 0.1)",
               },
               filter: llmLoading ? "grayscale(50%)" : "none",
             }}
@@ -665,32 +570,37 @@ export function ChessDBDisplay({
             {isMobile ? (
               // Mobile Layout - Stacked
               <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
                   <Typography
                     variant="body2"
                     sx={{
-                      
                       fontWeight: "bold",
                       fontFamily: "monospace",
-                      fontSize: "0.85rem"
+                      fontSize: "0.85rem",
                     }}
                   >
                     {index + 1}. {move.san}
                   </Typography>
-                  <Chip 
+                  <Chip
                     label={move.note}
                     size="small"
                     sx={{
-                      
                       fontSize: "0.65rem",
-                      height: 20
+                      height: 20,
                     }}
                   />
                 </Stack>
                 <Stack direction="row" alignItems="center" spacing={2}>
                   {showScores && (
                     <Box>
-                      <Typography variant="caption" sx={{  fontSize: "0.65rem" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ fontSize: "0.65rem" }}
+                      >
                         Score
                       </Typography>
                       <Typography
@@ -699,16 +609,23 @@ export function ChessDBDisplay({
                           color: getScoreColor(move.score),
                           fontFamily: "monospace",
                           fontSize: "0.75rem",
-                          fontWeight: 500
+                          fontWeight: 500,
                         }}
                       >
-                        {move.score === "N/A" ? "—" : `${parseFloat(move.score) >= 0 ? '+' : ''}${move.score}`}
+                        {move.score === "N/A"
+                          ? "—"
+                          : `${parseFloat(move.score) >= 0 ? "+" : ""}${
+                              move.score
+                            }`}
                       </Typography>
                     </Box>
                   )}
                   {showWinrates && (
                     <Box>
-                      <Typography variant="caption" sx={{ fontSize: "0.65rem" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ fontSize: "0.65rem" }}
+                      >
                         Win %
                       </Typography>
                       <Typography
@@ -717,7 +634,7 @@ export function ChessDBDisplay({
                           color: getWinrateColor(move.winrate),
                           fontFamily: "monospace",
                           fontSize: "0.75rem",
-                          fontWeight: 500
+                          fontWeight: 500,
                         }}
                       >
                         {move.winrate === "N/A" ? "—" : `${move.winrate}%`}
@@ -731,9 +648,8 @@ export function ChessDBDisplay({
                     <Typography
                       variant="body2"
                       sx={{
-                      
                         fontFamily: "monospace",
-                        fontSize: "0.75rem"
+                        fontSize: "0.75rem",
                       }}
                     >
                       {move.rank}
@@ -748,11 +664,10 @@ export function ChessDBDisplay({
                 <Typography
                   variant="body2"
                   sx={{
-                  
                     fontWeight: "bold",
                     minWidth: "80px",
                     fontFamily: "monospace",
-                    fontSize: "0.9rem"
+                    fontSize: "0.9rem",
                   }}
                 >
                   {index + 1}. {move.san}
@@ -767,10 +682,14 @@ export function ChessDBDisplay({
                       minWidth: "60px",
                       fontFamily: "monospace",
                       fontSize: "0.85rem",
-                      fontWeight: 500
+                      fontWeight: 500,
                     }}
                   >
-                    {move.score === "N/A" ? "—" : `${parseFloat(move.score) >= 0 ? '+' : ''}${move.score}`}
+                    {move.score === "N/A"
+                      ? "—"
+                      : `${parseFloat(move.score) >= 0 ? "+" : ""}${
+                          move.score
+                        }`}
                   </Typography>
                 )}
 
@@ -783,7 +702,7 @@ export function ChessDBDisplay({
                       minWidth: "60px",
                       fontFamily: "monospace",
                       fontSize: "0.85rem",
-                      fontWeight: 500
+                      fontWeight: 500,
                     }}
                   >
                     {move.winrate === "N/A" ? "—" : `${move.winrate}%`}
@@ -794,10 +713,9 @@ export function ChessDBDisplay({
                 <Typography
                   variant="body2"
                   sx={{
-                   
                     fontFamily: "monospace",
                     fontSize: "0.8rem",
-                    flex: 1
+                    flex: 1,
                   }}
                 >
                   {move.rank}
@@ -807,10 +725,9 @@ export function ChessDBDisplay({
                 <Typography
                   variant="body2"
                   sx={{
-                    
                     fontFamily: "monospace",
                     fontSize: "0.8rem",
-                    flex: 1
+                    flex: 1,
                   }}
                 >
                   {move.note}
@@ -825,19 +742,31 @@ export function ChessDBDisplay({
       <Paper
         sx={{
           p: isMobile ? 1 : 1.5,
-         
+
           borderRadius: 0,
-          mt: 0
+          mt: 0,
         }}
       >
-        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={isMobile ? 1 : 0}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap"
+          spacing={isMobile ? 1 : 0}
+        >
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Storage fontSize="small"  />
-            <Typography variant="caption" sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
+            <Storage fontSize="small" />
+            <Typography
+              variant="caption"
+              sx={{ fontSize: isMobile ? "0.7rem" : "0.75rem" }}
+            >
               Data from ChessDB
             </Typography>
           </Stack>
-          <Typography variant="caption" sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem' }}>
+          <Typography
+            variant="caption"
+            sx={{ fontSize: isMobile ? "0.7rem" : "0.75rem" }}
+          >
             Showing {data.length} moves
           </Typography>
         </Stack>
@@ -850,42 +779,43 @@ export function ChessDBDisplay({
         fullScreen={isMobile}
         PaperProps={{
           sx: {
-         
-            minWidth: isMobile ? 'auto' : 400
-          }
+            minWidth: isMobile ? "auto" : 400,
+          },
         }}
       >
         <DialogTitle>ChessDB Settings</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ pt: 1 }}>
             <Box>
-              <Typography variant="caption" sx={{  mb: 1, display: "block" }}>
+              <Typography variant="caption" sx={{ mb: 1, display: "block" }}>
                 Available moves in this position: {actualMaxMoves}
               </Typography>
             </Box>
             <Box>
-              <Typography variant="body2" sx={{  mb: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
                 Display Options
               </Typography>
               <Stack spacing={2} sx={{ mt: 2 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2" >
-                    Show Scores
-                  </Typography>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="body2">Show Scores</Typography>
                   <Switch
                     checked={showScores}
                     onChange={(e) => setShowScores(e.target.checked)}
-                    
                   />
                 </Stack>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2" >
-                    Show Win Rates
-                  </Typography>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography variant="body2">Show Win Rates</Typography>
                   <Switch
                     checked={showWinrates}
                     onChange={(e) => setShowWinrates(e.target.checked)}
-                    
                   />
                 </Stack>
               </Stack>
@@ -893,9 +823,7 @@ export function ChessDBDisplay({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleSettingsClose} >
-            Done
-          </Button>
+          <Button onClick={handleSettingsClose}>Done</Button>
         </DialogActions>
       </Dialog>
 
@@ -903,7 +831,10 @@ export function ChessDBDisplay({
       <Box sx={{ mt: 2, px: isMobile ? 0.5 : 0 }}>
         <Typography
           variant="caption"
-          sx={{  fontStyle: "italic", fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+          sx={{
+            fontStyle: "italic",
+            fontSize: isMobile ? "0.7rem" : "0.75rem",
+          }}
         >
           Click on any move above to get AI analysis of that candidate
         </Typography>

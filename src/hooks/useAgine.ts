@@ -10,7 +10,9 @@ import {
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
-import { CandidateMove, getChessDBSpeech, useChessDB } from "../componets/tabs/Chessdb";
+import { CandidateMove } from "@/libs/agine/helper";
+import { getChessDBSpeech} from "../componets/tabs/Chessdb";
+import { useChessDB } from "./useChessDb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
 import { ApiSettings } from "../componets/tabs/ModelSetting";
@@ -21,10 +23,10 @@ import { useThemeScore } from "./useThemeScore";
 import { useChatContext } from "@/context/ChatContext";
 import { useNets } from "./useNets";
 import { addNetAnalysisToQuery } from "@/libs/nets/maiaPrompter";
+import { getStockfishCacheKey, readStockfishCache, writeStockfishCache } from "@/stockfish/engine/cache";
 
 export default function useAgine(fen: string) {
 
-  
 
   const {
     chatMessages,
@@ -69,6 +71,13 @@ export default function useAgine(fen: string) {
 
   const { session } = useSession();
   const engine = useEngine(true, enginePicked);
+
+  useEffect(() => {
+  Object.keys(sessionStorage)
+    .filter((k) => k.startsWith("stockfish:"))
+    .forEach((k) => sessionStorage.removeItem(k));
+}, [engine]);
+
   
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
   const {
@@ -84,9 +93,6 @@ export default function useAgine(fen: string) {
   
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
-
-
-
 
   const currentFenRef = useRef(fen);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -257,37 +263,58 @@ export default function useAgine(fen: string) {
     }
   }, [updateState]);
 
-  const analyzeWithStockfish = useCallback(async (): Promise<void> => {
-    if (!engine) {
-      console.warn("Stockfish engine not ready");
-      return;
-    }
+  const analyzeWithStockfish = useCallback(async () => {
+  if (!engine || !fen) return;
 
-    const currentFen = currentFenRef.current;
-    updateState({ stockfishLoading: true });
+  const currentFen = currentFenRef.current;
+  const cacheKey = getStockfishCacheKey(
+    currentFen,
+    engineDepth,
+    engineLines
+  );
 
-    try {
-      const result = await engine.evaluatePositionWithUpdate({
-        fen: currentFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: (partialEval: PositionEval) => {
-          if (currentFenRef.current === currentFen) {
-            updateState({ stockfishAnalysisResult: partialEval });
-          }
-        },
+  const cached = readStockfishCache(cacheKey);
+  if (cached) {
+    updateState({
+      stockfishAnalysisResult: cached,
+      stockfishLoading: false,
+    });
+    return;
+  }
+
+  updateState({ stockfishLoading: true });
+
+  try {
+    const result = await engine.evaluatePositionWithUpdate({
+      fen: currentFen,
+      depth: engineDepth,
+      multiPv: engineLines,
+      setPartialEval: (partialEval) => {
+        if (currentFenRef.current === currentFen) {
+          updateState({ stockfishAnalysisResult: partialEval });
+        }
+      },
+    });
+
+    if (currentFenRef.current === currentFen) {
+      writeStockfishCache(cacheKey, result);
+
+      updateState({
+        stockfishAnalysisResult: result,
+        stockfishLoading: false,
       });
-
-      if (currentFenRef.current === currentFen) {
-        updateState({ stockfishAnalysisResult: result, stockfishLoading: false });
-      }
-    } catch (error) {
-      console.error("Error analyzing position with Stockfish:", error);
-      if (currentFenRef.current === currentFen) {
-        updateState({ stockfishAnalysisResult: null, stockfishLoading: false });
-      }
     }
-  }, [engine, engineDepth, engineLines, updateState]);
+  } catch (err) {
+    console.error("Stockfish analysis failed:", err);
+
+    if (currentFenRef.current === currentFen) {
+      updateState({
+        stockfishAnalysisResult: null,
+        stockfishLoading: false,
+      });
+    }
+  }
+}, [engine, fen, engineDepth, engineLines, updateState]);
 
 
   const abortChatMessage = useCallback((): void => {

@@ -28,7 +28,7 @@ import LegalMoveTab from "../tabs/LegalMoveTab";
 import ChatTab from "../tabs/ChatTab";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
-import { CandidateMove } from "../tabs/Chessdb";
+import { CandidateMove } from "@/libs/agine/helper";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
