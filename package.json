@@ -27,6 +27,7 @@
     "axios": "^1.12.2",
     "chess.js": "^1.4.0",
     "chess.ts": "^0.16.2",
+    "idb": "^8.0.3",
     "lucide-react": "^0.555.0",
     "next": "^16.0.10",
     "ollama-ai-provider-v2": "^1.5.1",

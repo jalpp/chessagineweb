@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import { Chess, Move, validateFen, Color } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { LineEval } from "@/stockfish/engine/engine";
-import { CandidateMove } from "../componets/tabs/Chessdb";
+import { CandidateMove } from "@/libs/agine/helper";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 import { getOpeningStats } from "@/libs/openingdatabase/helper";
 import { useSessionStorage } from "usehooks-ts";

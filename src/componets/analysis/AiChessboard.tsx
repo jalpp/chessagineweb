@@ -61,11 +61,10 @@ import { MaiaEvaluation } from "@/libs/nets/types";
 
 export type BoardOrientation = "white" | "black";
 
-
 export interface MaiaEngineAnalysis {
-    maia2?: { [key: string]: MaiaEvaluation } | null
-    bigLeela?: MaiaEvaluation | null
-    elitemaia?: MaiaEvaluation | null
+  maia2?: { [key: string]: MaiaEvaluation } | null;
+  bigLeela?: MaiaEvaluation | null;
+  elitemaia?: MaiaEvaluation | null;
 }
 
 interface AiChessboardPanelProps {
@@ -100,7 +99,7 @@ interface AiChessboardPanelProps {
   gameStatus?: string;
   playerSide?: "white" | "black";
   engineThinking?: boolean;
-  evaluations?: MaiaEngineAnalysis
+  evaluations?: MaiaEngineAnalysis;
 }
 
 export default function AiChessboardPanel({
@@ -391,7 +390,6 @@ export default function AiChessboardPanel({
     );
   }, [playMode, gameStatus, game, playerSide, engineThinking]);
 
-  
   const pgnMoves = useMemo(() => {
     if (moveHistory.length <= 1) return [];
 
@@ -442,248 +440,211 @@ export default function AiChessboardPanel({
     [moveHistory, setGame, setFen, clearAnalysis]
   );
 
-  
   const handlePlayerMove = useCallback(
-  (args: PieceDropHandlerArgs) => {
-    const source = args.sourceSquare;
-    const target = args.targetSquare;
+    (args: PieceDropHandlerArgs) => {
+      const source = args.sourceSquare;
+      const target = args.targetSquare;
 
-    // In v5, targetSquare can be null if dropped off board
-    if (!source || !target) return false;
+      // In v5, targetSquare can be null if dropped off board
+      if (!source || !target) return false;
 
-    if (playMode) {
-      if (!canPlayerMove()) return false;
+      if (playMode) {
+        if (!canPlayerMove()) return false;
 
-      try {
-        const move = game.move({
-          from: source,
-          to: target,
-          promotion: "q",
-        });
+        try {
+          const move = game.move({
+            from: source,
+            to: target,
+            promotion: "q",
+          });
 
-        if (move) {
-          const newGame = new Chess(game.fen());
-          setGame(newGame);
-          setFen(newGame.fen());
-          setSelectedSquare(null);
-          setLegalMoves([]);
-          setMoveSquares({});
-          return true;
+          if (move) {
+            const newGame = new Chess(game.fen());
+            setGame(newGame);
+            setFen(newGame.fen());
+            setSelectedSquare(null);
+            setLegalMoves([]);
+            setMoveSquares({});
+            return true;
+          }
+        } catch (error) {
+          console.log("Invalid move:", error);
         }
-      } catch (error) {
-        console.log("Invalid move:", error);
+        return false;
+      } else {
+        let moveMade = false;
+        safeGameMutate((gameInstance) => {
+          const move = gameInstance.move({
+            from: source,
+            to: target,
+            promotion: "q",
+          });
+          if (move) {
+            moveMade = true;
+            clearAnalysis();
+          }
+        });
+        setMoveSquares({});
+        return moveMade;
       }
-      return false;
-    } else {
-      let moveMade = false;
-      safeGameMutate((gameInstance) => {
-        const move = gameInstance.move({
-          from: source,
-          to: target,
-          promotion: "q",
-        });
-        if (move) {
-          moveMade = true;
-          clearAnalysis();
-        }
-      });
-      setMoveSquares({});
-      return moveMade;
-    }
-  },
-  [
-    playMode,
-    canPlayerMove,
-    game,
-    setGame,
-    setFen,
-    setMoveSquares,
-    safeGameMutate,
-    clearAnalysis,
-  ]
-);
+    },
+    [
+      playMode,
+      canPlayerMove,
+      game,
+      setGame,
+      setFen,
+      setMoveSquares,
+      safeGameMutate,
+      clearAnalysis,
+    ]
+  );
 
-const handleSquareClick = useCallback(
-  ({ piece, square }: SquareHandlerArgs) => {
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-
-    if (selectedSquare && legalMoves.includes(square)) {
-      // Create PieceDropHandlerArgs for the move
-      const movingPiece = game.get(selectedSquare as Square);
-      const args: PieceDropHandlerArgs = {
-        piece: {
-          isSparePiece: false,
-          position: selectedSquare,
-          pieceType: movingPiece ? `${movingPiece.color}${movingPiece.type.toUpperCase()}` : 'wP',
-        },
-        sourceSquare: selectedSquare,
-        targetSquare: square,
-      };
-      
-      // Use handlePlayerMove to process the move
-      handlePlayerMove(args);
-      
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-
-    const chessPiece = game.get(square as Square);
-    if (!chessPiece || chessPiece.color !== game.turn()) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-
-    if (playMode) {
-      const playerColor = side === "white" ? "w" : "b";
-      if (chessPiece.color !== playerColor) {
+  const handleSquareClick = useCallback(
+    ({ piece, square }: SquareHandlerArgs) => {
+      if (selectedSquare === square) {
         setSelectedSquare(null);
         setLegalMoves([]);
         return;
       }
-    }
 
-    const moves = game.moves({ square: square as Square, verbose: true });
-    const targetSquares = moves.map((move) => move.to);
+      if (selectedSquare && legalMoves.includes(square)) {
+        // Create PieceDropHandlerArgs for the move
+        const movingPiece = game.get(selectedSquare as Square);
+        const args: PieceDropHandlerArgs = {
+          piece: {
+            isSparePiece: false,
+            position: selectedSquare,
+            pieceType: movingPiece
+              ? `${movingPiece.color}${movingPiece.type.toUpperCase()}`
+              : "wP",
+          },
+          sourceSquare: selectedSquare,
+          targetSquare: square,
+        };
 
-    setSelectedSquare(square);
-    setLegalMoves(targetSquares);
-  },
-  [
-    playMode,
-    canPlayerMove,
-    selectedSquare,
-    legalMoves,
-    game,
-    side,
-    setGame,
-    setFen,
-    safeGameMutate,
-    clearAnalysis,
-    handlePlayerMove, 
-  ]
-);
+        // Use handlePlayerMove to process the move
+        handlePlayerMove(args);
 
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
 
-  const customArrows = useMemo((): Arrow[] => {
-    
-  if (!showArrows) {
-    return [];
-  }
+      const chessPiece = game.get(square as Square);
+      if (!chessPiece || chessPiece.color !== game.turn()) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
 
-  const arrows: Arrow[] = [];
+      if (playMode) {
+        const playerColor = side === "white" ? "w" : "b";
+        if (chessPiece.color !== playerColor) {
+          setSelectedSquare(null);
+          setLegalMoves([]);
+          return;
+        }
+      }
 
-  if (reviewMove) {
-    const reviewArrow: Arrow = {
-      startSquare: reviewMove.arrowMove.from as Square,
-      endSquare: reviewMove.arrowMove.to as Square,
-      color: getMoveClassificationStyle(reviewMove.quality).color,
+      const moves = game.moves({ square: square as Square, verbose: true });
+      const targetSquares = moves.map((move) => move.to);
+
+      setSelectedSquare(square);
+      setLegalMoves(targetSquares);
+    },
+    [
+      playMode,
+      canPlayerMove,
+      selectedSquare,
+      legalMoves,
+      game,
+      side,
+      setGame,
+      setFen,
+      safeGameMutate,
+      clearAnalysis,
+      handlePlayerMove,
+    ]
+  );
+
+  const customArrows = useMemo<Arrow[]>(() => {
+    if (!showArrows) return [];
+
+    const arrows: Arrow[] = [];
+    const seen = new Set<string>();
+
+    const addArrow = (arrow: Arrow) => {
+      const key = `${arrow.startSquare}-${arrow.endSquare}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        arrows.push(arrow);
+      }
     };
-    arrows.push(reviewArrow);
 
-    if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines) {
-      const bestLine = stockfishAnalysisResult.lines[0]?.pv;
-      if (bestLine && bestLine.length > 0) {
-        const move = bestLine[0];
-        if (move && move.length >= 4) {
-          const from = move.substring(0, 2);
-          const to = move.substring(2, 4);
+    if (reviewMove) {
+      addArrow({
+        startSquare: reviewMove.arrowMove.from as Square,
+        endSquare: reviewMove.arrowMove.to as Square,
+        color: getMoveClassificationStyle(reviewMove.quality).color,
+      });
 
-          // Avoid duplicate arrows
-          const arrowKey = `${from}-${to}`;
-          const reviewArrowKey = `${reviewMove.arrowMove.from}-${reviewMove.arrowMove.to}`;
-
-          if (arrowKey !== reviewArrowKey) {
-            const engineArrow: Arrow = {
-              startSquare: from as Square,
-              endSquare: to as Square,
-              color: "#4caf50",
-            };
-            arrows.push(engineArrow);
-          }
+      if (
+        reviewMove.quality !== "Best" &&
+        stockfishAnalysisResult?.lines?.length
+      ) {
+        const move = stockfishAnalysisResult.lines[0].pv?.[0];
+        if (move?.length >= 4) {
+          addArrow({
+            startSquare: move.slice(0, 2) as Square,
+            endSquare: move.slice(2, 4) as Square,
+            color: "#4caf50",
+          });
         }
       }
     }
-  } else if (!reviewMove && stockfishAnalysisResult?.lines) {
-    // Only show engine arrow if no reviewMove is present
-    const bestLine = stockfishAnalysisResult.lines[0]?.pv;
-    if (bestLine && bestLine.length > 0) {
-      const move = bestLine[0];
-      if (move && move.length >= 4) {
-        const from = move.substring(0, 2);
-        const to = move.substring(2, 4);
-        const engineArrow: Arrow = {
-          startSquare: from as Square,
-          endSquare: to as Square,
+
+    if (!reviewMove && stockfishAnalysisResult?.lines?.length) {
+      const move = stockfishAnalysisResult.lines[0].pv?.[0];
+      if (move?.length >= 4) {
+        addArrow({
+          startSquare: move.slice(0, 2) as Square,
+          endSquare: move.slice(2, 4) as Square,
           color: "#4caf50",
-        };
-        arrows.push(engineArrow);
-      }
-    }
-  }
-
-  console.log("boardevals", evaluations);
-
-  // Helper function to add arrow if move is valid and not duplicate
-  const addArrowIfValid = (
-    policy: Record<string, number> | undefined,
-    color: string
-  ) => {
-    if (!policy) return;
-
-    const topMove = Object.entries(policy).sort(([, a], [, b]) => b - a)[0];
-    if (!topMove) return;
-
-    const [move] = topMove;
-    if (move.length >= 4) {
-      const from = move.substring(0, 2) as Square;
-      const to = move.substring(2, 4) as Square;
-
-      // Avoid duplicate arrows
-      const arrowKey = `${from}-${to}`;
-      const existingArrow = arrows.find(
-        (a) => `${a.startSquare}-${a.endSquare}` === arrowKey
-      );
-
-      if (!existingArrow) {
-        arrows.push({
-          startSquare: from,
-          endSquare: to,
-          color,
         });
       }
     }
-  };
 
-  // Add Maia 1900 top move arrow (human-like move)
-  if (evaluations?.maia2) {
-    const maia1900 = evaluations.maia2["maia_kdd_1900"];
-    addArrowIfValid(maia1900?.policy, "#7c3aed"); 
-  }
+    const addPolicyArrow = (
+      policy?: Record<string, number>,
+      color?: string
+    ) => {
+      if (!policy) return;
 
-  // Add BigLeela top move arrow (strong engine)
-  if (evaluations?.bigLeela) {
-    addArrowIfValid(evaluations.bigLeela.policy, "#400ac8ff"); 
-  }
+      const move = Object.entries(policy).sort(([, a], [, b]) => b - a)[0]?.[0];
 
-  // Add EliteMaia top move arrow (elite human-like)
-  if (evaluations?.elitemaia) {
-    addArrowIfValid(evaluations.elitemaia.policy, "#c60b75ff"); 
-  }
+      if (move?.length >= 4) {
+        addArrow({
+          startSquare: move.slice(0, 2) as Square,
+          endSquare: move.slice(2, 4) as Square,
+          color: color!,
+        });
+      }
+    };
 
-  return arrows;
-}, [
-  showArrows,
-  reviewMove,
-  stockfishAnalysisResult,
-  currentMoveIndex,
-  evaluations,
-]);
+    addPolicyArrow(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
+    addPolicyArrow(evaluations?.bigLeela?.policy, "#400ac8ff");
+    addPolicyArrow(evaluations?.elitemaia?.policy, "#c60b75ff");
+
+    return arrows;
+  }, [
+    showArrows,
+    reviewMove,
+    stockfishAnalysisResult,
+    evaluations,
+    currentMoveIndex,
+    fen,
+  ]);
 
   // Memoized custom square styles with piece highlighting
   const customSquareStyles = useMemo(() => {
@@ -826,100 +787,110 @@ const handleSquareClick = useCallback(
   });
 
   const getCustomPieces = (pieceSet: string): PieceRenderObject => {
-  const pieces = ["P", "N", "B", "R", "Q", "K"];
-  const colors = ["w", "b"];
-  const customPieces: PieceRenderObject = {};
+    const pieces = ["P", "N", "B", "R", "Q", "K"];
+    const colors = ["w", "b"];
+    const customPieces: PieceRenderObject = {};
 
-  if (is3DSet(pieceSet)) {
-    const pieceHeights: Record<string, number> = {
-      P: 1, N: 1.2, B: 1.2, R: 1.2, Q: 1.5, K: 1.6
-    };
+    if (is3DSet(pieceSet)) {
+      const pieceHeights: Record<string, number> = {
+        P: 1,
+        N: 1.2,
+        B: 1.2,
+        R: 1.2,
+        Q: 1.5,
+        K: 1.6,
+      };
 
-    colors.forEach((color) => {
-      pieces.forEach((piece) => {
-        const pieceKey = `${color}${piece}`;
-        const pieceHeight = pieceHeights[piece];
+      colors.forEach((color) => {
+        pieces.forEach((piece) => {
+          const pieceKey = `${color}${piece}`;
+          const pieceHeight = pieceHeights[piece];
 
-        customPieces[pieceKey] = () => {
-          const squareWidth = document.querySelector(`[data-column="a"][data-row="1"]`)?.getBoundingClientRect()?.width ?? 80;
-          
-          return (
-            <div style={{
-              width: squareWidth,
-              height: squareWidth,
-              position: 'relative',
-              pointerEvents: 'none'
-            }}>
-              <img 
-                src={`/static/pieces/${pieceSet}/${pieceKey}.png`}
-                width={squareWidth}
-                height={pieceHeight * squareWidth}
+          customPieces[pieceKey] = () => {
+            const squareWidth =
+              document
+                .querySelector(`[data-column="a"][data-row="1"]`)
+                ?.getBoundingClientRect()?.width ?? 80;
+
+            return (
+              <div
                 style={{
-                  position: 'absolute',
-                  bottom: `${0.2 * squareWidth}px`,
-                  objectFit: piece === 'K' ? 'contain' : 'cover'
+                  width: squareWidth,
+                  height: squareWidth,
+                  position: "relative",
+                  pointerEvents: "none",
                 }}
-                alt={pieceKey}
-              />
-            </div>
+              >
+                <img
+                  src={`/static/pieces/${pieceSet}/${pieceKey}.png`}
+                  width={squareWidth}
+                  height={pieceHeight * squareWidth}
+                  style={{
+                    position: "absolute",
+                    bottom: `${0.2 * squareWidth}px`,
+                    objectFit: piece === "K" ? "contain" : "cover",
+                  }}
+                  alt={pieceKey}
+                />
+              </div>
+            );
+          };
+        });
+      });
+    } else {
+      colors.forEach((color) => {
+        pieces.forEach((piece) => {
+          const pieceKey = `${color}${piece}`;
+
+          let src: string;
+          if (pieceSet.toLowerCase() === "cburnett" || !pieceSet) {
+            src = `/static/pieces/Cburnett/${pieceKey}.svg`;
+          } else {
+            src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
+          }
+
+          customPieces[pieceKey] = () => (
+            <img
+              src={src}
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "block",
+              }}
+              alt={pieceKey}
+            />
           );
-        };
+        });
       });
-    });
-  } else {
-    colors.forEach((color) => {
-      pieces.forEach((piece) => {
-        const pieceKey = `${color}${piece}`;
+    }
 
-        let src: string;
-        if (pieceSet.toLowerCase() === "cburnett" || !pieceSet) {
-          src = `/static/pieces/Cburnett/${pieceKey}.svg`;
-        } else {
-          src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
-        }
+    return customPieces;
+  };
 
-        customPieces[pieceKey] = () => (
-          <img 
-            src={src} 
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              display: 'block'
-            }} 
-            alt={pieceKey}
-          />
-        );
-      });
-    });
-  }
-
-  return customPieces;
-};
-
-const get3DBoardStyle = (pieceSet: string) => {
-  if (is3DSet(pieceSet)) {
-    return {
-      transform: 'rotateX(27.5deg)',
-      transformOrigin: 'center',
-      border: '16px solid #2b1e19ff',
-      borderStyle: 'outset',
-      borderRightColor: getCurrentThemeColors(boardTheme).darkSquareColor,
-      borderRadius: '4px',
-      boxShadow: 'rgba(0, 0, 0, 0.5) 2px 24px 24px 8px',
-      borderRightWidth: '2px',
-      borderLeftWidth: '2px',
-      borderTopWidth: '0px',
-      borderBottomWidth: '18px',
-      borderTopLeftRadius: '8px',
-      borderTopRightRadius: '8px',
-      padding: '8px 8px 12px',
-      background: getCurrentThemeColors(boardTheme).lightSquareColor,
-      backgroundSize: 'cover',
-      overflow: 'visible'
-    };
-  }
-  return {};
-};
+  const get3DBoardStyle = (pieceSet: string) => {
+    if (is3DSet(pieceSet)) {
+      return {
+        transform: "rotateX(27.5deg)",
+        transformOrigin: "center",
+        border: "16px solid #2b1e19ff",
+        borderStyle: "outset",
+        borderRightColor: getCurrentThemeColors(boardTheme).darkSquareColor,
+        borderRadius: "4px",
+        boxShadow: "rgba(0, 0, 0, 0.5) 2px 24px 24px 8px",
+        borderRightWidth: "2px",
+        borderLeftWidth: "2px",
+        borderTopWidth: "0px",
+        borderBottomWidth: "18px",
+        borderTopLeftRadius: "8px",
+        borderTopRightRadius: "8px",
+        padding: "8px 8px 12px",
+        background: getCurrentThemeColors(boardTheme).lightSquareColor,
+        backgroundSize: "cover",
+        overflow: "visible",
+      };
+    }
+    return {};
+  };
 
   return (
     <Box
@@ -1037,7 +1008,7 @@ const get3DBoardStyle = (pieceSet: string) => {
               boardOrientation: getBoardOrientation(),
               pieces: getCustomPieces(pieceType),
               boardStyle: get3DBoardStyle(pieceType),
-              id: "ai-chessboard", 
+              id: "ai-chessboard",
             }}
           />
         </Box>

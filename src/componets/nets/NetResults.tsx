@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Box,
   Card,
@@ -431,11 +431,11 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
     return <DownloadAllModelsPrompt downloadModel={downloadModel} />
   }
 
-
   const currentTab = selectedTab
 
   // Check if current tab model is ready
   const isCurrentModelReady = status[currentTab] === 'ready'
+  const isCurrentModelDownloading = status[currentTab] === 'downloading'
 
   return (
     <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
@@ -453,23 +453,44 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             onChange={(_, newValue) => setSelectedTab(newValue)}
             variant="fullWidth"
           >
-            {(Object.keys(MODEL_CONFIGS) as ModelType[]).map((modelType) => (
-              <Tab
-                key={modelType}
-                label={MODEL_CONFIGS[modelType].name}
-                value={modelType}
-              />
-            ))}
+            {(Object.keys(MODEL_CONFIGS) as ModelType[]).map((modelType) => {
+              const isDownloading = status[modelType] === 'downloading'
+              
+              return (
+                <Tab
+                  key={modelType}
+                  label={
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {isDownloading && (
+                        <CircularProgress size={16} thickness={5} />
+                      )}
+                      <span>{MODEL_CONFIGS[modelType].name}</span>
+                    </Box>
+                  }
+                  value={modelType}
+                />
+              )
+            })}
           </Tabs>
         </Box>
 
-        {/* Show download prompt if selected model is not ready */}
-        {!isCurrentModelReady && (
+        {/* Show downloading indicator if current model is downloading */}
+        {isCurrentModelDownloading && (
+          <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={4}>
+            <CircularProgress  />
+            <Typography>
+              Downloading {MODEL_CONFIGS[currentTab].name}...
+            </Typography>
+          </Box>
+        )}
+
+        {/* Show download prompt if selected model is not ready and not downloading */}
+        {!isCurrentModelReady && !isCurrentModelDownloading && (
           <ModelDownloadPrompt modelType={currentTab} downloadModel={downloadModel} />
         )}
 
         {/* Maia 2 with Rating Level Selector */}
-        {currentTab === 'maia2' && evaluations.maia2 && (
+        {isCurrentModelReady && currentTab === 'maia2' && evaluations.maia2 && (
           <>
             <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>
               <InputLabel id="maia-model-select-label">
@@ -497,12 +518,11 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
           </>
         )}
 
-   
-        {currentTab === 'bigLeela' && evaluations.bigLeela && (
+        {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && (
           <EvaluationDisplay evaluation={evaluations.bigLeela} />
         )}
 
-        {currentTab === 'elitemaia' && evaluations.elitemaia && (
+        {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && (
           <EvaluationDisplay evaluation={evaluations.elitemaia} />
         )}
       </CardContent>

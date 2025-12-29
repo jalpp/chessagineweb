@@ -3,7 +3,6 @@ import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../openingdatabase/helper";
 import { MoveQuality } from "@/hooks/useGameReview";
 import { Moves } from "../openingdatabase/helper";
-import { CandidateMove } from "@/componets/tabs/Chessdb";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 
 export interface ChatMessage {
@@ -35,6 +34,15 @@ export interface AgineState {
   lichessOpeningLoading: boolean;
   moveSquares: { [square: string]: string };
   analysisTab: number;
+}
+
+export interface CandidateMove {
+  uci: string;
+  san: string;
+  score: string;
+  winrate: string;
+  rank: string;
+  note: string;
 }
 
 // Analysis data types
