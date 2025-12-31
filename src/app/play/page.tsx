@@ -290,34 +290,69 @@ export default function PlayVsBotsPage() {
   };
 
   const calculateBotThinkTime = (): number => {
-    const moveNumber = game.history().length;
+  const moveNumber = game.history().length;
 
-    let baseTime = 0;
+  // --- determine bot remaining time ---
+  const botTimeRemaining =
+    playerColor === "white" ? blackTime : whiteTime;
 
-    if (selectedBot === "maia2") {
-      if (moveNumber < 10) {
-        baseTime = 1 + Math.random() * 2;
-      } else if (moveNumber < 30) {
-        baseTime = 2 + Math.random() * 4;
-      } else {
-        baseTime = 1.5 + Math.random() * 3;
-      }
-    } else {
-      if (moveNumber < 10) {
-        baseTime = 0.5 + Math.random() * 1;
-      } else if (moveNumber < 30) {
-        baseTime = 1.5 + Math.random() * 2.5;
-      } else {
-        baseTime = 1 + Math.random() * 2;
-      }
-    }
+  const baseGameSeconds = TIME_CONTROLS[timeControl].minutes * 60;
 
-    if (Math.random() < 0.15) {
-      baseTime *= 1.8;
-    }
+  // --- PANIC MODE ---
+  const inPanicMode =
+    botTimeRemaining <= 30 ||
+    botTimeRemaining <= baseGameSeconds * 0.1;
 
-    return Math.max(0.3, baseTime);
-  };
+  if (inPanicMode) {
+    // ultra-fast moves to avoid flag
+    return Math.max(0.3, Math.min(2.0, Math.random() * 1.5 + 0.3));
+  }
+
+  // --- base think time (engine-agnostic) ---
+  let baseTime = 0;
+
+  if (moveNumber < 10) {
+    baseTime = 0.6 + Math.random() * 1.2;
+  } else if (moveNumber < 30) {
+    baseTime = 1.5 + Math.random() * 2.5;
+  } else {
+    baseTime = 1.2 + Math.random() * 2.0;
+  }
+
+  // Occasional deep think (disabled in panic)
+  if (Math.random() < 0.15) {
+    baseTime *= 0.8;
+  }
+
+  // --- unified bounds by time control ---
+  let minThink = 0;
+  let maxThink = 10;
+
+  switch (timeControl) {
+    case "5+0":
+      minThink = 0;
+      maxThink = 45;
+      break;
+
+    case "10+0":
+      minThink = 60;
+      maxThink = 180;
+      break;
+
+    case "30+0":
+      minThink = 360;
+      maxThink = 480;
+      break;
+  }
+
+  // --- final clamp ---
+  const thinkTime = Math.min(
+    maxThink,
+    Math.max(minThink, baseTime)
+  );
+
+  return Math.round(thinkTime * 10) / 10;
+};
 
   const makeBotMove = async () => {
     if (isNetLoading && selectedBot !== "stockfish") {
