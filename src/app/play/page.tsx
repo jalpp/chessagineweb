@@ -289,68 +289,65 @@ export default function PlayVsBotsPage() {
     );
   };
 
-  const calculateBotThinkTime = (): number => {
+const calculateBotThinkTime = (): number => {
   const moveNumber = game.history().length;
-
-  // --- determine bot remaining time ---
-  const botTimeRemaining =
-    playerColor === "white" ? blackTime : whiteTime;
-
+  const botTimeRemaining = playerColor === "white" ? blackTime : whiteTime;
   const baseGameSeconds = TIME_CONTROLS[timeControl].minutes * 60;
 
-  // --- PANIC MODE ---
+  // --- PANIC MODE (low time) ---
   const inPanicMode =
-    botTimeRemaining <= 30 ||
-    botTimeRemaining <= baseGameSeconds * 0.1;
+    botTimeRemaining <= 20 ||
+    botTimeRemaining <= baseGameSeconds * 0.08;
 
   if (inPanicMode) {
-    // ultra-fast moves to avoid flag
-    return Math.max(0.3, Math.min(2.0, Math.random() * 1.5 + 0.3));
+    return 0.4 + Math.random() * 0.8; // 0.4-1.2s when panicking
   }
 
-  // --- base think time (engine-agnostic) ---
+  // --- TIME BUDGETING ---
+  const estimatedMovesLeft = Math.max(40 - moveNumber, 20);
+  const avgTimePerMove = botTimeRemaining / estimatedMovesLeft;
+  
+  // --- BASE THINK TIME by phase ---
   let baseTime = 0;
 
-  if (moveNumber < 10) {
-    baseTime = 0.6 + Math.random() * 1.2;
+  if (moveNumber < 8) {
+    // Opening: quick book-like moves
+    baseTime = 0.5 + Math.random() * 1.0; // 0.5-1.5s
+  } else if (moveNumber < 15) {
+    // Early middlegame: slightly more thought
+    baseTime = 1.0 + Math.random() * 1.5; // 1-2.5s
   } else if (moveNumber < 30) {
-    baseTime = 1.5 + Math.random() * 2.5;
+    // Middlegame: variable thinking
+    baseTime = 1.2 + Math.random() * 2.3; // 1.2-3.5s
   } else {
-    baseTime = 1.2 + Math.random() * 2.0;
+    // Endgame: careful calculation
+    baseTime = 1.5 + Math.random() * 2.0; // 1.5-3.5s
   }
 
-  // Occasional deep think (disabled in panic)
-  if (Math.random() < 0.15) {
-    baseTime *= 0.8;
+  // --- OCCASIONAL DEEP THINK (10% chance) ---
+  if (Math.random() < 0.10) {
+    baseTime *= 1.8; // Think 80% longer
   }
 
-  // --- unified bounds by time control ---
-  let minThink = 0;
-  let maxThink = 10;
+  // --- CAPS based on time control ---
+  let minThink = 0.3;
+  let maxThink = 0;
 
   switch (timeControl) {
     case "5+0":
-      minThink = 0;
-      maxThink = 45;
+      maxThink = Math.min(8, avgTimePerMove * 2.5); // Max ~8s or 2.5x avg
       break;
-
     case "10+0":
-      minThink = 60;
-      maxThink = 180;
+      maxThink = Math.min(12, avgTimePerMove * 2.5); // Max ~12s or 2.5x avg
       break;
-
     case "30+0":
-      minThink = 360;
-      maxThink = 480;
+      maxThink = Math.min(20, avgTimePerMove * 3); // Max ~20s or 3x avg
       break;
   }
 
-  // --- final clamp ---
-  const thinkTime = Math.min(
-    maxThink,
-    Math.max(minThink, baseTime)
-  );
-
+  // --- FINAL CLAMP ---
+  const thinkTime = Math.max(minThink, Math.min(maxThink, baseTime));
+  
   return Math.round(thinkTime * 10) / 10;
 };
 
