@@ -50,7 +50,7 @@ export interface PGNViewProps {
   gameResult?: string;
   gamePgn?: string;
   moveAnalysis: MoveAnalysis[] | null;
-  goToMove: (index: number) => void;
+  goToMove?: (index: number) => void;
   currentMoveIndex: number;
   onAnnotateMove?: (review: MoveAnalysis, customQuery?: string) => Promise<AgentMessage | null>;
 }
@@ -368,7 +368,7 @@ const PGNView: React.FC<PGNViewProps> = ({
       elements.push(
         <Button
           key={`white-${whiteIndex}`}
-          onClick={() => goToMove(whiteIndex + 1)}
+          onClick={() => goToMove?.(whiteIndex + 1)}
           onContextMenu={(e) => handleContextMenu(e, whiteIndex)}
           variant="text"
           size="small"
@@ -403,7 +403,7 @@ const PGNView: React.FC<PGNViewProps> = ({
         elements.push(
           <Button
             key={`black-${blackIndex}`}
-            onClick={() => goToMove(blackIndex + 1)}
+            onClick={() => goToMove?.(blackIndex + 1)}
             onContextMenu={(e) => handleContextMenu(e, blackIndex)}
             variant="text"
             size="small"
@@ -519,7 +519,7 @@ const PGNView: React.FC<PGNViewProps> = ({
           
           {/* White move */}
           <Button
-            onClick={() => goToMove(whiteIndex + 1)}
+            onClick={() => goToMove?.(whiteIndex + 1)}
             onContextMenu={(e) => handleContextMenu(e, whiteIndex)}
             variant="text"
             size="small"
@@ -546,7 +546,7 @@ const PGNView: React.FC<PGNViewProps> = ({
           {/* Black move */}
           {blackMove ? (
             <Button
-              onClick={() => goToMove(blackIndex + 1)}
+              onClick={() => goToMove?.(blackIndex + 1)}
               onContextMenu={(e) => handleContextMenu(e, blackIndex)}
               variant="text"
               size="small"

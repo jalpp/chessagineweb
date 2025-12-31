@@ -293,7 +293,7 @@ export abstract class UciEngine {
 
             const onNewMessage = (messages: string[]) => {
                 const parsedResults = parseEvaluationResults(fen, messages, whiteToPlay);
-                console.debug('Setting partial results: ', parsedResults);
+
                 setPartialEval?.(parsedResults);
             };
 
