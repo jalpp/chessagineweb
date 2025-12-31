@@ -64,10 +64,6 @@ export default function useAgine(fen: string) {
 
   const {evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen} = useNets({fen: fen});
 
-  console.log("agine usenet hooks san", sanEvaluations);
-  console.log("agine net is loading: ", isNetLoading);
-  console.log("agine net eval fen: ", evaluationsFen);
-
   const [enginePicked] = useLocalStorage<EngineName>(
     "stockfish-engine-picked",
     EngineName.Stockfish17Point

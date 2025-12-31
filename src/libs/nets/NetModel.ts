@@ -86,8 +86,8 @@ class NetModel {
 
   private async initializeModel(buffer: ArrayBuffer) {
     this.model = await InferenceSession.create(buffer)
-    console.log('ONNX inputs:', this.model.inputNames)
-    console.log('ONNX outputs:', this.model.outputNames)
+    // console.log('ONNX inputs:', this.model.inputNames)
+    // console.log('ONNX outputs:', this.model.outputNames)
   }
 
   public get getModel(){

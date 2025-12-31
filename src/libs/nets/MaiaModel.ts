@@ -27,8 +27,8 @@ export class MaiaModel extends NetModel {
       elo_oppo: eloOppoTensor,
     });
 
-    console.log(outputs.logits_maia.size);
-    console.log(outputs, "maia");
+    // console.log(outputs.logits_maia.size);
+    // console.log(outputs, "maia");
     const result = processMaiaPolicy(
       fen,
       outputs.logits_maia,
