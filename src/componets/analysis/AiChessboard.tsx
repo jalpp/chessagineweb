@@ -460,6 +460,7 @@ export default function AiChessboardPanel({
 
           if (move) {
             const newGame = new Chess(game.fen());
+            newGame.loadPgn(game.pgn());
             setGame(newGame);
             setFen(newGame.fen());
             setSelectedSquare(null);
@@ -569,7 +570,7 @@ export default function AiChessboardPanel({
   );
 
   const customArrows = useMemo<Arrow[]>(() => {
-    if (!showArrows) return [];
+    if (!showArrows || playMode) return [];
 
     const arrows: Arrow[] = [];
     const seen = new Set<string>();
@@ -640,6 +641,7 @@ export default function AiChessboardPanel({
   }, [
     showArrows,
     reviewMove,
+    playMode,
     stockfishAnalysisResult,
     evaluations,
     currentMoveIndex,
@@ -742,12 +744,6 @@ export default function AiChessboardPanel({
     setSettingsOpen(false);
   };
 
-  const handleBoardSizeChange = useCallback(
-    (_: Event, newValue: number | number[]) => {
-      setBoardSize(newValue as number);
-    },
-    []
-  );
 
   const handleAnimationChange = useCallback(
     (_: Event, newValue: number | number[]) => {
@@ -976,7 +972,7 @@ export default function AiChessboardPanel({
         {gameReviewMode && gameInfo && <TopPlayerBar />}
         {/* Chessboard */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
-          {showEvalBar && !puzzleMode && (
+          {showEvalBar && !puzzleMode && !playMode && (
             <EvalBar
               lineEval={stockfishAnalysisResult?.lines[0]}
               boardOrientation={getBoardOrientation()}

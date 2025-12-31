@@ -34,7 +34,7 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
-import { GitHub } from "@mui/icons-material";
+import { GitHub, SmartToy } from "@mui/icons-material";
 
 export default function NavBar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -84,6 +84,12 @@ export default function NavBar() {
       label: "Analyze Game", 
       href: "/game", 
       icon: <FaChessPawn />,
+      isExternal: false
+    },
+    { 
+      label: "Play Bot", 
+      href: "/play", 
+      icon: <SmartToy />,
       isExternal: false
     },
     { 

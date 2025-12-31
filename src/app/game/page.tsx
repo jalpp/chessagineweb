@@ -156,7 +156,6 @@ export default function PGNUploaderPage() {
       setMoves(savedGame.moves);
       setGameInfo(savedGame.gameInfo);
       setGameReview(savedGame.gameReview);
-
       const parsed = extractMovesWithComments(savedGame.pgn);
       setParsedMovesWithComments(parsed);
       setCurrentMoveIndex(0);

@@ -62,7 +62,11 @@ export default function useAgine(fen: string) {
     DEFAULT_ENGINE_LINES
   );
 
-  const {sanEvaluations} = useNets({fen: fen});
+  const {evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen} = useNets({fen: fen});
+
+  console.log("agine usenet hooks san", sanEvaluations);
+  console.log("agine net is loading: ", isNetLoading);
+  console.log("agine net eval fen: ", evaluationsFen);
 
   const [enginePicked] = useLocalStorage<EngineName>(
     "stockfish-engine-picked",
@@ -71,6 +75,9 @@ export default function useAgine(fen: string) {
 
   const { session } = useSession();
   const engine = useEngine(true, enginePicked);
+  const [stockfishFen, setStockfishFen] = useState<string | null>(null);
+  const [stockfishDone, setStockfishDone] = useState(false);
+
 
   useEffect(() => {
   Object.keys(sessionStorage)
@@ -279,10 +286,14 @@ export default function useAgine(fen: string) {
       stockfishAnalysisResult: cached,
       stockfishLoading: false,
     });
+    setStockfishFen(currentFen);
+    setStockfishDone(true);
     return;
   }
 
   updateState({ stockfishLoading: true });
+  setStockfishFen(null);
+  setStockfishDone(false);
 
   try {
     const result = await engine.evaluatePositionWithUpdate({
@@ -292,6 +303,8 @@ export default function useAgine(fen: string) {
       setPartialEval: (partialEval) => {
         if (currentFenRef.current === currentFen) {
           updateState({ stockfishAnalysisResult: partialEval });
+          setStockfishFen(currentFen);
+          setStockfishDone(false);
         }
       },
     });
@@ -303,6 +316,8 @@ export default function useAgine(fen: string) {
         stockfishAnalysisResult: result,
         stockfishLoading: false,
       });
+       setStockfishFen(currentFen);
+       setStockfishDone(true); 
     }
   } catch (err) {
     console.error("Stockfish analysis failed:", err);
@@ -312,6 +327,8 @@ export default function useAgine(fen: string) {
         stockfishAnalysisResult: null,
         stockfishLoading: false,
       });
+      setStockfishFen(null);
+      setStockfishDone(true); 
     }
   }
 }, [engine, fen, engineDepth, engineLines, updateState]);
@@ -439,6 +456,7 @@ Instructions:
 <mode>
 Type: Play Mode
 Instructions:
+- The User is playing a game against AI, keep that in mind
 - Act as a supportive chess coach during live gameplay
 - Provide real-time strategic advice and tactical guidance
 - Help identify threats and opportunities in the current position
@@ -1370,6 +1388,8 @@ Be concise but thorough, and use clear chess language.`;
       llmAnalysisResult: state.llmAnalysisResult,
       setLlmAnalysisResult: (result: string | null) => updateState({ llmAnalysisResult: result }),
       stockfishAnalysisResult: state.stockfishAnalysisResult,
+      stockfishDone,
+      stockfishFen,
       setStockfishAnalysisResult: (result: PositionEval | null) => updateState({ stockfishAnalysisResult: result }),
       openingData: state.openingData,
       setOpeningData: (data: MasterGames | null) => updateState({ openingData: data }),
@@ -1380,6 +1400,10 @@ Be concise but thorough, and use clear chess language.`;
       legalMoves,
       refetch,
       requestAnalysis,
+      sanEvaluations,
+      evaluations,
+      isNetLoading,
+      evaluationsFen,
 
       // themes
       scores,

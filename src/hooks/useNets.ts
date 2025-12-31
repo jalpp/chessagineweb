@@ -60,6 +60,7 @@ export interface UseMaiaEngineResult {
   isInBook: boolean;
   isLoading: boolean;
   Maiaerror: Error | null;
+  evaluationsFen?: string | null;
 }
 
 // Map Maia ratings to Lichess rating groups
@@ -127,6 +128,28 @@ const lichessToSanEvaluation = (data: LichessData): SanMaiaEvaluation => {
   return { value, policy };
 };
 
+const lichessToEvaluation = (data: LichessData): SanMaiaEvaluation => {
+  const totalGames = data.white + data.draws + data.black;
+  const winRate =
+    totalGames > 0 ? (data.white + data.draws * 0.5) / totalGames : 0.5;
+
+  const policy: { [key: string]: number } = {};
+  const totalMoveGames = data.moves.reduce(
+    (sum, move) => sum + move.white + move.draws + move.black,
+    0
+  );
+
+  data.moves.forEach((move) => {
+    const moveGames = move.white + move.draws + move.black;
+    policy[move.uci] = totalMoveGames > 0 ? moveGames / totalMoveGames : 0;
+  });
+
+  // Convert win rate to value format consistent with neural network output
+  const value = (winRate - 0.5) * 2;
+
+  return { value, policy };
+};
+
 const uciToSan = (uci: string, fen: string): string => {
   try {
     const chess = new Chess(fen);
@@ -180,6 +203,8 @@ export const useNets = ({
   const [isInBook, setIsInBook] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [evaluationsFen, setEvaluationsFen] = useState<string | null>(null);
+
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -207,6 +232,7 @@ export const useNets = ({
         setSanEvaluations(cached.sanEvaluations);
         setLichessData(cached.lichessData);
         setIsInBook(cached.isInBook);
+        setEvaluationsFen(fen);
         setIsLoading(false);
         return;
       }
@@ -257,6 +283,7 @@ export const useNets = ({
 
               if (totalGames >= bookThreshold) {
                 positionIsInBook = true;
+                maia2Evaluations[model] = lichessToEvaluation(lichessResult);
                 maia2SanEvaluations[model] =
                   lichessToSanEvaluation(lichessResult);
               }
@@ -336,6 +363,7 @@ export const useNets = ({
           setSanEvaluations(newSanEvaluations);
           setLichessData(newLichessData);
           setIsInBook(positionIsInBook);
+          setEvaluationsFen(fen);
         }
       } catch (err) {
         if (!currentAbortController.signal.aborted) {
@@ -404,6 +432,7 @@ export const useNets = ({
     sanEvaluations,
     lichessData,
     isInBook,
+    evaluationsFen,
     isLoading,
     Maiaerror: error,
   };

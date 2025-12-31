@@ -60,6 +60,13 @@ export default function HomeView() {
         color: theme.palette.success.main,
       },
       {
+        icon: <ViewBoardIcon sx={{ fontSize: { xs: 40, md: 48 } }} />,
+        title: "Play vs Engines",
+        description: "Challenge human neural networks and chess engines in real-time games.",
+        path: "/play",
+        color: theme.palette.warning.main,
+      },
+      {
         icon: <FaQuestion style={{ fontSize: isMobile ? 40 : 48 }} />,
         title: "Documentation",
         description: "Learn how to use ChessAgine and set up your API key.",
