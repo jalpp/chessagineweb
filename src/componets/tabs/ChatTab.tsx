@@ -997,7 +997,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         </Stack>
 
         {/* Mode Controls */}
-        {!playMode && (
+        
           <Stack
             direction={{ xs: "column", sm: "row" }}
             alignItems={{ xs: "flex-start", sm: "center" }}
@@ -1100,7 +1100,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
               </Button>
             )}
           </Stack>
-        )}
+       
 
       </Paper>
 

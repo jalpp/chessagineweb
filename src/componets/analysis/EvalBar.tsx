@@ -10,7 +10,7 @@ interface EvalBarProps {
 
 export const EvalBar: React.FC<EvalBarProps> = ({
   lineEval,
-  boardOrientation = "white",
+  boardOrientation,
   height = 400,
 }) => {
   
@@ -54,7 +54,9 @@ export const EvalBar: React.FC<EvalBarProps> = ({
   const evalText = getEvalText();
 
   const whitePercentage =
-    boardOrientation === "black" ? evalPercentage : evalPercentage;
+  boardOrientation === "black"
+    ? 100 - evalPercentage
+    : evalPercentage;
 
   return (
     <Box

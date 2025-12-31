@@ -570,7 +570,7 @@ export default function AiChessboardPanel({
   );
 
   const customArrows = useMemo<Arrow[]>(() => {
-    if (!showArrows) return [];
+    if (!showArrows || playMode) return [];
 
     const arrows: Arrow[] = [];
     const seen = new Set<string>();
@@ -641,6 +641,7 @@ export default function AiChessboardPanel({
   }, [
     showArrows,
     reviewMove,
+    playMode,
     stockfishAnalysisResult,
     evaluations,
     currentMoveIndex,

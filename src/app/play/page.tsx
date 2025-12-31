@@ -29,6 +29,7 @@ import {
   RestartAlt as RestartIcon,
   Chat as ChatIcon,
   CloudDownload,
+  Flag as ResignIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -38,51 +39,17 @@ import { TabPanel } from "@/componets/tabs/tab";
 import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { MODEL_CONFIGS } from "@/libs/nets/types";
 import PGNView from "@/componets/tabs/PgnView";
-
-type BotType = "stockfish" | "bigLeela" | "maia2" | "elitemaia";
-type MaiaRating = 1100 | 1200 | 1300 | 1400 | 1500 | 1600 | 1700 | 1800 | 1900;
-
-interface BotConfig {
-  name: string;
-  description: string;
-  strength: string;
-  color: string;
-  requiresModel?: boolean;
-  modelType?: "maia2" | "bigLeela" | "elitemaia";
-}
-
-const BOT_CONFIGS: Record<BotType, BotConfig> = {
-  stockfish: {
-    name: "Stockfish 17",
-    description: "Classical engine - strongest tactical play",
-    strength: "~3500 ELO",
-    color: "#1976d2",
-  },
-  bigLeela: {
-    name: "Leela Chess Zero",
-    description: "Neural network - strategic positional play",
-    strength: "~3400 ELO",
-    color: "#9c27b0",
-    requiresModel: true,
-    modelType: "bigLeela",
-  },
-  maia2: {
-    name: "Maia2",
-    description: "Human-like play at selected rating level",
-    strength: "1100-1900 ELO",
-    color: "#2e7d32",
-    requiresModel: true,
-    modelType: "maia2",
-  },
-  elitemaia: {
-    name: "Elite Leela",
-    description: "Enhanced Leela trained on master games",
-    strength: "~3450 ELO",
-    color: "#d32f2f",
-    requiresModel: true,
-    modelType: "elitemaia",
-  },
-};
+import SaveGameReviewDialog from "@/componets/game/SaveGameReviewDialog";
+import { SaveIcon } from "lucide-react";
+import {
+  BotType,
+  BOT_CONFIGS,
+  MaiaRating,
+  TIME_CONTROLS,
+  TimeControl,
+} from "@/libs/agine/bothelper";
+import { TimerDisplay } from "@/componets/game/TimerDisplay";
+import { FenSelector } from "@/componets/game/FenSelector";
 
 export default function PlayVsBotsPage() {
   const theme = useTheme();
@@ -99,15 +66,22 @@ export default function PlayVsBotsPage() {
   const [result, setResult] = useState<string>("");
   const [botThinking, setBotThinking] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-
-  // Drawer states
   const [controlDrawerOpen, setControlDrawerOpen] = useState(false);
+  const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [startingFen, setStartingFen] = useState<string>(new Chess().fen());
 
-  // Use net status and models
+  // Timer states
+  const [timeControl, setTimeControl] = useState<TimeControl>("10+0");
+  const [whiteTime, setWhiteTime] = useState<number>(0);
+  const [blackTime, setBlackTime] = useState<number>(0);
+  const [activeTimer, setActiveTimer] = useState<"white" | "black" | null>(
+    null
+  );
+
   const { status, progress } = useNetStatus();
   const { downloadModel } = useNetModels();
 
-  // Use ref to track game status to avoid stale closures
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
 
@@ -141,6 +115,45 @@ export default function PlayVsBotsPage() {
   } = useAgine(fen);
 
   useEffect(() => {
+    if (gameStatus !== "playing" || !activeTimer) return;
+
+    const interval = setInterval(() => {
+      if (activeTimer === "white") {
+        setWhiteTime((t) => {
+          if (t <= 1) {
+            handleTimerExpire("white");
+            return 0;
+          }
+          return t - 1;
+        });
+      } else {
+        setBlackTime((t) => {
+          if (t <= 1) {
+            handleTimerExpire("black");
+            return 0;
+          }
+          return t - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeTimer, gameStatus]);
+
+  useEffect(() => {
+    if (gameStatus !== "playing") return;
+
+    const turn = game.turn();
+    setActiveTimer(turn === "w" ? "white" : "black");
+  }, [fen]);
+
+  useEffect(() => {
+    if (gameStatus !== "playing") return;
+    checkGameEnd(game);
+  }, [fen]);
+
+  // Bot move trigger
+  useEffect(() => {
     if (gameStatus !== "playing" || botThinking || game.isGameOver()) return;
 
     const currentTurn = game.turn();
@@ -152,7 +165,6 @@ export default function PlayVsBotsPage() {
 
     if (selectedBot === "stockfish") {
       if (!stockfishDone || stockfishFen !== fen) {
-        console.log("[BOT] Waiting for Stockfish to finish");
         return;
       }
     } else {
@@ -171,18 +183,89 @@ export default function PlayVsBotsPage() {
     playerColor,
   ]);
 
-  // Start new game
+  const handleTimerExpire = (color: "white" | "black") => {
+    if (gameStatusRef.current === "playing") {
+      const winner = color === "white" ? "Black" : "White";
+      setGameStatus("finished");
+      setResult(`Time out! ${winner} wins!`);
+    }
+  };
+
+  const initializeTimers = () => {
+    const baseSeconds = TIME_CONTROLS[timeControl].minutes * 60;
+
+    setWhiteTime(baseSeconds);
+    setBlackTime(baseSeconds);
+
+    // White always starts
+    setActiveTimer("white");
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && currentMoveIndex > 0) {
+        goToMove(currentMoveIndex - 1);
+      }
+      if (e.key === "ArrowRight" && currentMoveIndex < game.history().length) {
+        goToMove(currentMoveIndex + 1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentMoveIndex, game.history()]);
+
+  const goToMove = (index: number) => {
+    const tempGame = new Chess();
+    tempGame.loadPgn(game.pgn());
+    const moves = game.history();
+
+    // Reset to starting position and replay moves up to index
+    const resetGame = new Chess();
+    for (let i = 0; i < index; i++) {
+      resetGame.move(moves[i]);
+    }
+
+    setFen(resetGame.fen());
+    setCurrentMoveIndex(index);
+    setLlmAnalysisResult(null);
+    setStockfishAnalysisResult(null);
+  };
+
+  const buildPlayGameInfo = (): Record<string, string> => {
+    const info: Record<string, string> = {
+      White: playerColor === "white" ? "You" : BOT_CONFIGS[selectedBot].name,
+      Black: playerColor === "black" ? "You" : BOT_CONFIGS[selectedBot].name,
+      Result: result || "*",
+      Date: new Date().toISOString().split("T")[0],
+      Event: "Play vs Bot",
+      Site: "https://www.chessagine.com/",
+      TimeControl: timeControl,
+    };
+
+    if (startingFen && startingFen !== new Chess().fen()) {
+      info.SetUp = "1";
+      info.FEN = startingFen;
+    }
+
+    return info;
+  };
+
   const startGame = () => {
     const newGame = new Chess();
+
+    if (startingFen) {
+      newGame.load(startingFen);
+    }
+
     setGame(newGame);
     setFen(newGame.fen());
     setGameStatus("playing");
     setResult("");
     setMoveSquares({});
     setBotThinking(false);
+    initializeTimers();
   };
 
-  // Reset to setup (for new game with different settings)
   const resetToSetup = () => {
     const newGame = new Chess();
     setGame(newGame);
@@ -191,198 +274,136 @@ export default function PlayVsBotsPage() {
     setResult("");
     setMoveSquares({});
     setBotThinking(false);
+    setActiveTimer(null);
   };
-   
-  // Make bot move using evaluations
-  const makeBotMove = async () => {
-    console.groupCollapsed("[BOT] makeBotMove()");
-    console.log("Selected bot:", selectedBot);
-    console.log("Bot thinking:", botThinking);
-    console.log("Game over:", game.isGameOver());
-    console.log("Current FEN:", game.fen());
 
+  const resignGame = () => {
+    if (gameStatus !== "playing") return;
+
+    const winner = playerColor === "white" ? "Black" : "White";
+    setGameStatus("finished");
+    setResult(
+      `${
+        playerColor.charAt(0).toUpperCase() + playerColor.slice(1)
+      } resigned. ${winner} wins!`
+    );
+  };
+
+  const calculateBotThinkTime = (): number => {
+    const moveNumber = game.history().length;
+
+    let baseTime = 0;
+
+    if (selectedBot === "maia2") {
+      if (moveNumber < 10) {
+        baseTime = 1 + Math.random() * 2;
+      } else if (moveNumber < 30) {
+        baseTime = 2 + Math.random() * 4;
+      } else {
+        baseTime = 1.5 + Math.random() * 3;
+      }
+    } else {
+      if (moveNumber < 10) {
+        baseTime = 0.5 + Math.random() * 1;
+      } else if (moveNumber < 30) {
+        baseTime = 1.5 + Math.random() * 2.5;
+      } else {
+        baseTime = 1 + Math.random() * 2;
+      }
+    }
+
+    if (Math.random() < 0.15) {
+      baseTime *= 1.8;
+    }
+
+    return Math.max(0.3, baseTime);
+  };
+
+  const makeBotMove = async () => {
     if (isNetLoading && selectedBot !== "stockfish") {
-      console.log("[BOT] Waiting for nets to finish");
       return;
     }
 
     if (evaluationsFen !== game.fen() && selectedBot !== "stockfish") {
-      console.log("[BOT] Nets out of sync with FEN");
-      console.log("Expected:", game.fen());
-      console.log("Got:", evaluationsFen);
       return;
     }
 
     if (selectedBot === "stockfish") {
-      if (stockfishLoading) {
-        console.log("[BOT] Stockfish still thinking");
-        return;
-      }
-
-      if (!stockfishDone) {
-        console.log("[BOT] Stockfish not finished yet");
-        return;
-      }
-
-      if (stockfishFen !== game.fen()) {
-        console.log("[BOT] Stockfish out of sync with FEN");
-        console.log("Expected:", game.fen());
-        console.log("Got:", stockfishFen);
+      if (stockfishLoading || !stockfishDone || stockfishFen !== game.fen()) {
         return;
       }
     }
 
     if (botThinking || game.isGameOver()) {
-      console.warn("[BOT] Early exit: botThinking or game over");
-      console.groupEnd();
       return;
     }
 
     setBotThinking(true);
-    console.log("[BOT] Bot thinking set to TRUE");
 
     try {
       const moves = game.moves();
-      console.log("[BOT] Legal moves:", moves);
-
       if (moves.length === 0) {
-        console.warn("[BOT] No legal moves available");
         setBotThinking(false);
-        console.groupEnd();
         return;
       }
 
       let move: string | undefined;
 
-      try {
-        console.group("[BOT] Evaluation selection");
-
-        if (selectedBot === "stockfish") {
-          console.log("[BOT] Using Stockfish");
-          console.log("Stockfish analysis:", stockfishAnalysisResult);
-
-          const pvMove = stockfishAnalysisResult?.lines?.[0]?.pv?.[0];
-          if (pvMove) {
-            move = pvMove;
-            console.log("[BOT] Stockfish selected move:", move);
-          } else {
-            console.warn("[BOT] Stockfish PV missing");
-          }
-        } else if (selectedBot === "maia2") {
-          console.log("[BOT] Using Maia2");
-          const maiaKey = `maia_kdd_${maiaRating}`;
-
-          const maiaEval = sanEvaluations.maia2?.[maiaKey];
-
-          console.log("Maia key:", maiaKey);
-          console.log("Maia eval:", maiaEval);
-
-          if (maiaEval?.policy) {
-            const sorted = Object.entries(maiaEval.policy).sort(
-              ([, a], [, b]) => b - a
-            );
-
-            console.log(
-              "[BOT] Maia sorted policy (top 5):",
-              sorted.slice(0, 5)
-            );
-
-            if (sorted[0]) {
-              move = sorted[0][0];
-              console.log("[BOT] Maia selected move:", move);
-            }
-          } else {
-            console.warn("[BOT] Maia policy missing");
-          }
-        } else if (selectedBot === "bigLeela") {
-          console.log("[BOT] Using Big Leela");
-          const leelaEval = sanEvaluations.bigLeela;
-
-          console.log("Big Leela eval:", leelaEval);
-
-          if (leelaEval?.policy) {
-            const sorted = Object.entries(leelaEval.policy).sort(
-              ([, a], [, b]) => b - a
-            );
-
-            console.log(
-              "[BOT] Big Leela sorted policy (top 5):",
-              sorted.slice(0, 5)
-            );
-
-            if (sorted[0]) {
-              move = sorted[0][0];
-              console.log("[BOT] Big Leela selected move:", move);
-            }
-          } else {
-            console.warn("[BOT] Big Leela policy missing");
-          }
-        } else if (selectedBot === "elitemaia") {
-          console.log("[BOT] Using Elite Maia");
-          const eliteEval = sanEvaluations.elitemaia;
-
-          console.log("Elite Maia eval:", eliteEval);
-
-          if (eliteEval?.policy) {
-            const sorted = Object.entries(eliteEval.policy).sort(
-              ([, a], [, b]) => b - a
-            );
-
-            console.log(
-              "[BOT] Elite Maia sorted policy (top 5):",
-              sorted.slice(0, 5)
-            );
-
-            if (sorted[0]) {
-              move = sorted[0][0];
-              console.log("[BOT] Elite Maia selected move:", move);
-            }
-          } else {
-            console.warn("[BOT] Elite Maia policy missing");
-          }
+      if (selectedBot === "stockfish") {
+        const pvMove = stockfishAnalysisResult?.lines?.[0]?.pv?.[0];
+        if (pvMove) move = pvMove;
+      } else if (selectedBot === "maia2") {
+        const maiaKey = `maia_kdd_${maiaRating}`;
+        const maiaEval = sanEvaluations.maia2?.[maiaKey];
+        if (maiaEval?.policy) {
+          const sorted = Object.entries(maiaEval.policy).sort(
+            ([, a], [, b]) => b - a
+          );
+          if (sorted[0]) move = sorted[0][0];
         }
-
-        console.groupEnd();
-      } catch (evalErr) {
-        console.error("[BOT] Evaluation error:", evalErr);
-        move = moves[Math.floor(Math.random() * moves.length)];
-        console.warn("[BOT] Falling back to random move:", move);
+      } else if (selectedBot === "bigLeela") {
+        const leelaEval = sanEvaluations.bigLeela;
+        if (leelaEval?.policy) {
+          const sorted = Object.entries(leelaEval.policy).sort(
+            ([, a], [, b]) => b - a
+          );
+          if (sorted[0]) move = sorted[0][0];
+        }
+      } else if (selectedBot === "elitemaia") {
+        const eliteEval = sanEvaluations.elitemaia;
+        if (eliteEval?.policy) {
+          const sorted = Object.entries(eliteEval.policy).sort(
+            ([, a], [, b]) => b - a
+          );
+          if (sorted[0]) move = sorted[0][0];
+        }
       }
 
-      // Fallback to random move if no evaluation available
       if (!move) {
         move = moves[Math.floor(Math.random() * moves.length)];
-        console.warn("[BOT] No eval move found, random fallback:", move);
       }
 
-      console.log("[BOT] Final move chosen:", move);
+      const thinkTime = calculateBotThinkTime();
+      const thinkTimeMs = thinkTime * 1000;
+
+      await new Promise((resolve) => setTimeout(resolve, thinkTimeMs));
 
       const newGame = new Chess(game.fen());
       newGame.loadPgn(game.pgn());
       const moveResult = newGame.move(move);
 
-      if (!moveResult) {
-        console.error("[BOT] Move rejected by chess.js:", move);
-      } else {
-        console.log("[BOT] Move applied:", moveResult);
+      if (moveResult) {
+        setGame(newGame);
+        setFen(newGame.fen());
+        checkGameEnd(newGame);
       }
-
-      setGame(newGame);
-      setFen(newGame.fen());
-
-      console.log("[BOT] New FEN:", newGame.fen());
-
-      checkGameEnd(newGame);
     } catch (error) {
-      console.error("[BOT] makeBotMove fatal error:", error);
+      console.error("[BOT] makeBotMove error:", error);
     } finally {
       setBotThinking(false);
-      console.log("[BOT] Bot thinking set to FALSE");
-      console.groupEnd();
     }
   };
 
-  // Check if game ended
   const checkGameEnd = (currentGame: Chess): boolean => {
     if (currentGame.isGameOver()) {
       setGameStatus("finished");
@@ -391,13 +412,15 @@ export default function PlayVsBotsPage() {
         const winner = currentGame.turn() === "w" ? "Black" : "White";
         setResult(`Checkmate! ${winner} wins!`);
       } else if (currentGame.isDraw()) {
-        setResult("Game drawn!");
+        setResult("Draw!");
       } else if (currentGame.isStalemate()) {
-        setResult("Stalemate!");
+        setResult("Stalemate - Draw!");
       } else if (currentGame.isThreefoldRepetition()) {
-        setResult("Draw by repetition!");
+        setResult("Draw by threefold repetition!");
       } else if (currentGame.isInsufficientMaterial()) {
         setResult("Draw by insufficient material!");
+      } else {
+        setResult("Game Over!");
       }
 
       return true;
@@ -405,30 +428,39 @@ export default function PlayVsBotsPage() {
     return false;
   };
 
-  // Download PGN
+  const getPgn = () => {
+    // Start from correct initial position
+    const pgnGame =
+      startingFen && startingFen !== new Chess().fen()
+        ? new Chess(startingFen)
+        : new Chess();
+
+    // Replay moves
+    game.history().forEach((move) => {
+      pgnGame.move(move);
+    });
+
+    // Apply headers from shared builder
+    const headers = buildPlayGameInfo();
+    Object.entries(headers).forEach(([key, value]) => {
+      pgnGame.setHeader(key, value);
+    });
+
+    const pgn = pgnGame.pgn({ newline: "\n" });
+
+    return pgn;
+  };
+
   const downloadPGN = () => {
-    const pgnGame = new Chess();
-    game.history().forEach((move) => pgnGame.move(move));
+    const pgn = getPgn();
 
-    pgnGame.header(
-      "White",
-      playerColor === "white" ? "You" : BOT_CONFIGS[selectedBot].name
-    );
-    pgnGame.header(
-      "Black",
-      playerColor === "black" ? "You" : BOT_CONFIGS[selectedBot].name
-    );
-    pgnGame.header("Date", new Date().toISOString().split("T")[0]);
-    pgnGame.header("Result", result || "*");
-
-    const pgn = pgnGame.pgn();
     const blob = new Blob([pgn], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
-    a.download = `game-vs-${selectedBot}-${
-      new Date().toISOString().split("T")[0]
-    }.pgn`;
+    a.download = `game-vs-${selectedBot}-${new Date()}.pgn`;
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -445,82 +477,136 @@ export default function PlayVsBotsPage() {
       : false;
     const modelProgress = modelType ? progress[modelType] || 0 : 0;
 
+    const showConfigMenus = gameStatus === "setup" || gameStatus === "finished";
+
     return (
-      <Stack spacing={3}>
-        {/* Bot Selection */}
-        <Box>
-          <Typography variant="h6" gutterBottom fontWeight={600}>
-            Challenge a Bot
-          </Typography>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Select Bot</InputLabel>
-            <Select
-              value={selectedBot}
-              label="Select Bot"
-              onChange={(e) => setSelectedBot(e.target.value as BotType)}
-              disabled={gameStatus === "playing"}
-            >
-              {Object.entries(BOT_CONFIGS).map(([key, config]) => (
-                <MenuItem key={key} value={key}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <BotIcon sx={{ color: config.color }} />
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        {config.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {config.strength}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Box sx={{ mt: 2 }}>
-            <Chip
-              label={BOT_CONFIGS[selectedBot].description}
-              size="small"
-              sx={{
-                backgroundColor: BOT_CONFIGS[selectedBot].color + "20",
-                color: BOT_CONFIGS[selectedBot].color,
-              }}
-            />
-          </Box>
-        </Box>
-
-        {/* Maia2 Rating Selection */}
-        {selectedBot === "maia2" && (
-          <Box>
-            <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-              Maia Rating Level
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel>Rating</InputLabel>
-              <Select
-                value={maiaRating}
-                label="Rating"
-                onChange={(e) => setMaiaRating(e.target.value as MaiaRating)}
-                disabled={gameStatus === "playing"}
-              >
-                {[1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900].map(
-                  (rating) => (
-                    <MenuItem key={rating} value={rating}>
-                      Maia {rating}
+      <Stack spacing={3} sx={{ pb: 2 }}>
+        {/* Show Config Menus only in setup or finished states */}
+        {showConfigMenus && (
+          <>
+            {/* Bot Selection */}
+            <Box>
+              <Typography variant="h6" gutterBottom fontWeight={600}>
+                Challenge a Bot
+              </Typography>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel>Select Bot</InputLabel>
+                <Select
+                  value={selectedBot}
+                  label="Select Bot"
+                  onChange={(e) => setSelectedBot(e.target.value as BotType)}
+                >
+                  {Object.entries(BOT_CONFIGS).map(([key, config]) => (
+                    <MenuItem key={key} value={key}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <BotIcon sx={{ color: config.color }} />
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                            {config.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {config.strength}
+                          </Typography>
+                        </Box>
+                      </Stack>
                     </MenuItem>
-                  )
-                )}
-              </Select>
-            </FormControl>
-          </Box>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Box sx={{ mt: 2 }}>
+                <Chip
+                  label={BOT_CONFIGS[selectedBot].description}
+                  size="small"
+                  sx={{
+                    backgroundColor: BOT_CONFIGS[selectedBot].color + "20",
+                    color: BOT_CONFIGS[selectedBot].color,
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* Time Control Selection */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                Time Control
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                {(Object.keys(TIME_CONTROLS) as TimeControl[]).map((tc) => (
+                  <Button
+                    key={tc}
+                    variant={timeControl === tc ? "contained" : "outlined"}
+                    onClick={() => setTimeControl(tc)}
+                    fullWidth
+                  >
+                    {TIME_CONTROLS[tc].label}
+                  </Button>
+                ))}
+              </Stack>
+            </Box>
+
+            {/* Maia2 Rating Selection */}
+            {selectedBot === "maia2" && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                  Maia Rating Level
+                </Typography>
+                <FormControl fullWidth>
+                  <InputLabel>Rating</InputLabel>
+                  <Select
+                    value={maiaRating}
+                    label="Rating"
+                    onChange={(e) =>
+                      setMaiaRating(e.target.value as MaiaRating)
+                    }
+                  >
+                    {[1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900].map(
+                      (rating) => (
+                        <MenuItem key={rating} value={rating}>
+                          Maia {rating}
+                        </MenuItem>
+                      )
+                    )}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+
+            {/* Color Selection */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                Your Color
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant={playerColor === "white" ? "contained" : "outlined"}
+                  onClick={() => setPlayerColor("white")}
+                  fullWidth
+                >
+                  White
+                </Button>
+                <Button
+                  variant={playerColor === "black" ? "contained" : "outlined"}
+                  onClick={() => setPlayerColor("black")}
+                  fullWidth
+                >
+                  Black
+                </Button>
+              </Stack>
+            </Box>
+            <Box>
+              <FenSelector
+                value={startingFen}
+                onChange={setStartingFen}
+                disabled={gameStatus !== "setup"}
+              />
+            </Box>
+          </>
         )}
 
         {/* Model Download Section */}
         {requiresModel && !isModelReady && gameStatus === "setup" && (
-          <Card
-           
-          >
+          <Card>
             <CardContent>
               <Stack spacing={2} alignItems="center">
                 <CloudDownload sx={{ fontSize: 40 }} />
@@ -571,31 +657,6 @@ export default function PlayVsBotsPage() {
           </Card>
         )}
 
-        {/* Color Selection */}
-        <Box>
-          <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-            Your Color
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant={playerColor === "white" ? "contained" : "outlined"}
-              onClick={() => setPlayerColor("white")}
-              disabled={gameStatus === "playing"}
-              fullWidth
-            >
-              White
-            </Button>
-            <Button
-              variant={playerColor === "black" ? "contained" : "outlined"}
-              onClick={() => setPlayerColor("black")}
-              disabled={gameStatus === "playing"}
-              fullWidth
-            >
-              Black
-            </Button>
-          </Stack>
-        </Box>
-
         {/* Game Controls */}
         <Box>
           {gameStatus === "setup" && (
@@ -615,8 +676,19 @@ export default function PlayVsBotsPage() {
 
           {gameStatus === "playing" && (
             <Stack spacing={1}>
+              <Button
+                variant="contained"
+                color="error"
+                fullWidth
+                onClick={resignGame}
+                startIcon={<ResignIcon />}
+                sx={{ mb: 1 }}
+              >
+                Resign
+              </Button>
+
               {botThinking && (
-                <Alert severity="info">
+                <Alert severity="info" sx={{ mb: 1 }}>
                   {BOT_CONFIGS[selectedBot].name} is thinking...
                 </Alert>
               )}
@@ -652,6 +724,23 @@ export default function PlayVsBotsPage() {
                 Download PGN
               </Button>
               <Button
+                variant="contained"
+                onClick={() => setSaveDialogOpen(true)}
+                startIcon={<SaveIcon />}
+                fullWidth
+              >
+                Save Game
+              </Button>
+              <SaveGameReviewDialog
+                saveDialogOpen={saveDialogOpen}
+                setSaveDialogOpen={setSaveDialogOpen}
+                gameInfo={buildPlayGameInfo()}
+                gameReview={[]}
+                gameReviewTheme={null}
+                moves={game.history()}
+                pgnText={getPgn()}
+              />
+              <Button
                 variant="outlined"
                 fullWidth
                 onClick={resetToSetup}
@@ -671,7 +760,6 @@ export default function PlayVsBotsPage() {
           )}
         </Box>
 
-        {/* Game Info */}
         {gameStatus !== "setup" && (
           <Box>
             <Typography variant="subtitle2" gutterBottom fontWeight={600}>
@@ -696,10 +784,14 @@ export default function PlayVsBotsPage() {
                   playerColor === "white" &&
                   ` (${maiaRating})`}
               </Typography>
+              <Typography variant="body2">
+                Time Control: {timeControl}
+              </Typography>
             </Stack>
           </Box>
         )}
 
+        {/* Game Moves - Show when game has moves */}
         {game.history().length > 0 && (
           <Box>
             <Typography variant="subtitle2" gutterBottom fontWeight={600}>
@@ -708,7 +800,8 @@ export default function PlayVsBotsPage() {
             <PGNView
               moves={game.history()}
               moveAnalysis={null}
-              currentMoveIndex={game.history().length}
+              goToMove={goToMove}
+              currentMoveIndex={currentMoveIndex}
               gamePgn={game.pgn()}
               gameResult={result}
             />
@@ -731,20 +824,13 @@ export default function PlayVsBotsPage() {
         width: "100%",
       }}
     >
-      <Box
-        sx={{
-          borderBottom: 1,
-          borderColor: "divider",
-          px: 2,
-          pt: 1,
-        }}
-      >
+      <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, pt: 1 }}>
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
         >
           <Tab label="Controls" />
-          <Tab label="Chat" />
+          {gameStatus !== "playing" && <Tab label="Chat" />}
         </Tabs>
       </Box>
 
@@ -757,31 +843,33 @@ export default function PlayVsBotsPage() {
         }}
       >
         <TabPanel value={activeTab} index={0}>
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: 3, overflowY: "auto", height: "100%" }}>
             <ControlPanel />
           </Box>
         </TabPanel>
 
-        <TabPanel value={activeTab} index={1}>
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            <ChatTab
-              playMode={true}
-              sendChatMessage={sendChatMessage}
-              handleChatKeyPress={handleChatKeyPress}
-              abortChatMessage={abortChatMessage}
-              gameInfo={game.pgn()}
-              currentMove={game.history().slice(-1)[0]}
-              currentMoveIndex={game.history().length}
-            />
-          </Box>
-        </TabPanel>
+        {gameStatus !== "playing" && (
+          <TabPanel value={activeTab} index={1}>
+            <Box
+              sx={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              <ChatTab
+                playMode={true}
+                sendChatMessage={sendChatMessage}
+                handleChatKeyPress={handleChatKeyPress}
+                abortChatMessage={abortChatMessage}
+                gameInfo={game.pgn()}
+                currentMove={game.history().slice(-1)[0]}
+                currentMoveIndex={game.history().length}
+              />
+            </Box>
+          </TabPanel>
+        )}
       </Box>
     </Card>
   );
@@ -800,14 +888,14 @@ export default function PlayVsBotsPage() {
         spacing={{ xs: 2, sm: 3, md: 4 }}
         sx={{ width: "100%", maxWidth: "100%" }}
       >
-        {/* Chessboard Section */}
         <Box
           sx={{
             flex: { xs: "1 1 auto", lg: "0 0 auto" },
             width: { xs: "100%", lg: "auto" },
             maxWidth: "100%",
             display: "flex",
-            justifyContent: { xs: "center", lg: "flex-start" },
+            flexDirection: "column",
+            alignItems: { xs: "center", lg: "flex-start" },
             px: { xs: 0, sm: 1 },
           }}
         >
@@ -830,8 +918,27 @@ export default function PlayVsBotsPage() {
             stockfishLoading={stockfishLoading}
             stockfishAnalysisResult={stockfishAnalysisResult}
             openingLoading={openingLoading}
-            playMode={true}
+            playMode={gameStatus === "playing"}
           />
+
+          {/* Timer Display below chessboard */}
+          {gameStatus !== "setup" && (
+            <Box
+              sx={{
+                mt: 2,
+                width: { xs: "100%", sm: "600px", md: "650px" },
+                maxWidth: "100%",
+              }}
+            >
+              <TimerDisplay
+                whiteTime={whiteTime}
+                blackTime={blackTime}
+                selectedBot={selectedBot}
+                activeTimer={activeTimer}
+                playerColor={playerColor}
+              />
+            </Box>
+          )}
         </Box>
 
         {/* Desktop Interaction Panel */}

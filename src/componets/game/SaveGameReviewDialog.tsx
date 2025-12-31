@@ -30,22 +30,22 @@ export interface SavedGameReview {
   gameInfo: Record<string, string>;
   pgn: string;
   gameReview: MoveAnalysis[];
-  gameReviewTheme: GameReviewTheme,
+  gameReviewTheme: GameReviewTheme | null;
   moves: string[];
   savedAt: string;
   title?: string;
 }
 
 interface SaveGameReviewProp {
-  loadFromHistory: (savedGame: SavedGameReview) => void;
-  historyDialogOpen: boolean;
-  setHistoryDialogOpen: (historysave: boolean) => void;
+  loadFromHistory?: (savedGame: SavedGameReview) => void;
+  historyDialogOpen?: boolean;
+  setHistoryDialogOpen?: (historysave: boolean) => void;
   saveDialogOpen: boolean;
   setSaveDialogOpen: (save: boolean) => void;
   gameInfo: Record<string, string>;
   pgnText: string;
   gameReview: MoveAnalysis[];
-  gameReviewTheme: GameReviewTheme;
+  gameReviewTheme: GameReviewTheme | null;
   moves: string[];
 }
 
@@ -65,7 +65,7 @@ function SaveGameReviewDialog({
     SavedGameReview[]
   >("chess-game-review-history", []);
 
-const [saveTitle, setSaveTitle] = useState("");
+  const [saveTitle, setSaveTitle] = useState("");
 
   const generateGameTitle = () => {
     const white = gameInfo.White || "Unknown";
@@ -116,21 +116,14 @@ const [saveTitle, setSaveTitle] = useState("");
         fullWidth
         PaperProps={{
           sx: {
-        
             borderRadius: 3,
           },
         }}
       >
-        <DialogTitle >
-          Save Game Review
-        </DialogTitle>
+        <DialogTitle>Save Game Review</DialogTitle>
         <DialogContent>
           <div>
-            <Typography
-              variant="body2"
-              component="div"
-              sx={{ mb: 2 }}
-            >
+            <Typography variant="body2" component="div" sx={{ mb: 2 }}>
               Give your game review a title for easy identification
             </Typography>
           </div>
@@ -144,169 +137,102 @@ const [saveTitle, setSaveTitle] = useState("");
             placeholder={generateGameTitle()}
             sx={{
               mt: 1,
-           
             }}
-            
           />
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setSaveDialogOpen(false)}
-           
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveConfirm}
-            variant="contained"
-           
-          >
+          <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleSaveConfirm} variant="contained">
             Save Review
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Game History Dialog */}
-      <Dialog
-        open={historyDialogOpen}
-        onClose={() => setHistoryDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-             
-              borderRadius: 3,
-              maxHeight: "80vh",
-            },
-          },
-        }}
-      >
-        <DialogTitle >
-          Saved Game Reviews
-        </DialogTitle>
-        <DialogContent>
-          {gameReviewHistory.length === 0 ? (
-            <Alert
-              severity="info"
-              
-            >
-              No saved game reviews yet. Analyze a game and save the review to
-              build your history!
-            </Alert>
-          ) : (
-            <List sx={{ width: "100%" }}>
-              {gameReviewHistory.map((savedGame) => (
-                <ListItem
-                  key={savedGame.id}
-                  sx={{
-                    
-                    borderRadius: 2,
-                    mb: 1,
-                   
-                  }}
-                  secondaryAction={
-                    <Stack direction="row" spacing={1}>
-                      <IconButton
-                        onClick={() => loadFromHistory(savedGame)}
-                        
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => deleteFromHistory(savedGame.id)}
-                        sx={{
-                          color: "#f44336",
-                          
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Stack>
-                  }
-                >
-                  <ListItemText
-                    primary={
-                      <div>
-                        <Typography
-                          variant="h6"
-                          component="div"
-                          sx={{
-                           
-                            fontWeight: 600,
-                          }}
-                        >
-                          {savedGame.title}
-                        </Typography>
-                      </div>
-                    }
-                    secondary={
-                      <Box component="div">
-                        <Typography
-                          variant="body2"
-                          component="span"
-                          sx={{
-                            
-                            display: "block",
-                          }}
-                        >
-                          Saved: {formatDate(savedGame.savedAt)}
-                        </Typography>
-                        <Box
-                          sx={{
-                            mt: 1,
-                            display: "flex",
-                            gap: 1,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                         
-                          <Chip
-                            label={`${
-                              savedGame.gameInfo.White || "unknown"
-                            } vs ${savedGame.gameInfo.Black || "unknown"}`}
-                            size="small"
-                            sx={{
-                      
-                              fontSize: "0.75rem",
-                            }}
-                          />
-                          {savedGame.gameInfo.Result && (
-                            <Chip
-                              label={`Result: ${savedGame.gameInfo.Result}`}
-                              size="small"
-                              sx={{
-                              
-                                fontSize: "0.75rem",
-                              }}
-                            />
-                          )}
-                          <Chip
-                            label={`${savedGame.moves.length} moves`}
-                            size="small"
-                            sx={{
-                             
-                              fontSize: "0.75rem",
-                            }}
-                          />
-                        </Box>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setHistoryDialogOpen(false)}
-         
+      {historyDialogOpen !== undefined &&
+        setHistoryDialogOpen &&
+        loadFromHistory && (
+          <Dialog
+            open={historyDialogOpen}
+            onClose={() => setHistoryDialogOpen(false)}
+            maxWidth="md"
+            fullWidth
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: 3,
+                  maxHeight: "80vh",
+                },
+              },
+            }}
           >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogTitle>Saved Game Reviews</DialogTitle>
+
+            <DialogContent>
+              {gameReviewHistory.length === 0 ? (
+                <Alert severity="info">No saved game reviews yet.</Alert>
+              ) : (
+                <List sx={{ width: "100%" }}>
+                  {gameReviewHistory.map((savedGame) => (
+                    <ListItem
+                      key={savedGame.id}
+                      sx={{ borderRadius: 2, mb: 1 }}
+                      secondaryAction={
+                        <Stack direction="row" spacing={1}>
+                          <IconButton
+                            onClick={() => loadFromHistory(savedGame)}
+                          >
+                            <ViewIcon />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => deleteFromHistory(savedGame.id)}
+                            sx={{ color: "#f44336" }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Stack>
+                      }
+                    >
+                      <ListItemText
+                        primary={
+                          <Typography variant="h6" fontWeight={600}>
+                            {savedGame.title}
+                          </Typography>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography variant="body2">
+                              Saved: {formatDate(savedGame.savedAt)}
+                            </Typography>
+                            <Stack direction="row" spacing={1} mt={1}>
+                              <Chip
+                                label={`${savedGame.gameInfo.White} vs ${savedGame.gameInfo.Black}`}
+                                size="small"
+                              />
+                              {savedGame.gameInfo.Result && (
+                                <Chip
+                                  label={`Result: ${savedGame.gameInfo.Result}`}
+                                  size="small"
+                                />
+                              )}
+                              <Chip
+                                label={`${savedGame.moves.length} moves`}
+                                size="small"
+                              />
+                            </Stack>
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </DialogContent>
+
+            <DialogActions>
+              <Button onClick={() => setHistoryDialogOpen(false)}>Close</Button>
+            </DialogActions>
+          </Dialog>
+        )}
     </>
   );
 }
