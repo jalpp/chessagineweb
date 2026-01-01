@@ -323,6 +323,7 @@ export const useNets = ({
           newSanEvaluations.maia2 = maia2SanEvaluations;
         }
 
+        // BigLeela (2500 rating)
         if (
           modelsToUse.includes("bigLeela") &&
           bigLeela &&
@@ -330,12 +331,33 @@ export const useNets = ({
         ) {
           if (currentAbortController.signal.aborted) return;
 
-          const uciEval = await bigLeela.evaluate(fen);
-          newEvaluations.bigLeela = uciEval;
-          newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen);
+          if (useLichessBook) {
+            const lichessResult = await fetchLichessData(
+              fen,
+              2500,
+              currentAbortController.signal
+            );
+            const totalGames =
+              lichessResult.white + lichessResult.draws + lichessResult.black;
+
+            newLichessData.bigLeela = lichessResult;
+
+            if (totalGames >= bookThreshold) {
+              positionIsInBook = true;
+              newEvaluations.bigLeela = lichessToEvaluation(lichessResult);
+              newSanEvaluations.bigLeela =
+          lichessToSanEvaluation(lichessResult);
+            }
+          }
+
+          if (!positionIsInBook || !useLichessBook) {
+            const uciEval = await bigLeela.evaluate(fen);
+            newEvaluations.bigLeela = uciEval;
+            newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen);
+          }
         }
 
-        // Elite Maia (Leela model)
+        
         if (
           modelsToUse.includes("elitemaia") &&
           elitemaia &&
@@ -343,9 +365,30 @@ export const useNets = ({
         ) {
           if (currentAbortController.signal.aborted) return;
 
-          const uciEval = await elitemaia.evaluate(fen);
-          newEvaluations.elitemaia = uciEval;
-          newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen);
+          if (useLichessBook) {
+            const lichessResult = await fetchLichessData(
+              fen,
+              2500,
+              currentAbortController.signal
+            );
+            const totalGames =
+              lichessResult.white + lichessResult.draws + lichessResult.black;
+
+            newLichessData.elitemaia = lichessResult;
+
+            if (totalGames >= bookThreshold) {
+              positionIsInBook = true;
+              newEvaluations.elitemaia = lichessToEvaluation(lichessResult);
+              newSanEvaluations.elitemaia =
+          lichessToSanEvaluation(lichessResult);
+            }
+          }
+
+          if (!positionIsInBook || !useLichessBook) {
+            const uciEval = await elitemaia.evaluate(fen);
+            newEvaluations.elitemaia = uciEval;
+            newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen);
+          }
         }
 
         if (!currentAbortController.signal.aborted) {
