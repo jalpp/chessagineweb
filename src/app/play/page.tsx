@@ -21,6 +21,7 @@ import {
   Tabs,
   Tab,
   LinearProgress,
+  TextField,
 } from "@mui/material";
 import {
   SmartToy as BotIcon,
@@ -71,8 +72,9 @@ export default function PlayVsBotsPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [startingFen, setStartingFen] = useState<string>(new Chess().fen());
 
-  // Timer states
   const [timeControl, setTimeControl] = useState<TimeControl>("10+0");
+  const [customMinutes, setCustomMinutes] = useState<number>(10);
+  const [customIncrement, setCustomIncrement] = useState<number>(0);
   const [whiteTime, setWhiteTime] = useState<number>(0);
   const [blackTime, setBlackTime] = useState<number>(0);
   const [activeTimer, setActiveTimer] = useState<"white" | "black" | null>(
@@ -84,6 +86,17 @@ export default function PlayVsBotsPage() {
 
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
+
+  const getActiveTimeControl = () => {
+    if (timeControl === "custom") {
+      return {
+        minutes: customMinutes,
+        increment: customIncrement,
+        label: `${customMinutes}+${customIncrement}`,
+      };
+    }
+    return TIME_CONTROLS[timeControl];
+  };
 
   useEffect(() => {
     gameStatusRef.current = gameStatus;
@@ -148,6 +161,12 @@ export default function PlayVsBotsPage() {
   }, [fen]);
 
   useEffect(() => {
+    if (gameStatus !== "playing" || timeControl !== "custom" || getActiveTimeControl().increment === 0) return;
+    const movedColor = getColorThatJustMoved(game);
+    applyIncrement(movedColor);
+  }, [fen]);
+
+  useEffect(() => {
     if (gameStatus !== "playing") return;
     checkGameEnd(game);
   }, [fen]);
@@ -192,14 +211,28 @@ export default function PlayVsBotsPage() {
   };
 
   const initializeTimers = () => {
-    const baseSeconds = TIME_CONTROLS[timeControl].minutes * 60;
+    const tc = getActiveTimeControl();
+    const baseSeconds = tc.minutes * 60;
 
     setWhiteTime(baseSeconds);
     setBlackTime(baseSeconds);
-
-    // White always starts
     setActiveTimer("white");
   };
+
+  const applyIncrement = (color: "white" | "black") => {
+    const inc = getActiveTimeControl().increment;
+    if (!inc) return;
+
+    if (color === "white") {
+      setWhiteTime((t) => t + inc);
+    } else {
+      setBlackTime((t) => t + inc);
+    }
+  };
+
+  const getColorThatJustMoved = (g: Chess): "white" | "black" =>
+  g.turn() === "w" ? "black" : "white";
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -239,7 +272,7 @@ export default function PlayVsBotsPage() {
       Date: new Date().toISOString().split("T")[0],
       Event: "Play vs Bot",
       Site: "https://www.chessagine.com/",
-      TimeControl: timeControl,
+      TimeControl: getActiveTimeControl().label,
     };
 
     if (startingFen && startingFen !== new Chess().fen()) {
@@ -289,67 +322,63 @@ export default function PlayVsBotsPage() {
     );
   };
 
-const calculateBotThinkTime = (): number => {
-  const moveNumber = game.history().length;
-  const botTimeRemaining = playerColor === "white" ? blackTime : whiteTime;
-  const baseGameSeconds = TIME_CONTROLS[timeControl].minutes * 60;
+  const calculateBotThinkTime = (): number => {
+    const moveNumber = game.history().length;
+    const botTimeRemaining = playerColor === "white" ? blackTime : whiteTime;
+    const baseGameSeconds = getActiveTimeControl().minutes * 60;
 
-  // --- PANIC MODE (low time) ---
-  const inPanicMode =
-    botTimeRemaining <= 20 ||
-    botTimeRemaining <= baseGameSeconds * 0.08;
+    const inPanicMode =
+      botTimeRemaining <= 20 || botTimeRemaining <= baseGameSeconds * 0.08;
 
-  if (inPanicMode) {
-    return 0.4 + Math.random() * 0.8; // 0.4-1.2s when panicking
-  }
+    if (inPanicMode) {
+      return 0.4 + Math.random() * 0.8;
+    }
 
-  // --- TIME BUDGETING ---
-  const estimatedMovesLeft = Math.max(40 - moveNumber, 20);
-  const avgTimePerMove = botTimeRemaining / estimatedMovesLeft;
-  
-  // --- BASE THINK TIME by phase ---
-  let baseTime = 0;
+    const estimatedMovesLeft = Math.max(40 - moveNumber, 20);
+    const avgTimePerMove = botTimeRemaining / estimatedMovesLeft;
 
-  if (moveNumber < 8) {
-    // Opening: quick book-like moves
-    baseTime = 0.5 + Math.random() * 1.0; // 0.5-1.5s
-  } else if (moveNumber < 15) {
-    // Early middlegame: slightly more thought
-    baseTime = 1.0 + Math.random() * 1.5; // 1-2.5s
-  } else if (moveNumber < 30) {
-    // Middlegame: variable thinking
-    baseTime = 1.2 + Math.random() * 2.3; // 1.2-3.5s
-  } else {
-    // Endgame: careful calculation
-    baseTime = 1.5 + Math.random() * 2.0; // 1.5-3.5s
-  }
+    let baseTime = 0;
 
-  // --- OCCASIONAL DEEP THINK (10% chance) ---
-  if (Math.random() < 0.10) {
-    baseTime *= 1.8; // Think 80% longer
-  }
+    if (moveNumber < 8) {
+      baseTime = 0.5 + Math.random() * 1.0;
+    } else if (moveNumber < 15) {
+      // Early middlegame: slightly more thought
+      baseTime = 1.0 + Math.random() * 1.5;
+    } else if (moveNumber < 30) {
+      // Middlegame: variable thinking
+      baseTime = 1.2 + Math.random() * 2.3;
+    } else {
+      // Endgame: careful calculation
+      baseTime = 1.5 + Math.random() * 2.0;
+    }
 
-  // --- CAPS based on time control ---
-  let minThink = 0.3;
-  let maxThink = 0;
+    // --- OCCASIONAL DEEP THINK (10% chance) ---
+    if (Math.random() < 0.1) {
+      baseTime *= 1.8; // Think 80% longer
+    }
 
-  switch (timeControl) {
-    case "5+0":
-      maxThink = Math.min(8, avgTimePerMove * 2.5); // Max ~8s or 2.5x avg
-      break;
-    case "10+0":
-      maxThink = Math.min(12, avgTimePerMove * 2.5); // Max ~12s or 2.5x avg
-      break;
-    case "30+0":
-      maxThink = Math.min(20, avgTimePerMove * 3); // Max ~20s or 3x avg
-      break;
-  }
+    // --- CAPS based on time control ---
+    let minThink = 0.3;
+    let maxThink = 0;
 
-  // --- FINAL CLAMP ---
-  const thinkTime = Math.max(minThink, Math.min(maxThink, baseTime));
-  
-  return Math.round(thinkTime * 10) / 10;
-};
+    switch (timeControl) {
+      case "5+0":
+        maxThink = Math.min(8, avgTimePerMove * 2.5); // Max ~8s or 2.5x avg
+        break;
+      case "10+0":
+        maxThink = Math.min(12, avgTimePerMove * 2.5); // Max ~12s or 2.5x avg
+        break;
+      case "30+0":
+        maxThink = Math.min(20, avgTimePerMove * 3); // Max ~20s or 3x avg
+        break;
+    
+    }
+
+    // --- FINAL CLAMP ---
+    const thinkTime = Math.max(minThink, Math.min(maxThink, baseTime));
+
+    return Math.round(thinkTime * 10) / 10;
+  };
 
   const makeBotMove = async () => {
     if (isNetLoading && selectedBot !== "stockfish") {
@@ -428,6 +457,7 @@ const calculateBotThinkTime = (): number => {
         setGame(newGame);
         setFen(newGame.fen());
         checkGameEnd(newGame);
+      
       }
     } catch (error) {
       console.error("[BOT] makeBotMove error:", error);
@@ -561,20 +591,42 @@ const calculateBotThinkTime = (): number => {
             {/* Time Control Selection */}
             <Box>
               <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                Time Control
+              Time Control
               </Typography>
-              <Stack direction="row" spacing={1}>
-                {(Object.keys(TIME_CONTROLS) as TimeControl[]).map((tc) => (
-                  <Button
-                    key={tc}
-                    variant={timeControl === tc ? "contained" : "outlined"}
-                    onClick={() => setTimeControl(tc)}
-                    fullWidth
-                  >
-                    {TIME_CONTROLS[tc].label}
-                  </Button>
-                ))}
+
+              <Stack direction="row" spacing={1} mb={1}>
+              {(Object.keys(TIME_CONTROLS) as TimeControl[]).map((tc) => (
+                <Button
+                key={tc}
+                variant={timeControl === tc ? "contained" : "outlined"}
+                onClick={() => setTimeControl(tc)}
+                fullWidth
+                >
+                {TIME_CONTROLS[tc].label}
+                </Button>
+              ))}
               </Stack>
+
+              {timeControl === "custom" && (
+              <Stack direction="row" spacing={2}>
+                <TextField
+                label="Minutes"
+                type="number"
+                slotProps={{ htmlInput: { min: 1, max: 180 } }}
+                value={customMinutes}
+                onChange={(e) => setCustomMinutes(+e.target.value)}
+                fullWidth
+                />
+                <TextField
+                label="Increment (sec)"
+                type="number"
+                slotProps={{ htmlInput: { min: 0, max: 60 } }}
+                value={customIncrement}
+                onChange={(e) => setCustomIncrement(+e.target.value)}
+                fullWidth
+                />
+              </Stack>
+              )}
             </Box>
 
             {/* Maia2 Rating Selection */}
