@@ -1,0 +1,1047 @@
+{
+  "requirements": [
+    {
+      "requirementName": "Spar Position #4",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1300-1400"
+      ],
+      "id": "067f0cf3-9afa-4081-96e6-7234458ab281",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Winter-Capablanca 1919",
+          "fen": "r4rk1/ppp5/3b1p1p/2p1p1p1/4P3/3P1PBP/PPP2P2/R4RK1 w - - 0 16",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #1",
+      "shortName": "Algorithm #1",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "0-300",
+        "300-400",
+        "400-500",
+        "500-600",
+        "600-700",
+        "700-800",
+        "800-900",
+        "900-1000"
+      ],
+      "id": "114e4da1-6de1-41f8-9b16-11aa001fab3b",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "K+Q Checkmate #1",
+          "fen": "8/8/8/8/8/2K5/2Q5/7k w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "K+Q Checkmate #2",
+          "fen": "7k/5Q2/8/8/8/8/8/1K6 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "K+Q Checkmate #3",
+          "fen": "8/8/8/8/8/1k6/8/QK6 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #11",
+      "shortName": "Algorithm #11",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1600-1700",
+        "1700-1800",
+        "1800-1900"
+      ],
+      "id": "1647cc7a-0d1a-4284-8fdd-9b3d7783fc55",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "B+N Mate #1",
+          "fen": "5k2/5N2/5K2/5B2/8/8/8/8 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "B+N Mate #2",
+          "fen": "7k/8/5K2/4N3/8/8/2B5/8 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "B+N Mate #3",
+          "fen": "1k6/8/3K4/3N4/3B4/8/8/8 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #5",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1400-1500"
+      ],
+      "id": "202acb4a-0031-4947-ab89-67150bf33c0c",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Stein-Furman",
+          "fen": "rn1k1b1r/1bq2ppp/p2p1n2/3P4/Pp1N4/6P1/1PP2PBP/R1BQR1K1 w - - 0 13",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Win Conversion #2",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "700-800"
+      ],
+      "id": "20610054-01f0-438b-b8ef-38ca38b75dfe",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Extra Rook",
+          "fen": "r2qk2B/pbp1bp1p/1p2pn2/3p4/8/1P1P1N2/P1P1BPPP/RN1Q1RK1 w q - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 5,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #19",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2000-2100"
+      ],
+      "id": "208b028a-c951-428c-ba38-8d3ade63b908",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Saemisch-Alekhine",
+          "fen": "r2r2k1/pb3pp1/3ppq1p/2p5/2P5/3BP3/PPQ2PPP/3R1RK1 w - - 0 17",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #9",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1600-1700"
+      ],
+      "id": "2ae9acfa-8a4e-4a7c-b7dc-08c1c2ba58aa",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Andersson-Miles 1981",
+          "fen": "r1bnk2r/pp3pbp/4p1p1/8/8/2N1P1P1/PP3PBP/R1B1K2R w KQkq - 0 13",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #4",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1300-1400"
+      ],
+      "id": "2bd2e6e6-ac0f-4ab1-9e1e-b698b04536f9",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Kline-Capablanca",
+          "fen": "r1b1rnk1/pp3ppp/2p2q2/4p2n/4P3/2PBNN2/PPQ2PPP/R4RK1 w - - 0 16",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #29",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2300-2400"
+      ],
+      "id": "2dc5d6fd-20bf-4fab-acf0-211c55221161",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Smyslov-Sliwa 1956",
+          "fen": "1n3k2/1b4pp/1p3p2/1Pb1pP2/2N1P1P1/2BB1K1P/8/8 w - - 3 43",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #7",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1500-1600"
+      ],
+      "id": "2f43c969-7b6c-4f57-b116-27a0058d8095",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Knorre-Chigorin",
+          "fen": "r1bqk2r/ppp2N2/2np1n2/2b1p3/2B1P3/3P2p1/PPP2PPP/RN1Q1RK1 w kq - 0 11",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #9",
+      "shortName": "Algorithm #9",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1400-1500",
+        "1500-1600",
+        "1600-1700",
+        "1700-1800",
+        "1800-1900"
+      ],
+      "id": "31bf0fe2-f5c2-4d52-9a61-370d215f5c72",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "Lucena #1",
+          "fen": "3K4/3P1k2/8/8/8/8/2r5/4R3 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "Lucena #2",
+          "fen": "8/4K1k1/4P3/8/8/8/r7/3R4 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "Lucena #3",
+          "fen": "8/k1K4r/2PR4/8/8/8/8/8 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #25",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2200-2300"
+      ],
+      "id": "31fd70c9-63f7-4c2c-9288-462a49548653",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Smyslov-Simagin 1951",
+          "fen": "8/2n2rkp/4p1p1/p1N3P1/1pP2P2/4PK2/P7/3R4 w - - 3 37",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #33",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2400+"
+      ],
+      "id": "38d8ce81-3ff9-483d-80c1-b6813c5378d7",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Smyslov-Haag 1963",
+          "fen": "1kb3r1/ppp5/1nn1prpp/3p4/3P1P1P/1PN2NPB/P1P5/2KRR3 w - - 3 20",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #19",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2000-2100"
+      ],
+      "id": "46614b57-f7a1-4f49-8a14-d70184160e70",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Catalan Pressure",
+          "fen": "r1b1k2r/1p3ppp/pb2pn2/8/8/6P1/PP1BPPBP/RN3RK1 w kq - 0 15",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #5",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1400-1500"
+      ],
+      "id": "46f37b1c-68db-4659-a35e-0f59d971f15e",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Larsen-Spassky 1968",
+          "fen": "3rr3/4kppp/p7/1ppR4/4n3/P3PN1P/1P3PP1/2R2K2 w - - 2 24",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #2",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1100-1200"
+      ],
+      "id": "493d60ce-2eea-435a-953a-cc924dfd383c",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Sveshnikov-Kasparov 1979",
+          "fen": "8/5p2/p3p1p1/1pbkP2p/5P1P/1P4P1/P3KB2/8 w - - 2 35",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #7",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1500-1600"
+      ],
+      "id": "50cd2b9f-7d7e-4569-b7e9-6a752e876a36",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Gheorghiu-Olafsson 1969",
+          "fen": "2b3k1/5ppp/p3p3/1p6/1P1Pn3/4P3/1B2BPPP/6K1 w - - 0 21",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #13",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1800-1900"
+      ],
+      "id": "5c34e73a-3745-48c6-a796-02f4763076d6",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Bondarevsky-Lilienthal",
+          "fen": "r1br2k1/pp2qppp/3pnn2/2p1p3/3PP3/2P2N2/P1P2PPP/R1BQRBK1 w - - 0 13",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Win Conversion #2",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "700-800"
+      ],
+      "id": "5e1a63a1-fe22-4e9c-893f-2ee2d860e361",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Extra Bishop",
+          "fen": "6k1/1p4pp/p4p2/3p4/3P1B2/1P6/P4PP1/6K1 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 5,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Win Conversion #1",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "600-700"
+      ],
+      "id": "79cb7fe2-7b33-4ebb-a3af-ccdf253c4d61",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Extra Rook",
+          "fen": "5k2/p4pp1/4p2p/1p1pP3/7P/8/P4PP1/R5K1 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 5,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #3",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1200-1300"
+      ],
+      "id": "830f9bc8-f013-476b-8014-3516a7c2aa0c",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Topalov-Anand 2014 WC",
+          "fen": "8/5pkp/6p1/1R6/2r5/4P3/4KPPP/8 w - - 0 28",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #16",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1900-2000"
+      ],
+      "id": "86869cf3-92dd-4576-9e04-d74c545bb5fe",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Smyslov-Benko 1969",
+          "fen": "rn3r2/p3ppkp/1p4p1/8/3N4/1P4P1/P3PPbP/R4RK1 w - - 0 15",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #3",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1200-1300"
+      ],
+      "id": "8d8131ea-6ba3-4685-8f18-8f4ab1a42243",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Steinitz-Paulsen",
+          "fen": "2kr1bnr/ppp2ppp/2np4/8/3PPB1q/P1N1K3/1PP1B1PP/R2Q3R w - - 0 13",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #16",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1900-2000"
+      ],
+      "id": "94eaaea6-750d-4383-8139-6ef1261f2733",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Koenig-Smyslov",
+          "fen": "r1b2rk1/5ppp/pnqp1b2/np2p3/4P3/2P2N1P/PPB2PP1/R1BQRNK1 w - - 0 16",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #2",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1100-1200"
+      ],
+      "id": "9a4cbce7-dcce-4d14-b657-55256c0bff1a",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Marshall-Chigorin",
+          "fen": "2rqr1k1/pp3ppp/5nn1/8/2NP4/P2Q4/1B3PPP/R4RK1 w - - 0 19",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #7",
+      "shortName": "Algorithm #7",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1300-1400",
+        "1400-1500",
+        "1500-1600",
+        "1600-1700",
+        "1700-1800",
+        "1800-1900"
+      ],
+      "id": "a40abdcf-5ff5-4a4c-9791-5496f4f4a70a",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "Philidor #1",
+          "fen": "1R6/8/8/8/4pk2/8/r7/4K3 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Draw"
+        },
+        {
+          "title": "Philidor #2",
+          "fen": "8/8/8/r7/5pk1/3R4/8/3K4 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Draw"
+        },
+        {
+          "title": "Philidor #3",
+          "fen": "8/8/8/2R5/3pk3/8/7r/3K4 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Draw"
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #4",
+      "shortName": "Algorithm #4",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1000-1100",
+        "1100-1200",
+        "1200-1300",
+        "1300-1400",
+        "1400-1500",
+        "1500-1600",
+        "800-900",
+        "900-1000"
+      ],
+      "id": "aa1fcc48-2e0c-4bd3-b1a7-2e2e841eeff9",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "Two Bishop Checkmate #1",
+          "fen": "4k3/8/8/3BBK2/8/8/8/8 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "Two Bishop Checkmate #2",
+          "fen": "8/8/6k1/8/6BB/6K1/8/8 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "Two Bishop Checkmate #3",
+          "fen": "3k4/8/8/8/8/8/8/B2K1B2 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #11",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1700-1800"
+      ],
+      "id": "b9ea6e13-c1b2-48ca-94ed-a838e81c0145",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Nimzowitsch-Capablanca",
+          "fen": "2r1r1k1/2pq1pbp/Q1pp1np1/8/4P3/2N5/PPP2PPP/R1B2RK1 w - - 0 15",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #1",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1000-1100"
+      ],
+      "id": "be1611a0-fe0b-47d4-ae9a-f14a5ad763d1",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Alekhine-NN",
+          "fen": "r1bqnrk1/ppppnppp/1b6/3PP3/2B5/5N2/PP3PPP/RNBQ1RK1 w - - 0 10",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #25",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2200-2300"
+      ],
+      "id": "cc45a791-e3e9-40e0-84be-4d1b4e310a06",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Alatortsev-Levenfish",
+          "fen": "r1b2rk1/p1p1q1pp/1p1p4/3Pn3/2P1Pp2/3N1P2/PP4BP/2RQR1K1 w - - 0 19",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #29",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2300-2400"
+      ],
+      "id": "d4a6d99e-d270-4c08-a878-01acb41bca10",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Smyslov-Reshevsky",
+          "fen": "3rr1k1/2q2pp1/1p1p1np1/p1n1p3/2P5/1P2QPPB/PB1RP2P/3R2K1 w - - 0 21",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #11",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1700-1800"
+      ],
+      "id": "d6887366-1e10-4f6e-833e-4e0e67fef586",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Fischer-Reshevsky 1963",
+          "fen": "r6r/1p1k3p/p2p1bp1/3Rp3/4P1P1/1PP5/1P3P2/2B1K2R w K - 0 22",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Win REP Match #1",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1400-1500",
+        "1500-1600",
+        "1600-1700"
+      ],
+      "id": "dbf2b781-149e-49ea-81b6-a3c21b877f1e",
+      "positionCount": 5,
+      "positions": [
+        {
+          "title": " #1",
+          "fen": "8/8/8/8/1kp5/8/7r/2K3R1 w - - 0 1",
+          "limitSeconds": 120,
+          "incrementSeconds": 30,
+          "result": ""
+        },
+        {
+          "title": " #2",
+          "fen": "8/8/8/5R2/3kp3/8/r7/4K3 w - - 0 1",
+          "limitSeconds": 120,
+          "incrementSeconds": 30,
+          "result": ""
+        },
+        {
+          "title": " #3",
+          "fen": "2k2r2/8/1pK4R/2P5/8/8/8/8 w - - 0 1",
+          "limitSeconds": 120,
+          "incrementSeconds": 30,
+          "result": ""
+        },
+        {
+          "title": " #4",
+          "fen": "3k4/2r5/2PK4/3R4/8/8/8/8 w - - 15 11",
+          "limitSeconds": 120,
+          "incrementSeconds": 30,
+          "result": ""
+        },
+        {
+          "title": " #5",
+          "fen": "2R5/8/8/1p6/1k6/8/2K4r/8 w - - 0 1",
+          "limitSeconds": 120,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #2",
+      "shortName": "Algorithm #2",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1000-1100",
+        "500-600",
+        "600-700",
+        "700-800",
+        "800-900",
+        "900-1000"
+      ],
+      "id": "df074603-53f6-4d46-bd64-a207e8a0e289",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "K+R Checkmate #1",
+          "fen": "4k3/8/3R1K2/8/8/8/8/8 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "K+R Checkmate #2",
+          "fen": "8/8/4k3/8/4K3/3R4/8/8 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "K+R Checkmate #3",
+          "fen": "8/8/8/8/8/1k6/8/RK6 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #22",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2100-2200"
+      ],
+      "id": "e2f644e2-eaee-4297-8264-c8f2edbfb9e8",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Pilnik-Geller",
+          "fen": "r2q1rk1/4bppp/3p1n2/p1pPp3/2P5/2B2B2/PP3PPP/R2Q1RK1 w - - 0 17",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #14",
+      "shortName": "Algorithm #14",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1800-1900",
+        "1900-2000",
+        "2000-2100"
+      ],
+      "id": "e4910c3a-02b6-46ae-9b64-c083159a7575",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "Q vs P #1",
+          "fen": "5QK1/8/8/8/8/8/1p6/2k5 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "Q vs P #2",
+          "fen": "1KQ5/8/8/8/8/8/3p4/4k3 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "Q vs P #3",
+          "fen": "2Q5/1K6/8/8/8/2p5/1k6/8 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #22",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2100-2200"
+      ],
+      "id": "e7a9cb4f-623c-403a-9679-2c347e69e79f",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Mikenas-Smyslov 1944",
+          "fen": "5k2/1p3ppb/2p4p/p7/P2bP1P1/1B1N1P2/1P5P/5K2 w - - 4 35",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #17",
+      "shortName": "Algorithm #17",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1900-2000",
+        "2000-2100",
+        "2100-2200",
+        "2200-2300",
+        "2300-2400",
+        "2400+"
+      ],
+      "id": "e7e4abb2-2681-4da9-90c1-5a2510715d94",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "R vs P 2 #1",
+          "fen": "8/4K3/8/3pk3/3R4/8/8/8 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "R vs P 2 #2",
+          "fen": "8/3K4/8/8/1p1k4/8/8/7R w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "R vs P 2 #3",
+          "fen": "8/2K5/8/1k6/1p6/8/8/1R6 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #9",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1600-1700"
+      ],
+      "id": "e984c523-392a-4667-8db2-f86fa4c77aa6",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Keres-Sajtar",
+          "fen": "r1b1kb1r/1p1n2pp/p2pNn2/6B1/2q1P3/2N5/PPP2PPP/R2Q1RK1 w kq - 0 11",
+          "limitSeconds": 900,
+          "incrementSeconds": 10,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Complete Algorithm #3",
+      "shortName": "Algorithm #3",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1000-1100",
+        "1100-1200",
+        "1200-1300",
+        "700-800",
+        "800-900",
+        "900-1000"
+      ],
+      "id": "ec00c174-95ed-4fb3-9990-ff35d41f5576",
+      "positionCount": 3,
+      "positions": [
+        {
+          "title": "K+P vs K #1",
+          "fen": "3k4/8/8/8/8/8/3P4/3K4 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "K+P vs K #2",
+          "fen": "2k5/8/8/8/8/8/2P5/2K5 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        },
+        {
+          "title": "K+P vs K #3",
+          "fen": "1k6/8/8/8/8/8/1P6/1K6 w - - 0 1",
+          "limitSeconds": 180,
+          "incrementSeconds": 0,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #1",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1000-1100"
+      ],
+      "id": "ecdb7ad6-6db5-4de0-b918-5861533e7cbe",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Outside Passer",
+          "fen": "4k3/5ppp/4p3/1p6/8/PP6/4KPPP/8 w - - 0 1 ",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Win Conversion #1",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "600-700"
+      ],
+      "id": "ee743bd9-e838-4611-953a-95921aadbfb1",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Extra Queen",
+          "fen": "2r2rk1/pb1nbppp/1p2pn2/2pp4/3P1B2/2PBPN2/PP3PPP/RN1QR1K1 w - - 0 1",
+          "limitSeconds": 300,
+          "incrementSeconds": 5,
+          "result": "Win"
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Middlegame Position #33",
+      "category": "Middlegames + Strategy",
+      "status": "ACTIVE",
+      "cohorts": [
+        "2400+"
+      ],
+      "id": "efc338c5-0af2-411a-8937-2e0394d25468",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Spassky-Petrosian",
+          "fen": "3rr1k1/2q2pp1/1p1p1np1/p1n1p3/2P5/1P2QPPB/PB1RP2P/3R2K1 w - - 0 21",
+          "limitSeconds": 900,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    },
+    {
+      "requirementName": "Spar Position #13",
+      "category": "Endgame",
+      "status": "ACTIVE",
+      "cohorts": [
+        "1800-1900"
+      ],
+      "id": "fca7e6ca-434e-49ed-a3d2-81a17ce4c48b",
+      "positionCount": 1,
+      "positions": [
+        {
+          "title": "Botvinnik-Alehkine 1938",
+          "fen": "1n3rk1/2R3pp/pp3p2/3p4/3P4/5N2/PP3PPP/6K1 w - - 0 23",
+          "limitSeconds": 300,
+          "incrementSeconds": 30,
+          "result": ""
+        }
+      ]
+    }
+  ]
+}
