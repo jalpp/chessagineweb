@@ -24,6 +24,7 @@ import { useChatContext } from "@/context/ChatContext";
 import { useNets } from "./useNets";
 import { addNetAnalysisToQuery } from "@/libs/nets/maiaPrompter";
 import { getReverseStockfishCacheKey, getStockfishCacheKey, readStockfishCache, writeStockfishCache } from "@/stockfish/engine/cache";
+import { LANGUAGES } from "@/libs/docs/helper";
 
 export default function useAgine(fen: string) {
 
@@ -506,11 +507,17 @@ FEN: ${currentFen}`;
       puzzleQuery?: string,
       playMode?: boolean
     ): string => {
+      const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
+      const selectedLanguage = LANGUAGES.find(lang => lang.name === (apiSettings.language || 'English')) || LANGUAGES[0];
       let query = `<chess_coaching_request>
 
 <user_query>
 ${currentInput}
+
+Please Speak in: ${selectedLanguage.name}
 </user_query>
+
+
 
 <position_context>
 Current FEN: ${currentFen}
@@ -813,6 +820,8 @@ ${candidateMoves}
           );
         }
 
+        console.log(query);
+
         const result = await makeApiRequest(currentFen, query, mode);
 
 
@@ -842,8 +851,13 @@ ${candidateMoves}
           setChatMessages(newChatMessages);
           setChatLoading(true)
 
+          const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
+          const selectedLanguage = LANGUAGES.find(lang => lang.name === (apiSettings.language || 'English')) || LANGUAGES[0];
+
           const evalQuery = `
-        mode: ${mode}
+        Please Speak in: ${selectedLanguage.name}  
+        mode: 
+        ${mode}
         \n\n
         ${assistantMessage.content}
         `

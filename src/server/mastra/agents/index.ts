@@ -62,24 +62,25 @@ function createAgineCloudModel(runtimeContext: RuntimeContext) {
 function createAgentInstruction(runtimeContext: RuntimeContext) {
   const lang = (runtimeContext.get("lang") as string) || "English";
   const mode = (runtimeContext.get("mode") as string) || "position";
+  const replaceLangKey = '[ENGLISH]';
 
   switch (mode) {
     case "position":
-      return agineSystemPrompt.replace("ENGLISH", lang);
+      return agineSystemPrompt.replace(replaceLangKey, lang);
     case "puzzle":
-      return aginePuzzleSystemPrompt.replace("ENGLISH", lang);
+      return aginePuzzleSystemPrompt.replace(replaceLangKey, lang);
     case "annotation":
-      return chessAgineAnnoPrompt.replace("ENGLISH", lang);
+      return chessAgineAnnoPrompt.replace(replaceLangKey, lang);
     case "question":
-      return agineQuestionMode.replace("ENGLISH", lang);
+      return agineQuestionMode.replace(replaceLangKey, lang);
     case "selfeval":
-      return agineSelfEval.replace("ENGLISH", lang);
+      return agineSelfEval.replace(replaceLangKey, lang);
     case "grader":
-      return agineEvalGraderPrompt.replace("ENGLISH", lang);  
+      return agineEvalGraderPrompt.replace(replaceLangKey, lang);  
     case "chess-gemma-commentary":
       return "Generate professional chess commentary in the specified language. For Type=standard use 30–40 words. For Type=explanation, explain the best move briefly and address the userQuery. (≤50 words). Return exactly: Commentary, Predicted ELO, Verified Classification.";   
     default:
-      return agineSystemPrompt.replace("ENGLISH", lang);
+      return agineSystemPrompt.replace(replaceLangKey, lang);
   }
 }
 
