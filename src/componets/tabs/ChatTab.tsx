@@ -184,10 +184,8 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       e.preventDefault();
       // Sync to parent before sending
       setChatInput(localInput);
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        sendChatMessage(gameInfo, currentMove, puzzleMode, puzzleQuery, playMode);
-      }, 0);
+      
+      handleChatKeyPress(e);
     }
   };
 
@@ -277,7 +275,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   >([]);
   const [speechEnabled, setSpeechEnabled] = useState(true);
 
-  console.log("test")
+
 
   
 
