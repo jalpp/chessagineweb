@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
 import { CandidateMove } from "@/libs/agine/helper";
-import { getChessDBSpeech} from "../componets/tabs/Chessdb";
+import { getChessDBSpeech } from "../componets/tabs/Chessdb";
 import { useChessDB } from "./useChessDb";
 import { useLocalStorage } from "usehooks-ts";
 import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
@@ -23,7 +23,7 @@ import { useThemeScore } from "./useThemeScore";
 import { useChatContext } from "@/context/ChatContext";
 import { useNets } from "./useNets";
 import { addNetAnalysisToQuery } from "@/libs/nets/maiaPrompter";
-import { getStockfishCacheKey, readStockfishCache, writeStockfishCache } from "@/stockfish/engine/cache";
+import { getReverseStockfishCacheKey, getStockfishCacheKey, readStockfishCache, writeStockfishCache } from "@/stockfish/engine/cache";
 
 export default function useAgine(fen: string) {
 
@@ -37,10 +37,11 @@ export default function useAgine(fen: string) {
     setChatInput,
     setChatLoading,
   } = useChatContext()
- 
+
   const [state, setState] = useState<AgineState>({
     llmAnalysisResult: null,
     stockfishAnalysisResult: null,
+    reverseStockfishAnalysisResult: null,
     openingData: null,
     lichessOpeningData: null,
     llmLoading: false,
@@ -49,7 +50,7 @@ export default function useAgine(fen: string) {
     lichessOpeningLoading: false,
     moveSquares: {},
     analysisTab: 0,
-  
+
   });
 
   // Engine settings with localStorage
@@ -58,11 +59,11 @@ export default function useAgine(fen: string) {
     DEFAULT_ENGINE_DEPTH
   );
   const [engineLines, setEngineLines] = useLocalStorage<number>(
-    "engineLines", 
+    "engineLines",
     DEFAULT_ENGINE_LINES
   );
 
-  const {evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen} = useNets({fen: fen});
+  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen: fen });
 
   const [enginePicked] = useLocalStorage<EngineName>(
     "stockfish-engine-picked",
@@ -76,12 +77,12 @@ export default function useAgine(fen: string) {
 
 
   useEffect(() => {
-  Object.keys(sessionStorage)
-    .filter((k) => k.startsWith("stockfish:"))
-    .forEach((k) => sessionStorage.removeItem(k));
-}, [engine]);
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith("stockfish:"))
+      .forEach((k) => sessionStorage.removeItem(k));
+  }, [engine]);
 
-  
+
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
   const {
     gameReview,
@@ -93,7 +94,7 @@ export default function useAgine(fen: string) {
     rootCurrentMove,
     setRootCurrentMove
   } = useGameReview(engine, engineDepth);
-  
+
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
 
@@ -105,12 +106,12 @@ export default function useAgine(fen: string) {
     currentFenRef.current = fen;
   }, [fen]);
 
- 
+
   const legalMoves = useMemo(() => {
     return isValidFEN(fen) ? new Chess(fen).moves() : [];
   }, [fen]);
 
- 
+
   const formatEvaluation = useCallback((line: LineEval): string => {
     if (line.mate !== undefined) {
       return `M${line.mate}`;
@@ -174,63 +175,63 @@ export default function useAgine(fen: string) {
 
 
   const makeApiRequest = useCallback(
-  async (fen: string, query: string, mode: string): Promise<AgentMessage> => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    
-    try {
-      const token = await session?.getToken();
-      
-      const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
-      
-      if(!apiSettings.ollamaBaseUrl && apiSettings.provider == "ollama"){
-        throw new Error("Please configure your Ollama Ngrok local LLM endpoint in the settins page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.")
+    async (fen: string, query: string, mode: string): Promise<AgentMessage> => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-      
-      if (!apiSettings.apiKey && (apiSettings.provider === "anthropic" || apiSettings.provider === "google" || apiSettings.provider === "openai")) {
-        throw new Error('Please configure your API Key in the Settings page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.');
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        const token = await session?.getToken();
+
+        const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
+
+        if (!apiSettings.ollamaBaseUrl && apiSettings.provider == "ollama") {
+          throw new Error("Please configure your Ollama Ngrok local LLM endpoint in the settins page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.")
+        }
+
+        if (!apiSettings.apiKey && (apiSettings.provider === "anthropic" || apiSettings.provider === "google" || apiSettings.provider === "openai")) {
+          throw new Error('Please configure your API Key in the Settings page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.');
+        }
+
+        const response = await fetch(`/api/agent`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            fen,
+            query,
+            mode,
+            apiSettings: {
+              provider: apiSettings.provider,
+              model: apiSettings.model,
+              apiKey: apiSettings.apiKey,
+              language: apiSettings.language,
+              isRouted: apiSettings.isRouted,
+              ollamaBaseUrl: `${apiSettings.ollamaBaseUrl}/api`
+            }
+          }),
+          signal: controller.signal,
+        });
+
+        const data = await response.json() as AgentMessage;
+        return data;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          throw new Error("Request cancelled");
+        }
+        throw error;
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
-      
-      const response = await fetch(`/api/agent`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ 
-          fen, 
-          query, 
-          mode,
-          apiSettings: {
-            provider: apiSettings.provider,
-            model: apiSettings.model,
-            apiKey: apiSettings.apiKey,
-            language: apiSettings.language,
-            isRouted: apiSettings.isRouted,
-            ollamaBaseUrl: `${apiSettings.ollamaBaseUrl}/api`          
-          }
-        }),
-        signal: controller.signal,
-      });
-      
-      const data = await response.json() as AgentMessage;
-      return data;
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new Error("Request cancelled");
-      }
-      throw error;
-    } finally {
-      if (abortControllerRef.current === controller) {
-        abortControllerRef.current = null;
-      }
-    }
-  },
-  [session]
-);
+    },
+    [session]
+  );
 
   const fetchOpeningData = useCallback(async (): Promise<void> => {
     const currentFen = currentFenRef.current;
@@ -266,7 +267,7 @@ export default function useAgine(fen: string) {
     }
   }, [updateState]);
 
-  const analyzeWithStockfish = useCallback(async () => {
+const analyzeWithStockfish = useCallback(async () => {
   if (!engine || !fen) return;
 
   const currentFen = currentFenRef.current;
@@ -284,6 +285,9 @@ export default function useAgine(fen: string) {
     });
     setStockfishFen(currentFen);
     setStockfishDone(true);
+    
+    // Still analyze threats in background even if main analysis is cached
+    await analyzeThreatsInBackground(currentFen);
     return;
   }
 
@@ -312,8 +316,11 @@ export default function useAgine(fen: string) {
         stockfishAnalysisResult: result,
         stockfishLoading: false,
       });
-       setStockfishFen(currentFen);
-       setStockfishDone(true); 
+      setStockfishFen(currentFen);
+      setStockfishDone(true);
+      
+      // Automatically analyze threats after main analysis completes
+      await analyzeThreatsInBackground(currentFen);
     }
   } catch (err) {
     console.error("Stockfish analysis failed:", err);
@@ -324,10 +331,88 @@ export default function useAgine(fen: string) {
         stockfishLoading: false,
       });
       setStockfishFen(null);
-      setStockfishDone(true); 
+      setStockfishDone(true);
     }
   }
 }, [engine, fen, engineDepth, engineLines, updateState]);
+
+// Helper function to analyze threats in the background
+const analyzeThreatsInBackground = useCallback(async (currentFen: string) => {
+  if (!engine) {
+    console.debug("[analyzeThreatsInBackground] Engine not available, skipping threat analysis");
+    return;
+  }
+
+  console.debug("[analyzeThreatsInBackground] Starting threat analysis for FEN:", currentFen);
+
+  try {
+    // Create a "null move" by switching the side to move
+    const chess = new Chess(currentFen);
+    const nullMoveFen = currentFen.replace(
+      chess.turn() === 'w' ? ' w ' : ' b ',
+      chess.turn() === 'w' ? ' b ' : ' w '
+    );
+
+    
+
+    const cacheKey = getReverseStockfishCacheKey(
+      nullMoveFen,
+      12, // Fixed depth for threat analysis
+      4   // Fixed lines for threat analysis
+    );
+
+
+    // Check cache first
+    const cached = readStockfishCache(cacheKey);
+    if (cached) {
+      console.debug("[analyzeThreatsInBackground] Found cached threat analysis, applying result");
+      if (currentFenRef.current === currentFen) {
+        updateState({
+          reverseStockfishAnalysisResult: cached,
+        });
+        console.info("[analyzeThreatsInBackground] Threat analysis updated from cache");
+      } else {
+        console.debug("[analyzeThreatsInBackground] FEN changed, skipping cache update");
+      }
+      return;
+    }
+
+    console.debug("[analyzeThreatsInBackground] No cache found, analyzing threats with engine");
+
+    // Analyze threats silently in background
+    const result = await engine.evaluatePositionWithUpdate({
+      fen: nullMoveFen,
+      depth: 12,
+      multiPv: 4,
+      setPartialEval: (partialEval) => {
+        console.debug("[analyzeThreatsInBackground] Partial evaluation received, lines:", partialEval.lines?.length);
+        if (currentFenRef.current === currentFen) {
+          updateState({ reverseStockfishAnalysisResult: partialEval });
+        } else {
+          console.debug("[analyzeThreatsInBackground] FEN changed during analysis, ignoring partial result");
+        }
+      },
+    });
+
+    if (currentFenRef.current === currentFen) {
+      writeStockfishCache(cacheKey, result);
+      updateState({
+        reverseStockfishAnalysisResult: result,
+      });
+      console.info("[analyzeThreatsInBackground] Threat analysis complete, result cached and applied");
+    } else {
+      console.debug("[analyzeThreatsInBackground] FEN changed before analysis completed, discarding result");
+    }
+  } catch (err) {
+    console.error("[analyzeThreatsInBackground] Threat analysis failed:", err instanceof Error ? err.message : String(err));
+    if (currentFenRef.current === currentFen) {
+      updateState({
+        reverseStockfishAnalysisResult: null,
+      });
+      console.debug("[analyzeThreatsInBackground] Error state updated");
+    }
+  }
+}, [engine, updateState]);
 
 
   const abortChatMessage = useCallback((): void => {
@@ -337,76 +422,76 @@ export default function useAgine(fen: string) {
       abortControllerRef.current = null;
 
       setChatLoading(false);
-      addChatMessage(createChatMessage("assistant", "","Message generation was cancelled.", ));
+      addChatMessage(createChatMessage("assistant", "", "Message generation was cancelled."));
     }
   }, [updateState, addChatMessage]);
 
- 
+
 
   const buildCustomChatQuery = useCallback(
-  (
-    currentFen: string,
-    sideToMove: string,
-    langCode: string,
+    (
+      currentFen: string,
+      sideToMove: string,
+      langCode: string,
 
-  ): string => {
-    
-    const type = 'standard';
-    
-    let query = `
+    ): string => {
+
+      const type = 'standard';
+
+      let query = `
 LangCode: ${langCode}
 Type: ${type}
 FEN: ${currentFen}`;
 
 
-    const formattedSide = sideToMove.charAt(0).toUpperCase() + sideToMove.slice(1).toLowerCase();
-    query += `\nSide: ${formattedSide}`;
+      const formattedSide = sideToMove.charAt(0).toUpperCase() + sideToMove.slice(1).toLowerCase();
+      query += `\nSide: ${formattedSide}`;
 
-   
-    query += `\nActor: human`;
 
-    const currentMoveIndex = rootCurrentMove;
- 
-    if (gameReview && gameReview.length > 0 && currentMoveIndex) {
-          
-      if (currentMoveIndex !== -1) {
-        const moveAnalysis = gameReview[currentMoveIndex];
-        
-        query += `\nmoveSAN: ${moveAnalysis.notation}`
-        query += `\nTag: ${moveAnalysis.quality}`;
-        
-  
-        if (moveAnalysis.sanNotation) {
-          query += `\nBestAlt: ${moveAnalysis.sanNotation}`;
+      query += `\nActor: human`;
+
+      const currentMoveIndex = rootCurrentMove;
+
+      if (gameReview && gameReview.length > 0 && currentMoveIndex) {
+
+        if (currentMoveIndex !== -1) {
+          const moveAnalysis = gameReview[currentMoveIndex];
+
+          query += `\nmoveSAN: ${moveAnalysis.notation}`
+          query += `\nTag: ${moveAnalysis.quality}`;
+
+
+          if (moveAnalysis.sanNotation) {
+            query += `\nBestAlt: ${moveAnalysis.sanNotation}`;
+          }
+
+
+          const cpAfter = moveAnalysis.evalMove;
+          let cpBefore = cpAfter;
+
+          if (currentMoveIndex > 0) {
+            cpBefore = gameReview[currentMoveIndex - 1].evalMove;
+          }
+
+          const delta = cpAfter - cpBefore;
+          query += `\nCP: ${cpBefore}->${cpAfter} (Δ=${delta})`;
         }
-        
-        
-        const cpAfter = moveAnalysis.evalMove;
-        let cpBefore = cpAfter; 
-        
-        if (currentMoveIndex > 0) {
-          cpBefore = gameReview[currentMoveIndex - 1].evalMove;
+      }
+
+      // Alternative: Get BestAlt from stockfish analysis (2nd variation)
+      if (!gameReview && state.stockfishAnalysisResult?.lines && state.stockfishAnalysisResult.lines.length > 1) {
+        const secondBestLine = state.stockfishAnalysisResult.lines[1];
+        if (secondBestLine?.pv && secondBestLine.pv.length > 0) {
+          // Extract first move from second best line
+          const bestAltMove = secondBestLine.pv[0];
+          query += `\nBestAlt: ${bestAltMove}`;
         }
-        
-        const delta = cpAfter - cpBefore;
-        query += `\nCP: ${cpBefore}->${cpAfter} (Δ=${delta})`;
       }
-    }
 
-    // Alternative: Get BestAlt from stockfish analysis (2nd variation)
-    if (!gameReview && state.stockfishAnalysisResult?.lines && state.stockfishAnalysisResult.lines.length > 1) {
-      const secondBestLine = state.stockfishAnalysisResult.lines[1];
-      if (secondBestLine?.pv && secondBestLine.pv.length > 0) {
-        // Extract first move from second best line
-        const bestAltMove = secondBestLine.pv[0];
-        query += `\nBestAlt: ${bestAltMove}`;
-      }
-    }
-
-    return query;
-  },
-  [gameReview, state.stockfishAnalysisResult]
-);
+      return query;
+    },
+    [gameReview, state.stockfishAnalysisResult]
+  );
 
 
   const buildChatQuery = useCallback(
@@ -493,15 +578,15 @@ ${currentMove}
 </current_move>`;
       }
 
-      if(graderMode){
+      if (graderMode) {
         query += `Grade user's position evaluation, if position is not present, ask user to evaluate the current position so you can grade it`;
       }
 
-    
+
       if (gameReview && gameReview.length > 0 && !graderMode) {
         const generateGameReviewSummary = (moves: MoveAnalysis[]): string => {
           const movesByQuality: Record<MoveQuality, MoveAnalysis[]> = {
-            "Best": [], "Very Good": [], "Good": [], "Dubious": [], 
+            "Best": [], "Very Good": [], "Good": [], "Dubious": [],
             "Mistake": [], "Blunder": [], "Book": []
           };
 
@@ -524,7 +609,7 @@ ${currentMove}
             const whiteBlunders = whiteMoves.filter(m => m.quality === "Blunder");
             const whiteMistakes = whiteMoves.filter(m => m.quality === "Mistake");
             const whiteDubious = whiteMoves.filter(m => m.quality === "Dubious");
-            
+
             summary += `White's Performance:
 - Blunders: ${whiteBlunders.length}${whiteBlunders.length > 0 ? ` (${formatMoveList(whiteBlunders)})` : ''}
 - Mistakes: ${whiteMistakes.length}${whiteMistakes.length > 0 ? ` (${formatMoveList(whiteMistakes)})` : ''}
@@ -535,7 +620,7 @@ ${currentMove}
             const blackBlunders = blackMoves.filter(m => m.quality === "Blunder");
             const blackMistakes = blackMoves.filter(m => m.quality === "Mistake");
             const blackDubious = blackMoves.filter(m => m.quality === "Dubious");
-            
+
             summary += `Black's Performance:
 - Blunders: ${blackBlunders.length}${blackBlunders.length > 0 ? ` (${formatMoveList(blackBlunders)})` : ''}
 - Mistakes: ${blackMistakes.length}${blackMistakes.length > 0 ? ` (${formatMoveList(blackMistakes)})` : ''}
@@ -570,14 +655,14 @@ ${generateGameReviewSummary(gameReview)}
 
 Detailed Move Analysis:
 ${gameReview.map(move => {
-  const moveNumber = Math.ceil(move.plyNumber / 2);
-  const playerName = move.player === 'w' ? 'White' : 'Black';
-  return `Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.notation} (${playerName}) - Quality: ${move.quality} Best was ${move.sanNotation}`;
-}).join('\n')}
+          const moveNumber = Math.ceil(move.plyNumber / 2);
+          const playerName = move.player === 'w' ? 'White' : 'Black';
+          return `Move ${moveNumber}${move.player === 'w' ? '' : '...'} ${move.notation} (${playerName}) - Quality: ${move.quality} Best was ${move.sanNotation}`;
+        }).join('\n')}
 </game_review_analysis>`;
       }
 
-      
+
       if (state.stockfishAnalysisResult) {
         const formattedEngineLines = state.stockfishAnalysisResult.lines
           .map((line, index) => {
@@ -603,7 +688,35 @@ ${formattedEngineLines}
 </engine_analysis>`;
       }
 
-      if(sanEvaluations){
+      
+        if (state.reverseStockfishAnalysisResult) {
+          const formattedThreatLines = state.reverseStockfishAnalysisResult.lines
+            .map((line, index) => {
+              const evaluation = formatEvaluation(line);
+              const moves = formatPrincipalVariation(line.pv, line.fen);
+              let formattedLine = `  Threat ${index + 1}: ${evaluation}
+    Moves: ${moves}`;
+
+              if (line.resultPercentages) {
+                formattedLine += `
+    Win Rate: ${line.resultPercentages.win}% | Draw: ${line.resultPercentages.draw}% | Loss: ${line.resultPercentages.loss}%`;
+              }
+
+              return formattedLine;
+            })
+            .join("\n\n");
+
+          query += `
+
+<null_move_analysis>
+Note: These are opponent threats if null move is applied played (null move analysis)
+Usage Note: Use this to extract threats and opposition plans, and consider analysis from opposition
+Depth: 12
+${formattedThreatLines}
+</null_move_analysis>`;
+        }
+
+      if (sanEvaluations) {
         query += addNetAnalysisToQuery(sanEvaluations);
       }
 
@@ -616,7 +729,7 @@ ${openingSpeech}
 </opening_information>`;
       }
 
-      
+
       if (chessdbdata) {
         const candidateMoves = getChessDBSpeech(chessdbdata);
         query += `
@@ -626,7 +739,7 @@ ${candidateMoves}
 </database_analysis>`;
       }
 
-     
+
       query += `
 
 </chess_coaching_request>`;
@@ -636,144 +749,144 @@ ${candidateMoves}
     [state.stockfishAnalysisResult, state.openingData, gameReview, chessdbdata, engineDepth, formatEvaluation, formatPrincipalVariation]
   );
 
-const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
-const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "true";
-const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true";
+  const getQuestionMode = () => localStorage.getItem("agine_question_mode") === "true";
+  const getSelfEvalMode = () => localStorage.getItem("agine_selfEval_mode") === "true";
+  const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true";
 
   const sendChatMessage = useCallback(
-  async (
-    gameInfo?: string,
-    currentMove?: string,
-    puzzleMode?: boolean,
-    puzzleQuery?: string,
-    playMode?: boolean,
+    async (
+      gameInfo?: string,
+      currentMove?: string,
+      puzzleMode?: boolean,
+      puzzleQuery?: string,
+      playMode?: boolean,
 
-  ): Promise<void> => {
-    if (!chatInput.trim()) return;
+    ): Promise<void> => {
+      if (!chatInput.trim()) return;
 
-    console.time("SEND_MESSAGE_TOTAL");
+      console.time("SEND_MESSAGE_TOTAL");
 
-    const userMessage = createChatMessage("user", fen, chatInput);
-    const currentInput = chatInput;
+      const userMessage = createChatMessage("user", fen, chatInput);
+      const currentInput = chatInput;
 
-    setChatInput("");
+      setChatInput("");
 
 
-   
-    setChatMessages([...chatMessages, userMessage])
-    setChatLoading(true)
 
-    const currentFen = currentFenRef.current;
+      setChatMessages([...chatMessages, userMessage])
+      setChatLoading(true)
 
-    try {
-      const chessInstance = new Chess(currentFen);
-      const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
-      const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
+      const currentFen = currentFenRef.current;
 
-      let query = '';
+      try {
+        const chessInstance = new Chess(currentFen);
+        const sideToMove = chessInstance.turn() === "w" ? "White" : "Black";
+        const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
 
-      
-      let mode = getQuestionMode() ? "question" : (puzzleMode || puzzleQuery ? "puzzle" : "position");
-      const grader = getGraderMode();
-      if(grader){
-        mode = 'grader';
-      }
+        let query = '';
 
-      if(apiSettings.provider === "ollama" && apiSettings.model === "hf.co/NAKSTStudio/chess-gemma-commentary:F16"){
-        query = buildCustomChatQuery(
-          currentFen,
-          sideToMove,
-          apiSettings.language,
-        )
-        mode = "chess-gemma-commentary";
-      }else{
-        query = buildChatQuery(
-        currentInput,
-        currentFen,
-        sideToMove,
-        gameInfo,
-        currentMove,
-        puzzleMode,
-        grader,
-        puzzleQuery,
-        playMode
-      );
-      }
 
-      const result = await makeApiRequest(currentFen, query, mode);
-     
+        let mode = getQuestionMode() ? "question" : (puzzleMode || puzzleQuery ? "puzzle" : "position");
+        const grader = getGraderMode();
+        if (grader) {
+          mode = 'grader';
+        }
 
-      let assistantMessage = createChatMessage(
-        "assistant",
-        fen,
-        result.message,
-        result.maxTokens,
-        result.provider,
-        result.model,
-        (Date.now() + 1).toString()
-      );
+        if (apiSettings.provider === "ollama" && apiSettings.model === "hf.co/NAKSTStudio/chess-gemma-commentary:F16") {
+          query = buildCustomChatQuery(
+            currentFen,
+            sideToMove,
+            apiSettings.language,
+          )
+          mode = "chess-gemma-commentary";
+        } else {
+          query = buildChatQuery(
+            currentInput,
+            currentFen,
+            sideToMove,
+            gameInfo,
+            currentMove,
+            puzzleMode,
+            grader,
+            puzzleQuery,
+            playMode
+          );
+        }
 
-      let newChatMessages = [...chatMessages, userMessage, assistantMessage];
-      const selfevalMode = getSelfEvalMode();
-      console.log(selfevalMode)
+        const result = await makeApiRequest(currentFen, query, mode);
 
-      if (selfevalMode) {
-      
-        const selfEvalUserMessage = createChatMessage(
-          "user",
+
+        let assistantMessage = createChatMessage(
+          "assistant",
           fen,
-          "Go check for hallucinations."
+          result.message,
+          result.maxTokens,
+          result.provider,
+          result.model,
+          (Date.now() + 1).toString()
         );
-        newChatMessages = [...newChatMessages, selfEvalUserMessage];
 
-        setChatMessages(newChatMessages);
-        setChatLoading(true)
+        let newChatMessages = [...chatMessages, userMessage, assistantMessage];
+        const selfevalMode = getSelfEvalMode();
+       
 
-        const evalQuery = `
+        if (selfevalMode) {
+
+          const selfEvalUserMessage = createChatMessage(
+            "user",
+            fen,
+            "Go check for hallucinations."
+          );
+          newChatMessages = [...newChatMessages, selfEvalUserMessage];
+
+          setChatMessages(newChatMessages);
+          setChatLoading(true)
+
+          const evalQuery = `
         mode: ${mode}
         \n\n
         ${assistantMessage.content}
         `
-        const selfEvalResult = await makeApiRequest(currentFen, evalQuery, "selfeval");
+          const selfEvalResult = await makeApiRequest(currentFen, evalQuery, "selfeval");
 
-        const correctedMessage = createChatMessage(
-          "assistant",
-          fen,
-          selfEvalResult.message,
-          selfEvalResult.maxTokens,
-          selfEvalResult.provider,
-          selfEvalResult.model,
-          (Date.now() + 2).toString()
-        );
+          const correctedMessage = createChatMessage(
+            "assistant",
+            fen,
+            selfEvalResult.message,
+            selfEvalResult.maxTokens,
+            selfEvalResult.provider,
+            selfEvalResult.model,
+            (Date.now() + 2).toString()
+          );
 
-        newChatMessages = [...newChatMessages, correctedMessage];
+          newChatMessages = [...newChatMessages, correctedMessage];
 
-     
+
+          setChatMessages(newChatMessages);
+          setChatLoading(false)
+
+          return;
+        }
+
         setChatMessages(newChatMessages);
         setChatLoading(false)
 
-        return;
+
+      } catch (error) {
+        console.error("Error sending chat message:", error);
+
+        if (!(error instanceof Error && error.message === "Request cancelled")) {
+          const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
+          const errorMessage = createChatMessage("assistant", "", errorMsg);
+          setChatMessages([...chatMessages, userMessage, errorMessage])
+          setChatLoading(false);
+        }
       }
 
-      setChatMessages(newChatMessages);
-      setChatLoading(false)
-
-
-    } catch (error) {
-      console.error("Error sending chat message:", error);
-
-      if (!(error instanceof Error && error.message === "Request cancelled")) {
-        const errorMsg = error instanceof Error ? error.message : "An unknown error occurred";
-        const errorMessage = createChatMessage("assistant", "", errorMsg);
-        setChatMessages([...chatMessages, userMessage, errorMessage])
-        setChatLoading(false);
-      }
-    }
-
-    console.timeEnd("SEND_MESSAGE_TOTAL");
-  },
-  [chatInput, chatMessages, buildChatQuery, makeApiRequest, updateState]
-);
+      console.timeEnd("SEND_MESSAGE_TOTAL");
+    },
+    [chatInput, chatMessages, buildChatQuery, makeApiRequest, updateState]
+  );
 
 
   const handleChatKeyPress = useCallback(
@@ -793,7 +906,7 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
       if (state.llmLoading || chatLoading) return;
 
       setChatLoading(true);
-      updateState({analysisTab: 1 });
+      updateState({ analysisTab: 1 });
 
       try {
         // Build query based on analysis type
@@ -806,7 +919,7 @@ const getGraderMode = () => localStorage.getItem("agine_grader_mode") === "true"
             const formattedLine = formatLineForLLM(engineData.line, engineData.lineIndex);
             const chessInstance = new Chess(currentFen);
             const sideToMovew = chessInstance.turn() === "w" ? "White" : "Black";
-            
+
             query = `<chess_analysis_request>
 
 <analysis_type>Engine Line Analysis</analysis_type>
@@ -1029,7 +1142,7 @@ ${candidateMoves}
               fen: currentFen,
               depth: engineDepth,
               multiPv: engineLines,
-              setPartialEval: () => {},
+              setPartialEval: () => { },
             });
           }
 
@@ -1059,6 +1172,32 @@ ${formattedEngineLines}
           }
         }
 
+        if (state.reverseStockfishAnalysisResult) {
+          const formattedThreatLines = state.reverseStockfishAnalysisResult.lines
+            .map((line, index) => {
+              const evaluation = formatEvaluation(line);
+              const moves = formatPrincipalVariation(line.pv, line.fen);
+              let formattedLine = `  Threat ${index + 1}: ${evaluation}
+    Moves: ${moves}`;
+
+              if (line.resultPercentages) {
+                formattedLine += `
+    Win Rate: ${line.resultPercentages.win}% | Draw: ${line.resultPercentages.draw}% | Loss: ${line.resultPercentages.loss}%`;
+              }
+
+              return formattedLine;
+            })
+            .join("\n\n");
+
+          query += `
+
+<null_move_analysis>
+Note: These are opponent threats if top moves are not played (null move analysis)
+Depth: ${engineDepth}
+${formattedThreatLines}
+</null_move_analysis>`;
+        }
+
         if (customQuery) {
           query += `
 
@@ -1067,7 +1206,7 @@ ${customQuery}
 </additional_considerations>`;
         }
 
-      
+
         query += `
 </chess_analysis_request>`;
 
@@ -1094,10 +1233,10 @@ ${customQuery}
             messageContent = `Agine, analyze move: ${coachMove.sanNotation}`
           case "annotation":
             const reviewData = data as MoveAnalysis;
-            const moveNotationDisplay = reviewData.plyNumber % 2 === 0 ? 
-              `${Math.floor(reviewData.plyNumber / 2) + 1}.` : 
+            const moveNotationDisplay = reviewData.plyNumber % 2 === 0 ?
+              `${Math.floor(reviewData.plyNumber / 2) + 1}.` :
               `${Math.floor(reviewData.plyNumber / 2) + 1}...`;
-            messageContent = analysisType === "annotation" 
+            messageContent = analysisType === "annotation"
               ? `Agine, annotate this move: ${reviewData.notation} (${reviewData.quality})`
               : `Agine, analyze move: ${moveNotationDisplay} ${reviewData.notation} (${reviewData.quality}) for ${reviewData.player === "w" ? "White" : "Black"}`;
             break;
@@ -1108,7 +1247,7 @@ ${customQuery}
         const assistantMessage = createChatMessage("assistant", fen, result.message, result.maxTokens, result.provider, result.model, (Date.now() + 1).toString());
 
 
-        if(analysisType === "moveCoach"){
+        if (analysisType === "moveCoach") {
           const chathistory: ChatMessage[] = chatMessages;
           chathistory.push(userMessage);
           chathistory.push(assistantMessage);
@@ -1131,23 +1270,23 @@ ${customQuery}
             undefined,
             (Date.now() + 1).toString()
           );
-         
+
           setChatMessages([...chatMessages, errorMessage]);
           setChatLoading(false)
         }
-        
+
       }
     },
     [
       fen,
-      state.llmLoading, 
-      chatLoading, 
-      chatMessages, 
-      state.openingData, 
+      state.llmLoading,
+      chatLoading,
+      chatMessages,
+      state.openingData,
       state.stockfishAnalysisResult,
-      chessdbdata, 
-      engine, 
-      engineDepth, 
+      chessdbdata,
+      engine,
+      engineDepth,
       engineLines,
       formatLineForLLM,
       formatEvaluation,
@@ -1159,7 +1298,7 @@ ${customQuery}
 
   // Specific handlers using the generic analysis handler
   const handleEngineLineClick = useCallback(
-    (line: LineEval, lineIndex: number) => 
+    (line: LineEval, lineIndex: number) =>
       createAnalysisHandler("engineLine")({ line, lineIndex } as EngineLineData),
     [createAnalysisHandler]
   );
@@ -1179,7 +1318,7 @@ ${customQuery}
     [createAnalysisHandler]
   );
 
- 
+
   const handleFutureMoveLegalClick = useCallback(
     async (move: string): Promise<void> => {
       if (state.llmLoading || chatLoading) return;
@@ -1218,7 +1357,7 @@ Be concise but thorough, and use clear chess language.`;
             fen: futureFen,
             depth: engineDepth,
             multiPv: engineLines,
-            setPartialEval: () => {},
+            setPartialEval: () => { },
           });
 
           if (engineResult) {
@@ -1252,11 +1391,11 @@ Be concise but thorough, and use clear chess language.`;
       }
     },
     [
-      state.llmLoading, 
-      chatLoading, 
+      state.llmLoading,
+      chatLoading,
       chatMessages,
-      engine, 
-      engineDepth, 
+      engine,
+      engineDepth,
       engineLines,
       formatLineForLLM,
       makeApiRequest,
@@ -1288,7 +1427,7 @@ Be concise but thorough, and use clear chess language.`;
 
       const keyMoves: MoveAnalysis[] = [];
 
-      
+
       ["Blunder", "Mistake", "Dubious"].forEach(quality => {
         const whiteMove = findMovesByQuality(quality as MoveQuality, "w")[0];
         const blackMove = findMovesByQuality(quality as MoveQuality, "b")[0];
@@ -1309,10 +1448,10 @@ Be concise but thorough, and use clear chess language.`;
       chathistory.push(summaryMessage);
       setChatMessages(chathistory)
 
-      
+
       for (let i = 0; i < keyMoves.length; i++) {
         const move = keyMoves[i];
-        
+
         if (i > 0) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
@@ -1334,42 +1473,43 @@ Be concise but thorough, and use clear chess language.`;
         (Date.now() + keyMoves.length + 1).toString()
       );
 
-      
+
       setChatMessages([...chatMessages, finalMessage])
       setChatLoading(false);
     },
     [chatLoading, chatMessages, handleMoveCoachClick, updateState]
   );
 
-  
+
   useEffect(() => {
-    if (!engine || !fen) return;
+  if (!engine || !fen) return;
 
-    // Clear previous results
-    updateState({
-      stockfishAnalysisResult: null,
-      llmAnalysisResult: null,
-      openingData: null,
-    });
+  // Clear previous results
+  updateState({
+    stockfishAnalysisResult: null,
+    reverseStockfishAnalysisResult: null,
+    llmAnalysisResult: null,
+    openingData: null,
+  });
 
-    // Cancel any pending API requests
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+  // Cancel any pending API requests
+  if (abortControllerRef.current) {
+    abortControllerRef.current.abort();
+  }
+
+  // Auto-analyze with delay to avoid rapid fire requests
+  const timeoutId = setTimeout(() => {
+    if (currentFenRef.current === fen) {
+      analyzeWithStockfish();
+      fetchOpeningData();
+      fetchLichessOpeningData();
     }
+  }, ANALYSIS_DELAY);
 
-    // Auto-analyze with delay to avoid rapid fire requests
-    const timeoutId = setTimeout(() => {
-      if (currentFenRef.current === fen) {
-        analyzeWithStockfish();
-        fetchOpeningData();
-        fetchLichessOpeningData();
-      }
-    }, ANALYSIS_DELAY);
+  return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [fen, engine, engineDepth, engineLines]);
 
-    return () => clearTimeout(timeoutId);
-  }, [fen, engine, engineDepth, engineLines, analyzeWithStockfish, fetchOpeningData, fetchLichessOpeningData, updateState]);
-
-  
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -1380,86 +1520,86 @@ Be concise but thorough, and use clear chess language.`;
 
 
   return {
-      // Analysis Results
-      llmAnalysisResult: state.llmAnalysisResult,
-      setLlmAnalysisResult: (result: string | null) => updateState({ llmAnalysisResult: result }),
-      stockfishAnalysisResult: state.stockfishAnalysisResult,
-      stockfishDone,
-      stockfishFen,
-      setStockfishAnalysisResult: (result: PositionEval | null) => updateState({ stockfishAnalysisResult: result }),
-      openingData: state.openingData,
-      setOpeningData: (data: MasterGames | null) => updateState({ openingData: data }),
-      chessdbdata,
-      loading,
-      error,
-      queueing,
-      legalMoves,
-      refetch,
-      requestAnalysis,
-      sanEvaluations,
-      evaluations,
-      isNetLoading,
-      evaluationsFen,
+    // Analysis Results
+    llmAnalysisResult: state.llmAnalysisResult,
+    setLlmAnalysisResult: (result: string | null) => updateState({ llmAnalysisResult: result }),
+    stockfishAnalysisResult: state.stockfishAnalysisResult,
+    stockfishDone,
+    stockfishFen,
+    setStockfishAnalysisResult: (result: PositionEval | null) => updateState({ stockfishAnalysisResult: result }),
+    openingData: state.openingData,
+    setOpeningData: (data: MasterGames | null) => updateState({ openingData: data }),
+    chessdbdata,
+    loading,
+    error,
+    queueing,
+    legalMoves,
+    refetch,
+    requestAnalysis,
+    sanEvaluations,
+    evaluations,
+    isNetLoading,
+    evaluationsFen,
 
-      // themes
-      scores,
-      themeScoreLoading,
-      themeScoreError,
+    // themes
+    scores,
+    themeScoreLoading,
+    themeScoreError,
 
-      // Loading States
-      llmLoading: state.llmLoading,
-      setLlmLoading: (loading: boolean) => updateState({ llmLoading: loading }),
-      stockfishLoading: state.stockfishLoading,
-      setStockfishLoading: (loading: boolean) => updateState({ stockfishLoading: loading }),
-      openingLoading: state.openingLoading,
-      setOpeningLoading: (loading: boolean) => updateState({ openingLoading: loading }),
-      lichessOpeningData: state.lichessOpeningData,
-      lichessOpeningLoading: state.lichessOpeningLoading,
-      setLichessOpeningLoading: (loading: boolean) => updateState({ lichessOpeningLoading: loading }),
+    // Loading States
+    llmLoading: state.llmLoading,
+    setLlmLoading: (loading: boolean) => updateState({ llmLoading: loading }),
+    stockfishLoading: state.stockfishLoading,
+    setStockfishLoading: (loading: boolean) => updateState({ stockfishLoading: loading }),
+    openingLoading: state.openingLoading,
+    setOpeningLoading: (loading: boolean) => updateState({ openingLoading: loading }),
+    lichessOpeningData: state.lichessOpeningData,
+    lichessOpeningLoading: state.lichessOpeningLoading,
+    setLichessOpeningLoading: (loading: boolean) => updateState({ lichessOpeningLoading: loading }),
 
-      // UI State
-      moveSquares: state.moveSquares,
-      setMoveSquares: (squares: { [square: string]: string }) => updateState({ moveSquares: squares }),
-      analysisTab: state.analysisTab,
-      setAnalysisTab: (tab: number) => updateState({ analysisTab: tab }),
+    // UI State
+    moveSquares: state.moveSquares,
+    setMoveSquares: (squares: { [square: string]: string }) => updateState({ moveSquares: squares }),
+    analysisTab: state.analysisTab,
+    setAnalysisTab: (tab: number) => updateState({ analysisTab: tab }),
 
 
-      // Engine Settings
-      engineDepth,
-      setEngineDepth,
-      engineLines,
-      setEngineLines,
-      engine,
+    // Engine Settings
+    engineDepth,
+    setEngineDepth,
+    engineLines,
+    setEngineLines,
+    engine,
 
-      // Game Review
-      gameReview,
-      setGameReview,
-      gameReviewLoading,
-      gameReviewProgress,
-      setGameReviewLoading,
-      generateGameReview,
-      rootCurrentMove,
-      setRootCurrentMove,
+    // Game Review
+    gameReview,
+    setGameReview,
+    gameReviewLoading,
+    gameReviewProgress,
+    setGameReviewLoading,
+    generateGameReview,
+    rootCurrentMove,
+    setRootCurrentMove,
 
-      // Functions
-      fetchOpeningData,
-      fetchLichessOpeningData,
-      analyzeWithStockfish,
-      sendChatMessage,
-      abortChatMessage,
-      handleChatKeyPress,
-      handleEngineLineClick,
-      handleOpeningMoveClick,
-      handleMoveClick,
-      handleMoveCoachClick,
-      handleMoveAnnontateClick,
-      handleGameReviewSummaryClick,
-      handleMovePGNAnnotateClick,
-      handleFutureMoveLegalClick,
+    // Functions
+    fetchOpeningData,
+    fetchLichessOpeningData,
+    analyzeWithStockfish,
+    sendChatMessage,
+    abortChatMessage,
+    handleChatKeyPress,
+    handleEngineLineClick,
+    handleOpeningMoveClick,
+    handleMoveClick,
+    handleMoveCoachClick,
+    handleMoveAnnontateClick,
+    handleGameReviewSummaryClick,
+    handleMovePGNAnnotateClick,
+    handleFutureMoveLegalClick,
 
-      // Utility Functions
-      formatEvaluation,
-      formatPrincipalVariation,
-      formatLineForLLM,
-    }
+    // Utility Functions
+    formatEvaluation,
+    formatPrincipalVariation,
+    formatLineForLLM,
+  }
 }
