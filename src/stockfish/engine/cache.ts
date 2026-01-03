@@ -10,6 +10,10 @@ export function getStockfishCacheKey(
   return `${STOCKFISH_CACHE_PREFIX}${fen}|d=${depth}|pv=${lines}`;
 }
 
+export function getReverseStockfishCacheKey(fen: string, depth: number, lines: number){
+  return `reverse-${getStockfishCacheKey(fen, depth, lines)}`;
+}
+
 export function readStockfishCache(key: string): PositionEval | null {
   try {
     const raw = sessionStorage.getItem(key);

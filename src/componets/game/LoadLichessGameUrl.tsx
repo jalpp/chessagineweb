@@ -28,7 +28,7 @@ interface LoadLichessGameUrlProp {
   setGameReview: (review: MoveAnalysis[]) => void;
   generateGameReview: (moves: string[]) => void;
   setLlmAnalysisResult: (result: string | null) => void;
-  analyzeGameTheme: (pgn: string) => void;
+  analyzeGameTheme: (moveList: string[]) => void;
   setInputsVisible: (view: boolean) => void;
 }
 
@@ -89,15 +89,9 @@ function LoadLichessGameUrl({
         setComment("");
         setGameReview([]);
         generateGameReview(moveList);
-        analyzeGameTheme(fetchedPgn);
+        analyzeGameTheme(moveList);
         setInputsVisible(false);
 
-        console.log("Game loaded successfully:", {
-          moves: moveList.length,
-          gameInfo: info,
-          white: info.White,
-          black: info.Black,
-        });
       } catch (pgnError) {
         console.error("Error parsing PGN:", pgnError);
         alert("Invalid PGN data received from Lichess");

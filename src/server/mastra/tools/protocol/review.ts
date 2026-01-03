@@ -2,11 +2,6 @@ import { Chess } from "chess.js";
 import { analyzeVariationThemes, findCriticalMoments, VariationAnalysis, ThemeChange, ThemeScore } from "./ovp";
 
 interface GameReview {
-    gameInfo: {
-        white: string;
-        black: string;
-        result: string;
-    };
     whiteAnalysis: {
         overallThemes: VariationAnalysis;
         criticalMoments: Array<{moveIndex: number, move: string, themeChanges: ThemeChange[]}>;
@@ -31,28 +26,10 @@ interface GameReview {
     };
 }
 
-export function generateGameReview(pgn: string, criticalMomentThreshold: number = 0.5): GameReview {
-    const chess = new Chess();
-    
-    // Load and parse PGN
-    chess.loadPgn(pgn);
-    
-    // Extract game headers
-    const headers = chess.header();
-    const gameInfo = {
-        white: headers.White || "Unknown",
-        black: headers.Black || "Unknown",
-        result: headers.Result || "*",
-        event: headers.Event,
-        date: headers.Date
-    };
-    
-    // Get move history
-    const history = chess.history();
-    
-    // Reset to starting position
-    chess.reset();
-    const startingFen = chess.fen();
+export function generateGameReview(moveList: string[], customFen?: string, criticalMomentThreshold: number = 0.5): GameReview {
+   
+    const history = moveList;
+    const startingFen = customFen || new Chess().fen();
     
     // Analyze for both colors
     const whiteAnalysis = analyzeVariationThemes(startingFen, history, "w");
@@ -75,7 +52,6 @@ export function generateGameReview(pgn: string, criticalMomentThreshold: number 
     );
     
     return {
-        gameInfo,
         whiteAnalysis: {
             overallThemes: whiteAnalysis,
             criticalMoments: whiteCriticalMoments,

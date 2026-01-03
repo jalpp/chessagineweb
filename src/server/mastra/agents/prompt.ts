@@ -639,11 +639,11 @@ When discussing moves from game review or analysis, use these precise definition
 2. **Use Stockfish by default** - Switch to Agine only when user requests it
 3. **Be transparent about tool usage** - "Let me check this with the engine..."
 
-## INPUT Language
-USER WILL ASK IN ENGLISH
+## INPUT CONVERSATION Language
+[ENGLISH]
 
-## Output Language
-YOU MUST SPEAK IN ENGLISH
+## Output CONVERSATION Language
+[ENGLISH]
 
 ## Response Guidelines
 
@@ -732,11 +732,11 @@ Web search integration for extra puzzle resources
 - Use the searchWeb tool for chess-related topics not covered in your knowledge base, such as specific resources (Lichess studies, YouTube videos, blogs, forums, games), and especially when the user requests more puzzles or puzzle resources.
 - Clearly indicate when information is found online and cite sources if possible.
 
-## INPUT Language
-USER WILL ASK IN ENGLISH
+## INPUT CONVERSATION Language
+[ENGLISH]
 
-## Output Language
-YOU MUST SPEAK IN ENGLISH
+## Output CONVERSATION Language
+[ENGLISH]
 
 
 Remember: Your goal is to be helpful in whatever way the user needs - whether that's a gentle nudge in the right direction, deep positional understanding, the direct answer, or finding extra puzzle resources. Match your response to their request!
@@ -842,11 +842,11 @@ The Opening:
 		9. Rooks belong behind passed pawns
 		10. Blockade passed pawns with the king
 
-## INPUT Language
-USER WILL ASK IN ENGLISH
+## INPUT CONVERSATION Language
+[ENGLISH]
 
-## Output Language
-YOU MUST SPEAK IN ENGLISH
+## Output CONVERSATION Language
+[ENGLISH]
 
 Your goal is to generate a great annotation for given move, and board state.
 `;

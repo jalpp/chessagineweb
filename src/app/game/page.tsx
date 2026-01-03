@@ -38,8 +38,10 @@ import LoadLichessGameUrl, {
 } from "@/componets/game/LoadLichessGameUrl";
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
-import MultiGameNavigator, { ParsedPGN } from "@/componets/game/MultiGameNavigator";
-import {  useNets } from "@/hooks/useNets";
+import MultiGameNavigator, {
+  ParsedPGN,
+} from "@/componets/game/MultiGameNavigator";
+import { useNets } from "@/hooks/useNets";
 import { useSessionStorage } from "usehooks-ts";
 
 export default function PGNUploaderPage() {
@@ -47,19 +49,30 @@ export default function PGNUploaderPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
 
-  const [pgnText, setPgnText] = useSessionStorage("agine_game_page_pgn","");
+  const [pgnText, setPgnText] = useSessionStorage("agine_game_page_pgn", "");
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [moves, setMoves] = useSessionStorage<string[]>("agine_game_moves",[]);
-  const [parsedMovesWithComments, setParsedMovesWithComments] = useSessionStorage<
-    ParsedComment[]
-  >("agine_parsed_comments",[]);
-  const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage("agine_game_current_move",0);
+  const [moves, setMoves] = useSessionStorage<string[]>("agine_game_moves", []);
+  const [parsedMovesWithComments, setParsedMovesWithComments] =
+    useSessionStorage<ParsedComment[]>("agine_parsed_comments", []);
+  const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage(
+    "agine_game_current_move",
+    0
+  );
 
-  const [inputsVisible, setInputsVisible] = useSessionStorage("agine_show_game",true);
-  const [chapters, setChapters] = useSessionStorage<Chapter[]>("agine_chapters",[]);
-  const [comment, setComment] = useSessionStorage("agine_comment","");
-  const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>("agine_game_info",{});
+  const [inputsVisible, setInputsVisible] = useSessionStorage(
+    "agine_show_game",
+    true
+  );
+  const [chapters, setChapters] = useSessionStorage<Chapter[]>(
+    "agine_chapters",
+    []
+  );
+  const [comment, setComment] = useSessionStorage("agine_comment", "");
+  const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>(
+    "agine_game_info",
+    {}
+  );
 
   // Multi-game navigation state
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
@@ -120,12 +133,21 @@ export default function PGNUploaderPage() {
     themeScoreLoading,
   } = useAgine(fen);
 
-     const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useNets({
-    fen: fen
-  })
+  const {
+    evaluations,
+    sanEvaluations,
+    isLoading: maiaIsLoading,
+    Maiaerror: maiaError,
+    lichessData,
+    isInBook,
+  } = useNets({
+    fen: fen,
+  });
 
-  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
-
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage(
+    "agine_game_act_tab",
+    0
+  );
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
 
@@ -150,21 +172,185 @@ export default function PGNUploaderPage() {
     setSaveDialogOpen(true);
   };
 
+  // ==================== HELPER FUNCTIONS ====================
+
+  const cleanPGN = (pgnText: string): string => {
+    const lines = pgnText.split("\n");
+    const headers: string[] = [];
+    const moveLines: string[] = [];
+
+    // Separate headers from moves
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
+        headers.push(trimmedLine);
+      } else if (trimmedLine !== "" && !trimmedLine.startsWith("[")) {
+        moveLines.push(trimmedLine);
+      }
+    }
+
+    // Clean the move text (remove comments, normalize spacing)
+    let movesText = moveLines.join(" ");
+    movesText = movesText.replace(/\{[^}]*\}/g, ""); // Remove comments
+    movesText = movesText.replace(/\([^)]*\)/g, ""); // Remove variations
+    movesText = movesText.replace(/\s+/g, " "); // Normalize whitespace
+    movesText = movesText.trim();
+
+    // Reconstruct PGN: headers, blank line, then moves
+    if (headers.length > 0) {
+      return headers.join("\n") + "\n\n" + movesText;
+    }
+    return movesText;
+  };
+
+  const extractStartingFen = (pgnText: string): string | undefined => {
+    const fenMatch = pgnText.match(/\[FEN "([^"]+)"\]/);
+    return fenMatch ? fenMatch[1] : undefined;
+  };
+
+  const parsePGNMoves = (
+    pgnText: string,
+    startingFen?: string
+  ): { game: Chess; moveList: string[] } => {
+    const cleanedPGN = cleanPGN(pgnText);
+    const tempGame = new Chess(startingFen);
+
+    // Extract just the moves (without headers)
+    const pgnWithoutHeaders = cleanedPGN
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("["))
+      .join(" ")
+      .trim();
+
+    if (startingFen && pgnWithoutHeaders) {
+      // Manual move parsing for custom positions
+      const moveText = pgnWithoutHeaders
+        .replace(/\d+\./g, "") // Remove move numbers
+        .replace(/\{[^}]*\}/g, "") // Remove comments
+        .replace(/\([^)]*\)/g, "") // Remove variations
+        .replace(/1-0|0-1|1\/2-1\/2|\*/g, "") // Remove result
+        .replace(/White resigned.*?!/g, "")
+        .replace(/Black resigned.*?!/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const moves = moveText.split(/\s+/).filter((m) => m.length > 0);
+
+      for (const move of moves) {
+        try {
+          tempGame.move(move);
+        } catch (e) {
+          console.error(`Failed to play move: ${move}`, e);
+          throw new Error(`Invalid move: ${move}`);
+        }
+      }
+    } else if (!startingFen && pgnWithoutHeaders) {
+      // Standard position - use loadPgn
+      tempGame.loadPgn(pgnWithoutHeaders);
+    }
+
+    return { game: tempGame, moveList: tempGame.history() };
+  };
+
+  const initializeGameState = (
+    pgn: string,
+    startingFen?: string,
+    moveList?: string[]
+  ) => {
+    const parsed = extractMovesWithComments(pgn);
+    const info = extractGameInfo(pgn);
+
+    setMoves(moveList || []);
+    setParsedMovesWithComments(parsed);
+    setGameInfo(info);
+    setCurrentMoveIndex(0);
+
+    const resetGame = new Chess(startingFen);
+    setGame(resetGame);
+    setFen(resetGame.fen());
+    setLlmAnalysisResult(null);
+    setComment("");
+    setGameReview([]);
+  };
+
+
+  const loadPGN = () => {
+    try {
+      const cleanedPGN = cleanPGN(pgnText);
+      const startingFen = extractStartingFen(cleanedPGN);
+
+      const { moveList } = parsePGNMoves(pgnText, startingFen);
+
+      initializeGameState(pgnText, startingFen, moveList);
+
+      generateGameReview(moveList, startingFen);
+      analyzeGameTheme(moveList, startingFen);
+    } catch (err) {
+      console.error("Error loading PGN:", err);
+      console.error("PGN text:", pgnText);
+      alert(
+        `Invalid PGN input: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+      setInputsVisible(false);
+    }
+  };
+
+  const loadUserPGN = (pgn: string, gameHash?: string) => {
+    try {
+      setPgnText(pgn);
+      const cleanPgn = cleanPGN(pgn);
+      const startingFen = extractStartingFen(cleanPgn);
+
+      const { moveList } = parsePGNMoves(pgn, startingFen);
+
+      
+      initializeGameState(pgn, startingFen, moveList);
+
+      if (gameHash) {
+        setCurrentGameHash(gameHash);
+      }
+
+      generateGameReview(moveList, startingFen);
+      analyzeGameTheme(moveList, startingFen);
+      setInputsVisible(false);
+    } catch (err) {
+      console.error("Error loading user PGN:", err);
+      console.error("PGN text:", pgn);
+      alert(
+        `Invalid PGN input: ${err instanceof Error ? err.message : "Unknown error"}`
+      );
+      setInputsVisible(false);
+    }
+  };
+
   const loadFromHistory = (savedGame: SavedGameReview) => {
     try {
-      setPgnText(savedGame.pgn);
+      
+      const cleanPgn = cleanPGN(savedGame.pgn);
+      const startingFen = extractStartingFen(cleanPgn);
+
+      setPgnText(cleanPgn);
       setMoves(savedGame.moves);
       setGameInfo(savedGame.gameInfo);
       setGameReview(savedGame.gameReview);
+
       const parsed = extractMovesWithComments(savedGame.pgn);
       setParsedMovesWithComments(parsed);
       setCurrentMoveIndex(0);
 
-      const resetGame = new Chess();
+      const resetGame = new Chess(startingFen);
       setGame(resetGame);
       setFen(resetGame.fen());
       setLlmAnalysisResult(null);
       setComment("");
+
+      if(savedGame.gameReview.length === 0){
+        generateGameReview(savedGame.moves, startingFen);
+      }
+
+      if(savedGame.gameReviewTheme === null){
+        analyzeGameTheme(savedGame.moves, startingFen);
+      }
 
       setHistoryDialogOpen(false);
       setInputsVisible(false);
@@ -174,107 +360,14 @@ export default function PGNUploaderPage() {
     }
   };
 
-  const cleanPGN = (pgnText: string) => {
-    let cleaned = pgnText;
-    cleaned = cleaned.replace(/\{[^}]*\}/g, "");
-    cleaned = cleaned.replace(/\s+/g, " ");
-    cleaned = cleaned.replace(/\s+(\d+\.)/g, " $1");
-    cleaned = cleaned
-      .split("\n")
-      .map((line: string) => line.trim())
-      .join("\n");
-
-    const lines = cleaned.split("\n");
-    let inHeader = true;
-    const result = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith("[") && line.endsWith("]")) {
-        result.push(line);
-        inHeader = true;
-      } else if (line.trim() === "" && inHeader) {
-        result.push(line);
-      } else if (line.trim() !== "") {
-        inHeader = false;
-        result.push(line);
-      }
-    }
-
-    return result.join("\n").trim();
-  };
-
-  const loadPGN = () => {
-    try {
-      const tempGame = new Chess();
-      const cleanedPGN = cleanPGN(pgnText);
-      tempGame.loadPgn(cleanedPGN);
-      const moveList = tempGame.history();
-      const parsed = extractMovesWithComments(pgnText);
-      const info = extractGameInfo(pgnText);
-
-      setMoves(moveList);
-      setParsedMovesWithComments(parsed);
-      setGameInfo(info);
-      setCurrentMoveIndex(0);
-
-      const resetGame = new Chess();
-      setGame(resetGame);
-      setFen(resetGame.fen());
-      setLlmAnalysisResult(null);
-      setComment("");
-      setGameReview([]);
-      generateGameReview(moveList);
-      analyzeGameTheme(cleanedPGN);
-    } catch (err) {
-      console.log(err);
-      alert("Invalid PGN input");
-    }
-  };
-
-  const loadUserPGN = (pgn: string, gameHash?: string) => {
-    try {
-      const tempGame = new Chess();
-      const cleanPgn = cleanPGN(pgn);
-      tempGame.loadPgn(cleanPgn);
-      const moveList = tempGame.history();
-      const parsed = extractMovesWithComments(pgn);
-      const info = extractGameInfo(pgn);
-      setMoves(moveList);
-      setParsedMovesWithComments(parsed);
-      setGameInfo(info);
-      setCurrentMoveIndex(0);
-      setPgnText(pgn);
-
-      const resetGame = new Chess();
-      setGame(resetGame);
-      setFen(resetGame.fen());
-      setLlmAnalysisResult(null);
-      setComment("");
-      setGameReview([]);
-
-      if (gameHash) {
-        setCurrentGameHash(gameHash);
-      }
-
-      generateGameReview(moveList);
-      analyzeGameTheme(cleanPgn);
-      setInputsVisible(false);
-    } catch (err) {
-      console.log(err);
-      alert("Invalid PGN input");
-    }
-  };
-
-  const handleMultiGameSelect = (game: ParsedPGN) => {
-    loadUserPGN(game.pgn, game.hash);
-  };
-
   const goToMove = (index: number) => {
-    const tempGame = new Chess();
+    const startingFen = extractStartingFen(pgnText);
+    const tempGame = new Chess(startingFen);
+
     for (let i = 0; i < index; i++) {
       tempGame.move(moves[i]);
     }
+
     setGame(tempGame);
     setFen(tempGame.fen());
     setCurrentMoveIndex(index);
@@ -282,6 +375,10 @@ export default function PGNUploaderPage() {
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
     setLlmAnalysisResult(null);
     setStockfishAnalysisResult(null);
+  };
+
+  const handleMultiGameSelect = (game: ParsedPGN) => {
+    loadUserPGN(game.pgn, game.hash);
   };
 
   const AnalysisContent = () => (

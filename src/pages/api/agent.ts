@@ -175,7 +175,6 @@ export default async function handler(
     runtimeContext.set("isRouted", apiSettings.isRouted)
     runtimeContext.set("lang", apiSettings.language);
 
-
     if (apiSettings.provider === "ollama") {
       if (apiSettings.ollamaBaseUrl) {
         runtimeContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);

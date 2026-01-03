@@ -274,13 +274,7 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
         </DialogTitle>
 
         <DialogContent>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
-              <strong>{gameReview.gameInfo.white}</strong> vs{" "}
-              <strong>{gameReview.gameInfo.black}</strong> • Result:{" "}
-              <strong>{gameReview.gameInfo.result}</strong>
-            </Typography>
-          </Alert>
+         
 
           <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
             <Tab label="Current Position" />
