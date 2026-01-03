@@ -19,22 +19,15 @@ export default async function handler(
   }
 
   try {
-    const { pgn} = req.body;
+    const { moveList, customFen} = req.body;
 
-    // Validate PGN
-    if (!pgn || typeof pgn !== 'string') {
-      return res.status(400).json({ 
-        error: 'Invalid request',
-        details: 'PGN is required and must be a string'
-      } as ErrorResponse);
-    }
-
+ 
     // Validate optional threshold parameter
     const threshold = 0.5; // default value
     
 
     // Generate the game review
-    const gameReview = generateGameReview(pgn, threshold);
+    const gameReview = generateGameReview(moveList, customFen, threshold);
 
     // Return successful response
     return res.status(200).json(gameReview);

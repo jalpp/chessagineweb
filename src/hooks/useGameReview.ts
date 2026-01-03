@@ -238,7 +238,7 @@ const useGameReview = (
   }, []);
 
   const generateGameReview = useCallback(
-    async (gameNotation: string[]): Promise<void> => {
+    async (gameNotation: string[], customFen?: string): Promise<void> => {
       setGameReviewLoading(true);
       setGameReviewProgress(0);
 
@@ -265,7 +265,7 @@ const useGameReview = (
       }
 
       try {
-        const gameBoard = new Chess();
+        const gameBoard = new Chess(customFen);
         const moveEvaluations: MoveAnalysis[] = [];
         const analysisDepth = searchDepth;
         const gameStates: GameState[] = [];

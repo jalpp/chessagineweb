@@ -29,11 +29,6 @@ interface VariationAnalysis {
 }
 
 export interface GameReviewTheme {
-  gameInfo: {
-    white: string;
-    black: string;
-    result: string;
-  };
   whiteAnalysis: {
     overallThemes: VariationAnalysis;
     criticalMoments: Array<{
