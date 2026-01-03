@@ -123,49 +123,7 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
     };
   }, []);
 
-  useEffect(() => {
-    (Object.keys(status) as ModelType[]).forEach(modelType => {
-      const modelStatus = status[modelType];
-      const modelName = MODEL_CONFIGS[modelType].name;
-
-      if (modelStatus === 'loading' && !toastIds.current[modelType]) {
-        toastIds.current[modelType] = toast.loading(`Loading ${modelName}...`);
-      } else if (modelStatus === 'downloading') {
-        const downloadProgress = progress[modelType];
-        if (toastIds.current[modelType]) {
-          toast.loading(
-            `Downloading ${modelName}... ${downloadProgress}%`,
-            { id: toastIds.current[modelType]! }
-          );
-        } else {
-          toastIds.current[modelType] = toast.loading(
-            `Downloading ${modelName}... ${downloadProgress}%`
-          );
-        }
-      } else if (modelStatus === 'ready') {
-        if (toastIds.current[modelType]) {
-          toast.success(`${modelName} loaded! Analysis is ready`, {
-            id: toastIds.current[modelType]!,
-          });
-          toastIds.current[modelType] = null;
-        }
-      } else if (modelStatus === 'error') {
-        if (toastIds.current[modelType]) {
-          toast.error(`Failed to load ${modelName}`, {
-            id: toastIds.current[modelType]!,
-          });
-          toastIds.current[modelType] = null;
-        } else {
-          toast.error(`Failed to load ${modelName}`);
-        }
-      } else if (modelStatus === 'no-cache') {
-        if (toastIds.current[modelType]) {
-          toast.dismiss(toastIds.current[modelType]!);
-          toastIds.current[modelType] = null;
-        }
-      }
-    });
-  }, [status, progress]);
+ 
 
   // Memoize engine context value
   const engineValue = useMemo(() => ({

@@ -22,6 +22,7 @@ import {
   Tab,
   LinearProgress,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import {
   SmartToy as BotIcon,
@@ -541,6 +542,42 @@ export default function PlayVsBotsPage() {
 
     const showConfigMenus = gameStatus === "setup" || gameStatus === "finished";
 
+    // Show loading state if model is downloading
+    if (isModelDownloading) {
+      return (
+        <Stack spacing={3} sx={{ pb: 2 }}>
+          <Card>
+            <CardContent>
+              <Stack spacing={3} alignItems="center" py={4}>
+                <CircularProgress size={60} />
+                <Box textAlign="center">
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    Downloading {MODEL_CONFIGS[modelType!].name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Please wait while the model is being downloaded...
+                  </Typography>
+                </Box>
+                <Box sx={{ width: "100%" }}>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="body2">Progress</Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {Math.round(modelProgress)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={modelProgress}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+      );
+    }
+
     return (
       <Stack spacing={3} sx={{ pb: 2 }}>
         {/* Show Config Menus only in setup or finished states */}
@@ -709,32 +746,13 @@ export default function PlayVsBotsPage() {
                   {MODEL_CONFIGS[modelType!].description}
                 </Typography>
 
-                {isModelDownloading && (
-                  <Box sx={{ width: "100%" }}>
-                    <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography variant="body2">Downloading...</Typography>
-                      <Typography variant="body2">
-                        {Math.round(modelProgress)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={modelProgress}
-                      sx={{ height: 8, borderRadius: 4 }}
-                    />
-                  </Box>
-                )}
-
                 <Button
                   variant="contained"
                   startIcon={<DownloadIcon />}
                   onClick={() => downloadModel(modelType!)}
-                  disabled={isModelDownloading}
                   fullWidth
                 >
-                  {isModelDownloading
-                    ? "Downloading..."
-                    : `Download Model (${MODEL_CONFIGS[modelType!].size})`}
+                  Download Model ({MODEL_CONFIGS[modelType!].size})
                 </Button>
               </Stack>
             </CardContent>

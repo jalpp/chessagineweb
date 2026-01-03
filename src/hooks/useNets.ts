@@ -13,8 +13,8 @@ interface UseMaiaEngineOptions {
   maxRetries?: number;
   retryDelayMs?: number;
   enabledModels?: ModelType[];
-  useLichessBook?: boolean; // Whether to use Lichess opening book
-  bookThreshold?: number; // Minimum games to consider position "in book"
+  useLichessBook?: boolean;
+  bookThreshold?: number;
 }
 
 interface SanMaiaEvaluation {
@@ -63,7 +63,6 @@ export interface UseMaiaEngineResult {
   evaluationsFen?: string | null;
 }
 
-// Map Maia ratings to Lichess rating groups
 const getRatingGroups = (maiaRating: number): number[] => {
   if (maiaRating <= 1100) return [1000, 1200];
   if (maiaRating <= 1200) return [1000, 1200];
@@ -78,12 +77,14 @@ const getRatingGroups = (maiaRating: number): number[] => {
   return [2200, 2500];
 };
 
-// Fetch Lichess Explorer data
+// Fetch with exponential backoff for 429 errors
 const fetchLichessData = async (
   fen: string,
   rating: number,
-  signal?: AbortSignal
-): Promise<LichessData> => {
+  signal?: AbortSignal,
+  retryCount = 0,
+  maxRetries = 3
+): Promise<LichessData | null> => {
   const ratings = getRatingGroups(rating);
   const params = new URLSearchParams({
     variant: "standard",
@@ -93,19 +94,40 @@ const fetchLichessData = async (
     moves: "12",
   });
 
-  const response = await fetch(
-    `https://explorer.lichess.ovh/lichess?${params.toString()}`,
-    { signal }
-  );
+  try {
+    const response = await fetch(
+      `https://explorer.lichess.ovh/lichess?${params.toString()}`,
+      { signal }
+    );
 
-  if (!response.ok) {
-    throw new Error(`Lichess API error: ${response.status}`);
+    if (response.status === 429) {
+      if (retryCount >= maxRetries) {
+        console.warn(`Lichess rate limit reached after ${maxRetries} retries, falling back to neural network`);
+        return null;
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, retryCount) * 1000;
+      console.log(`Lichess rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchLichessData(fen, rating, signal, retryCount + 1, maxRetries);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Lichess API error: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    if (signal?.aborted) {
+      throw err;
+    }
+    console.error(`Lichess fetch error:`, err);
+    return null;
   }
-
-  return response.json();
 };
 
-// Convert Lichess data to SAN evaluation format
 const lichessToSanEvaluation = (data: LichessData): SanMaiaEvaluation => {
   const totalGames = data.white + data.draws + data.black;
   const winRate =
@@ -122,7 +144,6 @@ const lichessToSanEvaluation = (data: LichessData): SanMaiaEvaluation => {
     policy[move.san] = totalMoveGames > 0 ? moveGames / totalMoveGames : 0;
   });
 
-  // Convert win rate to value format consistent with neural network output
   const value = (winRate - 0.5) * 2;
 
   return { value, policy };
@@ -144,7 +165,6 @@ const lichessToEvaluation = (data: LichessData): SanMaiaEvaluation => {
     policy[move.uci] = totalMoveGames > 0 ? moveGames / totalMoveGames : 0;
   });
 
-  // Convert win rate to value format consistent with neural network output
   const value = (winRate - 0.5) * 2;
 
   return { value, policy };
@@ -225,7 +245,6 @@ export const useNets = ({
         bookThreshold,
       });
 
-      // 🔥 IndexedDB cache hit
       const cached = await readMaiaCache(cacheKey);
       if (cached) {
         setEvaluations(cached.evaluations);
@@ -251,7 +270,7 @@ export const useNets = ({
         const newLichessData: UseMaiaEngineResult["lichessData"] = {};
         let positionIsInBook = false;
 
-        // Maia 2 (all rating levels)
+        // Maia 2
         if (
           modelsToUse.includes("maia2") &&
           maia2 &&
@@ -262,9 +281,9 @@ export const useNets = ({
           const maia2Evaluations: { [key: string]: MaiaEvaluation } = {};
           const maia2SanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
           const maia2LichessData: { [key: string]: LichessData } = {};
+          let anyLichessDataAvailable = false;
 
           if (useLichessBook) {
-            // Fetch Lichess data for all rating levels
             const lichessPromises = MAIA_MODELS.map((model) =>
               fetchLichessData(
                 fen,
@@ -276,25 +295,30 @@ export const useNets = ({
 
             MAIA_MODELS.forEach((model, index) => {
               const lichessResult = lichessResults[index];
-              const totalGames =
-                lichessResult.white + lichessResult.draws + lichessResult.black;
+              
+              if (lichessResult) {
+                const totalGames =
+                  lichessResult.white + lichessResult.draws + lichessResult.black;
 
-              maia2LichessData[model] = lichessResult;
+                maia2LichessData[model] = lichessResult;
+                anyLichessDataAvailable = true;
 
-              if (totalGames >= bookThreshold) {
-                positionIsInBook = true;
-                maia2Evaluations[model] = lichessToEvaluation(lichessResult);
-                maia2SanEvaluations[model] =
-                  lichessToSanEvaluation(lichessResult);
+                if (totalGames >= bookThreshold) {
+                  positionIsInBook = true;
+                  maia2Evaluations[model] = lichessToEvaluation(lichessResult);
+                  maia2SanEvaluations[model] =
+                    lichessToSanEvaluation(lichessResult);
+                }
               }
             });
 
-            newLichessData.maia2 = maia2LichessData;
+            if (anyLichessDataAvailable) {
+              newLichessData.maia2 = maia2LichessData;
+            }
           }
 
-          // If not in book, use Maia neural network
+          // Fallback to neural network if not in book or Lichess failed
           if (!positionIsInBook) {
-            // Create batch positions array with proper structure
             const positions = [
               { fen, eloSelf: 1100, eloOppo: 1100 },
               { fen, eloSelf: 1200, eloOppo: 1200 },
@@ -323,7 +347,7 @@ export const useNets = ({
           newSanEvaluations.maia2 = maia2SanEvaluations;
         }
 
-        // BigLeela (2500 rating)
+        // BigLeela
         if (
           modelsToUse.includes("bigLeela") &&
           bigLeela &&
@@ -331,33 +355,39 @@ export const useNets = ({
         ) {
           if (currentAbortController.signal.aborted) return;
 
+          let usedBook = false;
+
           if (useLichessBook) {
             const lichessResult = await fetchLichessData(
               fen,
               2500,
               currentAbortController.signal
             );
-            const totalGames =
-              lichessResult.white + lichessResult.draws + lichessResult.black;
+            
+            if (lichessResult) {
+              const totalGames =
+                lichessResult.white + lichessResult.draws + lichessResult.black;
 
-            newLichessData.bigLeela = lichessResult;
+              newLichessData.bigLeela = lichessResult;
 
-            if (totalGames >= bookThreshold) {
-              positionIsInBook = true;
-              newEvaluations.bigLeela = lichessToEvaluation(lichessResult);
-              newSanEvaluations.bigLeela =
-          lichessToSanEvaluation(lichessResult);
+              if (totalGames >= bookThreshold) {
+                positionIsInBook = true;
+                usedBook = true;
+                newEvaluations.bigLeela = lichessToEvaluation(lichessResult);
+                newSanEvaluations.bigLeela =
+                  lichessToSanEvaluation(lichessResult);
+              }
             }
           }
 
-          if (!positionIsInBook || !useLichessBook) {
+          if (!usedBook) {
             const uciEval = await bigLeela.evaluate(fen);
             newEvaluations.bigLeela = uciEval;
             newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen);
           }
         }
 
-        
+        // EliteMaia
         if (
           modelsToUse.includes("elitemaia") &&
           elitemaia &&
@@ -365,26 +395,32 @@ export const useNets = ({
         ) {
           if (currentAbortController.signal.aborted) return;
 
+          let usedBook = false;
+
           if (useLichessBook) {
             const lichessResult = await fetchLichessData(
               fen,
               2500,
               currentAbortController.signal
             );
-            const totalGames =
-              lichessResult.white + lichessResult.draws + lichessResult.black;
+            
+            if (lichessResult) {
+              const totalGames =
+                lichessResult.white + lichessResult.draws + lichessResult.black;
 
-            newLichessData.elitemaia = lichessResult;
+              newLichessData.elitemaia = lichessResult;
 
-            if (totalGames >= bookThreshold) {
-              positionIsInBook = true;
-              newEvaluations.elitemaia = lichessToEvaluation(lichessResult);
-              newSanEvaluations.elitemaia =
-          lichessToSanEvaluation(lichessResult);
+              if (totalGames >= bookThreshold) {
+                positionIsInBook = true;
+                usedBook = true;
+                newEvaluations.elitemaia = lichessToEvaluation(lichessResult);
+                newSanEvaluations.elitemaia =
+                  lichessToSanEvaluation(lichessResult);
+              }
             }
           }
 
-          if (!positionIsInBook || !useLichessBook) {
+          if (!usedBook) {
             const uciEval = await elitemaia.evaluate(fen);
             newEvaluations.elitemaia = uciEval;
             newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen);

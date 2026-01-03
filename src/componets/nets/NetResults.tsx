@@ -399,6 +399,12 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   const [selectedMaia2Model, setSelectedMaia2Model] = useState(0)
   const [selectedTab, setSelectedTab] = useState<ModelType>('maia2')
 
+  // Check if any model is downloading
+  const isAnyModelDownloading = Object.values(status).some(
+    (modelStatus) => modelStatus === 'downloading'
+  )
+
+  // Show loading if Maia is analyzing
   if (isMaiaLoading) {
     return (
       <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
@@ -407,6 +413,26 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             <CircularProgress size={40} />
             <Typography>
               Analyzing position...
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Show loading if any model is downloading
+  if (isAnyModelDownloading) {
+    const downloadingModel = (Object.keys(status) as ModelType[]).find(
+      (key) => status[key] === 'downloading'
+    )
+    
+    return (
+      <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <CardContent>
+          <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={4}>
+            <CircularProgress size={40} />
+            <Typography>
+              Downloading {downloadingModel ? MODEL_CONFIGS[downloadingModel].name : 'model'}...
             </Typography>
           </Box>
         </CardContent>
@@ -435,7 +461,6 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
 
   // Check if current tab model is ready
   const isCurrentModelReady = status[currentTab] === 'ready'
-  const isCurrentModelDownloading = status[currentTab] === 'downloading'
 
   return (
     <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
@@ -454,19 +479,10 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             variant="fullWidth"
           >
             {(Object.keys(MODEL_CONFIGS) as ModelType[]).map((modelType) => {
-              const isDownloading = status[modelType] === 'downloading'
-              
               return (
                 <Tab
                   key={modelType}
-                  label={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      {isDownloading && (
-                        <CircularProgress size={16} thickness={5} />
-                      )}
-                      <span>{MODEL_CONFIGS[modelType].name}</span>
-                    </Box>
-                  }
+                  label={MODEL_CONFIGS[modelType].name}
                   value={modelType}
                 />
               )
@@ -474,18 +490,8 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
           </Tabs>
         </Box>
 
-        {/* Show downloading indicator if current model is downloading */}
-        {isCurrentModelDownloading && (
-          <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={4}>
-            <CircularProgress  />
-            <Typography>
-              Downloading {MODEL_CONFIGS[currentTab].name}...
-            </Typography>
-          </Box>
-        )}
-
-        {/* Show download prompt if selected model is not ready and not downloading */}
-        {!isCurrentModelReady && !isCurrentModelDownloading && (
+        {/* Show download prompt if selected model is not ready */}
+        {!isCurrentModelReady && (
           <ModelDownloadPrompt modelType={currentTab} downloadModel={downloadModel} />
         )}
 
