@@ -32,6 +32,7 @@ import {
   Chat as ChatIcon,
   CloudDownload,
   Flag as ResignIcon,
+  AnalyticsOutlined,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
@@ -52,6 +53,7 @@ import {
 } from "@/libs/agine/bothelper";
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
+import { useGameTheme } from "@/hooks/useGameTheme";
 
 
 export default function PlayVsBotsPage() {
@@ -128,7 +130,14 @@ export default function PlayVsBotsPage() {
     evaluationsFen,
     stockfishDone,
     stockfishFen,
+    gameReview,
+    gameReviewLoading,
+    setGameReview,
+    generateGameReview
+    
   } = useAgine(fen);
+
+  const { gameReviewTheme, analyzeGameTheme, isLoading } = useGameTheme()
 
   useEffect(() => {
     if (gameStatus !== "playing" || !activeTimer) return;
@@ -297,6 +306,7 @@ export default function PlayVsBotsPage() {
     setFen(newGame.fen());
     setGameStatus("playing");
     setResult("");
+    setGameReview([])
     setMoveSquares({});
     setBotThinking(false);
     initializeTimers();
@@ -311,6 +321,7 @@ export default function PlayVsBotsPage() {
     setMoveSquares({});
     setBotThinking(false);
     setActiveTimer(null);
+    setGameReview([])
   };
 
   const resignGame = () => {
@@ -468,6 +479,12 @@ export default function PlayVsBotsPage() {
       setBotThinking(false);
     }
   };
+
+  const generateAnalsyis = () => {
+    generateGameReview(game.history(), startingFen || fen);
+    analyzeGameTheme(game.history(), startingFen || fen);
+
+  }
 
   const checkGameEnd = (currentGame: Chess): boolean => {
     if (currentGame.isGameOver()) {
@@ -829,9 +846,19 @@ export default function PlayVsBotsPage() {
               >
                 Download PGN
               </Button>
+                <Button
+                variant="outlined"
+                fullWidth
+                startIcon={isLoading || gameReviewLoading ? <CircularProgress size={20} /> : <AnalyticsOutlined/>}
+                disabled={gameReview.length > 0 || isLoading || gameReviewLoading}
+                onClick={generateAnalsyis}
+                >
+                {isLoading || gameReviewLoading ? "Generating..." : "Generate Game Review"}
+                </Button>
               <Button
                 variant="contained"
                 onClick={() => setSaveDialogOpen(true)}
+                disabled={!gameReview || gameReview.length === 0}
                 startIcon={<SaveIcon />}
                 fullWidth
               >
@@ -841,8 +868,8 @@ export default function PlayVsBotsPage() {
                 saveDialogOpen={saveDialogOpen}
                 setSaveDialogOpen={setSaveDialogOpen}
                 gameInfo={buildPlayGameInfo()}
-                gameReview={[]}
-                gameReviewTheme={null}
+                gameReview={gameReview}
+                gameReviewTheme={gameReviewTheme}
                 isBotGame={true}
                 moves={game.history()}
                 pgnText={getPgn()}
@@ -906,7 +933,7 @@ export default function PlayVsBotsPage() {
             </Typography>
             <PGNView
               moves={game.history()}
-              moveAnalysis={null}
+              moveAnalysis={gameReview}
               goToMove={goToMove}
               currentMoveIndex={currentMoveIndex}
               gamePgn={game.pgn()}
