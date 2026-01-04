@@ -42,6 +42,7 @@ interface SaveGameReviewProp {
   setHistoryDialogOpen?: (historysave: boolean) => void;
   saveDialogOpen: boolean;
   setSaveDialogOpen: (save: boolean) => void;
+  setSavedGameReview?: (save: SavedGameReview) => void;
   gameInfo: Record<string, string>;
   pgnText: string;
   gameReview: MoveAnalysis[];
@@ -55,6 +56,7 @@ function SaveGameReviewDialog({
   setSaveDialogOpen,
   historyDialogOpen,
   setHistoryDialogOpen,
+  setSavedGameReview,
   gameInfo,
   gameReview,
   moves,
@@ -105,6 +107,7 @@ function SaveGameReviewDialog({
     setSaveDialogOpen(false);
     setSaveTitle("");
     alert("Game review saved successfully!");
+    setSavedGameReview?.(savedGame);
   };
 
   return (
