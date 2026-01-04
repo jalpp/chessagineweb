@@ -113,7 +113,6 @@ function SaveGameReviewDialog({
     setSaveTitle("");
 
     if (isBotGame) {
-      console.log("isbotgame")
       sessionStorage.setItem("loadGameId", gameId);
 
       router.push("/game");

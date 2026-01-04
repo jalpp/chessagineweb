@@ -355,26 +355,27 @@ export default function PGNUploaderPage() {
   try {
     console.log(savedGame);
     
-    setPgnText(savedGame.pgn);
+    const cleanPgn = cleanPGN(savedGame.pgn);
+    console.log(cleanPgn);
+    const startingFen = extractStartingFen(cleanPgn);
+    console.log(startingFen);
+
+    setPgnText(cleanPgn);
+    setMoves(savedGame.moves);
+    setGameInfo(savedGame.gameInfo);
+    setGameReview(savedGame.gameReview);
+
+    const parsed = extractMovesWithComments(savedGame.pgn);
+    setParsedMovesWithComments(parsed);
+    setCurrentMoveIndex(0);
+
     
-    const cleanedPGN = cleanPGN(savedGame.pgn);
-    const startingFen = extractStartingFen(cleanedPGN);
-
-    const { moveList } = parsePGNMoves(savedGame.pgn, startingFen);
-
-    initializeGameState(savedGame.pgn, startingFen, moveList);
-
-    // Restore the saved game review if it exists
-    if (savedGame.gameReview && savedGame.gameReview.length > 0) {
-      setGameReview(savedGame.gameReview);
-    } else {
-      generateGameReview(moveList, startingFen);
-    }
-
-    // Analyze theme if not already done
-    if (!savedGame.gameReviewTheme) {
-      analyzeGameTheme(moveList, startingFen);
-    }
+    const resetGame = new Chess(startingFen);
+    setGame(resetGame);
+    setFen(resetGame.fen());
+    setCustomPlayFen(startingFen || resetGame.fen());
+    setLlmAnalysisResult(null);
+    setComment("");
 
     setHistoryDialogOpen(false);
     setInputsVisible(false);
