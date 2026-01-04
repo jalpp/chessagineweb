@@ -52,8 +52,7 @@ import {
 } from "@/libs/agine/bothelper";
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
-import { useLocalStorage } from "usehooks-ts";
-import GameReviewViewer from "@/componets/game/GameReviewer";
+
 
 export default function PlayVsBotsPage() {
   const theme = useTheme();
@@ -87,9 +86,6 @@ export default function PlayVsBotsPage() {
   const { status, progress } = useNetStatus();
   const { downloadModel } = useNetModels();
   
-  const [viewingGameReview, setViewingGameReview] =
-    useState<SavedGameReview | null>(null);
-    
 
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
@@ -839,15 +835,15 @@ export default function PlayVsBotsPage() {
                 startIcon={<SaveIcon />}
                 fullWidth
               >
-                Save Game
+                Save Game & View
               </Button>
               <SaveGameReviewDialog
                 saveDialogOpen={saveDialogOpen}
                 setSaveDialogOpen={setSaveDialogOpen}
                 gameInfo={buildPlayGameInfo()}
-                setSavedGameReview={setViewingGameReview}
                 gameReview={[]}
                 gameReviewTheme={null}
+                isBotGame={true}
                 moves={game.history()}
                 pgnText={getPgn()}
               />
@@ -985,24 +981,7 @@ export default function PlayVsBotsPage() {
     </Card>
   );
 
-    if (viewingGameReview) {
-    return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          height: "100%",
-          overflowY: "auto",
-          p: { xs: 1, sm: 2, md: 4 },
-        }}
-      >
-        <GameReviewViewer
-          savedGame={viewingGameReview}
-          onClose={() => setViewingGameReview(null)}
-          showCloseButton={true}
-        />
-      </Box>
-    );
-  }
+
 
   return (
     <Box

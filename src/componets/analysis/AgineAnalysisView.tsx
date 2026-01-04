@@ -54,7 +54,6 @@ interface BaseAnalysisViewProps {
   formatPrincipalVariation: (pv: string[], startFen: string) => string;
   setEngineDepth: (depth: number) => void;
   setEngineLines: (lines: number) => void;
-  fen?: string;
   openingLoading: boolean;
   openingData: MasterGames | null;
   lichessOpeningData: MasterGames | null;
@@ -92,7 +91,8 @@ interface GameReviewProps {
   comment?: string;
   gameInfo?: Record<string, string>;
   gameReviewTheme: GameReviewTheme | null;
-  generateGameReview?: (moves: string[]) => void;
+  generateGameReview?: (moves: string[], customFen?: string) => void;
+  Customfen?: string;
   gameReviewLoading?: boolean;
   gameReviewProgress?: number;
   handleGameReviewSummaryClick?: (
@@ -127,6 +127,7 @@ function AgineAnalysisView({
   engineDepth,
   engineLines,
   engine,
+  Customfen,
   analyzeWithStockfish,
   formatEvaluation,
   formatPrincipalVariation,
@@ -295,6 +296,7 @@ function AgineAnalysisView({
                     moves={moves!}
                     currentMoveIndex={currentMoveIndex!}
                     goToMove={goToMove!}
+                    fen={Customfen}
                     comment={comment!}
                     gameInfo={gameInfo!}
                     gameReviewTheme={gameReviewTheme!}

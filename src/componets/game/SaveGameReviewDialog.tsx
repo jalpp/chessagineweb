@@ -24,6 +24,7 @@ import {
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { useLocalStorage } from "usehooks-ts";
 import { GameReviewTheme } from "@/libs/themes/helper";
+import { useRouter } from "next/navigation";
 
 export interface SavedGameReview {
   id: string;
@@ -42,9 +43,9 @@ interface SaveGameReviewProp {
   setHistoryDialogOpen?: (historysave: boolean) => void;
   saveDialogOpen: boolean;
   setSaveDialogOpen: (save: boolean) => void;
-  setSavedGameReview?: (save: SavedGameReview) => void;
   gameInfo: Record<string, string>;
   pgnText: string;
+  isBotGame: boolean;
   gameReview: MoveAnalysis[];
   gameReviewTheme: GameReviewTheme | null;
   moves: string[];
@@ -56,16 +57,18 @@ function SaveGameReviewDialog({
   setSaveDialogOpen,
   historyDialogOpen,
   setHistoryDialogOpen,
-  setSavedGameReview,
   gameInfo,
   gameReview,
   moves,
+  isBotGame,
   gameReviewTheme,
   pgnText,
 }: SaveGameReviewProp) {
   const [gameReviewHistory, setGameReviewHistory] = useLocalStorage<
     SavedGameReview[]
   >("chess-game-review-history", []);
+
+  const router = useRouter();
 
   const [saveTitle, setSaveTitle] = useState("");
 
@@ -92,8 +95,10 @@ function SaveGameReviewDialog({
 
   const handleSaveConfirm = () => {
     const gameTitle = saveTitle.trim() || generateGameTitle();
+    const gameId =
+      Date.now().toString() 
     const savedGame: SavedGameReview = {
-      id: Date.now().toString(),
+      id: gameId,
       gameInfo,
       pgn: pgnText,
       gameReview,
@@ -106,8 +111,19 @@ function SaveGameReviewDialog({
     setGameReviewHistory((prev) => [savedGame, ...prev]);
     setSaveDialogOpen(false);
     setSaveTitle("");
-    alert("Game review saved successfully!");
-    setSavedGameReview?.(savedGame);
+
+    if (isBotGame) {
+      console.log("isbotgame")
+      sessionStorage.setItem("loadGameId", gameId);
+
+      router.push("/game");
+
+      setTimeout(() => {
+        setSaveDialogOpen(false);
+      }, 500);
+    } else {
+      alert("Saved game successfully!");
+    }
   };
 
   return (
