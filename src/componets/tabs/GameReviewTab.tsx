@@ -42,7 +42,8 @@ export interface MoveStats {
 
 interface GameReviewTabProps {
   gameReview: MoveAnalysis[] | null;
-  generateGameReview: (moves: string[]) => Promise<void>;
+  generateGameReview: (moves: string[], customFen?: string) => Promise<void>;
+  fen?: string;
   gameReviewTheme: GameReviewTheme | null;
   moves: string[];
   gameReviewLoading: boolean;
@@ -112,6 +113,7 @@ export const getMoveClassificationStyle = (classification: MoveQuality) => {
 const GameReviewTab: React.FC<GameReviewTabProps> = ({
   gameReview,
   generateGameReview,
+  fen,
   moves,
   stockfishAnalysisResult,
   gameReviewLoading,
@@ -230,15 +232,15 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         <Stack spacing={2} alignItems="center">
           <Sparkles size={32} />
           <Typography variant="h6" sx={{ textAlign: "center" }}>
-            AI Game Analysis
+            Game Analysis
           </Typography>
           <Typography variant="body2" sx={{  textAlign: "center" }}>
-            Generate detailed move-by-move analysis with AI insights
+            Generate detailed move-by-move game review
           </Typography>
 
           <Button
             variant="contained"
-            onClick={() => generateGameReview(moves)}
+            onClick={() => generateGameReview(moves, fen)}
             disabled={gameReviewLoading || moves.length === 0}
             startIcon={!gameReviewLoading && <PlayCircle size={18} />}
             sx={{

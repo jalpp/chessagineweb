@@ -25,7 +25,8 @@ export interface GameInfoTabProp {
   goToMove: (index: number) => void;
   comment: string;
   gameReviewTheme: GameReviewTheme | null;
-  generateGameReview: (moves: string[]) => void;
+  generateGameReview: (moves: string[], customFen?: string) => void;
+  fen?: string;
   gameReviewLoading: boolean;
   gameReview: MoveAnalysis[];
   stockfishAnalysisResult: PositionEval | null;
@@ -49,6 +50,7 @@ function GameInfoTab({
   handleMoveCoachClick,
   handleMoveAnnontateClick,
   handleGameReviewClick,
+  fen,
   gameReviewProgress,
   stockfishAnalysisResult,
 }: GameInfoTabProp) {
@@ -220,6 +222,7 @@ function GameInfoTab({
           chatLoading={chatLoading}
           gameReviewProgress={gameReviewProgress}
           comment={comment}
+          fen={fen}
           whiteTitle={gameInfo.WhiteTitle || ''}
           blackTitle={gameInfo.BlackTitle || ''}
           whitePlayer={gameInfo.White || "Unknown"}

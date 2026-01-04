@@ -75,7 +75,6 @@ export default function PositionPage() {
       stockfishLoading={stockfishLoading}
       handleEngineLineClick={handleEngineLineClick}
       engineDepth={engineDepth}
-      fen={fen}
       abortChatMessage={abortChatMessage}
       handleChatKeyPress={handleChatKeyPress}
       sendChatMessage={sendChatMessage}

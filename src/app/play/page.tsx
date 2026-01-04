@@ -41,7 +41,7 @@ import { TabPanel } from "@/componets/tabs/tab";
 import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { MODEL_CONFIGS } from "@/libs/nets/types";
 import PGNView from "@/componets/tabs/PgnView";
-import SaveGameReviewDialog from "@/componets/game/SaveGameReviewDialog";
+import SaveGameReviewDialog, { SavedGameReview } from "@/componets/game/SaveGameReviewDialog";
 import { SaveIcon } from "lucide-react";
 import {
   BotType,
@@ -52,6 +52,7 @@ import {
 } from "@/libs/agine/bothelper";
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
+
 
 export default function PlayVsBotsPage() {
   const theme = useTheme();
@@ -84,6 +85,7 @@ export default function PlayVsBotsPage() {
 
   const { status, progress } = useNetStatus();
   const { downloadModel } = useNetModels();
+  
 
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
@@ -578,6 +580,8 @@ export default function PlayVsBotsPage() {
       );
     }
 
+ 
+
     return (
       <Stack spacing={3} sx={{ pb: 2 }}>
         {/* Show Config Menus only in setup or finished states */}
@@ -831,7 +835,7 @@ export default function PlayVsBotsPage() {
                 startIcon={<SaveIcon />}
                 fullWidth
               >
-                Save Game
+                Save Game & View
               </Button>
               <SaveGameReviewDialog
                 saveDialogOpen={saveDialogOpen}
@@ -839,6 +843,7 @@ export default function PlayVsBotsPage() {
                 gameInfo={buildPlayGameInfo()}
                 gameReview={[]}
                 gameReviewTheme={null}
+                isBotGame={true}
                 moves={game.history()}
                 pgnText={getPgn()}
               />
@@ -975,6 +980,8 @@ export default function PlayVsBotsPage() {
       </Box>
     </Card>
   );
+
+
 
   return (
     <Box

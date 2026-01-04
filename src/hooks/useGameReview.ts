@@ -2,11 +2,12 @@
 import { useState, useCallback } from "react";
 import { Chess, Move, validateFen, Color } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { LineEval } from "@/stockfish/engine/engine";
+import { EngineName, LineEval } from "@/stockfish/engine/engine";
 import { CandidateMove } from "@/libs/agine/helper";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 import { getOpeningStats } from "@/libs/openingdatabase/helper";
-import { useSessionStorage } from "usehooks-ts";
+import { useLocalStorage, useSessionStorage } from "usehooks-ts";
+import { useEngine } from "@/stockfish/hooks/useEngine";
 
 export type MoveQuality =
   | "Best"
@@ -38,14 +39,12 @@ export interface MoveAnalysis {
  * thanks to chessKit devs!
  */
 
-const useGameReview = (
-  stockfishEngine: UciEngine | undefined,
-  searchDepth: number
-) => {
-  if (!stockfishEngine) {
-    console.log("invalid engine waiting for it to start");
-  }
+const useGameReview = () => {
+    
+  const stockfishEngine = useEngine(true, EngineName.Stockfish17Point);
+  const searchDepth = 15;
 
+ 
   const [gameReview, setGameReview] = useSessionStorage<MoveAnalysis[]>("agine_current_game_review",[]);
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
@@ -243,11 +242,33 @@ const useGameReview = (
       setGameReviewProgress(0);
 
       if (!stockfishEngine) {
-        console.warn("Chess engine unavailable");
-        alert("Current Stockfish unsupported, please try changing to lower Stockfish version");
+      console.warn("Chess engine unavailable");
+      setGameReviewLoading(false);
+      return;
+    }
+
+    // Wait for engine to be ready
+    if (!stockfishEngine.isReady()) {
+      console.log("Waiting for chess engine to initialize...");
+      
+      const maxWaitTime = 10000; // 10 seconds
+      const pollInterval = 100; // Check every 100ms
+      let elapsedTime = 0;
+      
+      while (!stockfishEngine.isReady() && elapsedTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        elapsedTime += pollInterval;
+      }
+      
+      if (!stockfishEngine.isReady()) {
+        console.error("Chess engine failed to initialize within timeout");
+        alert("Chess engine initialization timeout. Please try again or use a lower Stockfish version.");
         setGameReviewLoading(false);
         return;
       }
+      
+      console.log("Chess engine initialized successfully");
+    }
 
       interface GameState {
         preMovefen: string; 
