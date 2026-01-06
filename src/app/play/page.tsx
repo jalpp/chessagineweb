@@ -561,6 +561,29 @@ export default function PlayVsBotsPage() {
 
     const showConfigMenus = gameStatus === "setup" || gameStatus === "finished";
 
+
+    if (isLoading || gameReviewLoading) {
+      return (
+        <Stack spacing={3} sx={{ pb: 2 }}>
+          <Card>
+            <CardContent>
+              <Stack spacing={3} alignItems="center" py={4}>
+                <CircularProgress />
+                <Box textAlign="center">
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    Generating Game Review
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Analyzing your game...
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+      );
+    }
+
     // Show loading state if model is downloading
     if (isModelDownloading) {
       return (
@@ -568,7 +591,6 @@ export default function PlayVsBotsPage() {
           <Card>
             <CardContent>
               <Stack spacing={3} alignItems="center" py={4}>
-                <CircularProgress size={60} />
                 <Box textAlign="center">
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     Downloading {MODEL_CONFIGS[modelType!].name}
@@ -849,11 +871,11 @@ export default function PlayVsBotsPage() {
                 <Button
                 variant="outlined"
                 fullWidth
-                startIcon={isLoading || gameReviewLoading ? <CircularProgress size={20} /> : <AnalyticsOutlined/>}
+                startIcon={<AnalyticsOutlined/>}
                 disabled={gameReview.length > 0 || isLoading || gameReviewLoading}
                 onClick={generateAnalsyis}
                 >
-                {isLoading || gameReviewLoading ? "Generating..." : "Generate Game Review"}
+                {"Generate Game Review"}
                 </Button>
               <Button
                 variant="contained"

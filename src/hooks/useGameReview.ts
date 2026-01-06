@@ -1,13 +1,13 @@
 
 import { useState, useCallback } from "react";
 import { Chess, Move, validateFen, Color } from "chess.js";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { EngineName, LineEval } from "@/stockfish/engine/engine";
 import { CandidateMove } from "@/libs/agine/helper";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 import { getOpeningStats } from "@/libs/openingdatabase/helper";
-import { useLocalStorage, useSessionStorage } from "usehooks-ts";
+import {  useSessionStorage } from "usehooks-ts";
 import { useEngine } from "@/stockfish/hooks/useEngine";
+import { UciEngine } from "@/stockfish/engine/UciEngine";
 
 export type MoveQuality =
   | "Best"
@@ -39,11 +39,8 @@ export interface MoveAnalysis {
  * thanks to chessKit devs!
  */
 
-const useGameReview = () => {
-    
-  const stockfishEngine = useEngine(true, EngineName.Stockfish17Point);
-  const searchDepth = 15;
-
+const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: number) => {
+  
  
   const [gameReview, setGameReview] = useSessionStorage<MoveAnalysis[]>("agine_current_game_review",[]);
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
@@ -236,278 +233,252 @@ const useGameReview = () => {
     }
   }, []);
 
-  const generateGameReview = useCallback(
-    async (gameNotation: string[], customFen?: string): Promise<void> => {
-      setGameReviewLoading(true);
-      setGameReviewProgress(0);
+const generateGameReview = useCallback(
+  async (gameNotation: string[], customFen?: string): Promise<void> => {
+    setGameReviewLoading(true);
+    setGameReviewProgress(0);
 
-      if (!stockfishEngine) {
+    if (!stockfishEngine) {
       console.warn("Chess engine unavailable");
       setGameReviewLoading(false);
       return;
     }
 
-    // Wait for engine to be ready
-    if (!stockfishEngine.isReady()) {
-      console.log("Waiting for chess engine to initialize...");
-      
-      const maxWaitTime = 10000; // 10 seconds
-      const pollInterval = 100; // Check every 100ms
-      let elapsedTime = 0;
-      
-      while (!stockfishEngine.isReady() && elapsedTime < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-        elapsedTime += pollInterval;
-      }
-      
-      if (!stockfishEngine.isReady()) {
-        console.error("Chess engine failed to initialize within timeout");
-        alert("Chess engine initialization timeout. Please try again or use a lower Stockfish version.");
-        setGameReviewLoading(false);
-        return;
-      }
-      
-      console.log("Chess engine initialized successfully");
+    interface GameState {
+      preMovefen: string;
+      preMoveWinRate: number;
+      postMoveWinRate: number; // Added this field
+      secondOptionWinRate: number | undefined;
+      sanBestMove: string | undefined;
+      postMovefen: string;
+      activePlayer: Color;
+      evalMove: number;
+      moveNotation: string;
+      arrowMove: Move;
+      bestMove: string | undefined;
+      plyIndex: number;
+      openingMatch: boolean;
     }
 
-      interface GameState {
-        preMovefen: string; 
-        preMoveWinRate: number;
-        secondOptionWinRate: number | undefined;
-        sanBestMove: string | undefined;
-        postMovefen: string;
-        activePlayer: Color;
-        evalMove: number;
-        moveNotation: string;
-        arrowMove: Move;
-        bestMove: string | undefined;
-        plyIndex: number;
-        openingMatch: boolean;
-      }
+    try {
+      const gameBoard = new Chess(customFen);
+      const moveEvaluations: MoveAnalysis[] = [];
+      const analysisDepth = searchDepth;
+      const gameStates: GameState[] = [];
+      const moveHistory: string[] = [];
 
-      try {
-        const gameBoard = new Chess(customFen);
-        const moveEvaluations: MoveAnalysis[] = [];
-        const analysisDepth = searchDepth;
-        const gameStates: GameState[] = [];
-        const moveHistory: string[] = [];
+      const totalMoves = gameNotation.length;
 
-        const totalMoves = gameNotation.length;
+      const phase1Weight = 0.95;
+      const phase2Weight = 0.05;
 
-        const phase1Weight = 0.95;
-        const phase2Weight = 0.05;
+      // Phase 1: Collect all game states
+      for (let ply = 0; ply < gameNotation.length; ply++) {
+        const preMovefen = gameBoard.fen();
+        const activePlayer = gameBoard.turn();
+        const moveNotation = gameNotation[ply];
 
-        // Phase 1: Collect all game states
-        for (let ply = 0; ply < gameNotation.length; ply++) {
-          const preMovefen = gameBoard.fen();
-          const activePlayer = gameBoard.turn();
-          const moveNotation = gameNotation[ply];
+        const moveObject = gameBoard.move(moveNotation);
 
-          const moveObject = gameBoard.move(moveNotation);
+        const postMovefen = gameBoard.fen();
+        if (!moveObject) {
+          console.error(
+            `Illegal move detected: ${moveNotation} at ply ${ply}`
+          );
+          continue;
+        }
 
-          const postMovefen = gameBoard.fen();
-          if (!moveObject) {
-            console.error(
-              `Illegal move detected: ${moveNotation} at ply ${ply}`
-            );
-            continue;
-          }
+        const uciNotation =
+          moveObject.from + moveObject.to + (moveObject.promotion || "");
+        const sanNotation = moveObject.san;
+        moveHistory.push(uciNotation);
 
-          const uciNotation =
-            moveObject.from + moveObject.to + (moveObject.promotion || "");
-          const sanNotation = moveObject.san;
-          moveHistory.push(uciNotation);
+        let preMoveWinRate = 0;
+        let postMoveWinRate = 0;
+        let secondBestWinRate: number | undefined = 0;
+        let bestMove;
+        let evalMove = 0.0;
+        const openingMatch = isFenInAllDatabases(postMovefen);
 
-          let preMoveWinRate = 0;
-          let secondBestWinRate: number | undefined = 0;
-          let bestMove;
-          let evalMove = 0.0;
-          const fetchMasterDb = await getOpeningStats(postMovefen);
-          const openingMatch = isFenInAllDatabases(postMovefen) || (fetchMasterDb && fetchMasterDb.topGames.length > 0);
-
-          if (openingMatch) {
-            gameStates.push({
-              activePlayer: activePlayer,
-              preMoveWinRate: preMoveWinRate,
-              secondOptionWinRate: secondBestWinRate,
-              preMovefen: preMovefen,
-              postMovefen: postMovefen,
-              moveNotation: moveNotation,
-              arrowMove: moveObject,
-              evalMove: evalMove,
-              plyIndex: ply,
-              bestMove: bestMove,
-              sanBestMove: sanNotation,
-              openingMatch: true,
-            });
-
-            const phase1Progress =
-              ((ply + 1) / totalMoves) * phase1Weight * 100;
-            setGameReviewProgress(Math.round(phase1Progress));
-            continue;
-          }
-
-          const chessDbEvals = await fetchChessDBData(preMovefen);
-          let sanBestMove;
-
-          if (chessDbEvals.length == 0) {
-            const positionAnalysis =
-              await stockfishEngine.evaluatePositionWithUpdate({
-                fen: preMovefen,
-                depth: analysisDepth,
-                multiPv: 3,
-              });
-
-            preMoveWinRate = evaluationToWinRate(positionAnalysis.lines?.[0]);
-            const secondBestEval = positionAnalysis.lines?.[1];
-            secondBestWinRate = secondBestEval
-              ? evaluationToWinRate(secondBestEval)
-              : undefined;
-            bestMove = positionAnalysis.bestMove;
-            evalMove = positionAnalysis.lines[0].cp || 0;
-            const chess = new Chess(preMovefen);
-            const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
-            sanBestMove = moveObjSan ? moveObjSan.san : undefined;
-          } else {
-            preMoveWinRate = percentToNumber(chessDbEvals[0].winrate);
-            evalMove = normalizeChessDBScore(Number(chessDbEvals[0].score || 0), activePlayer);
-            secondBestWinRate = chessDbEvals[1] ? percentToNumber(chessDbEvals[1].winrate) : undefined;
-            bestMove = chessDbEvals[0].uci;
-            sanBestMove = chessDbEvals[0].san;
-          }
-
+        if (openingMatch) {
           gameStates.push({
             activePlayer: activePlayer,
             preMoveWinRate: preMoveWinRate,
+            postMoveWinRate: postMoveWinRate,
             secondOptionWinRate: secondBestWinRate,
             preMovefen: preMovefen,
             postMovefen: postMovefen,
             moveNotation: moveNotation,
-            plyIndex: ply,
-            evalMove: evalMove,
             arrowMove: moveObject,
+            evalMove: evalMove,
+            plyIndex: ply,
             bestMove: bestMove,
-            sanBestMove: sanBestMove,
-            openingMatch: false,
+            sanBestMove: sanNotation,
+            openingMatch: true,
           });
 
-          const phase1Progress = ((ply + 1) / totalMoves) * phase1Weight * 100;
+          const phase1Progress =
+            ((ply + 1) / totalMoves) * phase1Weight * 100;
           setGameReviewProgress(Math.round(phase1Progress));
+          continue;
         }
 
-        // Phase 2: Classify all moves
-        for (let ply = 0; ply < gameStates.length; ply++) {
-          const currentState = gameStates[ply];
-          const {
-            activePlayer,
-            moveNotation,
-            plyIndex,
-            preMovefen,
-            postMovefen,
-            preMoveWinRate,
-            secondOptionWinRate,
-            bestMove,
-            openingMatch,
-            sanBestMove,
-            arrowMove,
-            evalMove
-          } = currentState;
+        const chessDbEvals = await fetchChessDBData(preMovefen);
+        let sanBestMove;
 
-          if (openingMatch) {
-            moveEvaluations.push({
-              plyNumber: plyIndex,
+        // Evaluate PRE-MOVE position
+        if (chessDbEvals.length == 0) {
+          const positionAnalysis =
+            await stockfishEngine.evaluatePositionWithUpdate({
               fen: preMovefen,
-              notation: moveNotation,
-              sanNotation: sanBestMove,
-              evalMove,
-              currenFen: postMovefen,
-              arrowMove: arrowMove,
-              quality: "Book",
-              player: activePlayer,
+              depth: analysisDepth,
+              multiPv: 3,
             });
 
-            const phase2Progress =
-              phase1Weight * 100 +
-              ((ply + 1) / gameStates.length) * phase2Weight * 100;
-            setGameReviewProgress(Math.round(phase2Progress));
-            continue;
-          }
+          preMoveWinRate = evaluationToWinRate(positionAnalysis.lines?.[0]);
+          const secondBestEval = positionAnalysis.lines?.[1];
+          secondBestWinRate = secondBestEval
+            ? evaluationToWinRate(secondBestEval)
+            : undefined;
+          bestMove = positionAnalysis.bestMove;
+          evalMove = positionAnalysis.lines[0].cp || 0;
+          const chess = new Chess(preMovefen);
+          const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
+          sanBestMove = moveObjSan ? moveObjSan.san : undefined;
+        } else {
+          preMoveWinRate = percentToNumber(chessDbEvals[0].winrate);
+          evalMove = normalizeChessDBScore(
+            Number(chessDbEvals[0].score || 0),
+            activePlayer
+          );
+          secondBestWinRate = chessDbEvals[1]
+            ? percentToNumber(chessDbEvals[1].winrate)
+            : undefined;
+          bestMove = chessDbEvals[0].uci;
+          sanBestMove = chessDbEvals[0].san;
+        }
 
-          const nextState =
-            ply < gameStates.length - 1 ? gameStates[ply + 1] : null;
-          const postMoveWinRate = nextState
-            ? nextState.preMoveWinRate
-            : preMoveWinRate;
-
-          const secondBestWinRate = secondOptionWinRate;
-
-          const isWhitePlaying = activePlayer === "w";
-          const playedMove = moveHistory[ply];
-          const engineChoice = bestMove;
-
-          if (
-            isVeryGoodMove(
-              preMoveWinRate,
-              postMoveWinRate,
-              isWhitePlaying,
-              secondBestWinRate
-            )
-          ) {
-            moveEvaluations.push({
-              plyNumber: plyIndex,
-              notation: moveNotation,
-              sanNotation: sanBestMove,
-              fen: preMovefen,
-              evalMove,
-              currenFen: postMovefen,
-              arrowMove: arrowMove,
-              quality: "Very Good",
-              player: activePlayer,
+        // Evaluate POST-MOVE position (from opponent's perspective)
+        const chessDbEvalsPost = await fetchChessDBData(postMovefen);
+        
+        if (chessDbEvalsPost.length == 0) {
+          const postAnalysis =
+            await stockfishEngine.evaluatePositionWithUpdate({
+              fen: postMovefen,
+              depth: analysisDepth,
+              multiPv: 1,
             });
+          
+          // Get evaluation from opponent's perspective and flip it back
+          const opponentWinRate = evaluationToWinRate(postAnalysis.lines?.[0]);
+          postMoveWinRate = 100 - opponentWinRate;
+        } else {
+          // ChessDB winrate is from the side to move, so flip it
+          const opponentWinRate = percentToNumber(chessDbEvalsPost[0].winrate);
+          postMoveWinRate = 100 - opponentWinRate;
+        }
 
-            const phase2Progress =
-              phase1Weight * 100 +
-              ((ply + 1) / gameStates.length) * phase2Weight * 100;
-            setGameReviewProgress(Math.round(phase2Progress));
-            continue;
-          }
+        gameStates.push({
+          activePlayer: activePlayer,
+          preMoveWinRate: preMoveWinRate,
+          postMoveWinRate: postMoveWinRate,
+          secondOptionWinRate: secondBestWinRate,
+          preMovefen: preMovefen,
+          postMovefen: postMovefen,
+          moveNotation: moveNotation,
+          plyIndex: ply,
+          evalMove: evalMove,
+          arrowMove: moveObject,
+          bestMove: bestMove,
+          sanBestMove: sanBestMove,
+          openingMatch: false,
+        });
 
-          // Check if played move matches best move
-          if (playedMove === engineChoice) {
-            moveEvaluations.push({
-              plyNumber: plyIndex,
-              notation: moveNotation,
-              sanNotation: sanBestMove,
-              fen: preMovefen,
-              quality: "Best",
-              evalMove,
-              arrowMove: arrowMove,
-              currenFen: postMovefen,
-              player: activePlayer,
-            });
+        const phase1Progress = ((ply + 1) / totalMoves) * phase1Weight * 100;
+        setGameReviewProgress(Math.round(phase1Progress));
+      }
 
-            const phase2Progress =
-              phase1Weight * 100 +
-              ((ply + 1) / gameStates.length) * phase2Weight * 100;
-            setGameReviewProgress(Math.round(phase2Progress));
-            continue;
-          }
+      // Phase 2: Classify all moves
+      for (let ply = 0; ply < gameStates.length; ply++) {
+        const currentState = gameStates[ply];
+        const {
+          activePlayer,
+          moveNotation,
+          plyIndex,
+          preMovefen,
+          postMovefen,
+          preMoveWinRate,
+          postMoveWinRate,
+          secondOptionWinRate,
+          bestMove,
+          openingMatch,
+          sanBestMove,
+          arrowMove,
+          evalMove,
+        } = currentState;
 
-          // Get basic classification (Good, Dubious, Mistake, Blunder)
-          const qualityRating = getMoveBasicClassification(
+        if (openingMatch) {
+          moveEvaluations.push({
+            plyNumber: plyIndex,
+            fen: preMovefen,
+            notation: moveNotation,
+            sanNotation: sanBestMove,
+            evalMove,
+            currenFen: postMovefen,
+            arrowMove: arrowMove,
+            quality: "Book",
+            player: activePlayer,
+          });
+
+          const phase2Progress =
+            phase1Weight * 100 +
+            ((ply + 1) / gameStates.length) * phase2Weight * 100;
+          setGameReviewProgress(Math.round(phase2Progress));
+          continue;
+        }
+
+        const secondBestWinRate = secondOptionWinRate;
+        const isWhitePlaying = activePlayer === "w";
+        const playedMove = moveHistory[ply];
+        const engineChoice = bestMove;
+
+        if (
+          isVeryGoodMove(
             preMoveWinRate,
             postMoveWinRate,
-            isWhitePlaying
-          );
-
+            isWhitePlaying,
+            secondBestWinRate
+          )
+        ) {
           moveEvaluations.push({
             plyNumber: plyIndex,
             notation: moveNotation,
             sanNotation: sanBestMove,
-            quality: qualityRating,
-            arrowMove: arrowMove,
             fen: preMovefen,
             evalMove,
+            currenFen: postMovefen,
+            arrowMove: arrowMove,
+            quality: "Very Good",
+            player: activePlayer,
+          });
+
+          const phase2Progress =
+            phase1Weight * 100 +
+            ((ply + 1) / gameStates.length) * phase2Weight * 100;
+          setGameReviewProgress(Math.round(phase2Progress));
+          continue;
+        }
+
+        // Check if played move matches best move
+        if (playedMove === engineChoice) {
+          moveEvaluations.push({
+            plyNumber: plyIndex,
+            notation: moveNotation,
+            sanNotation: sanBestMove,
+            fen: preMovefen,
+            quality: "Best",
+            evalMove,
+            arrowMove: arrowMove,
             currenFen: postMovefen,
             player: activePlayer,
           });
@@ -516,19 +487,45 @@ const useGameReview = () => {
             phase1Weight * 100 +
             ((ply + 1) / gameStates.length) * phase2Weight * 100;
           setGameReviewProgress(Math.round(phase2Progress));
+          continue;
         }
 
-        console.log("Analysis Complete:", moveEvaluations);
-        setGameReview(moveEvaluations);
-        setGameReviewProgress(100);
-      } catch (error) {
-        console.error("Analysis failed:", error);
-      } finally {
-        setGameReviewLoading(false);
+        // Get basic classification (Good, Dubious, Mistake, Blunder)
+        const qualityRating = getMoveBasicClassification(
+          preMoveWinRate,
+          postMoveWinRate,
+          isWhitePlaying
+        );
+
+        moveEvaluations.push({
+          plyNumber: plyIndex,
+          notation: moveNotation,
+          sanNotation: sanBestMove,
+          quality: qualityRating,
+          arrowMove: arrowMove,
+          fen: preMovefen,
+          evalMove,
+          currenFen: postMovefen,
+          player: activePlayer,
+        });
+
+        const phase2Progress =
+          phase1Weight * 100 +
+          ((ply + 1) / gameStates.length) * phase2Weight * 100;
+        setGameReviewProgress(Math.round(phase2Progress));
       }
-    },
-    [stockfishEngine, searchDepth, fetchChessDBData]
-  );
+
+      console.log("Analysis Complete:", moveEvaluations);
+      setGameReview(moveEvaluations);
+      setGameReviewProgress(100);
+    } catch (error) {
+      console.error("Analysis failed:", error);
+    } finally {
+      setGameReviewLoading(false);
+    }
+  },
+  [stockfishEngine, searchDepth, fetchChessDBData]
+);
 
   return {
     gameReview,
