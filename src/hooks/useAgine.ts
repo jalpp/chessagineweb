@@ -94,7 +94,7 @@ export default function useAgine(fen: string) {
     generateGameReview,
     rootCurrentMove,
     setRootCurrentMove
-  } = useGameReview();
+  } = useGameReview(engine, engineDepth);
 
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
