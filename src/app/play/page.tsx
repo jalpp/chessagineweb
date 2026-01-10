@@ -43,7 +43,7 @@ import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { MODEL_CONFIGS } from "@/libs/nets/types";
 import PGNView from "@/componets/tabs/PgnView";
 import SaveGameReviewDialog, { SavedGameReview } from "@/componets/game/SaveGameReviewDialog";
-import { SaveIcon } from "lucide-react";
+import { Menu, SaveIcon } from "lucide-react";
 import {
   BotType,
   BOT_CONFIGS,
@@ -51,6 +51,8 @@ import {
   TIME_CONTROLS,
   TimeControl,
 } from "@/libs/agine/bothelper";
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
 import { useGameTheme } from "@/hooks/useGameTheme";
@@ -91,6 +93,8 @@ export default function PlayVsBotsPage() {
 
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
+  const [interactionPanelVisible, setInteractionPanelVisible] = useState(true);
+
 
   const getActiveTimeControl = () => {
     if (timeControl === "custom") {
@@ -1032,163 +1036,192 @@ export default function PlayVsBotsPage() {
 
 
 
-  return (
-    <Box
-      sx={{
-        p: { xs: 1, sm: 2, md: 4 },
-        minHeight: "100vh",
-        height: "100%",
-        overflowY: "auto",
-      }}
+return (
+  <Box
+    sx={{
+      p: { xs: 1, sm: 2, md: 4 },
+      minHeight: "100vh",
+      height: "100%",
+      overflowY: "auto",
+    }}
+  >
+    <Stack
+      direction={{ xs: "column", lg: "row" }}
+      spacing={{ xs: 2, sm: 3, md: 4 }}
+      sx={{ width: "100%", maxWidth: "100%" }}
     >
-      <Stack
-        direction={{ xs: "column", lg: "row" }}
-        spacing={{ xs: 2, sm: 3, md: 4 }}
-        sx={{ width: "100%", maxWidth: "100%" }}
+      <Box
+        sx={{
+          flex: { xs: "1 1 auto", lg: "0 0 auto" },
+          width: { xs: "100%", lg: interactionPanelVisible ? "auto" : "100%" },
+          maxWidth: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: { xs: "center", lg: interactionPanelVisible ? "flex-start" : "center" },
+          px: { xs: 0, sm: 1 },
+          transition: "all 0.3s ease-in-out",
+        }}
+      >
+        <AiChessboardPanel
+          game={game}
+          fen={fen}
+          moveSquares={moveSquares}
+          setMoveSquares={setMoveSquares}
+          engine={engine}
+          setFen={setFen}
+          gameInfo={buildPlayGameInfo()}
+          side={playerColor}
+          setGame={setGame}
+          setLlmAnalysisResult={setLlmAnalysisResult}
+          setOpeningData={setOpeningData}
+          evaluations={evaluations}
+          setStockfishAnalysisResult={setStockfishAnalysisResult}
+          fetchOpeningData={fetchOpeningData}
+          analyzeWithStockfish={analyzeWithStockfish}
+          llmLoading={llmLoading}
+          stockfishLoading={stockfishLoading}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+          openingLoading={openingLoading}
+          playMode={gameStatus === "playing"}
+        />
+
+        {/* Timer Display below chessboard */}
+        {gameStatus !== "setup" && (
+          <Box
+            sx={{
+              mt: 2,
+              width: { xs: "100%", sm: "600px", md: interactionPanelVisible ? "650px" : "750px" },
+              maxWidth: "100%",
+              transition: "width 0.3s ease-in-out",
+            }}
+          >
+            <TimerDisplay
+              whiteTime={whiteTime}
+              blackTime={blackTime}
+              selectedBot={selectedBot}
+              activeTimer={activeTimer}
+              playerColor={playerColor}
+            />
+          </Box>
+        )}
+
+        {/* Toggle Button for Desktop - Only show during gameplay */}
+        {!isMobile && gameStatus === "playing" && (
+          <Box
+            sx={{
+              mt: 2,
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={() => setInteractionPanelVisible(!interactionPanelVisible)}
+              startIcon={interactionPanelVisible ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+              size="medium"
+              sx={{
+                borderRadius: 2,
+                px: 3,
+              }}
+            >
+              {interactionPanelVisible ? "Hide Panel (Focus Mode)" : "Show Panel"}
+            </Button>
+          </Box>
+        )}
+      </Box>
+
+      {/* Desktop Interaction Panel */}
+      {!isMobile && interactionPanelVisible && (
+        <Box
+          sx={{
+            flex: 1,
+            width: { xs: "100%", lg: "auto" },
+            maxWidth: "100%",
+            minWidth: 0,
+            transition: "all 0.3s ease-in-out",
+          }}
+        >
+          <InteractionPanel />
+        </Box>
+      )}
+
+      {/* Mobile Floating Action Button */}
+      {isMobile && (
+        <Fab
+          color="primary"
+          aria-label="controls"
+          onClick={() => setControlDrawerOpen(true)}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+          }}
+        >
+           <Menu/>
+        </Fab>
+      )}
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="bottom"
+        open={controlDrawerOpen}
+        onClose={() => setControlDrawerOpen(false)}
+        sx={{
+          "& .MuiDrawer-paper": {
+            height: "85vh",
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            overflow: "hidden",
+          },
+        }}
       >
         <Box
           sx={{
-            flex: { xs: "1 1 auto", lg: "0 0 auto" },
-            width: { xs: "100%", lg: "auto" },
-            maxWidth: "100%",
+            height: "100%",
             display: "flex",
             flexDirection: "column",
-            alignItems: { xs: "center", lg: "flex-start" },
-            px: { xs: 0, sm: 1 },
+            overflow: "hidden",
           }}
         >
-          <AiChessboardPanel
-            game={game}
-            fen={fen}
-            moveSquares={moveSquares}
-            setMoveSquares={setMoveSquares}
-            engine={engine}
-            setFen={setFen}
-            gameInfo={buildPlayGameInfo()}
-            side={playerColor}
-            setGame={setGame}
-            setLlmAnalysisResult={setLlmAnalysisResult}
-            setOpeningData={setOpeningData}
-            evaluations={evaluations}
-            setStockfishAnalysisResult={setStockfishAnalysisResult}
-            fetchOpeningData={fetchOpeningData}
-            analyzeWithStockfish={analyzeWithStockfish}
-            llmLoading={llmLoading}
-            stockfishLoading={stockfishLoading}
-            stockfishAnalysisResult={stockfishAnalysisResult}
-            openingLoading={openingLoading}
-            playMode={gameStatus === "playing"}
-          />
-
-          {/* Timer Display below chessboard */}
-          {gameStatus !== "setup" && (
-            <Box
-              sx={{
-                mt: 2,
-                width: { xs: "100%", sm: "600px", md: "650px" },
-                maxWidth: "100%",
-              }}
+          {/* Drawer Header */}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: 1,
+              borderColor: "divider",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexShrink: 0,
+            }}
+          >
+            <Typography variant="h6" fontWeight={600}>
+              Play vs Bot
+            </Typography>
+            <Button
+              onClick={() => setControlDrawerOpen(false)}
+              startIcon={<CloseIcon />}
+              size="small"
             >
-              <TimerDisplay
-                whiteTime={whiteTime}
-                blackTime={blackTime}
-                selectedBot={selectedBot}
-                activeTimer={activeTimer}
-                playerColor={playerColor}
-              />
-            </Box>
-          )}
-        </Box>
+              Close
+            </Button>
+          </Box>
 
-        {/* Desktop Interaction Panel */}
-        {!isMobile && (
+          {/* Drawer Content */}
           <Box
             sx={{
               flex: 1,
-              width: { xs: "100%", lg: "auto" },
-              maxWidth: "100%",
-              minWidth: 0,
+              overflowY: "auto",
             }}
           >
             <InteractionPanel />
           </Box>
-        )}
+        </Box>
+      </Drawer>
+    </Stack>
+  </Box>
+);
 
-        {/* Mobile Floating Action Button */}
-        {isMobile && (
-          <Fab
-            color="primary"
-            aria-label="controls"
-            onClick={() => setControlDrawerOpen(true)}
-            sx={{
-              position: "fixed",
-              bottom: 24,
-              right: 24,
-              zIndex: 1000,
-            }}
-          >
-            <ChatIcon />
-          </Fab>
-        )}
-
-        {/* Mobile Drawer */}
-        <Drawer
-          anchor="bottom"
-          open={controlDrawerOpen}
-          onClose={() => setControlDrawerOpen(false)}
-          sx={{
-            "& .MuiDrawer-paper": {
-              height: "85vh",
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              overflow: "hidden",
-            },
-          }}
-        >
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            {/* Drawer Header */}
-            <Box
-              sx={{
-                p: 2,
-                borderBottom: 1,
-                borderColor: "divider",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexShrink: 0,
-              }}
-            >
-              <Typography variant="h6" fontWeight={600}>
-                Play vs Bot
-              </Typography>
-              <Button
-                onClick={() => setControlDrawerOpen(false)}
-                startIcon={<CloseIcon />}
-                size="small"
-              >
-                Close
-              </Button>
-            </Box>
-
-            {/* Drawer Content */}
-            <Box
-              sx={{
-                flex: 1,
-                overflowY: "auto",
-              }}
-            >
-              <InteractionPanel />
-            </Box>
-          </Box>
-        </Drawer>
-      </Stack>
-    </Box>
-  );
 }
