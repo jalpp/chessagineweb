@@ -15,10 +15,14 @@ import {
   Tabs,
   Tab,
   Button,
+  Slider,
 } from '@mui/material'
 import { TrendingUp, TrendingDown, Download, CloudDownload } from '@mui/icons-material'
 import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/nets/types'
 import { useNetStatus, useNetModels } from '@/context/NetContext'
+import { CandidateMove } from '@/libs/agine/helper'
+import { QuadrantClassification } from '@/libs/nets/classifyMoves'
+import { QuadrantAnalysisView } from './QuadrantAnalysisView'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -27,6 +31,8 @@ export interface MaiaResultsProps {
     elitemaia?: MaiaEvaluation | null
   }
   isMaiaLoading: boolean
+  chessDbMoves: CandidateMove[] | null;
+  chessDbLoading: boolean;
   maiaerror: Error | null
 }
 
@@ -119,45 +125,125 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) 
   )
 }
 
-const EvaluationDisplay: React.FC<{ evaluation: MaiaEvaluation }> = ({ evaluation }) => {
+const EvaluationDisplay: React.FC<{ 
+  evaluation: MaiaEvaluation
+  candidateMoves?: CandidateMove[] | null
+  showQuadrantAnalysis?: boolean
+}> = ({ evaluation, candidateMoves, showQuadrantAnalysis = true }) => {
+  const [viewMode, setViewMode] = useState<'evaluation' | 'quadrant'>('evaluation')
+  const [improbableThreshold, setImprobableThreshold] = useState(0.05) // Make it stateful
+ 
+  const quadrantMoves = React.useMemo(() => {
+    if (!candidateMoves || candidateMoves.length === 0) return []
+    return QuadrantClassification(evaluation, candidateMoves, improbableThreshold)
+  }, [evaluation, candidateMoves, improbableThreshold])
+
+  const hasQuadrantData = quadrantMoves.length > 0
+
+  const handleThresholdChange = (event: Event, newValue: number | number[]) => {
+    setImprobableThreshold(newValue as number)
+  }
+
   return (
     <>
-      <Box mb={3}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-          <Typography variant="subtitle2">
-            Position Evaluation
-          </Typography>
-          <Box display="flex" alignItems="center" gap={1}>
-            {getValueIcon(evaluation.value)}
-            <Chip
-              label={formatValue(evaluation.value)}
-              size="small"
+      {hasQuadrantData && showQuadrantAnalysis && (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={viewMode} onChange={(_, newValue) => setViewMode(newValue)}>
+            <Tab label="Position Evaluation" value="evaluation" />
+            <Tab label="Candidate Analysis" value="quadrant" />
+          </Tabs>
+        </Box>
+      )}
+
+      {viewMode === 'evaluation' ? (
+        <>
+          <Box mb={3}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+              <Typography variant="subtitle2">
+                Position Evaluation
+              </Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                {getValueIcon(evaluation.value)}
+                <Chip
+                  label={formatValue(evaluation.value)}
+                  size="small"
+                  sx={{
+                    bgcolor: getValueColor(evaluation.value),
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={evaluation.value * 100}
               sx={{
-                bgcolor: getValueColor(evaluation.value),
-                fontWeight: 600,
+                height: 8,
+                borderRadius: 4,
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: getValueColor(evaluation.value),
+                },
               }}
             />
           </Box>
-        </Box>
-        <LinearProgress
-          variant="determinate"
-          value={evaluation.value * 100}
-          sx={{
-            height: 8,
-            borderRadius: 4,
-            '& .MuiLinearProgress-bar': {
-              bgcolor: getValueColor(evaluation.value),
-            },
-          }}
-        />
-      </Box>
 
-      <Box>
-        <Typography variant="subtitle2" sx={{ mb: 2 }}>
-          Top Moves
-        </Typography>
-        <MovesList policy={evaluation.policy} />
-      </Box>
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 2 }}>
+              Top Moves
+            </Typography>
+            <MovesList policy={evaluation.policy} />
+          </Box>
+        </>
+      ) : (
+        <>
+          {/* Threshold Control */}
+          <Box mb={3} px={2}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+              <Typography variant="subtitle2">
+                Improbability Threshold
+              </Typography>
+              <Chip 
+                label={`${(improbableThreshold * 100).toFixed(0)}%`}
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+            <Slider
+              value={improbableThreshold}
+              onChange={handleThresholdChange}
+              min={0.01}
+              max={0.50}
+              step={0.01}
+              marks={[
+              { value: 0.01, label: '1%' },
+              { value: 0.05, label: '5%' },
+              { value: 0.10, label: '10%' },
+              { value: 0.15, label: '15%' },
+              { value: 0.20, label: '20%' },
+              { value: 0.25, label: '25%' },
+              { value: 0.35, label: '35%' },
+              { value: 0.45, label: '45%' },
+              { value: 0.50, label: '50%' },
+              ]}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(value) => `${(value * 100).toFixed(0)}%`}
+              sx={{
+                '& .MuiSlider-markLabel': {
+                  fontSize: '0.75rem',
+                },
+              }}
+            />
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', display: 'block', mt: 1 }}>
+              Moves below this threshold are considered "unlikely" by the neural network
+            </Typography>
+          </Box>
+
+          <QuadrantAnalysisView
+            quadrantMoves={quadrantMoves} 
+            improbableThreshold={improbableThreshold}
+          />
+        </>
+      )}
     </>
   )
 }
@@ -391,6 +477,8 @@ const DownloadAllModelsPrompt: React.FC<{
 
 export const NetResults: React.FC<MaiaResultsProps> = ({
   evaluations,
+  chessDbLoading,
+  chessDbMoves,
   isMaiaLoading,
   maiaerror,
 }) => {
@@ -519,17 +607,18 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             {evaluations.maia2[MAIA_MODELS[selectedMaia2Model]] && (
               <EvaluationDisplay
                 evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
+                candidateMoves={chessDbMoves}
               />
             )}
           </>
         )}
 
         {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && (
-          <EvaluationDisplay evaluation={evaluations.bigLeela} />
+          <EvaluationDisplay evaluation={evaluations.bigLeela} candidateMoves={chessDbMoves}/>
         )}
 
         {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && (
-          <EvaluationDisplay evaluation={evaluations.elitemaia} />
+          <EvaluationDisplay evaluation={evaluations.elitemaia} candidateMoves={chessDbMoves}/>
         )}
       </CardContent>
     </Card>
