@@ -29,7 +29,7 @@ interface GameReview {
 export function generateGameReview(moveList: string[], customFen?: string, criticalMomentThreshold: number = 0.5): GameReview {
    
     const history = moveList;
-    const startingFen = customFen || new Chess().fen();
+    const startingFen = customFen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     
     // Analyze for both colors
     const whiteAnalysis = analyzeVariationThemes(startingFen, history, "w");

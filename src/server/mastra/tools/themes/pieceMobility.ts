@@ -52,7 +52,9 @@ function calculateMobilityForSide(chess: Chess, fen: string, side: Color): {
   if (originalTurn !== side) {
     const fenParts = fen.split(' ');
     fenParts[1] = side; // set turn to the desired side
-    chess.load(fenParts.join(' '));
+    const fliped = fenParts.join(' ');
+
+    chess.load(fliped);
   }
 
   const pieces = getSidePieces(chess, side);
@@ -77,7 +79,8 @@ function calculateMobilityForSide(chess: Chess, fen: string, side: Color): {
   if (originalTurn !== side) {
     const fenParts = fen.split(' ');
     fenParts[1] = originalTurn;
-    chess.load(fenParts.join(' '));
+    const reverseFliped = fenParts.join(' ');
+    chess.load(reverseFliped);
   }
 
   return {
