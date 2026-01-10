@@ -956,7 +956,7 @@ export default function AiChessboardPanel({
           </Stack>
         </Paper>
 
-        {gameReviewMode && gameInfo && <TopPlayerBar />}
+        {gameInfo && <TopPlayerBar />}
         {/* Chessboard */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
           {showEvalBar && !puzzleMode && !playMode && (
@@ -995,7 +995,7 @@ export default function AiChessboardPanel({
             }}
           />
         </Box>
-        {gameReviewMode && gameInfo && <BottomPlayerBar />}
+        {gameInfo && <BottomPlayerBar />}
 
         {/* Navigation Controls */}
         {!playMode && !gameReviewMode && !puzzleMode && (

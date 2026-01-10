@@ -20,8 +20,6 @@ export function PlayerTimer({
       elevation={isActive ? 2 : 0}
       sx={{
         p: 1.5,
-        backgroundColor: isActive ? "primary.main" : "background.paper",
-        color: isActive ? "white" : "text.primary",
         transition: "background-color 0.3s, color 0.3s",
         border: "1px solid",
         borderColor: isActive ? "primary.light" : "divider",

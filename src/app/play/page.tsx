@@ -1064,6 +1064,7 @@ export default function PlayVsBotsPage() {
             setMoveSquares={setMoveSquares}
             engine={engine}
             setFen={setFen}
+            gameInfo={buildPlayGameInfo()}
             side={playerColor}
             setGame={setGame}
             setLlmAnalysisResult={setLlmAnalysisResult}
