@@ -215,8 +215,8 @@ export default function PuzzlePage() {
           params.append("themes", themes.join(","));
         }
         if (ratingFrom !== undefined && ratingTo !== undefined) {
-          params.append("ratingFrom", ratingFrom.toString());
-          params.append("ratingTo", ratingTo.toString());
+          params.append("ratingFrom", Math.round(ratingFrom).toString());
+          params.append("ratingTo", Math.round(ratingTo).toString());
         }
         if (params.toString()) {
           url += `?${params.toString()}`;
@@ -576,13 +576,13 @@ const handleSquareClick = useCallback(
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Chip
                       icon={<User2 size={18} />}
-                      label={`Your Rating: ${userPuzzleRating}`}
+                      label={`Your Rating: ${Math.round(userPuzzleRating)}`}
                       color="secondary"
                       size="small"
                     />
                     <Chip
                       icon={<Star size={18} />}
-                      label={`Rating: ${puzzleData.rating}`}
+                      label={`Rating: ${Math.round(puzzleData.rating)}`}
                       color="primary"
                       size="small"
                     />

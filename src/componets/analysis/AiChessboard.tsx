@@ -237,29 +237,25 @@ export default function AiChessboardPanel({
     }
   }, [fen, showHangingPieces, showSemiProtectedPieces]);
 
-  // Memoized piece highlighting styles
   const pieceHighlightStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
 
     if (!boardAnalysis) return styles;
 
-    // Hanging pieces - Critical (red)
-    if (showHangingPieces) {
+    if (showHangingPieces && !puzzleMode && !playMode) {
       boardAnalysis.HangingPieceCoordinates.forEach((coord) => {
         styles[coord] = {
-          backgroundColor: "rgba(244, 67, 54, 0.6)", // Red with transparency
+          backgroundColor: "rgba(244, 67, 54, 0.6)",
           boxShadow: "inset 0 0 0 3px rgba(244, 67, 54, 0.8)",
         };
       });
     }
 
-    // Semi-protected pieces - Medium priority (yellow)
-    if (showSemiProtectedPieces) {
+    if (showSemiProtectedPieces && !puzzleMode && !playMode) {
       boardAnalysis.SemiProtectedPieceCoordinates.forEach((coord) => {
-        // Don't override hanging or unprotected pieces
         if (!styles[coord]) {
           styles[coord] = {
-            backgroundColor: "rgba(255, 235, 59, 0.6)", // Yellow with transparency
+            backgroundColor: "rgba(255, 235, 59, 0.6)",
             boxShadow: "inset 0 0 0 3px rgba(255, 235, 59, 0.8)",
           };
         }
@@ -267,7 +263,13 @@ export default function AiChessboardPanel({
     }
 
     return styles;
-  }, [boardAnalysis, showHangingPieces, showSemiProtectedPieces]);
+  }, [
+    boardAnalysis,
+    showHangingPieces,
+    showSemiProtectedPieces,
+    puzzleMode,
+    playMode,
+  ]);
 
   // Resize handler
   const handleMouseDown = useCallback(
@@ -744,7 +746,6 @@ export default function AiChessboardPanel({
     setSettingsOpen(false);
   };
 
-
   const handleAnimationChange = useCallback(
     (_: Event, newValue: number | number[]) => {
       setAnimationDuration(newValue as number);
@@ -910,20 +911,6 @@ export default function AiChessboardPanel({
           overflowY: "auto",
           overflowX: "hidden",
           p: 2,
-          "&::-webkit-scrollbar": {
-            width: "6px",
-          },
-          "&::-webkit-scrollbar-track": {
-            background: "#2a2a2a",
-            borderRadius: "3px",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            background: "#555",
-            borderRadius: "3px",
-            "&:hover": {
-              background: "#666",
-            },
-          },
         }}
       >
         {/* Header */}
@@ -1358,114 +1345,117 @@ export default function AiChessboardPanel({
                   />
                 </Stack>
 
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Typography variant="body2">Show FEN String</Typography>
-                  <Switch
-                    checked={showFen}
-                    onChange={(e) => setShowFen(e.target.checked)}
-                  />
-                </Stack>
-
                 {!puzzleMode && !playMode && (
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body2">
-                      Show Analysis Arrows
-                    </Typography>
-                    <Switch
-                      checked={showArrows}
-                      onChange={(e) => setShowArrows(e.target.checked)}
-                    />
-                  </Stack>
+                  <>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">Show FEN String</Typography>
+                      <Switch
+                        checked={showFen}
+                        onChange={(e) => setShowFen(e.target.checked)}
+                      />
+                    </Stack>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">
+                        Show Analysis Arrows
+                      </Typography>
+                      <Switch
+                        checked={showArrows}
+                        onChange={(e) => setShowArrows(e.target.checked)}
+                      />
+                    </Stack>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">Show Eval Bar</Typography>
+                      <Switch
+                        checked={showEvalBar}
+                        onChange={(e) => setEvalBar(e.target.checked)}
+                      />
+                    </Stack>
+                  </>
                 )}
-
-                {!puzzleMode && (
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body2">Show Eval Bar</Typography>
-                    <Switch
-                      checked={showEvalBar}
-                      onChange={(e) => setEvalBar(e.target.checked)}
-                    />
-                  </Stack>
-                )}
-              </Stack>
-            </Box>
-
-            <Box>
-              <Typography variant="body2">Piece Highlighting</Typography>
-              <Stack spacing={2}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Box>
-                    <Typography variant="body2">Hanging Pieces</Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-                      Critical threats - undefended pieces
-                    </Typography>
-                  </Box>
-                  <Switch
-                    checked={showHangingPieces}
-                    onChange={(e) => setShowHangingPieces(e.target.checked)}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#f44336",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#f44336",
-                        },
-                    }}
-                  />
-                </Stack>
-
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Box>
-                    <Typography variant="body2">
-                      Semi-Protected Pieces
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }}>
-                      Equal attackers and defenders
-                    </Typography>
-                  </Box>
-                  <Switch
-                    checked={showSemiProtectedPieces}
-                    onChange={(e) =>
-                      setShowSemiProtectedPieces(e.target.checked)
-                    }
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#ffeb3b",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#ffeb3b",
-                        },
-                    }}
-                  />
-                </Stack>
               </Stack>
             </Box>
 
             {!puzzleMode && !playMode && (
               <>
-                <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+                <Box>
+                  <Typography variant="body2">Piece Highlighting</Typography>
+                  <Stack spacing={2}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box>
+                        <Typography variant="body2">Hanging Pieces</Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ fontSize: "0.7rem" }}
+                        >
+                          Critical threats - undefended pieces
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={showHangingPieces}
+                        onChange={(e) => setShowHangingPieces(e.target.checked)}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "#f44336",
+                          },
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "#f44336",
+                            },
+                        }}
+                      />
+                    </Stack>
+
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box>
+                        <Typography variant="body2">
+                          Semi-Protected Pieces
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ fontSize: "0.7rem" }}
+                        >
+                          Equal attackers and defenders
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={showSemiProtectedPieces}
+                        onChange={(e) =>
+                          setShowSemiProtectedPieces(e.target.checked)
+                        }
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "#ffeb3b",
+                          },
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "#ffeb3b",
+                            },
+                        }}
+                      />
+                    </Stack>
+                  </Stack>
+                </Box>
+                <Divider />
 
                 <Box>
                   <Typography variant="body2" sx={{ mb: 2 }}>
