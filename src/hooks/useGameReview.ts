@@ -7,6 +7,8 @@ import { getOpeningStats } from "@/libs/openingdatabase/helper";
 import { useSessionStorage } from "usehooks-ts";
 import { useEngine } from "@/stockfish/hooks/useEngine";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
+import { useChessDB } from "./useChessDb";
+import { isVeryGoodMove,evaluationToWinRate, percentToNumber, normalizeChessDBScore, getMoveBasicClassification } from "@/libs/game/gamereview";
 
 export type MoveQuality =
   | "Best"
@@ -36,6 +38,9 @@ export interface MoveAnalysis {
  * other functions are my addition on top of it.
  * 
  * thanks to chessKit devs!
+ * 
+ * @author
+ * jalpp, ChessKit devs
  */
 
 const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: number) => {
@@ -44,172 +49,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
   const [rootCurrentMove, setRootCurrentMove] = useState(0);
-
-  // Convert centipawn to win percentage (from White's perspective)
-  const centipawnToWinRate = (centipawn: number): number => {
-    const clampedCp = Math.max(-1100, Math.min(centipawn, 1100));
-    const conversionFactor = -0.0038988;
-    const probability = 2 / (1 + Math.exp(conversionFactor * clampedCp)) - 1;
-    return 55 + 55 * probability;
-  };
-
-  // Convert mate score to win percentage (from White's perspective)
-  const mateToWinRate = (mateDistance: number): number => {
-    if (mateDistance === 0) return 50;
-    return mateDistance > 0 ? 100 : 0;
-  };
-
-  // Convert evaluation to win percentage (always from White's perspective)
-  const evaluationToWinRate = (evaluation: LineEval | undefined): number => {
-    if (!evaluation) return 50;
-
-    if (evaluation.cp !== undefined) {
-      return centipawnToWinRate(evaluation.cp);
-    }
-
-    if (evaluation.mate !== undefined) {
-      return mateToWinRate(evaluation.mate);
-    }
-
-    return 50;
-  };
-
-  // Normalize ChessDB score based on turn
-  function normalizeChessDBScore(score: number, turn: Color): number {
-    if (turn === "b") {
-      return -score;
-    }
-    return score;
-  }
-
-  // Convert percentage string to number
-  function percentToNumber(percentStr: string): number {
-    return parseFloat(percentStr.replace('%', '').trim());
-  }
-
-  const getHasChangedGameOutcome = (
-    lastPositionWinPercentage: number,
-    positionWinPercentage: number
-  ): boolean => {
-    const winPercentageDiff = positionWinPercentage - lastPositionWinPercentage;
-    return (
-      winPercentageDiff > 10 &&
-      ((lastPositionWinPercentage < 50 && positionWinPercentage > 50) ||
-        (lastPositionWinPercentage > 50 && positionWinPercentage < 50))
-    );
-  };
-
-  const getIsTheOnlyGoodMove = (
-    positionWinPercentage: number,
-    lastPositionAlternativeLineWinPercentage: number
-  ): boolean => {
-    const winPercentageDiff = positionWinPercentage - lastPositionAlternativeLineWinPercentage;
-    return winPercentageDiff > 10;
-  };
-
-  const isLosingOrAlternateCompletelyWinning = (
-    positionWinPercentage: number,
-    lastPositionAlternativeLineWinPercentage: number
-  ): boolean => {
-    const isLosing = positionWinPercentage < 50;
-    const isAlternateCompletelyWinning = lastPositionAlternativeLineWinPercentage > 97;
-
-    return isLosing || isAlternateCompletelyWinning;
-  };
-
-  const isVeryGoodMove = (
-    lastPositionWinPercentage: number,
-    positionWinPercentage: number,
-    lastPositionAlternativeLineWinPercentage: number | undefined
-  ): boolean => {
-    if (!lastPositionAlternativeLineWinPercentage) return false;
-
-    const winPercentageDiff = positionWinPercentage - lastPositionWinPercentage;
-    if (winPercentageDiff < -2) return false;
-
-    if (
-      isLosingOrAlternateCompletelyWinning(
-        positionWinPercentage,
-        lastPositionAlternativeLineWinPercentage
-      )
-    ) {
-      return false;
-    }
-
-    const hasChangedGameOutcome = getHasChangedGameOutcome(
-      lastPositionWinPercentage,
-      positionWinPercentage
-    );
-
-    const isTheOnlyGoodMove = getIsTheOnlyGoodMove(
-      positionWinPercentage,
-      lastPositionAlternativeLineWinPercentage
-    );
-
-    return hasChangedGameOutcome || isTheOnlyGoodMove;
-  };
-
-  const getMoveBasicClassification = (
-    lastPositionWinPercentage: number,
-    positionWinPercentage: number
-  ): MoveQuality => {
-    const winPercentageDiff = positionWinPercentage - lastPositionWinPercentage;
-
-    if (winPercentageDiff < -20) return "Blunder";
-    if (winPercentageDiff < -10) return "Mistake";
-    if (winPercentageDiff < -5) return "Dubious";
-    if (winPercentageDiff < -2) return "Good";
-    return "Very Good";
-  };
-
-  // Fetch ChessDB data
-  const fetchChessDBData = useCallback(async (fenString: string) => {
-    if (!fenString.trim()) {
-      return [];
-    }
-
-    if (!validateFen(fenString)) {
-      return [];
-    }
-
-    try {
-      const encodedFen = encodeURIComponent(fenString);
-      const apiUrl = `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodedFen}&learn=0&json=1`;
-
-      const response = await fetch(apiUrl);
-
-      if (!response.ok) {
-        return [];
-      }
-
-      const responseData = await response.json();
-
-      if (responseData.status !== "ok") {
-        return [];
-      }
-
-      const moves = responseData.moves;
-      if (!Array.isArray(moves) || moves.length === 0) {
-        return [];
-      }
-
-      const processedMoves = moves.slice(0, 5).map((move: CandidateMove) => {
-        const scoreNum = Number(move.score);
-        const scoreStr = isNaN(scoreNum) ? "N/A" : String(scoreNum);
-        return {
-          uci: move.uci || "N/A",
-          san: move.san || "N/A",
-          score: scoreStr || 0,
-          winrate: move.winrate || "N/A",
-        };
-      });
-
-      return processedMoves;
-    } catch (err) {
-      console.log("error!", err);
-      return [];
-    }
-  }, []);
+  const {fetchChessDBData, data} = useChessDB("", true);
 
   const generateGameReview = useCallback(
     async (gameNotation: string[], customFen?: string): Promise<void> => {
@@ -300,8 +140,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             setGameReviewProgress(Math.round(phase1Progress));
             continue;
           }
-
-          const chessDbEvals = await fetchChessDBData(preMovefen);
+          await fetchChessDBData(preMovefen);
+          const chessDbEvals = data;
           let sanBestMove;
 
           // Evaluate PRE-MOVE position (convert to player's perspective)
@@ -345,7 +185,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           }
 
           // Evaluate POST-MOVE position (convert to player's perspective)
-          const chessDbEvalsPost = await fetchChessDBData(postMovefen);
+           await fetchChessDBData(postMovefen);
+           const chessDbEvalsPost = data;
           
           if (chessDbEvalsPost.length == 0) {
             const postAnalysis =

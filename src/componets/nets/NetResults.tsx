@@ -331,25 +331,7 @@ const DownloadAllModelsPrompt: React.FC<{
 
   const allModelTypes = Object.keys(MODEL_CONFIGS) as ModelType[]
   
-  // Check which models need downloading
-  const modelsToDownload = allModelTypes.filter(
-    modelType => status[modelType] !== 'ready'
-  )
-
-  const handleDownloadAll = async () => {
-    setIsDownloadingAll(true)
-    try {
-      // Download all models sequentially
-      for (const modelType of modelsToDownload) {
-        await downloadModel(modelType)
-      }
-    } catch (error) {
-      console.error('Download all failed:', error)
-    } finally {
-      setIsDownloadingAll(false)
-    }
-  }
-
+  
   const anyDownloading = allModelTypes.some(
     modelType => status[modelType] === 'downloading'
   )
@@ -361,11 +343,7 @@ const DownloadAllModelsPrompt: React.FC<{
         <Box display="flex" flexDirection="column" alignItems="center" gap={3} py={4}>
           <CloudDownload sx={{ fontSize: 48, color: 'primary.main' }} />
           <Typography variant="h5" sx={{ textAlign: 'center' }}>
-            Download Models to Start Analysis
-          </Typography>
-          <Typography sx={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', maxWidth: 500 }}>
-            Download all analysis models to get comprehensive insights into chess positions
-            from different skill levels and perspectives.
+            Download Neural Nets to Start Analysis
           </Typography>
 
           {/* Show progress for each model being downloaded */}
@@ -398,28 +376,8 @@ const DownloadAllModelsPrompt: React.FC<{
             </Box>
           )}
 
-          <Box display="flex" gap={2}>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<CloudDownload />}
-              onClick={handleDownloadAll}
-              disabled={downloading || modelsToDownload.length === 0}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 500,
-                px: 4,
-              }}
-            >
-              {downloading ? 'Downloading...' : 'Download All Models'}
-            </Button>
-          </Box>
-
           {/* Individual model cards */}
           <Box sx={{ width: '100%', maxWidth: 600, mt: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 2, textAlign: 'center' }}>
-              Or download individual models:
-            </Typography>
             <Box display="flex" flexDirection="column" gap={2}>
               {allModelTypes.map((modelType) => {
                 const config = MODEL_CONFIGS[modelType]
