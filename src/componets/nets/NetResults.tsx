@@ -23,6 +23,7 @@ import { useNetStatus, useNetModels } from '@/context/NetContext'
 import { CandidateMove } from '@/libs/agine/helper'
 import { QuadrantClassification } from '@/libs/nets/classifyMoves'
 import { QuadrantAnalysisView } from './QuadrantAnalysisView'
+import { calculateEaseMetric } from '@/libs/easemetric/helper'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -125,20 +126,33 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) 
   )
 }
 
+
 const EvaluationDisplay: React.FC<{ 
   evaluation: MaiaEvaluation
   candidateMoves?: CandidateMove[] | null
   showQuadrantAnalysis?: boolean
 }> = ({ evaluation, candidateMoves, showQuadrantAnalysis = true }) => {
-  const [viewMode, setViewMode] = useState<'evaluation' | 'quadrant'>('evaluation')
-  const [improbableThreshold, setImprobableThreshold] = useState(0.05) // Make it stateful
+  const [viewMode, setViewMode] = useState<'evaluation' | 'quadrant' | 'ease'>('evaluation')
+  const [improbableThreshold, setImprobableThreshold] = useState(0.05)
  
   const quadrantMoves = React.useMemo(() => {
     if (!candidateMoves || candidateMoves.length === 0) return []
     return QuadrantClassification(evaluation, candidateMoves, improbableThreshold)
   }, [evaluation, candidateMoves, improbableThreshold])
 
+  const easeMetric = React.useMemo(() => {
+    if (!candidateMoves || candidateMoves.length === 0) return null
+    try {
+      return calculateEaseMetric(evaluation, candidateMoves)
+    } catch {
+      return null
+    }
+  }, [evaluation, candidateMoves])
+
+  console.log(easeMetric);
+
   const hasQuadrantData = quadrantMoves.length > 0
+  const hasEaseData = easeMetric !== null
 
   const handleThresholdChange = (event: Event, newValue: number | number[]) => {
     setImprobableThreshold(newValue as number)
@@ -146,11 +160,12 @@ const EvaluationDisplay: React.FC<{
 
   return (
     <>
-      {hasQuadrantData && showQuadrantAnalysis && (
+      {(hasQuadrantData || hasEaseData) && showQuadrantAnalysis && (
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs value={viewMode} onChange={(_, newValue) => setViewMode(newValue)}>
             <Tab label="Position Evaluation" value="evaluation" />
-            <Tab label="Candidate Analysis" value="quadrant" />
+            {hasQuadrantData && <Tab label="Candidate Analysis" value="quadrant" />}
+            {hasEaseData && <Tab label="Ease Metric Analysis" value="ease" />}
           </Tabs>
         </Box>
       )}
@@ -194,9 +209,8 @@ const EvaluationDisplay: React.FC<{
             <MovesList policy={evaluation.policy} />
           </Box>
         </>
-      ) : (
+      ) : viewMode === 'quadrant' ? (
         <>
-          {/* Threshold Control */}
           <Box mb={3} px={2}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
               <Typography variant="subtitle2">
@@ -242,6 +256,113 @@ const EvaluationDisplay: React.FC<{
             quadrantMoves={quadrantMoves} 
             improbableThreshold={improbableThreshold}
           />
+        </>
+      ) : (
+        <>
+          {easeMetric !== null && (
+            <Box>
+              <Box mb={4}>
+                <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                  <Typography variant="h6">
+                    Position Difficulty
+                  </Typography>
+                  <Chip
+                    label={easeMetric.toFixed(3)}
+                    size="medium"
+                    sx={{
+                      bgcolor: easeMetric > 0.7 ? '#4caf50' : easeMetric > 0.4 ? '#ff9800' : '#f44336',
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                    }}
+                  />
+                </Box>
+                
+                <LinearProgress
+                  variant="determinate"
+                  value={easeMetric * 100}
+                  sx={{
+                    height: 12,
+                    borderRadius: 6,
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: easeMetric > 0.7 ? '#4caf50' : easeMetric > 0.4 ? '#ff9800' : '#f44336',
+                    },
+                  }}
+                />
+                
+                <Box display="flex" justifyContent="space-between" mt={1}>
+                  <Typography variant="caption" sx={{ color: '#f44336', fontWeight: 600 }}>
+                    Hard (0.0)
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                    Easy (1.0)
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ 
+                bgcolor: 'rgba(255, 255, 255, 0.05)', 
+                borderRadius: 2, 
+                p: 3,
+                mb: 3
+              }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                  Interpretation
+                </Typography>
+                
+                {easeMetric > 0.7 ? (
+                  <Box>
+                    <Typography sx={{ mb: 1 }}>
+                      ✅ <strong>Easy Position</strong>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      The neural network strongly prefers moves that are also objectively strong. 
+                      There's clear alignment between human intuition and engine evaluation.
+                    </Typography>
+                  </Box>
+                ) : easeMetric > 0.4 ? (
+                  <Box>
+                    <Typography sx={{ mb: 1 }}>
+                      ⚠️ <strong>Moderate Difficulty</strong>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      Some discrepancy between intuitive moves and objectively best moves. 
+                      Careful calculation may be needed to find the optimal continuation.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Typography sx={{ mb: 1 }}>
+                      🔴 <strong>Difficult Position</strong>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      The most intuitive moves may not be the best. This position requires deep analysis 
+                      to find the optimal moves, as human pattern recognition diverges from engine evaluation.
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                  How It's Calculated
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
+                  The ease metric combines neural network move probabilities with engine evaluations:
+                </Typography>
+                <Box component="ul" sx={{ pl: 3, '& li': { mb: 0.5, color: 'rgba(255, 255, 255, 0.7)' } }}>
+                  <Typography component="li" variant="body2">
+                    Higher values (→ 1.0) = Neural net strongly favors objectively best moves
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    Lower values (→ 0.0) = Neural net favors moves that differ from engine's top choices
+                  </Typography>
+                  <Typography component="li" variant="body2">
+                    Considers both move probability and quality gap from the best move
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
         </>
       )}
     </>
