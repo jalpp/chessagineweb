@@ -94,6 +94,15 @@ export const uciToSan = (uci: string, fen: string): string => {
 };
 export type MoveCategory = 'brilliant' | 'tricky' | 'normal' | 'book';
 
+export type QuadrantCandidateMoves = "Likely Good" | "Likely Bad" | "Unlikely Good" | "Unlikely Bad";
+
+export interface QuadrantMove {
+  rank: number;
+  notation: string;
+  qclassification: QuadrantCandidateMoves;
+  probability: number;
+}
+
 export interface MoveWithProbability {
   moveNumber: number;
   notation: string;
@@ -103,23 +112,6 @@ export interface MoveWithProbability {
   isGoodMove: boolean;
 }
 
-export const categorizeMove = (
-  probability: number,
-  quality: string,
-  improbableThreshold: number
-): MoveCategory => {
-  if (quality === 'Book') return 'book';
-  
-  const isGoodMove = ['Best', 'Very Good', 'Good'].includes(quality);
-  const isBadMove = ['Mistake', 'Blunder'].includes(quality);
-  const isImprobable = probability < improbableThreshold;
-  
-  if (isImprobable && isGoodMove) return 'brilliant';
-  
-  if (!isImprobable && isBadMove) return 'tricky';
-  
-  return 'normal';
-};
 
 export const CATEGORY_COLORS = {
   brilliant: '#4ade80', 

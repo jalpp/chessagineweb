@@ -13,13 +13,14 @@ import {
 } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
-  categorizeMove,
+
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   MAIA_MODELS,
   MaiaEvaluation,
   uciToSan,
 } from "@/libs/nets/types";
+import { categorizeMove } from "@/libs/nets/classifyMoves";
 import { MoveAnalysis } from "@/hooks/useGameReview";
 import { useNetModels, useNetStatus } from "@/context/NetContext";
 

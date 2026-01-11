@@ -493,6 +493,8 @@ function AgineAnalysisView({
                 <NetResults
                   evaluations={evaluations}
                   isMaiaLoading={isLoading}
+                  chessDbLoading={loading}
+                  chessDbMoves={chessdbdata}
                   maiaerror={Maiaerror}
                 />
                 {gameReview && (

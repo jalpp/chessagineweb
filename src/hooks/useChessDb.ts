@@ -16,7 +16,7 @@ function getChessDbNoteWord(note: string): string {
   }
 }
 
-export function useChessDB(fen: string) {
+export function useChessDB(fen: string, gameReviewMode?: boolean) {
   const [data, setData] = useState<CandidateMove[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,8 @@ export function useChessDB(fen: string) {
     const responseData = await response.json();
 
     if (responseData.status !== "ok") {
-      throw new Error(`Position evaluation not available: ${responseData.status}`);
+      await queueAnalysis(fen);
+      return [];
     }
 
     const moves = responseData.moves;
@@ -126,6 +127,10 @@ export function useChessDB(fen: string) {
   }, []);
 
   useEffect(() => {
+    if(gameReviewMode){
+      return;
+    }
+    
     fetchChessDBData(fen);
   }, [fen, fetchChessDBData]);
 
@@ -142,6 +147,7 @@ export function useChessDB(fen: string) {
     loading,
     error,
     queueing,
+    fetchChessDBData,
     refetch,
     requestAnalysis,
   };

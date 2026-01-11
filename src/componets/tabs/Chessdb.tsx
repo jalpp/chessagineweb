@@ -368,14 +368,7 @@ export function ChessDBDisplay({
             textAlign: "center",
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{ mb: 3, fontSize: isMobile ? "0.8rem" : "0.875rem" }}
-          >
-            {error
-              ? `Error: ${error}`
-              : "No ChessDB data found for this position."}
-          </Typography>
+         
 
           <Stack
             direction={isMobile ? "column" : "row"}

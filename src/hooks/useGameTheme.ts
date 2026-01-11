@@ -19,7 +19,7 @@ export function useGameTheme(): UseGameThemeReturn {
     moveList: string[],
     customFen?: string, 
   ) => {
-    // Reset previous state
+  
     setError(null);
     setIsLoading(true);
 
@@ -37,7 +37,8 @@ export function useGameTheme(): UseGameThemeReturn {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || 'Failed to analyze game');
+        console.log(errorData);
+        reset();
       }
 
       const data: GameReviewTheme = await response.json();
