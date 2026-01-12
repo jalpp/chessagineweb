@@ -424,7 +424,7 @@ export default function PGNUploaderPage() {
         engine={engine}
         Maiaerror={maiaError}
         isLoading={maiaIsLoading}
-        evaluations={sanEvaluations}
+        evaluations={evaluations}
         analyzeWithStockfish={analyzeWithStockfish}
         formatEvaluation={formatEvaluation}
         formatPrincipalVariation={formatPrincipalVariation}
@@ -463,6 +463,7 @@ export default function PGNUploaderPage() {
         currentMove={moves[currentMoveIndex]}
         Customfen={customPlayFen}
         sanEvaluations={sanEvaluations}
+        
         isInBook={isInBook}
         scores={scores}
         ThemeScoreerror={themeScoreError}

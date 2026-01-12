@@ -1,70 +1,70 @@
+import { PositionEval } from "@/stockfish/engine/engine";
 import { CandidateMove } from "../agine/helper";
 import { MaiaEvaluation } from "../nets/types";
 
-export function findMaxQ(candidateMoves: CandidateMove[]): number {
-    return Math.max(...candidateMoves.map(move => Number(move.score)));
+
+export function findMaxQ(engineEval: PositionEval): number {
+   const maxQs = []; 
+   for(let i = 0; i < engineEval.lines.length; i++){
+      const cp = engineEval.lines[i].cp;
+      maxQs.push(rawWinningChanceQ(cp || 0));
+   }
+
+    return Math.max(...maxQs);
 }
 
-export function calculateEaseMetric(netEvals: MaiaEvaluation, candidateMoves: CandidateMove[]): number {
-    // Handle edge cases
-    if (!candidateMoves || candidateMoves.length === 0) {
+const rawWinningChanceQ = (cp: number): number => {
+  const MULTIPLIER = -0.00368208; // https://github.com/lichess-org/lila/pull/11148
+  return 2 / (1 + Math.exp(MULTIPLIER * cp)) - 1;
+};
+
+
+export function calculateEaseMetric(netEvals: MaiaEvaluation, engineEval: PositionEval | null): number {
+    if (!engineEval) {
+        console.info("calculateEaseMetric: No engine evaluation provided");
         return 0;
     }
 
-    const Qmax = findMaxQ(candidateMoves);
+    const Qmax = findMaxQ(engineEval);
+    console.info(`calculateEaseMetric: Qmax=${Qmax}, analyzing ${engineEval.lines.length} lines`);
+    
     const metrics: number[] = [];
 
-    for (let i = 0; i < candidateMoves.length; i++) {
-        const move = candidateMoves[i];
+    for (let i = 0; i < engineEval.lines.length; i++) {
+        const move = engineEval.lines[i].pv[0];
+        const policyValue = netEvals.policy[move];
         
-        // Get policy value (already in 0-100 range from your API)
-        const policyValue = netEvals.policy[move.san];
-        
-        // Skip moves not in the policy (shouldn't happen, but defensive)
-        if (policyValue === undefined || policyValue === null) {
-            console.warn(`Move ${move.san} not found in policy, skipping`);
-            continue;
-        }
-
-        // Convert to 0-1 range if needed
         const P = policyValue > 1 ? policyValue / 100 : policyValue;
-        const Qi = Number(move.score);
+        const Qi = rawWinningChanceQ(engineEval.lines[i].cp || 0);
         
-        // Validate numbers
         if (isNaN(Qi) || isNaN(P)) {
-            console.warn(`Invalid values for move ${move.san}: P=${P}, Qi=${Qi}`);
+            console.info(`calculateEaseMetric: Invalid values for move ${move}: P=${P}, Qi=${Qi}`);
             continue;
         }
 
-        // Calculate components
-        const PiCal = Math.pow(P, 1.5); // β = 1.5
-        const Qdiff = Math.max(0, Qmax - Qi); // Ensure non-negative
-        
-        // Calculate metric component with α = 1/3
+        const PiCal = Math.pow(P, 1.5);
+        const Qdiff = Math.max(0, Qmax - Qi);
         const component = (PiCal * Qdiff) / 2;
         const emetrici = Math.pow(component, 1/3);
         
-        // Validate result
         if (isNaN(emetrici)) {
-            console.warn(`NaN metric for move ${move.san}: component=${component}`);
+            console.info(`calculateEaseMetric: NaN metric for move ${move}: component=${component}`);
             continue;
         }
 
+        console.info(`calculateEaseMetric: move=${move}, P=${P.toFixed(4)}, Qi=${Qi.toFixed(4)}, metric=${emetrici.toFixed(4)}`);
         metrics.push(emetrici);
     }
 
-    // Handle case where no valid metrics were calculated
     if (metrics.length === 0) {
+        console.info("calculateEaseMetric: No valid metrics calculated");
         return 0;
     }
 
-    // Calculate: first metric minus sum of rest
-    const metricMinusSum = metrics.reduce((acc, val, idx) => 
-        idx === 0 ? val : acc - val, 
-        0
-    );
+    const metricMinusSum = metrics.reduce((acc, val) => acc + val, 0);
 
-    // Clamp result between 0 and 1
     const result = 1 - metricMinusSum;
+    console.info(`calculateEaseMetric: Final result=${result.toFixed(4)}`);
+    
     return result;
 }

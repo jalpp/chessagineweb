@@ -24,6 +24,7 @@ import { CandidateMove } from '@/libs/agine/helper'
 import { QuadrantClassification } from '@/libs/nets/classifyMoves'
 import { QuadrantAnalysisView } from './QuadrantAnalysisView'
 import { calculateEaseMetric } from '@/libs/easemetric/helper'
+import { PositionEval } from '@/stockfish/engine/engine'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -31,9 +32,15 @@ export interface MaiaResultsProps {
     bigLeela?: MaiaEvaluation | null
     elitemaia?: MaiaEvaluation | null
   }
+  ucievaluations: {
+    maia2?: { [key: string]: MaiaEvaluation } | null
+    bigLeela?: MaiaEvaluation | null
+    elitemaia?: MaiaEvaluation | null
+  }
   isMaiaLoading: boolean
   chessDbMoves: CandidateMove[] | null;
   chessDbLoading: boolean;
+  stockfishAnalysisResult: PositionEval | null;
   maiaerror: Error | null
 }
 
@@ -129,9 +136,11 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) 
 
 const EvaluationDisplay: React.FC<{ 
   evaluation: MaiaEvaluation
+  ucievaluation?: MaiaEvaluation | null
   candidateMoves?: CandidateMove[] | null
+  stockfishAnalysisResult: PositionEval | null;
   showQuadrantAnalysis?: boolean
-}> = ({ evaluation, candidateMoves, showQuadrantAnalysis = true }) => {
+}> = ({ ucievaluation ,evaluation, candidateMoves, showQuadrantAnalysis = true, stockfishAnalysisResult }) => {
   const [viewMode, setViewMode] = useState<'evaluation' | 'quadrant' | 'ease'>('evaluation')
   const [improbableThreshold, setImprobableThreshold] = useState(0.05)
  
@@ -141,9 +150,9 @@ const EvaluationDisplay: React.FC<{
   }, [evaluation, candidateMoves, improbableThreshold])
 
   const easeMetric = React.useMemo(() => {
-    if (!candidateMoves || candidateMoves.length === 0) return null
+    if (!candidateMoves || candidateMoves.length === 0 || !ucievaluation) return null
     try {
-      return calculateEaseMetric(evaluation, candidateMoves)
+      return calculateEaseMetric(ucievaluation, stockfishAnalysisResult)
     } catch {
       return null
     }
@@ -557,6 +566,8 @@ const DownloadAllModelsPrompt: React.FC<{
 export const NetResults: React.FC<MaiaResultsProps> = ({
   evaluations,
   chessDbLoading,
+  stockfishAnalysisResult,
+  ucievaluations,
   chessDbMoves,
   isMaiaLoading,
   maiaerror,
@@ -686,18 +697,19 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             {evaluations.maia2[MAIA_MODELS[selectedMaia2Model]] && (
               <EvaluationDisplay
                 evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
+                stockfishAnalysisResult={stockfishAnalysisResult}
                 candidateMoves={chessDbMoves}
               />
             )}
           </>
         )}
 
-        {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && (
-          <EvaluationDisplay evaluation={evaluations.bigLeela} candidateMoves={chessDbMoves}/>
+        {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && ucievaluations.bigLeela && (
+          <EvaluationDisplay evaluation={evaluations.bigLeela} candidateMoves={chessDbMoves} stockfishAnalysisResult={stockfishAnalysisResult} ucievaluation={ucievaluations.bigLeela}/>
         )}
 
-        {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && (
-          <EvaluationDisplay evaluation={evaluations.elitemaia} candidateMoves={chessDbMoves}/>
+        {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && ucievaluations.elitemaia && (
+          <EvaluationDisplay evaluation={evaluations.elitemaia} candidateMoves={chessDbMoves} stockfishAnalysisResult={stockfishAnalysisResult} ucievaluation={ucievaluations.elitemaia}/>
         )}
       </CardContent>
     </Card>

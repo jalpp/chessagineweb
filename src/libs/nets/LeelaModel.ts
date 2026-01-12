@@ -6,7 +6,11 @@ import { pickOutput, processLeelaPolicy, wdlToWinProb } from "./helper";
 export class LeelaModel extends NetModel {
 
   async evaluate(fen: string) {
-    if (!this.getModel) throw new Error("Model not ready");
+    await this.waitUntilReady();
+
+    if (!this.isReady()) {
+      throw new Error('Model failed to initialize');
+    }
 
     const { boardInput, legalMoves } = preprocessLeela(fen);
 
@@ -47,7 +51,12 @@ export class LeelaModel extends NetModel {
       eloOppo: number;
     }[]
   ) {
-    if (!this.getModel) throw new Error("Model not ready");
+    await this.waitUntilReady();
+    
+    if (!this.isReady()) {
+      throw new Error('Model failed to initialize');
+    }
+
 
     const boards: Float32Array[] = [];
     const legalMovesList: Float32Array[] = [];

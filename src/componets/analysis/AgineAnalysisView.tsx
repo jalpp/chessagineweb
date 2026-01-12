@@ -123,6 +123,7 @@ interface AgineAnalysisViewProps
 function AgineAnalysisView({
   stockfishAnalysisResult,
   stockfishLoading,
+  sanEvaluations,
   handleEngineLineClick,
   engineDepth,
   engineLines,
@@ -491,8 +492,10 @@ function AgineAnalysisView({
                 }}
               >
                 <NetResults
-                  evaluations={evaluations}
+                  evaluations={sanEvaluations}
+                  ucievaluations={evaluations}
                   isMaiaLoading={isLoading}
+                  stockfishAnalysisResult={stockfishAnalysisResult}
                   chessDbLoading={loading}
                   chessDbMoves={chessdbdata}
                   maiaerror={Maiaerror}
