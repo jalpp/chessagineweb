@@ -608,9 +608,8 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
       <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <CardContent>
           <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={4}>
-            <CircularProgress size={40} />
             <Typography>
-              Downloading {downloadingModel ? MODEL_CONFIGS[downloadingModel].name : 'model'}...
+              Downloading {downloadingModel ? MODEL_CONFIGS[downloadingModel].name : 'model'}... Please wait.
             </Typography>
           </Box>
         </CardContent>
