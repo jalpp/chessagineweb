@@ -71,6 +71,7 @@ export default function PositionPage() {
       activeAnalysisTab={activeAnalysisTab}
       setActiveAnalysisTab={setActiveAnalysisTab}
       isGameReviewMode={false}
+      
       stockfishAnalysisResult={stockfishAnalysisResult}
       stockfishLoading={stockfishLoading}
       handleEngineLineClick={handleEngineLineClick}
@@ -104,7 +105,7 @@ export default function PositionPage() {
       handleFutureMoveLegalClick={handleFutureMoveLegalClick}
       gameReviewTheme={null}
       llmLoading={llmLoading}
-      evaluations={sanEvaluations}
+      evaluations={evaluations}
       isLoading={maiaIsLoading}
       Maiaerror={maiaError}
       scores={scores}

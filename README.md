@@ -156,6 +156,8 @@ A huge thanks to everyone who helped make ChessAgine possible:
 
 * **LeelaZero Devs** [LeelaZero](https://lczero.org/) for Leela model
 
+* **matstc** [Ease Metric Blog](https://lichess.org/@/matstc/blog/a-chess-metric-ease-for-humans/dIqTm3AJ) For ease metric paper
+
 * **Viet-Anh Tran** [EliteLeela](https://github.com/CallOn84/LeelaNets) for Elite Leela nets (custom trained on Elite Lichess DB)
 
 * **NAKSTStudio Devs** [https://huggingface.co/NAKSTStudio](https://huggingface.co/NAKSTStudio/activity/likes) for Free open source chess commentary trained model
