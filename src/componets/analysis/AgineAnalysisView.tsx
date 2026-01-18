@@ -39,6 +39,7 @@ import { UseMaiaEngineResult } from "@/hooks/useNets";
 import { useSessionStorage } from "usehooks-ts";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
+import ChessTreeView from "../tabs/ChessTreeView";
 
 
 
@@ -118,6 +119,7 @@ interface AgineAnalysisViewProps
   isGameReviewMode: boolean;
   activeAnalysisTab: number;
   setActiveAnalysisTab: Dispatch<SetStateAction<number>>
+  fen: string;
 }
 
 function AgineAnalysisView({
@@ -175,6 +177,7 @@ function AgineAnalysisView({
   ThemeScoreerror,
   ThemeScoreloading,
   activeAnalysisTab,
+  fen,
   setActiveAnalysisTab
 }: AgineAnalysisViewProps) {
   const [analysisTab, setAnalysisTab] = useSessionStorage<number>("agine_current_tab",0);
@@ -456,10 +459,52 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
 
+            
             <Accordion
               expanded={activeAnalysisTab === 3}
               onChange={() =>
                 setActiveAnalysisTab(activeAnalysisTab === 3 ? -1 : 3)
+              }
+              sx={{
+                "&:before": { display: "none" },
+                borderRadius: { xs: 1.5, md: 2 },
+                overflow: "hidden",
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                  minHeight: { xs: 48, md: 56 },
+                  "& .MuiAccordionSummary-content": {
+                    margin: { xs: "12px 0", md: "16px 0" },
+                  },
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: { xs: "1rem", md: "1.25rem" },
+                  }}
+                >
+                  Variation Tree
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails
+                sx={{
+                  p: { xs: 1.5, md: 2 },
+                }}
+              >
+                <ChessTreeView 
+                 initialFen={fen}
+                />
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              expanded={activeAnalysisTab === 4}
+              onChange={() =>
+                setActiveAnalysisTab(activeAnalysisTab === 4 ? -1 : 4)
               }
               sx={{
                 "&:before": { display: "none" },
@@ -511,9 +556,9 @@ function AgineAnalysisView({
 
             {/* Opening Explorer */}
             <Accordion
-              expanded={activeAnalysisTab === 4}
+              expanded={activeAnalysisTab === 5}
               onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 4 ? -1 : 4)
+                setActiveAnalysisTab(activeAnalysisTab === 5 ? -1 : 5)
               }
               
               sx={{
@@ -559,9 +604,9 @@ function AgineAnalysisView({
             </Accordion>
 
             <Accordion
-              expanded={activeAnalysisTab === 5}
+              expanded={activeAnalysisTab === 6}
               onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 5 ? -1 : 5)
+                setActiveAnalysisTab(activeAnalysisTab === 6 ? -1 : 6)
               }
               sx={{
                 "&:before": { display: "none" },
@@ -607,9 +652,9 @@ function AgineAnalysisView({
             </Accordion>
 
             <Accordion
-              expanded={activeAnalysisTab === 6}
+              expanded={activeAnalysisTab === 7}
               onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 6 ? -1 : 6)
+                setActiveAnalysisTab(activeAnalysisTab === 7 ? -1 : 7)
               }
               sx={{
                 "&:before": { display: "none" },
@@ -648,6 +693,7 @@ function AgineAnalysisView({
                 />
               </AccordionDetails>
             </Accordion>
+
           </Stack>
         </TabPanel>
 

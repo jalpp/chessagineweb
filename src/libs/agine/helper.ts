@@ -46,6 +46,13 @@ export interface CandidateMove {
   note: string;
 }
 
+export interface TreeMoveNode {
+  root: CandidateMove;
+  preRootFen: string;
+  postRootFen: string;
+  leafs: CandidateMove[]
+}
+
 // Analysis data types
 export interface EngineLineData {
   line: LineEval;
