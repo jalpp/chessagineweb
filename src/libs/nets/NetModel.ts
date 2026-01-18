@@ -21,11 +21,16 @@ class NetModel {
   private initPromise: Promise<void>
 
   constructor(options: NetModelOptions) {
-    this.modelUrl = options.model
-    this.options = options
-    this.options.setStatus('loading')
-    this.initPromise = this.initialize()
-  }
+  this.modelUrl = options.model
+  this.options = options
+  this.initPromise = Promise.resolve() 
+}
+
+public async initializeIfNeeded() {
+  if (this.initPromise !== Promise.resolve()) return
+  this.options.setStatus('loading')
+  this.initPromise = this.initialize()
+}
 
   private async initialize() {
     try {
