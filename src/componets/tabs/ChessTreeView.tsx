@@ -154,41 +154,42 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   const loading = sourceEngine === 'chessdb' ? chessDbLoading : netsLoading;
 
   useEffect(() => {
-    if (move && fen) {
-      try {
-        const chess = new Chess(fen);
-        // For neural nets, we have UCI in the move.uci field
-        // For ChessDB, move.uci might not be proper UCI format, so we use SAN
-        let result;
-        
-        if (sourceEngine === 'chessdb') {
-          // ChessDB: try SAN first
-          result = chess.move(move.san);
-        } else {
-          // Neural nets: use UCI format
-          if (move.uci && move.uci.length >= 4) {
-            const from = move.uci.substring(0, 2);
-            const to = move.uci.substring(2, 4);
-            const promotion = move.uci.length > 4 ? move.uci[4] as 'q' | 'r' | 'b' | 'n' : undefined;
-            
-            result = chess.move({ from, to, promotion });
-          } else {
-            // Fallback to SAN if UCI is not available
-            result = chess.move(move.san);
-          }
-        }
-        
-        if (result) {
-          setChildFen(chess.fen());
-        }
-      } catch (e) {
-        console.error('Invalid move:', e, 'Move:', move, 'Source:', sourceEngine);
-        setChildFen(null);
+  let nextFen: string | null = null;
+
+  if (move && fen) {
+    try {
+      const chess = new Chess(fen);
+      let result;
+
+      if (sourceEngine === 'chessdb') {
+        result = chess.move(move.san);
+      } else if (move.uci && move.uci.length >= 4) {
+        const from = move.uci.slice(0, 2);
+        const to = move.uci.slice(2, 4);
+        const promotion =
+          move.uci.length > 4
+            ? (move.uci[4] as 'q' | 'r' | 'b' | 'n')
+            : undefined;
+
+        result = chess.move({ from, to, promotion });
+      } else {
+        result = chess.move(move.san);
       }
-    } else {
-      setChildFen(fen);
+
+      if (result) {
+        nextFen = chess.fen();
+      }
+    } catch (e) {
+      console.error('Invalid move:', e, move);
+      nextFen = null;
     }
-  }, [fen, move, sourceEngine]);
+  } else {
+    nextFen = fen;
+  }
+
+  setChildFen((prev) => (prev === nextFen ? prev : nextFen));
+}, [fen, move, sourceEngine]);
+
 
   const hasChildren = depth < maxDepth;
   const canExpand = hasChildren && childMoves.length > 0;
@@ -377,6 +378,8 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
   const [sourceEngine, setSourceEngine] = useSessionStorage<SourceEngine>('tree-source-engine','chessdb');
   const [selectedMaia2Rating, setSelectedMaia2Rating] = useState<string>(MAIA_MODELS[4]); 
 
+  console.log(selectedMaia2Rating)
+
   const { status, activeModels } = useNetStatus();
 
   // ChessDB hook
@@ -390,7 +393,7 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
     Maiaerror: netsError
   } = useNets({
     fen,
-    enabledModels: sourceEngine !== 'chessdb' ? [sourceEngine as ModelType] : [],
+    enabledModels: ["maia2", "elitemaia", "bigLeela"]
   });
 
   // Convert neural net evaluations to CandidateMove format
@@ -400,10 +403,7 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
     let sanEvaluation = null;
     let uciEvaluation = null;
     
-    if (sourceEngine === 'maia2' && sanEvaluations.maia2 && evaluations.maia2) {
-      sanEvaluation = sanEvaluations.maia2[selectedMaia2Rating];
-      uciEvaluation = evaluations.maia2[selectedMaia2Rating];
-    } else if (sourceEngine === 'bigLeela' && sanEvaluations.bigLeela && evaluations.bigLeela) {
+     if (sourceEngine === 'bigLeela' && sanEvaluations.bigLeela && evaluations.bigLeela) {
       sanEvaluation = sanEvaluations.bigLeela;
       uciEvaluation = evaluations.bigLeela;
     } else if (sourceEngine === 'elitemaia' && sanEvaluations.elitemaia && evaluations.elitemaia) {
@@ -444,7 +444,7 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
       }));
 
     return moves;
-  }, [sourceEngine, sanEvaluations, evaluations, selectedMaia2Rating, fen]);
+  }, [sourceEngine, sanEvaluations, evaluations, fen]);
 
   const rootMoves = sourceEngine === 'chessdb' ? rootChessDbMoves : rootNetMoves;
   const rootLoading = sourceEngine === 'chessdb' ? chessDbLoading : netsLoading;
@@ -500,20 +500,20 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
   }, [initialFen]);
 
   useEffect(() => {
-    if (!rootLoading) {
-      setIsRefreshing(true);
-      if (sourceEngine === 'chessdb') {
-        refetchChessDb();
-      }
-      const timer = setTimeout(() => setIsRefreshing(false), 300);
-      return () => clearTimeout(timer);
+  if (!rootLoading) {
+    setIsRefreshing(true);
+    if (sourceEngine === 'chessdb') {
+      refetchChessDb();
     }
-  }, [depth, breadth]);
+    const timer = setTimeout(() => setIsRefreshing(false), 300);
+    return () => clearTimeout(timer);
+  }
+}, [depth, breadth]);
+
 
   const displayFen = selectedNode?.fen || fen;
   const isLoading = rootLoading;
 
-  // Check if selected neural net is available
   const isSelectedNetAvailable = sourceEngine === 'chessdb' || 
     (status[sourceEngine as ModelType] === 'ready' && activeModels.includes(sourceEngine as ModelType));
 
@@ -534,9 +534,6 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
                   onChange={handleSourceEngineChange}
                 >
                   <MenuItem value="chessdb">ChessDB</MenuItem>
-                  <MenuItem value="maia2" disabled={status.maia2 !== 'ready'}>
-                    Maia 2 {status.maia2 !== 'ready' && '(Not Downloaded)'}
-                  </MenuItem>
                   <MenuItem value="bigLeela" disabled={status.bigLeela !== 'ready'}>
                     T1-256 Leela {status.bigLeela !== 'ready' && '(Not Downloaded)'}
                   </MenuItem>
@@ -545,23 +542,6 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
                   </MenuItem>
                 </Select>
               </FormControl>
-
-              {sourceEngine === 'maia2' && (
-                <FormControl fullWidth size="small">
-                  <InputLabel>Maia Rating Level</InputLabel>
-                  <Select
-                    value={selectedMaia2Rating}
-                    label="Maia Rating Level"
-                    onChange={(e) => setSelectedMaia2Rating(e.target.value)}
-                  >
-                    {MAIA_MODELS.map((model) => (
-                      <MenuItem key={model} value={model}>
-                        {model.replace('maia_kdd_', 'Maia ')}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
 
               <Box>
                 <Typography variant="caption" color="text.secondary" gutterBottom>
