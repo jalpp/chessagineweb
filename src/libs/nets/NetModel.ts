@@ -28,7 +28,6 @@ class NetModel {
 
 public async initializeIfNeeded() {
   if (this.initPromise !== Promise.resolve()) return
-  this.options.setStatus('loading')
   this.initPromise = this.initialize()
 }
 
