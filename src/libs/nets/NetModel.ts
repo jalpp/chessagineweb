@@ -108,10 +108,10 @@ public async initializeIfNeeded() {
       if (done) break
       chunks.push(value)
       received += value.length
-      if (len) {
-        const progress = Math.floor((received / len) * 100)
-        this.options.setProgress(progress)
-      }
+      // if (len) {
+      //   const progress = Math.floor((received / len) * 100)
+      //   this.options.setProgress(progress)
+      // }
     }
 
     console.log(`Download complete: ${this.modelUrl} (${received} bytes)`)
