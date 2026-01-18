@@ -71,30 +71,47 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
     elitemaia: false,
   });
 
-  // Memoize models - they never change
-  const models = useMemo(() => ({
+ const modelsRef = useRef<{
+  maia2: MaiaModel
+  bigLeela: LeelaModel
+  elitemaia: LeelaModel
+} | null>(null)
+
+if (!modelsRef.current) {
+  modelsRef.current = {
     maia2: new MaiaModel({
       model: MODEL_CONFIGS.maia2.path,
       modelType: MODEL_CONFIGS.maia2.modelType,
-      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, maia2: s })),
-      setProgress: (p: number) => setProgress(prev => ({ ...prev, maia2: p })),
-      setError: (e: string) => setError(prev => ({ ...prev, maia2: e })),
+      setStatus: s => setStatus(prev => ({ ...prev, maia2: s })),
+      setProgress: p => setProgress(prev => ({ ...prev, maia2: p })),
+      setError: e => setError(prev => ({ ...prev, maia2: e })),
     }),
     bigLeela: new LeelaModel({
       model: MODEL_CONFIGS.bigLeela.path,
       modelType: MODEL_CONFIGS.bigLeela.modelType,
-      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, bigLeela: s })),
-      setProgress: (p: number) => setProgress(prev => ({ ...prev, bigLeela: p })),
-      setError: (e: string) => setError(prev => ({ ...prev, bigLeela: e })),
+      setStatus: s => setStatus(prev => ({ ...prev, bigLeela: s })),
+      setProgress: p => setProgress(prev => ({ ...prev, bigLeela: p })),
+      setError: e => setError(prev => ({ ...prev, bigLeela: e })),
     }),
     elitemaia: new LeelaModel({
       model: MODEL_CONFIGS.elitemaia.path,
       modelType: MODEL_CONFIGS.elitemaia.modelType,
-      setStatus: (s: NetStatus) => setStatus(prev => ({ ...prev, elitemaia: s })),
-      setProgress: (p: number) => setProgress(prev => ({ ...prev, elitemaia: p })),
-      setError: (e: string) => setError(prev => ({ ...prev, elitemaia: e })),
+      setStatus: s => setStatus(prev => ({ ...prev, elitemaia: s })),
+      setProgress: p => setProgress(prev => ({ ...prev, elitemaia: p })),
+      setError: e => setError(prev => ({ ...prev, elitemaia: e })),
     }),
-  }), []); 
+  }
+}
+
+const models = modelsRef.current
+
+  
+  useEffect(() => {
+  models.maia2.initializeIfNeeded()
+  models.bigLeela.initializeIfNeeded()
+  models.elitemaia.initializeIfNeeded()
+}, [models])
+
 
   const downloadModel = useCallback(async (modelType: ModelType) => {
     try {
