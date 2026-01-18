@@ -427,6 +427,7 @@ export default function PGNUploaderPage() {
         evaluations={evaluations}
         analyzeWithStockfish={analyzeWithStockfish}
         formatEvaluation={formatEvaluation}
+        fen={fen}
         formatPrincipalVariation={formatPrincipalVariation}
         setEngineDepth={setEngineDepth}
         setEngineLines={setEngineLines}

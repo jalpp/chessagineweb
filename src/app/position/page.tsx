@@ -71,7 +71,7 @@ export default function PositionPage() {
       activeAnalysisTab={activeAnalysisTab}
       setActiveAnalysisTab={setActiveAnalysisTab}
       isGameReviewMode={false}
-      
+      fen={fen}
       stockfishAnalysisResult={stockfishAnalysisResult}
       stockfishLoading={stockfishLoading}
       handleEngineLineClick={handleEngineLineClick}
