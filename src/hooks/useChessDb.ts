@@ -1,20 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
-import { CandidateMove } from "@/libs/agine/helper";
+import { CandidateMove, getChessDbNoteWord } from "@/libs/agine/helper";
 import { validateFen } from "chess.js";
 import { getChessDbCache, setChessDbCache} from "@/stockfish/engine/chessdbCache";
 
-function getChessDbNoteWord(note: string): string {
-  switch(note){
-    case "!":
-      return "Best";
-    case "*": 
-      return "Good";
-    case "?": 
-      return "Bad"; 
-    default:
-      return "unknown";     
-  }
-}
 
 export function useChessDB(fen: string, gameReviewMode?: boolean) {
   const [data, setData] = useState<CandidateMove[]>([]);
@@ -78,11 +66,11 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
         winrate: move.winrate || "N/A",
         rank: move.rank,
         note: getChessDbNoteWord(move.note.split(" ")[0]),
+        rawEval: scoreNum
       };
     });
 
     await setChessDbCache(fenString, processedMoves);
-
     setData(processedMoves);
   } catch (err) {
     console.error('error!', err);

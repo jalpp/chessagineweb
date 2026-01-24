@@ -79,19 +79,44 @@ export interface MaiaEvaluation {
   policy: { [key: string]: number }
 }
 
+
+export interface SanMaiaEvaluation {
+  value: number;
+  policy: { [key: string]: number };
+}
+
+
 export const uciToSan = (uci: string, fen: string): string => {
   try {
     const chess = new Chess(fen);
     const move = chess.move({
       from: uci.substring(0, 2),
       to: uci.substring(2, 4),
-      promotion: uci.length > 4 ? uci[4] : undefined,
+      promotion: uci.length > 4 ? (uci[4] as "q" | "r" | "b" | "n") : undefined,
     });
     return move ? move.san : uci;
   } catch {
     return uci;
   }
 };
+
+export const convertToSanEvaluation = (
+  uciEval: MaiaEvaluation,
+  fen: string
+): SanMaiaEvaluation => {
+  const sanPolicy: { [key: string]: number } = {};
+  Object.entries(uciEval.policy).forEach(([uciMove, probability]) => {
+    const sanMove = uciToSan(uciMove, fen);
+    sanPolicy[sanMove] = probability;
+  });
+
+  return {
+    value: uciEval.value,
+    policy: sanPolicy,
+  };
+};
+
+
 export type MoveCategory = 'brilliant' | 'tricky' | 'normal' | 'book';
 
 export type QuadrantCandidateMoves = "Likely Good" | "Likely Bad" | "Unlikely Good" | "Unlikely Bad";

@@ -44,6 +44,7 @@ export interface CandidateMove {
   winrate: string;
   rank: string;
   note: string;
+  rawEval?: number;
 }
 
 export interface TreeMoveNode {
@@ -96,3 +97,16 @@ export const createChatMessage = (
   content,
   timestamp: new Date(),
 });
+
+export function getChessDbNoteWord(note: string): string {
+  switch(note){
+    case "!":
+      return "Best";
+    case "*": 
+      return "Good";
+    case "?": 
+      return "Bad"; 
+    default:
+      return "unknown";     
+  }
+}
