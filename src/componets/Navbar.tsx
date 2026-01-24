@@ -116,12 +116,6 @@ export default function NavBar() {
       icon: <GitHub/>,
       isExternal: true
     },
-    {
-      label: "Discord",
-      href: "https://discord.gg/NwZb6JJAkS",
-      icon: <FaDiscord />,
-      isExternal: true
-    },
   ];
 
   return (
