@@ -23,8 +23,8 @@ import { useNetStatus, useNetModels } from '@/context/NetContext'
 import { CandidateMove } from '@/libs/agine/helper'
 import { QuadrantClassification } from '@/libs/nets/classifyMoves'
 import { QuadrantAnalysisView } from './QuadrantAnalysisView'
-import { calculateEaseMetric } from '@/libs/easemetric/helper'
 import { PositionEval } from '@/stockfish/engine/engine'
+import { StockfishEaseMetricCalculator } from '@/libs/easemetric/stockfishEaseMetric'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -151,8 +151,9 @@ const EvaluationDisplay: React.FC<{
 
   const easeMetric = React.useMemo(() => {
     if (!candidateMoves || candidateMoves.length === 0 || !ucievaluation) return null
+    const easeMetricCalculator = new StockfishEaseMetricCalculator(true);
     try {
-      return calculateEaseMetric(ucievaluation, stockfishAnalysisResult)
+      return easeMetricCalculator.calculateEaseMetric(ucievaluation, stockfishAnalysisResult);
     } catch {
       return null
     }
