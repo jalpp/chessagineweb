@@ -5,7 +5,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOllama } from "ollama-ai-provider-v2";
-import { RuntimeContext } from "@mastra/core/di";
+import { RequestContext } from "@mastra/core/request-context";
 import { createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {
   agineEvalGraderPrompt,
@@ -18,10 +18,10 @@ import {
 import { OpenAIModel, GoogleModel, AnthropicModel, OllamaModel, AgineCloudModel } from "./types";
 import { AgineTools } from "../tools";
 
-function createModelFromRouter(runtimeContext: RuntimeContext) {
-  const provider = runtimeContext.get("provider") as string;
-  const modelName = runtimeContext.get("model") as string;
-  const apiKey = runtimeContext.get("apiKey") as string;
+function createModelFromRouter(requestContext: RequestContext) {
+  const provider = requestContext.get("provider") as string;
+  const modelName = requestContext.get("model") as string;
+  const apiKey = requestContext.get("apiKey") as string;
 
   const openRouter = createOpenRouter({
     apiKey: apiKey,
@@ -40,8 +40,8 @@ function createModelFromRouter(runtimeContext: RuntimeContext) {
 }
 
 
-function createAgineCloudModel(runtimeContext: RuntimeContext) {
-  const modelName = runtimeContext.get("model") as string;
+function createAgineCloudModel(requestContext: RequestContext) {
+  const modelName = requestContext.get("model") as string;
 
 
   const apiKey = process.env.AGINE_KEY;
@@ -59,9 +59,9 @@ function createAgineCloudModel(runtimeContext: RuntimeContext) {
   
 }
 
-function createAgentInstruction(runtimeContext: RuntimeContext) {
-  const lang = (runtimeContext.get("lang") as string) || "English";
-  const mode = (runtimeContext.get("mode") as string) || "position";
+function createAgentInstruction(requestContext: RequestContext) {
+  const lang = (requestContext.get("lang") as string) || "English";
+  const mode = (requestContext.get("mode") as string) || "position";
   const replaceLangKey = '[ENGLISH]';
 
   switch (mode) {
@@ -84,17 +84,17 @@ function createAgentInstruction(runtimeContext: RuntimeContext) {
   }
 }
 
-function createModelFromContext(runtimeContext: RuntimeContext) {
-  const provider = runtimeContext.get("provider") as string;
-  const modelName = runtimeContext.get("model") as string;
-  const apiKey = runtimeContext.get("apiKey") as string;
-  const isRouted = runtimeContext.get("isRouted") as boolean;
-  const ollamaBaseUrl = runtimeContext.get("ollamaBaseUrl") as
+function createModelFromContext(requestContext: RequestContext) {
+  const provider = requestContext.get("provider") as string;
+  const modelName = requestContext.get("model") as string;
+  const apiKey = requestContext.get("apiKey") as string;
+  const isRouted = requestContext.get("isRouted") as boolean;
+  const ollamaBaseUrl = requestContext.get("ollamaBaseUrl") as
     | string
     | undefined;
 
   if(isRouted && !provider.includes("agineCloud")){
-    return createModelFromRouter(runtimeContext);
+    return createModelFromRouter(requestContext);
   }     
 
   switch (provider) {
@@ -123,15 +123,15 @@ function createModelFromContext(runtimeContext: RuntimeContext) {
       });
       return ollama(modelName as OllamaModel);
     case "agineCloud": 
-      return createAgineCloudModel(runtimeContext);
+      return createAgineCloudModel(requestContext);
 
     default:
       return openai("gpt-4o-mini");
   }
 }
 
-function createToolsFromContext(runtimeContext: RuntimeContext) {
-  const provider = runtimeContext.get("provider") as string;
+function createToolsFromContext(requestContext: RequestContext) {
+  const provider = requestContext.get("provider") as string;
 
   if(provider.includes("agineCloud") || provider.includes("ollama")){
     return {}
@@ -140,10 +140,11 @@ function createToolsFromContext(runtimeContext: RuntimeContext) {
   return AgineTools;
 }
 
+/* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
 export const chessAgine = new Agent({
+  id: "chessagine-agent",
   name: "ChessAgine",
-  instructions: ({ runtimeContext }) => createAgentInstruction(runtimeContext),
-  model: ({ runtimeContext }) => createModelFromContext(runtimeContext),
-  tools: ({runtimeContext}) => createToolsFromContext(runtimeContext)
+  instructions: ({ requestContext }) => createAgentInstruction(requestContext),
+  model: ({ requestContext }) => createModelFromContext(requestContext),
+  tools: ({requestContext}) => createToolsFromContext(requestContext)
 });
-
