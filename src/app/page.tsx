@@ -138,6 +138,7 @@ export default function HomePage() {
                 "Open Source",
                 "Stockfish 17.1",
                 "MCP Server",
+                "Skill.md",
                 "Lichess Integration",
                 "AI-Powered Analysis",
                 "Community Driven",

@@ -25,6 +25,7 @@ import {
   CheckCircle,
   Code,
   Laptop,
+  Description,
 } from "@mui/icons-material";
 
 interface CodeBlockProps {
@@ -98,39 +99,29 @@ const MCPdocs =  () => {
         installation experience
       </Alert>
 
-      {/* Option 0: Smithery */}
-      <Accordion
-        expanded={expanded === "option0"}
-        onChange={handleChange("option0")}
-        sx={{ mb: 2 }}
-      >
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Terminal color="action" />
-            <Box>
-              <Typography variant="h6">
-                Option 0: Installing via Smithery
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Automatic installation with Smithery CLI
-              </Typography>
-            </Box>
+      {/* Skills.md Download Section */}
+      <Alert severity="success" sx={{ mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box>
+            <Typography variant="body2" fontWeight="bold" gutterBottom>
+              ChessAgine Skill for Claude Desktop
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Download the ChessAgine skill to enhance your chess analysis experience in Claude Desktop
+            </Typography>
           </Box>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Typography variant="body2" paragraph>
-            Install ChessAgine automatically using Smithery:
-          </Typography>
-          <CodeBlock code="npx -y @smithery/cli install @jalpp/chessagine-mcp" />
-          <Link
-            href="https://smithery.ai/server/@jalpp/chessagine-mcp"
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Description />}
+            href="https://github.com/jalpp/chessagine.skill"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
           >
-            Visit Smithery Page →
-          </Link>
-        </AccordionDetails>
-      </Accordion>
+            Download Skills.md
+          </Button>
+        </Box>
+      </Alert>
 
       {/* Option 1: MCPB File */}
       <Accordion

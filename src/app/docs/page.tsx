@@ -20,6 +20,7 @@ import { renderCostsAnalysis } from "@/componets/docs/RenderCostBreakdown";
 import { renderFAQ } from "@/componets/docs/RenderFaq";
 import { renderHeader } from "@/componets/docs/RenderChessAgineHeader";
 import { renderSupportedProvider } from "@/componets/docs/RenderSupportedProvider";
+import { renderFeatures } from "@/componets/docs/RenderFeatures";
 import { agineTheme as docsTheme} from "@/theme/theme";
 import MCPdocs from "@/componets/docs/RenderMCPDocs";
 
@@ -46,6 +47,7 @@ const ChessAgineDocumentation = () => {
               scrollButtons="auto"
             >
               <Tab label="Setup Guides" />
+              <Tab label="Features" />
               <Tab label="Model Recommendations" />
               <Tab label="Costs Analysis" />
               <Tab label="Supported Providers" />
@@ -70,26 +72,30 @@ const ChessAgineDocumentation = () => {
           </TabPanel>
 
           <TabPanel value={selectedTab} index={1}>
-            {renderModelRecommendations()}
+            {renderFeatures()}
           </TabPanel>
 
           <TabPanel value={selectedTab} index={2}>
-            {renderCostsAnalysis()}
+            {renderModelRecommendations()}
           </TabPanel>
 
           <TabPanel value={selectedTab} index={3}>
-            {renderSupportedProvider()}
+            {renderCostsAnalysis()}
           </TabPanel>
 
           <TabPanel value={selectedTab} index={4}>
-            {renderIntegrations()}
+            {renderSupportedProvider()}
           </TabPanel>
 
           <TabPanel value={selectedTab} index={5}>
-            {renderFAQ()}
+            {renderIntegrations()}
           </TabPanel>
 
           <TabPanel value={selectedTab} index={6}>
+            {renderFAQ()}
+          </TabPanel>
+
+          <TabPanel value={selectedTab} index={7}>
             <MCPdocs/>
           </TabPanel>
 
@@ -98,8 +104,7 @@ const ChessAgineDocumentation = () => {
               Need Help?
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              If you encounter any issues during setup, please join the
-              community Discord for help!
+              If you encounter any issues during setup, please create an issue on Github
             </Typography>
           </Paper>
         </Box>
