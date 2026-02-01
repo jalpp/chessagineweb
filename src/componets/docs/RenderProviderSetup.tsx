@@ -9,6 +9,7 @@ import {
   Button,
   Box,
   Chip,
+  Alert,
 } from "@mui/material";
 import {
   Launch as LaunchIcon,
@@ -49,103 +50,191 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
           <Typography variant="body2" >
             AgineCloud models are completely free and ready to use immediately.
             Just select a model and start analyzing your chess games.
-            AgineCloud is in beta, so you might experiece few delays
+            AgineCloud is in beta, so you might experience a few delays.
           </Typography>
         </Box>
       ) : provider.name === "Ollama" ? (
-        <List dense>
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Download Ollama" />
-            <Button
-              variant="outlined"
-              size="small"
-              color="success"
-              startIcon={<LaunchIcon />}
-              href="https://ollama.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ ml: 2 }}
-            >
-              Download
-            </Button>
-          </ListItem>
+        <>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>Two Options:</strong> Run ChessAgine locally with local Ollama models, or connect your Ollama instance via ngrok to use the web version.
+            </Typography>
+          </Alert>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon  />
-            </ListItemIcon>
-            <ListItemText primary="Sign up to Ollama" />
-          </ListItem>
+          <Typography variant="subtitle1" gutterBottom fontWeight="bold" sx={{ mt: 2 }}>
+            Option 1: Local ChessAgine + Local Ollama 
+          </Typography>
+          <List dense>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Download and install Ollama" />
+              <Button
+                variant="outlined"
+                size="small"
+                color="success"
+                startIcon={<LaunchIcon />}
+                href="https://ollama.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ ml: 2 }}
+              >
+                Download
+              </Button>
+            </ListItem>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Install models locally using terminal or use cloud (-cloud models) in Ollama interface by chatting with them" />
-          </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Pull models locally using terminal (e.g., ollama pull llama3)" />
+            </ListItem>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Download Ngrok" />
-            <Button
-              variant="outlined"
-              size="small"
-              color="success"
-              startIcon={<LaunchIcon />}
-              href="https://ngrok.com/download/"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ ml: 2 }}
-            >
-              Download
-            </Button>
-          </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Clone the ChessAgine repository" />
+              <Button
+                variant="outlined"
+                size="small"
+                color="success"
+                startIcon={<LaunchIcon />}
+                href="https://github.com/jalpp/chessagineweb"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ ml: 2 }}
+              >
+                GitHub Repo
+              </Button>
+            </ListItem>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Authenticate ngrok in terminal by getting the token from in your dashboard" />
-            <Button
-              variant="outlined"
-              size="small"
-              color="success"
-              startIcon={<LaunchIcon />}
-              href="https://dashboard.ngrok.com/ "
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ ml: 2 }}
-            >
-              Open Dashboard
-            </Button>
-          </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Set environment variable: NEXT_PUBLIC_OLLAMA_ENDPOINT=http://localhost:11434"
+                secondary="Add this to your .env.local file in the project root"
+              />
+            </ListItem>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon  />
-            </ListItemIcon>
-            <ListItemText primary="Point ngrok to port 11434 by running ngrok http 11434" />
-          </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Run npm install and npm run dev" />
+            </ListItem>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Paste the ngrok web link in ChessAgine settings" />
-          </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Access ChessAgine at localhost:3000 and select your local Ollama models" />
+            </ListItem>
+          </List>
 
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon/>
-            </ListItemIcon>
-            <ListItemText primary="Start using it!" />
-          </ListItem>
-        </List>
+          <Typography variant="subtitle1" gutterBottom fontWeight="bold" sx={{ mt: 3 }}>
+            Option 2: Web ChessAgine + Ollama via Ngrok
+          </Typography>
+          <List dense>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Download and install Ollama" />
+              <Button
+                variant="outlined"
+                size="small"
+                color="success"
+                startIcon={<LaunchIcon />}
+                href="https://ollama.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ ml: 2 }}
+              >
+                Download
+              </Button>
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Sign up for Ollama and install models (local or -cloud models via chat)" />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Download Ngrok" />
+              <Button
+                variant="outlined"
+                size="small"
+                color="success"
+                startIcon={<LaunchIcon />}
+                href="https://ngrok.com/download/"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ ml: 2 }}
+              >
+                Download
+              </Button>
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Authenticate ngrok using token from your dashboard" />
+              <Button
+                variant="outlined"
+                size="small"
+                color="success"
+                startIcon={<LaunchIcon />}
+                href="https://dashboard.ngrok.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ ml: 2 }}
+              >
+                Open Dashboard
+              </Button>
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Point ngrok to port 11434: ngrok http 11434"
+                secondary="Run this command in your terminal"
+              />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Copy the ngrok HTTPS URL (e.g., https://xxxx.ngrok.io)" />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Paste the ngrok URL in ChessAgine settings" />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Start using ChessAgine with your Ollama models!" />
+            </ListItem>
+          </List>
+        </>
       ) : (
         <List dense>
           <ListItem>
@@ -170,14 +259,14 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon  />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Create a new API key" />
           </ListItem>
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon  />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText
               primary="Copy your API key"
@@ -187,7 +276,7 @@ export const renderProviderSetup = (provider: ProviderConfig) => (
 
           <ListItem>
             <ListItemIcon>
-              <CheckCircleIcon  />
+              <CheckCircleIcon />
             </ListItemIcon>
             <ListItemText primary="Enter the key in ChessAgine settings" />
           </ListItem>

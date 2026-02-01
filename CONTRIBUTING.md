@@ -5,7 +5,7 @@ Thank you for your interest in contributing to chessAgine!
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm/yarn/pnpm
+- Node.js 22+ and npm/yarn/pnpm
 - Git
 
 ### Setup
@@ -30,6 +30,14 @@ Thank you for your interest in contributing to chessAgine!
     ```
     AGINE_KEY
     ```
+
+    to connect ChessAgine local GUI to your local Ollam server set the following
+
+    ```
+    NEXT_PUBLIC_OLLAMA_ENDPOINT=http://localhost:11434
+    ```
+
+    in chat settings > ollama > pick a model and make sure to pull it, volia now you have entire application running end to end
 
     Note this are optional envs, but good to set up when helping with issues user face.
 

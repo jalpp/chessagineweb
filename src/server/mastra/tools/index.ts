@@ -69,8 +69,8 @@ export const getThemeScoresTool = createTool({
     color: colorSchema,
   }),
   outputSchema: themeScoreSchema,
-  execute: async ({ context }) => {
-    return getThemeScores(context.fen, context.color as Color);
+  execute: async (inputData) => {
+    return getThemeScores(inputData.fen, inputData.color as Color);
   },
 });
 
@@ -84,11 +84,11 @@ export const analyzeVariationThemesTool = createTool({
     color: colorSchema,
   }),
   outputSchema: variationAnalysisSchema,
-  execute: async ({ context }) => {
+  execute: async (inputData) => {
     return analyzeVariationThemes(
-      context.rootFen,
-      context.moves,
-      context.color as Color
+      inputData.rootFen,
+      inputData.moves,
+      inputData.color as Color
     );
   },
 });
@@ -110,12 +110,12 @@ export const getThemeProgressionTool = createTool({
     ]),
   }),
   outputSchema: z.array(z.number()),
-  execute: async ({ context }) => {
+  execute: async (inputData) => {
     return getThemeProgression(
-      context.rootFen,
-      context.moves,
-      context.color as Color,
-      context.theme
+      inputData.rootFen,
+      inputData.moves,
+      inputData.color as Color,
+      inputData.theme
     );
   },
 });
@@ -141,11 +141,11 @@ export const compareVariationsTool = createTool({
       analysis: variationAnalysisSchema,
     })
   ),
-  execute: async ({ context }) => {
+  execute: async (inputData) => {
     return compareVariations(
-      context.rootFen,
-      context.variations,
-      context.color as Color
+      inputData.rootFen,
+      inputData.variations,
+      inputData.color as Color
     );
   },
 });
@@ -168,12 +168,12 @@ export const findCriticalMomentsTool = createTool({
       themeChanges: z.array(themeChangeSchema),
     })
   ),
-  execute: async ({ context }) => {
+  execute: async (inputData) => {
     return findCriticalMoments(
-      context.rootFen,
-      context.moves,
-      context.color as Color,
-      context.threshold
+      inputData.rootFen,
+      inputData.moves,
+      inputData.color as Color,
+      inputData.threshold
     );
   },
 });
@@ -187,9 +187,9 @@ export const searchWeb = createTool({
   outputSchema: z.object({
     answer: z.string().optional().describe("the answer for the search query"),
   }),
-  execute: async ({ context }) => {
-    const answer = await searchWebAnswer(context.searchQuery);
-    console.log(context.searchQuery);
+  execute: async (inputData) => {
+    const answer = await searchWebAnswer(inputData.searchQuery);
+    console.log(inputData.searchQuery);
     console.log(answer);
     return { answer: answer };
   },
@@ -221,9 +221,9 @@ export const getStockfishAnalysisTool = createTool({
         "The top varation that would play out according to Stockfish in UCI format"
       ),
   }),
-  execute: async ({ context }) => {
-    const evaluation = await getChessEvaluation(context.fen, context.depth);
-    return generateChessAnalysis(evaluation, context.fen);
+  execute: async (inputData) => {
+    const evaluation = await getChessEvaluation(inputData.fen, inputData.depth);
+    return generateChessAnalysis(evaluation, inputData.fen);
   },
 });
 
@@ -251,8 +251,8 @@ export const getStockfishMoveAnalysisTool = createTool({
         "The top variation that would play out according to Stockfish in UCI format"
       ),
   }),
-  execute: async ({ context }) => {
-    const { fen, move } = context;
+  execute: async (inputData) => {
+    const { fen, move } = inputData;
     // calculateDeep returns the new FEN after the move
     const newFen = calculateDeep(fen, move)?.fen || fen;
     const evaluation = await getChessEvaluation(newFen, 15);
@@ -278,14 +278,14 @@ export const isLegalMoveTool = createTool({
       .optional()
       .describe("Optional message about legality or errors"),
   }),
-  execute: async ({ context }) => {
+  execute: async (inputData) => {
     try {
-      const boardState = getBoardState(context.fen);
+      const boardState = getBoardState(inputData.fen);
       if (!boardState) {
         return { isLegal: false, message: "Invalid FEN string" };
       }
       const legalMoves = boardState.legalMoves || [];
-      const move = context.move.trim();
+      const move = inputData.move.trim();
       const isLegal =
         legalMoves.includes(move) ||
         legalMoves.map((m) => m.toLowerCase()).includes(move.toLowerCase());
@@ -316,8 +316,8 @@ export const boardStateToPromptTool = createTool({
       .string()
       .describe("A prompt string describing the board state after the move"),
   }),
-  execute: async ({ context }) => {
-    const { fen, move } = context;
+  execute: async (inputData) => {
+    const { fen, move } = inputData;
     const boardState = calculateDeep(fen, move);
     if (!boardState || !boardState.validfen) {
       return {

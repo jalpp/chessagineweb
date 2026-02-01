@@ -189,11 +189,11 @@ export default function useAgine(fen: string) {
         const apiSettings = JSON.parse(localStorage.getItem('api-settings') || '{}') as ApiSettings;
 
         if (!apiSettings.ollamaBaseUrl && apiSettings.provider == "ollama") {
-          throw new Error("Please configure your Ollama Ngrok local LLM endpoint in the settins page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.")
+          throw new Error("Please configure your Ollama Ngrok local LLM endpoint in the settins page before using ChessAgine. If you are not sure you can read the docs in the docs tab, please create an issue on Github if you need help.")
         }
 
         if (!apiSettings.apiKey && (apiSettings.provider === "anthropic" || apiSettings.provider === "google" || apiSettings.provider === "openai")) {
-          throw new Error('Please configure your API Key in the Settings page before using ChessAgine. If you are not sure you can read the docs in the docs tab, and join the Discord for more help from the developer.');
+          throw new Error('Please configure your API Key in the Settings page before using ChessAgine. If you are not sure you can read the docs in the docs tab, please create an issue on Github if you need help.');
         }
 
         const response = await fetch(`/api/agent`, {

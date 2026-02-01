@@ -40,12 +40,16 @@ export interface ApiSettings {
 }
 
 
+
 const ModelSetting: React.FC = () => {
+
+  const ollamaURL = process.env.NEXT_PUBLIC_OLLAMA_ENDPOINT;
   
   const defaultSettings: ApiSettings = {
     provider: 'aginecloud',
     model: 'openai/gpt-oss-20b',
-    apiKey: '',
+    apiKey:  '',
+    ollamaBaseUrl: ollamaURL,
     isRouted: false,
     language: 'English',
   };
@@ -62,15 +66,29 @@ const ModelSetting: React.FC = () => {
   const [tempSettings, setTempSettings] = useState<ApiSettings>(() => ({
     ...defaultSettings,
     ...apiSettings,
+    // Always use env variable if present, override localStorage
+    ollamaBaseUrl: ollamaURL || apiSettings.ollamaBaseUrl,
   }));
 
   
   useEffect(() => {
-    setTempSettings(({
+    const mergedSettings = {
       ...defaultSettings,
       ...apiSettings,
-    }));
-  }, [apiSettings]);
+      // Always use env variable if present, override localStorage
+      ollamaBaseUrl: ollamaURL || apiSettings.ollamaBaseUrl,
+    };
+    
+    setTempSettings(mergedSettings);
+    
+    // If env variable exists and it's different from what's saved, update localStorage
+    if (ollamaURL && apiSettings.ollamaBaseUrl !== ollamaURL) {
+      setApiSettings({
+        ...apiSettings,
+        ollamaBaseUrl: ollamaURL,
+      });
+    }
+  }, [apiSettings, ollamaURL]);
 
   
   const validateApiKey = (provider: string, apiKey: string): boolean => {
@@ -99,6 +117,10 @@ const ModelSetting: React.FC = () => {
     // Reset routing if switching to provider that doesn't support it
     if (provider === 'ollama') {
       newSettings.isRouted = false;
+      // Ensure ollamaBaseUrl is set from env if available
+      if (ollamaURL) {
+        newSettings.ollamaBaseUrl = ollamaURL;
+      }
     }
 
     setTempSettings(newSettings);
@@ -151,7 +173,13 @@ const ModelSetting: React.FC = () => {
       }
     }
 
-    setApiSettings(tempSettings);
+    // Ensure ollamaBaseUrl is always saved with env value if present
+    const settingsToSave = {
+      ...tempSettings,
+      ollamaBaseUrl: ollamaURL || tempSettings.ollamaBaseUrl,
+    };
+
+    setApiSettings(settingsToSave);
       
     setValidationError('');
     setSaveSuccess(true);
@@ -519,43 +547,97 @@ const ModelSetting: React.FC = () => {
             <Box display="flex" alignItems="center" gap={1} mb={2}>
               <Typography 
                 variant="h6"
-                
               >
-                Local LLM ngrok endpoint
+                {ollamaURL ? 'Local Ollama Connection' : 'Local LLM ngrok endpoint'}
               </Typography>
               <Chip 
                 size="small" 
                 label={currentProviderConfig.name}
-                
                 variant="outlined"
               />
+              {ollamaURL && (
+                <Chip 
+                  size="small" 
+                  label="Connected"
+                  color="success"
+                  variant="outlined"
+                />
+              )}
             </Box>
             
-            <TextField
-              fullWidth
-              type="text"
-              value={tempSettings.ollamaBaseUrl || ''}
-              onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value.trim() })}
-              placeholder="Enter your ngrok endpoint https:..."
-              helperText="Enter your ngrok endpoint https:..."
-             
-            />
-            
-            <Box mt={2}>
-              <Link 
-                href="https://www.chessagine.com/docs" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5,
-                }}
+            {ollamaURL ? (
+              <Alert 
+                severity="success" 
+                sx={{ mb: 2 }}
               >
-                <InfoIcon fontSize="small" />
-                Read the docs to start the ngrok server to connect to local LLM 
-              </Link>
-            </Box>
+                Connected to local Ollama API at: {ollamaURL}
+              </Alert>
+            ) : (
+              <>
+                <TextField
+                  fullWidth
+                  type="text"
+                  value={tempSettings.ollamaBaseUrl || ''}
+                  onChange={(e) => setTempSettings({ ...tempSettings, ollamaBaseUrl: e.target.value.trim() })}
+                  placeholder="Enter your ngrok endpoint https:..."
+                  helperText="Enter your ngrok endpoint https:..."
+                />
+                
+                <Box mt={2}>
+                  <Link 
+                    href="https://www.chessagine.com/docs" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 0.5,
+                    }}
+                  >
+                    <InfoIcon fontSize="small" />
+                    Read the docs to start the ngrok server to connect to local LLM 
+                  </Link>
+                </Box>
+              </>
+            )}
+
+            {/* Model Setup Instructions */}
+            {tempSettings.model && (
+              <Box mt={3}>
+                <Typography 
+                  variant="subtitle2" 
+                  gutterBottom
+                  sx={{ fontWeight: 600 }}
+                >
+                  Setup Instructions
+                </Typography>
+                <Alert 
+                  severity="info"
+                  icon={<InfoIcon />}
+                >
+                  <Typography variant="body2" gutterBottom>
+                    Make sure you have downloaded the model locally:
+                  </Typography>
+                  <Box 
+                    sx={{ 
+                      mt: 1,
+                      p: 1.5,
+                      bgcolor: 'background.paper',
+                      borderRadius: 1,
+                      fontFamily: 'monospace',
+                      fontSize: '0.875rem',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <code>ollama pull {tempSettings.model}</code>
+                  </Box>
+                  <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+                    Run this command in your terminal to download the model before using it.
+                  </Typography>
+                </Alert>
+              </Box>
+            )}
           </CardContent>
         </Card>
       )}

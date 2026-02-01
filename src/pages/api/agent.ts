@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { chessAgine } from "@/server/mastra/agents";
 import { getBoardState } from "@/server/mastra/tools/protocol/state";
-import { RuntimeContext } from "@mastra/core/di";
+import { RequestContext } from "@mastra/core/request-context";
 import { PositionPrompter } from "@/server/mastra/tools/protocol/positionPrompter";
 import { getAuth } from "@clerk/nextjs/server";
 import { ApiSetting } from "@/server/mastra/agents/types";
@@ -107,7 +107,7 @@ export default async function handler(
       !rawApiSettings.ollamaBaseUrl ||
       typeof rawApiSettings.ollamaBaseUrl !== "string" ||
       !rawApiSettings.ollamaBaseUrl.trim() ||
-      !/^https:\/\/.+/i.test(rawApiSettings.ollamaBaseUrl)
+      !/^http:\/\/.+/i.test(rawApiSettings.ollamaBaseUrl)
       )
     ) {
       return res.status(400).json({
@@ -167,28 +167,28 @@ export default async function handler(
     }
 
     const aginePromptInject = `$${positionPrompt}`;
-    const runtimeContext = new RuntimeContext();
-    runtimeContext.set("provider", apiSettings.provider);
-    runtimeContext.set("model", apiSettings.model);
-    runtimeContext.set("apiKey", apiSettings.apiKey || "");
-    runtimeContext.set("mode", mode);
-    runtimeContext.set("isRouted", apiSettings.isRouted)
-    runtimeContext.set("lang", apiSettings.language);
+    const requestContext = new RequestContext();
+    requestContext.set("provider", apiSettings.provider);
+    requestContext.set("model", apiSettings.model);
+    requestContext.set("apiKey", apiSettings.apiKey || "");
+    requestContext.set("mode", mode);
+    requestContext.set("isRouted", apiSettings.isRouted)
+    requestContext.set("lang", apiSettings.language);
 
     if (apiSettings.provider === "ollama") {
       if (apiSettings.ollamaBaseUrl) {
-        runtimeContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);
+        requestContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);
       }
     }
 
     let response;
     let maxTokens;
     try {
-      if(runtimeContext.get("mode") === "chess-gemma-commentary"){
+      if(requestContext.get("mode") === "chess-gemma-commentary"){
         response = await chessAgine.generate(
           [{role: "user", content: query}],
           {
-            runtimeContext,
+            requestContext: requestContext
           }
         );
         maxTokens = response.usage.totalTokens || 0;
@@ -198,8 +198,9 @@ export default async function handler(
             {role: "system", content: aginePromptInject},
             { role: "user", content: query }],
           {
-            runtimeContext,
+             requestContext: requestContext
           }
+          
         );
         maxTokens = response.usage.totalTokens || 0;
       }

@@ -110,18 +110,17 @@ export const renderFAQ = () => (
           Still Have Questions?
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          Can not find what you are looking for? Join our community Discord
-          where fellow chess enthusiasts and ChessAgine users share tips,
-          discuss strategies, and help each other out!
+          Can not find what you are looking for? Create an issue on ChessAgine Github
         </Typography>
         <Button
           variant="outlined"
-          color="success"
-          startIcon={<CommunityIcon />}
-          href="https://discord.gg/3RpEnvmZwp"
+          color="primary"
+          startIcon={<InfoIcon />}
+          href="https://github.com/jalpp/chessagineweb/issues"
+          target="_blank"
           sx={{ mr: 2 }}
         >
-          Join Discord Community
+          Create GitHub Issue
         </Button>
       </CardContent>
     </Card>
