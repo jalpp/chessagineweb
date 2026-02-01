@@ -28,7 +28,8 @@ The most underrated FOSS chess interface that combines LLMs and chess engines in
 - **Game Review**: Generate game review and ask Agine for specific move analysis
 - **hallucinations Checker** checks the previous responses hallucinations  
 - **Ollama Integration**: Run LLMs locally or via cloud and connect to ChessAgine. open source, and no API key required  
-- **Mobile/Tablet UI support** Able to talk to Agine on mobile/tablet
+- **Mobile/Tablet UI support**: Able to talk to Agine on mobile/tablet
+- **Full local web app**: Run ChessAgine GUI + Ollama to have entire app running on your own machine/hardware/cloud
 
 ## Running ChessAgine locally
 
@@ -40,10 +41,10 @@ The most underrated FOSS chess interface that combines LLMs and chess engines in
 
 2. Set up environment variables by creating a `.env.local` file in the root directory with your API keys:
   ```
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
-  CLERK_SECRET_KEY=your_clerk_secret
-  AGINE_KEY=your_api_key
-  NEXT_PUBLIC_OLLAMA_ENDPOINT=http://localhost:11434
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key // optional not needed, used for auth or multi user setup
+  CLERK_SECRET_KEY=your_clerk_secret // optional not needed, used for auth, or multi user setup
+  AGINE_KEY=your_api_key // your OpenRouter key to use OpenRouter as backend model provider
+  NEXT_PUBLIC_OLLAMA_ENDPOINT=http://localhost:11434 // to use ollama as backend model provider
   ```
 
 3. Run the development server:
@@ -64,11 +65,11 @@ This protocol allows Chess GUIs to integrate engines and LLMs seamlessly.
 ChessAgine has a comprehensive MCP server that brings CCP to your MCP Client like Claude desktop,
 to install the server, read more [here](https://github.com/jalpp/chessagine-mcp)
 
-## Thanks
+## Thanks To Devs
 
 check out ```./thanks.md``` to explore various devs who have indirectly or directly contributed to chessAgine project.
 
-🚀 Thanks to everyone! ❤️
+## 🚀 Thanks To Everyone! ❤️
 
 [![Stargazers over time](https://starchart.cc/jalpp/chessagineweb.svg?variant=adaptive)](https://starchart.cc/jalpp/chessagineweb)
 
