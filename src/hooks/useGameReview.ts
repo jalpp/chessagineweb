@@ -5,6 +5,9 @@ import { useSessionStorage } from "usehooks-ts";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useChessDB } from "./useChessDb";
 import { isVeryGoodMove,evaluationToWinRate, percentToNumber, normalizeChessDBScore, getMoveBasicClassification } from "@/libs/game/gamereview";
+import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
+import { ChessDBEaseMetricCalculator } from "@/libs/easemetric/chessDbEaseMetric";
+import { useNets } from "./useNets";
 
 export type MoveQuality =
   | "Best"
@@ -23,6 +26,7 @@ export interface MoveAnalysis {
   arrowMove: Move;
   evalMove: number;
   fen: string;
+  easeMetric?: number;
   currenFen: string;
   player: "w" | "b";
 }
@@ -46,6 +50,10 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
   const [rootCurrentMove, setRootCurrentMove] = useState(0);
   const {fetchChessDBData, data} = useChessDB("", true);
+  const {evaluations, analyzePositionNet } = useNets({fen: "", gameReviewMode: true, useLichessBook: false, maxRetries: 1, enabledModels: ['bigLeela']}); 
+  const stockfishEmCalculator = new StockfishEaseMetricCalculator(false);
+  const chessDbEmCalculator = new ChessDBEaseMetricCalculator(false);
+
 
   const generateGameReview = useCallback(
     async (gameNotation: string[], customFen?: string): Promise<void> => {
@@ -71,6 +79,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         arrowMove: Move;
         bestMove: string | undefined;
         plyIndex: number;
+        easeMetric?: number;
         openingMatch: boolean;
       }
 
@@ -112,6 +121,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           let secondBestWinRate: number | undefined = 0;
           let bestMove;
           let evalMove = 0.0;
+          let easeMetric;
           const openingMatch = isFenInAllDatabases(postMovefen);
 
           if (openingMatch) {
@@ -126,6 +136,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               arrowMove: moveObject,
               evalMove: evalMove,
               plyIndex: ply,
+              easeMetric: 0.90,
               bestMove: bestMove,
               sanBestMove: sanNotation,
               openingMatch: true,
@@ -166,6 +177,14 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             const chess = new Chess(preMovefen);
             const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
             sanBestMove = moveObjSan ? moveObjSan.san : undefined;
+
+            await analyzePositionNet(preMovefen)
+            if(evaluations.bigLeela){
+              easeMetric = stockfishEmCalculator.calculateEaseMetric(evaluations.bigLeela, positionAnalysis)  
+            }else{
+              easeMetric = undefined;
+            }
+
           } else {
             // ChessDB winrate is already from the side to move (player's perspective)
             preMoveWinRate = percentToNumber(chessDbEvals[0].winrate);
@@ -178,6 +197,13 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               : undefined;
             bestMove = chessDbEvals[0].uci;
             sanBestMove = chessDbEvals[0].san;
+
+            await analyzePositionNet(preMovefen)
+            if(evaluations.bigLeela){
+              easeMetric = chessDbEmCalculator.calculateEaseMetric(evaluations.bigLeela, chessDbEvals);
+            }else{
+              easeMetric = undefined;
+            }
           }
 
           // Evaluate POST-MOVE position (convert to player's perspective)
@@ -214,6 +240,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             evalMove: evalMove,
             arrowMove: moveObject,
             bestMove: bestMove,
+            easeMetric: easeMetric,
             sanBestMove: sanBestMove,
             openingMatch: false,
           });
@@ -239,6 +266,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             sanBestMove,
             arrowMove,
             evalMove,
+            easeMetric,
           } = currentState;
 
           if (openingMatch) {
@@ -251,6 +279,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               currenFen: postMovefen,
               arrowMove: arrowMove,
               quality: "Book",
+              easeMetric: 0.90,
               player: activePlayer,
             });
 
@@ -280,6 +309,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               fen: preMovefen,
               evalMove,
               currenFen: postMovefen,
+              easeMetric: easeMetric,
               arrowMove: arrowMove,
               quality: "Very Good",
               player: activePlayer,
@@ -301,6 +331,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               fen: preMovefen,
               quality: "Best",
               evalMove,
+              easeMetric: easeMetric,
               arrowMove: arrowMove,
               currenFen: postMovefen,
               player: activePlayer,
@@ -327,6 +358,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             arrowMove: arrowMove,
             fen: preMovefen,
             evalMove,
+            easeMetric: easeMetric,
             currenFen: postMovefen,
             player: activePlayer,
           });

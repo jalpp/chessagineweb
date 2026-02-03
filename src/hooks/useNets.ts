@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNetModels, useNetStatus } from "@/context/NetContext";
 import { convertToSanEvaluation, MAIA_MODELS, MaiaEvaluation, ModelType, SanMaiaEvaluation } from "@/libs/nets/types";
 import {
@@ -15,6 +15,7 @@ interface UseMaiaEngineOptions {
   enabledModels?: ModelType[];
   useLichessBook?: boolean;
   bookThreshold?: number;
+  gameReviewMode?: boolean;
 }
 
 
@@ -40,6 +41,7 @@ export interface UseMaiaEngineResult {
   isLoading: boolean;
   Maiaerror: Error | null;
   evaluationsFen?: string | null;
+  analyzePositionNet: (customFen?: string) => Promise<void>;
 }
 
 export const useNets = ({
@@ -49,6 +51,7 @@ export const useNets = ({
   enabledModels,
   useLichessBook = true,
   bookThreshold = 21,
+  gameReviewMode = false,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
   const { maia2, bigLeela, elitemaia } = useNetModels();
   const { status, activeModels } = useNetStatus();
@@ -69,235 +72,257 @@ export const useNets = ({
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const analyzePosition = useCallback(async (customFen?: string) => {
+    const fenToAnalyze = customFen || fen;
+    if (!fenToAnalyze) return;
+
+    const modelsToUse = enabledModels
+      ? enabledModels.filter((m) => activeModels.includes(m))
+      : activeModels;
+
+    const cacheKey = getMaiaCacheKey({
+      fen: fenToAnalyze,
+      models: modelsToUse,
+      useLichessBook,
+      bookThreshold,
+    });
+
+    const cached = await readMaiaCache(cacheKey);
+    if (cached) {
+      setEvaluations(cached.evaluations);
+      setSanEvaluations(cached.sanEvaluations);
+      setLichessData(cached.lichessData);
+      setIsInBook(cached.isInBook);
+      setEvaluationsFen(fenToAnalyze);
+      setIsLoading(false);
+      return;
+    }
+
+    if (modelsToUse.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Create a new abort controller for this analysis
+    const currentAbortController = new AbortController();
+    abortControllerRef.current = currentAbortController;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const newEvaluations: UseMaiaEngineResult["evaluations"] = {};
+      const newSanEvaluations: UseMaiaEngineResult["sanEvaluations"] = {};
+      const newLichessData: UseMaiaEngineResult["lichessData"] = {};
+      let positionIsInBook = false;
+
+      // Maia 2
+      if (
+        modelsToUse.includes("maia2") &&
+        maia2 &&
+        status.maia2 === "ready"
+      ) {
+        if (currentAbortController.signal.aborted) return;
+
+        const maia2Evaluations: { [key: string]: MaiaEvaluation } = {};
+        const maia2SanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
+        const maia2LichessData: { [key: string]: LichessData } = {};
+        let anyLichessDataAvailable = false;
+
+        if (useLichessBook) {
+          const lichessPromises = MAIA_MODELS.map((model) =>
+            fetchLichessData(
+              fenToAnalyze,
+              parseInt(model),
+              currentAbortController.signal
+            )
+          );
+          const lichessResults = await Promise.all(lichessPromises);
+
+          MAIA_MODELS.forEach((model, index) => {
+            const lichessResult = lichessResults[index];
+            
+            if (lichessResult) {
+              const totalGames =
+                lichessResult.white + lichessResult.draws + lichessResult.black;
+
+              maia2LichessData[model] = lichessResult;
+              anyLichessDataAvailable = true;
+
+              if (totalGames >= bookThreshold) {
+                positionIsInBook = true;
+                maia2Evaluations[model] = lichessToEvaluation(lichessResult);
+                maia2SanEvaluations[model] =
+                  lichessToSanEvaluation(lichessResult);
+              }
+            }
+          });
+
+          if (anyLichessDataAvailable) {
+            newLichessData.maia2 = maia2LichessData;
+          }
+        }
+
+        // Fallback to neural network if not in book or Lichess failed
+        if (!positionIsInBook) {
+          const positions = [
+            { fen: fenToAnalyze, eloSelf: 1100, eloOppo: 1100 },
+            { fen: fenToAnalyze, eloSelf: 1200, eloOppo: 1200 },
+            { fen: fenToAnalyze, eloSelf: 1300, eloOppo: 1300 },
+            { fen: fenToAnalyze, eloSelf: 1400, eloOppo: 1400 },
+            { fen: fenToAnalyze, eloSelf: 1500, eloOppo: 1500 },
+            { fen: fenToAnalyze, eloSelf: 1600, eloOppo: 1600 },
+            { fen: fenToAnalyze, eloSelf: 1700, eloOppo: 1700 },
+            { fen: fenToAnalyze, eloSelf: 1800, eloOppo: 1800 },
+            { fen: fenToAnalyze, eloSelf: 1900, eloOppo: 1900 },
+          ];
+
+          const results = await maia2.batchEval(positions);
+
+          if (currentAbortController.signal.aborted) return;
+
+          MAIA_MODELS.forEach((model, index) => {
+            const uciEval = results[index];
+            maia2Evaluations[model] = uciEval;
+            maia2SanEvaluations[model] = convertToSanEvaluation(uciEval, fenToAnalyze);
+          });
+
+          newEvaluations.maia2 = maia2Evaluations;
+        }
+
+        newSanEvaluations.maia2 = maia2SanEvaluations;
+      }
+
+      // BigLeela
+      if (
+        modelsToUse.includes("bigLeela") &&
+        bigLeela &&
+        status.bigLeela === "ready"
+      ) {
+        if (currentAbortController.signal.aborted) return;
+
+        let usedBook = false;
+
+        if (useLichessBook) {
+          const lichessResult = await fetchLichessData(
+            fenToAnalyze,
+            2500,
+            currentAbortController.signal
+          );
+          
+          if (lichessResult) {
+            const totalGames =
+              lichessResult.white + lichessResult.draws + lichessResult.black;
+
+            newLichessData.bigLeela = lichessResult;
+
+            if (totalGames >= bookThreshold) {
+              positionIsInBook = true;
+              usedBook = true;
+              newEvaluations.bigLeela = lichessToEvaluation(lichessResult);
+              newSanEvaluations.bigLeela =
+                lichessToSanEvaluation(lichessResult);
+            }
+          }
+        }
+
+        if (!usedBook) {
+          const uciEval = await bigLeela.evaluate(fenToAnalyze);
+          newEvaluations.bigLeela = uciEval;
+          newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fenToAnalyze);
+        }
+      }
+
+      // EliteMaia
+      if (
+        modelsToUse.includes("elitemaia") &&
+        elitemaia &&
+        status.elitemaia === "ready"
+      ) {
+        if (currentAbortController.signal.aborted) return;
+
+        let usedBook = false;
+
+        if (useLichessBook) {
+          const lichessResult = await fetchLichessData(
+            fenToAnalyze,
+            2500,
+            currentAbortController.signal
+          );
+          
+          if (lichessResult) {
+            const totalGames =
+              lichessResult.white + lichessResult.draws + lichessResult.black;
+
+            newLichessData.elitemaia = lichessResult;
+
+            if (totalGames >= bookThreshold) {
+              positionIsInBook = true;
+              usedBook = true;
+              newEvaluations.elitemaia = lichessToEvaluation(lichessResult);
+              newSanEvaluations.elitemaia =
+                lichessToSanEvaluation(lichessResult);
+            }
+          }
+        }
+
+        if (!usedBook) {
+          const uciEval = await elitemaia.evaluate(fenToAnalyze);
+          newEvaluations.elitemaia = uciEval;
+          newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fenToAnalyze);
+        }
+      }
+
+      if (!currentAbortController.signal.aborted) {
+        const cacheEntry = {
+          evaluations: newEvaluations,
+          sanEvaluations: newSanEvaluations,
+          lichessData: newLichessData,
+          isInBook: positionIsInBook,
+          timestamp: Date.now(),
+        };
+
+        await writeMaiaCache(cacheKey, cacheEntry);
+
+        setEvaluations(newEvaluations);
+        setSanEvaluations(newSanEvaluations);
+        setLichessData(newLichessData);
+        setIsInBook(positionIsInBook);
+        setEvaluationsFen(fenToAnalyze);
+      }
+    } catch (err) {
+      if (!currentAbortController.signal.aborted) {
+        const error = err instanceof Error ? err : new Error("Unknown error");
+        setError(error);
+        console.error("Analysis error:", error);
+      }
+    } finally {
+      if (!currentAbortController.signal.aborted) {
+        setIsLoading(false);
+      }
+    }
+  }, [
+    fen,
+    maia2,
+    bigLeela,
+    elitemaia,
+    status.maia2,
+    status.bigLeela,
+    status.elitemaia,
+    activeModels,
+    enabledModels,
+    useLichessBook,
+    bookThreshold,
+  ]);
+
   useEffect(() => {
+    // Skip automatic analysis in game review mode
+    if (gameReviewMode) {
+      return;
+    }
+
     abortControllerRef.current = new AbortController();
     const currentAbortController = abortControllerRef.current;
-
-    const analyzePosition = async () => {
-      if (!fen) return;
-
-      const modelsToUse = enabledModels
-        ? enabledModels.filter((m) => activeModels.includes(m))
-        : activeModels;
-
-      const cacheKey = getMaiaCacheKey({
-        fen,
-        models: modelsToUse,
-        useLichessBook,
-        bookThreshold,
-      });
-
-      const cached = await readMaiaCache(cacheKey);
-      if (cached) {
-        setEvaluations(cached.evaluations);
-        setSanEvaluations(cached.sanEvaluations);
-        setLichessData(cached.lichessData);
-        setIsInBook(cached.isInBook);
-        setEvaluationsFen(fen);
-        setIsLoading(false);
-        return;
-      }
-
-      if (modelsToUse.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const newEvaluations: UseMaiaEngineResult["evaluations"] = {};
-        const newSanEvaluations: UseMaiaEngineResult["sanEvaluations"] = {};
-        const newLichessData: UseMaiaEngineResult["lichessData"] = {};
-        let positionIsInBook = false;
-
-        // Maia 2
-        if (
-          modelsToUse.includes("maia2") &&
-          maia2 &&
-          status.maia2 === "ready"
-        ) {
-          if (currentAbortController.signal.aborted) return;
-
-          const maia2Evaluations: { [key: string]: MaiaEvaluation } = {};
-          const maia2SanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
-          const maia2LichessData: { [key: string]: LichessData } = {};
-          let anyLichessDataAvailable = false;
-
-          if (useLichessBook) {
-            const lichessPromises = MAIA_MODELS.map((model) =>
-              fetchLichessData(
-                fen,
-                parseInt(model),
-                currentAbortController.signal
-              )
-            );
-            const lichessResults = await Promise.all(lichessPromises);
-
-            MAIA_MODELS.forEach((model, index) => {
-              const lichessResult = lichessResults[index];
-              
-              if (lichessResult) {
-                const totalGames =
-                  lichessResult.white + lichessResult.draws + lichessResult.black;
-
-                maia2LichessData[model] = lichessResult;
-                anyLichessDataAvailable = true;
-
-                if (totalGames >= bookThreshold) {
-                  positionIsInBook = true;
-                  maia2Evaluations[model] = lichessToEvaluation(lichessResult);
-                  maia2SanEvaluations[model] =
-                    lichessToSanEvaluation(lichessResult);
-                }
-              }
-            });
-
-            if (anyLichessDataAvailable) {
-              newLichessData.maia2 = maia2LichessData;
-            }
-          }
-
-          // Fallback to neural network if not in book or Lichess failed
-          if (!positionIsInBook) {
-            const positions = [
-              { fen, eloSelf: 1100, eloOppo: 1100 },
-              { fen, eloSelf: 1200, eloOppo: 1200 },
-              { fen, eloSelf: 1300, eloOppo: 1300 },
-              { fen, eloSelf: 1400, eloOppo: 1400 },
-              { fen, eloSelf: 1500, eloOppo: 1500 },
-              { fen, eloSelf: 1600, eloOppo: 1600 },
-              { fen, eloSelf: 1700, eloOppo: 1700 },
-              { fen, eloSelf: 1800, eloOppo: 1800 },
-              { fen, eloSelf: 1900, eloOppo: 1900 },
-            ];
-
-            const results = await maia2.batchEval(positions);
-
-            if (currentAbortController.signal.aborted) return;
-
-            MAIA_MODELS.forEach((model, index) => {
-              const uciEval = results[index];
-              maia2Evaluations[model] = uciEval;
-              maia2SanEvaluations[model] = convertToSanEvaluation(uciEval, fen);
-            });
-
-            newEvaluations.maia2 = maia2Evaluations;
-          }
-
-          newSanEvaluations.maia2 = maia2SanEvaluations;
-        }
-
-        // BigLeela
-        if (
-          modelsToUse.includes("bigLeela") &&
-          bigLeela &&
-          status.bigLeela === "ready"
-        ) {
-          if (currentAbortController.signal.aborted) return;
-
-          let usedBook = false;
-
-          if (useLichessBook) {
-            const lichessResult = await fetchLichessData(
-              fen,
-              2500,
-              currentAbortController.signal
-            );
-            
-            if (lichessResult) {
-              const totalGames =
-                lichessResult.white + lichessResult.draws + lichessResult.black;
-
-              newLichessData.bigLeela = lichessResult;
-
-              if (totalGames >= bookThreshold) {
-                positionIsInBook = true;
-                usedBook = true;
-                newEvaluations.bigLeela = lichessToEvaluation(lichessResult);
-                newSanEvaluations.bigLeela =
-                  lichessToSanEvaluation(lichessResult);
-              }
-            }
-          }
-
-          if (!usedBook) {
-            const uciEval = await bigLeela.evaluate(fen);
-            newEvaluations.bigLeela = uciEval;
-            newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fen);
-          }
-        }
-
-        // EliteMaia
-        if (
-          modelsToUse.includes("elitemaia") &&
-          elitemaia &&
-          status.elitemaia === "ready"
-        ) {
-          if (currentAbortController.signal.aborted) return;
-
-          let usedBook = false;
-
-          if (useLichessBook) {
-            const lichessResult = await fetchLichessData(
-              fen,
-              2500,
-              currentAbortController.signal
-            );
-            
-            if (lichessResult) {
-              const totalGames =
-                lichessResult.white + lichessResult.draws + lichessResult.black;
-
-              newLichessData.elitemaia = lichessResult;
-
-              if (totalGames >= bookThreshold) {
-                positionIsInBook = true;
-                usedBook = true;
-                newEvaluations.elitemaia = lichessToEvaluation(lichessResult);
-                newSanEvaluations.elitemaia =
-                  lichessToSanEvaluation(lichessResult);
-              }
-            }
-          }
-
-          if (!usedBook) {
-            const uciEval = await elitemaia.evaluate(fen);
-            newEvaluations.elitemaia = uciEval;
-            newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fen);
-          }
-        }
-
-        if (!currentAbortController.signal.aborted) {
-          const cacheEntry = {
-            evaluations: newEvaluations,
-            sanEvaluations: newSanEvaluations,
-            lichessData: newLichessData,
-            isInBook: positionIsInBook,
-            timestamp: Date.now(),
-          };
-
-          await writeMaiaCache(cacheKey, cacheEntry);
-
-          setEvaluations(newEvaluations);
-          setSanEvaluations(newSanEvaluations);
-          setLichessData(newLichessData);
-          setIsInBook(positionIsInBook);
-          setEvaluationsFen(fen);
-        }
-      } catch (err) {
-        if (!currentAbortController.signal.aborted) {
-          const error = err instanceof Error ? err : new Error("Unknown error");
-          setError(error);
-          console.error("Analysis error:", error);
-        }
-      } finally {
-        if (!currentAbortController.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    };
 
     const waitForModels = async () => {
       let retries = 0;
@@ -334,18 +359,12 @@ export const useNets = ({
     };
   }, [
     fen,
-    maia2,
-    bigLeela,
-    elitemaia,
-    status.maia2,
-    status.bigLeela,
-    status.elitemaia,
-    activeModels,
-    enabledModels,
-    useLichessBook,
-    bookThreshold,
+    gameReviewMode,
+    analyzePosition,
     maxRetries,
     retryDelayMs,
+    enabledModels,
+    activeModels,
   ]);
 
   return {
@@ -356,5 +375,6 @@ export const useNets = ({
     evaluationsFen,
     isLoading,
     Maiaerror: error,
+    analyzePositionNet: analyzePosition,
   };
 };
