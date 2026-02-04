@@ -49,8 +49,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
   const [rootCurrentMove, setRootCurrentMove] = useState(0);
-  const {fetchChessDBData, data} = useChessDB("", true);
-  const {evaluations, analyzePositionNet } = useNets({fen: "", gameReviewMode: true, useLichessBook: false, maxRetries: 1, enabledModels: ['bigLeela']}); 
+  const {fetchChessDBData} = useChessDB("", true);
+  const { analyzePositionNet } = useNets({fen: "", gameReviewMode: true, useLichessBook: false, maxRetries: 1, enabledModels: ['bigLeela']}); 
   const stockfishEmCalculator = new StockfishEaseMetricCalculator(false);
   const chessDbEmCalculator = new ChessDBEaseMetricCalculator(false);
 
@@ -147,8 +147,9 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             setGameReviewProgress(Math.round(phase1Progress));
             continue;
           }
-          await fetchChessDBData(preMovefen);
-          const chessDbEvals = data;
+          const data = await fetchChessDBData(preMovefen);
+          const chessDbEvals = data ? data : [];
+          
           let sanBestMove;
 
           // Evaluate PRE-MOVE position (convert to player's perspective)
@@ -178,9 +179,9 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             const moveObjSan = bestMove ? chess.move(bestMove) : undefined;
             sanBestMove = moveObjSan ? moveObjSan.san : undefined;
 
-            await analyzePositionNet(preMovefen)
-            if(evaluations.bigLeela){
-              easeMetric = stockfishEmCalculator.calculateEaseMetric(evaluations.bigLeela, positionAnalysis)  
+            const netResult = await analyzePositionNet?.(preMovefen)
+            if(netResult?.bigLeela){
+              easeMetric = stockfishEmCalculator.calculateEaseMetric(netResult?.bigLeela, positionAnalysis)  
             }else{
               easeMetric = undefined;
             }
@@ -198,17 +199,17 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             bestMove = chessDbEvals[0].uci;
             sanBestMove = chessDbEvals[0].san;
 
-            await analyzePositionNet(preMovefen)
-            if(evaluations.bigLeela){
-              easeMetric = chessDbEmCalculator.calculateEaseMetric(evaluations.bigLeela, chessDbEvals);
+            const netResult = await analyzePositionNet?.(preMovefen)
+            if(netResult?.bigLeela){
+              easeMetric = chessDbEmCalculator.calculateEaseMetric(netResult.bigLeela, chessDbEvals);
             }else{
               easeMetric = undefined;
             }
           }
 
           // Evaluate POST-MOVE position (convert to player's perspective)
-           await fetchChessDBData(postMovefen);
-           const chessDbEvalsPost = data;
+           const datapost = await fetchChessDBData(postMovefen);
+           const chessDbEvalsPost = datapost ? datapost : [];
           
           if (chessDbEvalsPost.length == 0) {
             const postAnalysis =

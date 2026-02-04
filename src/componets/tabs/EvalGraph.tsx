@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Box, Typography, useTheme, ToggleButtonGroup, ToggleButton, Alert, AlertTitle } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { MoveAnalysis } from "@/hooks/useGameReview";
@@ -13,9 +13,8 @@ type GraphMode = "eval" | "ease" | "both";
 const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
   const theme = useTheme();
   const [graphMode, setGraphMode] = useState<GraphMode>("eval");
-  const { status} = useNetStatus();
+  const { status } = useNetStatus();
   const leelaT1Status = status['bigLeela'];
- 
 
   const allData = useMemo(() => {
     return moves.map((m, idx) => {
@@ -57,19 +56,20 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
     return { xData, yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, minEval, maxEval, minEase, maxEase, undefinedEaseCount };
   }, [allData]);
 
-  const evalPadding = (maxEval - minEval) * 0.1 || 1;
-  const easePadding = (maxEase - minEase) * 0.1 || 0.1;
+  const evalPadding = useMemo(() => (maxEval - minEval) * 0.1 || 1, [maxEval, minEval]);
+  const easePadding = useMemo(() => (maxEase - minEase) * 0.1 || 0.1, [maxEase, minEase]);
 
   const shouldShowLeelaWarning = undefinedEaseCount >= 5 || leelaT1Status !== "ready";
   const showEaseMetricWarning = (graphMode === "ease" || graphMode === "both") && shouldShowLeelaWarning;
 
-  const handleModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: GraphMode | null) => {
+  const handleModeChange = useCallback((_event: React.MouseEvent<HTMLElement>, newMode: GraphMode | null) => {
     if (newMode !== null) {
       setGraphMode(newMode);
     }
-  };
+  }, []);
 
-  const getSeriesConfig = () => {
+  // Memoize series configuration
+  const seriesConfig = useMemo(() => {
     const evalSeries = {
       data: yData,
       label: "Eval per Move",
@@ -149,9 +149,10 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
     } else {
       return [evalSeries, easeSeries, ...criticalSeries];
     }
-  };
+  }, [yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, graphMode, allData, theme.palette.text.primary]);
 
-  const getYAxisConfig = () => {
+  // Memoize Y-axis configuration
+  const yAxisConfig = useMemo(() => {
     if (graphMode === "both") {
       return [
         {
@@ -186,7 +187,16 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
         },
       ];
     }
-  };
+  }, [graphMode, minEval, maxEval, minEase, maxEase, evalPadding, easePadding]);
+
+  // Memoize X-axis configuration
+  const xAxisConfig = useMemo(() => [
+    {
+      data: xData,
+      label: "Move Number",
+      scaleType: "linear" as const,
+    },
+  ], [xData]);
 
   return (
     <Box sx={{ width: "100%", mt: 2 }}>
@@ -223,16 +233,10 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
 
       <Box sx={{ width: "100%", height: 550 }}>
         <LineChart
-          xAxis={[
-            {
-              data: xData,
-              label: "Move Number",
-              scaleType: "linear",
-            },
-          ]}
+          xAxis={xAxisConfig}
           skipAnimation
-          yAxis={getYAxisConfig()}
-          series={getSeriesConfig()}
+          yAxis={yAxisConfig}
+          series={seriesConfig}
           height={550}
           margin={{ left: 70, right: graphMode === "both" ? 70 : 20, top: 20, bottom: 70 }}
           grid={{ vertical: true, horizontal: true }}

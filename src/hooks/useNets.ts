@@ -41,7 +41,7 @@ export interface UseMaiaEngineResult {
   isLoading: boolean;
   Maiaerror: Error | null;
   evaluationsFen?: string | null;
-  analyzePositionNet: (customFen?: string) => Promise<void>;
+  analyzePositionNet?: (customFen?: string | undefined) => Promise<MaiaEngineAnalysis | undefined>;
 }
 
 export const useNets = ({
@@ -289,6 +289,8 @@ export const useNets = ({
         setLichessData(newLichessData);
         setIsInBook(positionIsInBook);
         setEvaluationsFen(fenToAnalyze);
+
+        return newEvaluations;
       }
     } catch (err) {
       if (!currentAbortController.signal.aborted) {
