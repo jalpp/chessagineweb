@@ -72,6 +72,7 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
 
     await setChessDbCache(fenString, processedMoves);
     setData(processedMoves);
+    return processedMoves;
   } catch (err) {
     console.error('error!', err);
     setData([]);
