@@ -91,12 +91,10 @@ const getValueIcon = (value: number) => {
 }
 
 const getEMColor = (value: number) => {
-  // Positive EM means variation gets easier
-  if (value > 0.1) return '#4caf50'
-  // Negative EM means variation gets harder
-  if (value < -0.1) return '#f44336'
-  // Near zero means similar difficulty
-  return '#ff9800'
+  if (value > 0.1) return '#319333'
+  if (value < -0.1) return '#850e05'
+
+  return '#5e5549'
 }
 
 const formatPrincipalVariation = (pv: string[], startFen: string): string => {
@@ -293,7 +291,7 @@ const VariationEaseMetricView: React.FC<{
         borderRadius: 2, 
         p: 2,
         mt: 3
-      }}>``
+      }}>
         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
           Interpretation Guide
         </Typography>
