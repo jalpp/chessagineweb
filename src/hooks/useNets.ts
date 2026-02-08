@@ -201,36 +201,11 @@ export const useNets = ({
       ) {
         if (currentAbortController.signal.aborted) return;
 
-        let usedBook = false;
-
-        if (useLichessBook) {
-          const lichessResult = await fetchLichessData(
-            fenToAnalyze,
-            2500,
-            currentAbortController.signal
-          );
-          
-          if (lichessResult) {
-            const totalGames =
-              lichessResult.white + lichessResult.draws + lichessResult.black;
-
-            newLichessData.bigLeela = lichessResult;
-
-            if (totalGames >= bookThreshold) {
-              positionIsInBook = true;
-              usedBook = true;
-              newEvaluations.bigLeela = lichessToEvaluation(lichessResult);
-              newSanEvaluations.bigLeela =
-                lichessToSanEvaluation(lichessResult);
-            }
-          }
-        }
-
-        if (!usedBook) {
-          const uciEval = await bigLeela.evaluate(fenToAnalyze);
-          newEvaluations.bigLeela = uciEval;
-          newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fenToAnalyze);
-        }
+       // want to avoid looking at lichess book for good net like big leela
+        const uciEval = await bigLeela.evaluate(fenToAnalyze);
+        newEvaluations.bigLeela = uciEval;
+        newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fenToAnalyze);
+        
       }
 
       // EliteMaia
@@ -241,36 +216,11 @@ export const useNets = ({
       ) {
         if (currentAbortController.signal.aborted) return;
 
-        let usedBook = false;
-
-        if (useLichessBook) {
-          const lichessResult = await fetchLichessData(
-            fenToAnalyze,
-            2500,
-            currentAbortController.signal
-          );
-          
-          if (lichessResult) {
-            const totalGames =
-              lichessResult.white + lichessResult.draws + lichessResult.black;
-
-            newLichessData.elitemaia = lichessResult;
-
-            if (totalGames >= bookThreshold) {
-              positionIsInBook = true;
-              usedBook = true;
-              newEvaluations.elitemaia = lichessToEvaluation(lichessResult);
-              newSanEvaluations.elitemaia =
-                lichessToSanEvaluation(lichessResult);
-            }
-          }
-        }
-
-        if (!usedBook) {
-          const uciEval = await elitemaia.evaluate(fenToAnalyze);
-          newEvaluations.elitemaia = uciEval;
-          newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fenToAnalyze);
-        }
+        // want to avoid looking at lichess book for good net like elite maias
+        const uciEval = await elitemaia.evaluate(fenToAnalyze);
+        newEvaluations.elitemaia = uciEval;
+        newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fenToAnalyze);
+        
       }
 
       if (!currentAbortController.signal.aborted) {

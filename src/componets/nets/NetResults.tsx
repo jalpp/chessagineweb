@@ -247,7 +247,6 @@ const VariationEaseMetricView: React.FC<{
                     }}
                   >
                     {formatPrincipalVariation(line.pv, line.fen)}
-                    {line.pv.length > 3 ? '...' : ''}
                   </Typography>
                 </TableCell>
                 <TableCell>
