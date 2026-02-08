@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useNets } from "./useNets";
 import { MaiaEvaluation } from "@/libs/nets/types";
 import { easeMetricVariationCache } from "@/libs/easemetric/cache";
-import { DEFAULT_ENGINE_LINES, MAX_PV_MOVES } from "@/libs/setting/helper";
+import { DEFAULT_ENGINE_DEPTH, DEFAULT_ENGINE_LINES, MAX_PV_MOVES } from "@/libs/setting/helper";
 import { useLocalStorage } from "usehooks-ts";
 
 export function useEaseMetricVariation(
@@ -14,9 +14,14 @@ export function useEaseMetricVariation(
   engine: UciEngine | null,
   RnetEval: MaiaEvaluation,
   RPositionEval: PositionEval | null,
+  Max_PV: number
 ) {
   const [variations, setVariations] = useState<PositionEval | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [engineDepth] = useLocalStorage<number>(
+      "engineDepth",
+      DEFAULT_ENGINE_DEPTH
+    );
   const [engineLines] = useLocalStorage<number>(
       "engineLines",
       DEFAULT_ENGINE_LINES
@@ -38,8 +43,10 @@ export function useEaseMetricVariation(
     setIsLoading(true);
 
     try {
+
+      const cacheKey = `${Rfen}:${Max_PV}`
  
-      const cached = await easeMetricVariationCache.get(Rfen);
+      const cached = await easeMetricVariationCache.get(cacheKey);
       if (cached) {
         console.log("Using cached EaseMetricVariation");
         setVariations(cached);
@@ -56,7 +63,8 @@ export function useEaseMetricVariation(
 
         const board = new Chess(Rfen);
         const pv = updatedPositionEval.lines[i].pv;
-        for (let j = 0; j < MAX_PV_MOVES; j++) {
+        const maxLineMoves = Max_PV > pv.length ? pv.length : Math.min(Max_PV, pv.length);
+        for (let j = 0; j < maxLineMoves; j++) {
           board.move(pv[j]);
         }
         const viEndFen = board.fen();
@@ -67,7 +75,7 @@ export function useEaseMetricVariation(
 
         const viEval = await engine?.evaluatePositionWithUpdate({
           fen: viEndFen,
-          depth: 15,
+          depth: engineDepth,
           multiPv: engineLines,
         });
         console.log(`Line ${i}: Engine evaluation retrieved`, viEval);
@@ -85,8 +93,7 @@ export function useEaseMetricVariation(
 
       console.log("Variation computation completed");
 
-      // Cache the result
-      await easeMetricVariationCache.set(Rfen, updatedPositionEval);
+      await easeMetricVariationCache.set(cacheKey, updatedPositionEval);
 
       setVariations(updatedPositionEval);
     } catch (error) {
@@ -98,7 +105,7 @@ export function useEaseMetricVariation(
 
   useEffect(() => {
     computeEmVariation();
-  }, [Rfen, engine]);
+  }, [Rfen, engine, Max_PV]);
 
 
   return {

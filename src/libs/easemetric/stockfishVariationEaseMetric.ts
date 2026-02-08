@@ -13,7 +13,7 @@ export class StockfishVEaseMetricCalculator {
     public calculatePvEaseMetric(RnetEval: MaiaEvaluation, REngineEval: PositionEval | null, ViNetEval: MaiaEvaluation, ViEngineEval: PositionEval | undefined): number {
         if(!REngineEval){
             console.log('Root Engine lines not present, exist 0');
-            return 0;
+            return 0.5;
         }
         const REase = this.stockfishCalculator.calculateEaseMetric(RnetEval, REngineEval);
         const ViEase = this.stockfishCalculator.calculateEaseMetric(ViNetEval, ViEngineEval!);
