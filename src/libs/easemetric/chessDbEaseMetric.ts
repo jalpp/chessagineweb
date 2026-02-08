@@ -3,10 +3,8 @@ import { EaseMetricStrategy } from "./easeMetricStrategy";
 import { MaiaEvaluation } from "../nets/types";
 
 export class ChessDBEaseMetricCalculator extends EaseMetricStrategy {
-  
-
   constructor(log: boolean) {
-    super(log, 'calculateEaseMetricDB');
+    super(log, "calculateEaseMetricDB");
   }
 
   public findMaxQ(chessDbEval: CandidateMove[]): number {
@@ -25,8 +23,8 @@ export class ChessDBEaseMetricCalculator extends EaseMetricStrategy {
   ): number {
     try {
       if (!chessDbEval || chessDbEval.length === 0) {
-        this.doLog('No engine evaluation provided');
-        return 0;
+        this.doLog("No engine evaluation provided");
+        return 0.5;
       }
 
       const limitedMoves = chessDbEval.slice(0, 4);
@@ -40,18 +38,17 @@ export class ChessDBEaseMetricCalculator extends EaseMetricStrategy {
 
       for (let i = 0; i < limitedMoves.length; i++) {
         const currNode = limitedMoves[i];
-        const move = currNode.uci
+        const move = currNode.uci;
         const policyValue = netEvals.policy[move];
 
         const P = policyValue > 1 ? policyValue / 100 : policyValue;
         const Qi = this.calculateRawWinningChanceQ(currNode.rawEval || 0);
 
         if (isNaN(Qi) || isNaN(P)) {
-         
-            this.doLog(
-              `calculateEaseMetricDB: Invalid values for move ${move}: P=${P}, Qi=${Qi}`,
-            );
-          
+          this.doLog(
+            `calculateEaseMetricDB: Invalid values for move ${move}: P=${P}, Qi=${Qi}`,
+          );
+
           continue;
         }
 
@@ -62,24 +59,23 @@ export class ChessDBEaseMetricCalculator extends EaseMetricStrategy {
         );
 
         if (isNaN(easeMetric)) {
-         
-            this.doLog(
-              `calculateEaseMetricDB: NaN metric for move ${move}: component=${component}`,
-            );
-          
+          this.doLog(
+            `calculateEaseMetricDB: NaN metric for move ${move}: component=${component}`,
+          );
+
           continue;
         }
-        
-          this.doLog(
-            `calculateEaseMetricDB: move=${move}, P=${P.toFixed(4)}, Qi=${Qi.toFixed(4)}, metric=${easeMetric.toFixed(4)}`,
-          );
-        
+
+        this.doLog(
+          `calculateEaseMetricDB: move=${move}, P=${P.toFixed(4)}, Qi=${Qi.toFixed(4)}, metric=${easeMetric.toFixed(4)}`,
+        );
+
         metrics.push(easeMetric);
       }
 
       if (metrics.length === 0) {
-          this.doLog("calculateEaseMetricDB: No valid metrics calculated");
-        
+        this.doLog("calculateEaseMetricDB: No valid metrics calculated");
+
         return 0;
       }
 
@@ -89,7 +85,7 @@ export class ChessDBEaseMetricCalculator extends EaseMetricStrategy {
 
       return result;
     } catch (err: unknown) {
-      return 0;
+      return 0.5;
     }
   }
 }
