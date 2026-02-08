@@ -540,6 +540,8 @@ function AgineAnalysisView({
                   evaluations={sanEvaluations}
                   ucievaluations={evaluations}
                   isMaiaLoading={isLoading}
+                  fen={fen}
+                  engine={engine}
                   stockfishAnalysisResult={stockfishAnalysisResult}
                   chessDbLoading={loading}
                   chessDbMoves={chessdbdata}

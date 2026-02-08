@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   Box,
   Card,
@@ -16,8 +16,15 @@ import {
   Tab,
   Button,
   Slider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from '@mui/material'
-import { TrendingUp, TrendingDown, Download, CloudDownload } from '@mui/icons-material'
+import { TrendingUp, TrendingDown, Download, CloudDownload, Calculate } from '@mui/icons-material'
 import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from '@/libs/nets/types'
 import { useNetStatus, useNetModels } from '@/context/NetContext'
 import { CandidateMove } from '@/libs/agine/helper'
@@ -25,6 +32,10 @@ import { QuadrantClassification } from '@/libs/nets/classifyMoves'
 import { QuadrantAnalysisView } from './QuadrantAnalysisView'
 import { PositionEval } from '@/stockfish/engine/engine'
 import { StockfishEaseMetricCalculator } from '@/libs/easemetric/stockfishEaseMetric'
+import { UciEngine } from '@/stockfish/engine/UciEngine'
+import { useEaseMetricVariation } from '@/hooks/useEmVariation'
+import { Chess } from 'chess.js'
+import { MAX_PV_MOVES } from '@/libs/setting/helper'
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -39,9 +50,11 @@ export interface MaiaResultsProps {
   }
   isMaiaLoading: boolean
   chessDbMoves: CandidateMove[] | null;
+  engine?: UciEngine | null;
   chessDbLoading: boolean;
   stockfishAnalysisResult: PositionEval | null;
   maiaerror: Error | null
+  fen: string;
 }
 
 const MAIA_MODELS = [
@@ -76,6 +89,39 @@ const getValueIcon = (value: number) => {
   if (value < 0.30) return <TrendingDown sx={{ fontSize: 16 }} />
   return null
 }
+
+const getEMColor = (value: number) => {
+  // Positive EM means variation gets easier
+  if (value > 0.1) return '#4caf50'
+  // Negative EM means variation gets harder
+  if (value < -0.1) return '#f44336'
+  // Near zero means similar difficulty
+  return '#ff9800'
+}
+
+const formatPrincipalVariation = (pv: string[], startFen: string): string => {
+      const tempGame = new Chess(startFen);
+      const moves: string[] = [];
+
+      for (const uciMove of pv.slice(0, MAX_PV_MOVES)) {
+        try {
+          const move = tempGame.move({
+            from: uciMove.slice(0, 2),
+            to: uciMove.slice(2, 4),
+            promotion: uciMove.length > 4 ? (uciMove[4] as string) : undefined,
+          });
+          if (move) {
+            moves.push(move.san);
+          } else {
+            break;
+          }
+        } catch {
+          break;
+        }
+      }
+
+      return moves.join(" ");
+    }
 
 const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) => {
   const topMoves = Object.entries(policy)
@@ -133,17 +179,160 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({ policy }) 
   )
 }
 
+const VariationEaseMetricView: React.FC<{
+  variations: PositionEval | null
+  isCalculating: boolean
+}> = ({ variations, isCalculating }) => {
+  if (isCalculating) {
+    return (
+      <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={4}>
+        <CircularProgress size={40} />
+        <Typography>Calculating variation ease metrics...</Typography>
+      </Box>
+    )
+  }
+
+  if (!variations || !variations.lines.length) {
+    return (
+      <Typography sx={{ textAlign: 'center', py: 2 }}>
+        No variation data available
+      </Typography>
+    )
+  }
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+        Variation Difficulty Analysis
+      </Typography>
+      
+      <Box sx={{ 
+        borderRadius: 2, 
+        p: 2,
+        mb: 3
+      }}>
+        <Typography variant="body2" >
+          Shows how the position difficulty changes after following each engine line. 
+          Positive values mean the position becomes easier, negative values mean it becomes harder.
+        </Typography>
+      </Box>
+
+      <TableContainer component={Paper} >
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Line</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Moves</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Eval</TableCell>
+              <TableCell sx={{ fontWeight: 600 }} align="right">EM Change</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {variations.lines.map((line, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <Chip 
+                    label={`#${index + 1}`} 
+                    size="small" 
+                    sx={{ fontWeight: 600 }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontFamily: 'monospace',
+                      maxWidth: 300,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {formatPrincipalVariation(line.pv, line.fen)}
+                    {line.pv.length > 3 ? '...' : ''}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2">
+                    {line.mate !== undefined 
+                      ? `M${line.mate}` 
+                      : line.cp !== undefined 
+                        ? `${(line.cp / 100).toFixed(2)}`
+                        : 'N/A'
+                    }
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  {line.endingEM !== undefined ? (
+                    <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
+                      <Chip
+                        label={line.endingEM >= 0 ? `+${line.endingEM.toFixed(3)}` : line.endingEM.toFixed(3)}
+                        size="small"
+                        sx={{
+                          bgcolor: getEMColor(line.endingEM),
+                          fontWeight: 600,
+                          fontFamily: 'monospace',
+                        }}
+                      />
+                      {line.endingEM > 0.1 && <TrendingUp sx={{ fontSize: 16, color: '#4caf50' }} />}
+                      {line.endingEM < -0.1 && <TrendingDown sx={{ fontSize: 16, color: '#f44336' }} />}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.4)' }}>
+                      Calculating...
+                    </Typography>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Box sx={{
+        borderRadius: 2, 
+        p: 2,
+        mt: 3
+      }}>``
+        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+          Interpretation Guide
+        </Typography>
+        <Box component="ul" sx={{ pl: 3, m: 0, '& li': { mb: 0.5 } }}>
+          <Typography component="li" variant="body2">
+            🟢 Positive EM: The variation leads to a simpler position
+          </Typography>
+          <Typography component="li" variant="body2">
+            🟠 Near Zero: Similar difficulty to current position
+          </Typography>
+          <Typography component="li" variant="body2">
+            🔴 Negative EM: The variation leads to a more complex position
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
 
 const EvaluationDisplay: React.FC<{ 
   evaluation: MaiaEvaluation
   ucievaluation?: MaiaEvaluation | null
   candidateMoves?: CandidateMove[] | null
   stockfishAnalysisResult: PositionEval | null;
+  engine?: UciEngine | null;
+  fen: string;
   showQuadrantAnalysis?: boolean
-}> = ({ ucievaluation ,evaluation, candidateMoves, showQuadrantAnalysis = true, stockfishAnalysisResult }) => {
-  const [viewMode, setViewMode] = useState<'evaluation' | 'quadrant' | 'ease'>('evaluation')
+}> = ({ ucievaluation, evaluation, candidateMoves, showQuadrantAnalysis = true, stockfishAnalysisResult, engine, fen }) => {
+  const [viewMode, setViewMode] = useState<'evaluation' | 'quadrant' | 'ease' | 'variations'>('evaluation')
   const [improbableThreshold, setImprobableThreshold] = useState(0.05)
- 
+  
+  const { variations, isLoading } = useEaseMetricVariation(
+    fen,
+    engine || null,
+    ucievaluation || evaluation,
+    stockfishAnalysisResult
+  )
+
   const quadrantMoves = React.useMemo(() => {
     if (!candidateMoves || candidateMoves.length === 0) return []
     return QuadrantClassification(evaluation, candidateMoves, improbableThreshold)
@@ -157,25 +346,29 @@ const EvaluationDisplay: React.FC<{
     } catch {
       return null
     }
-  }, [evaluation, candidateMoves])
-
-  console.log(easeMetric);
+  }, [ucievaluation, stockfishAnalysisResult])
 
   const hasQuadrantData = quadrantMoves.length > 0
   const hasEaseData = easeMetric !== null
+  const hasVariationData = stockfishAnalysisResult && stockfishAnalysisResult.lines.length > 0
 
   const handleThresholdChange = (event: Event, newValue: number | number[]) => {
     setImprobableThreshold(newValue as number)
   }
 
+  const handleCalculateVariations = () => {
+    setViewMode('variations')
+  }
+
   return (
     <>
-      {(hasQuadrantData || hasEaseData) && showQuadrantAnalysis && (
+      {(hasQuadrantData || hasEaseData || hasVariationData) && showQuadrantAnalysis && (
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs value={viewMode} onChange={(_, newValue) => setViewMode(newValue)}>
             <Tab label="Position Evaluation" value="evaluation" />
             {hasQuadrantData && <Tab label="Candidate Analysis" value="quadrant" />}
             {hasEaseData && <Tab label="Ease Metric Analysis" value="ease" />}
+            {hasVariationData && <Tab label="Variation Analysis" value="variations" />}
           </Tabs>
         </Box>
       )}
@@ -218,6 +411,21 @@ const EvaluationDisplay: React.FC<{
             </Typography>
             <MovesList policy={evaluation.policy} />
           </Box>
+
+          {hasVariationData && (
+            <Box mt={3}>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<Calculate />}
+                onClick={handleCalculateVariations}
+                disabled={isLoading}
+                sx={{ textTransform: 'none' }}
+              >
+                {isLoading ? 'Calculating...' : 'Analyze Variations'}
+              </Button>
+            </Box>
+          )}
         </>
       ) : viewMode === 'quadrant' ? (
         <>
@@ -239,15 +447,15 @@ const EvaluationDisplay: React.FC<{
               max={0.50}
               step={0.01}
               marks={[
-              { value: 0.01, label: '1%' },
-              { value: 0.05, label: '5%' },
-              { value: 0.10, label: '10%' },
-              { value: 0.15, label: '15%' },
-              { value: 0.20, label: '20%' },
-              { value: 0.25, label: '25%' },
-              { value: 0.35, label: '35%' },
-              { value: 0.45, label: '45%' },
-              { value: 0.50, label: '50%' },
+                { value: 0.01, label: '1%' },
+                { value: 0.05, label: '5%' },
+                { value: 0.10, label: '10%' },
+                { value: 0.15, label: '15%' },
+                { value: 0.20, label: '20%' },
+                { value: 0.25, label: '25%' },
+                { value: 0.35, label: '35%' },
+                { value: 0.45, label: '45%' },
+                { value: 0.50, label: '50%' },
               ]}
               valueLabelDisplay="auto"
               valueLabelFormat={(value) => `${(value * 100).toFixed(0)}%`}
@@ -267,7 +475,7 @@ const EvaluationDisplay: React.FC<{
             improbableThreshold={improbableThreshold}
           />
         </>
-      ) : (
+      ) : viewMode === 'ease' ? (
         <>
           {easeMetric !== null && (
             <Box>
@@ -374,6 +582,11 @@ const EvaluationDisplay: React.FC<{
             </Box>
           )}
         </>
+      ) : (
+        <VariationEaseMetricView 
+          variations={variations}
+          isCalculating={isLoading}
+        />
       )}
     </>
   )
@@ -566,12 +779,13 @@ const DownloadAllModelsPrompt: React.FC<{
 
 export const NetResults: React.FC<MaiaResultsProps> = ({
   evaluations,
-  chessDbLoading,
   stockfishAnalysisResult,
   ucievaluations,
   chessDbMoves,
   isMaiaLoading,
   maiaerror,
+  engine,
+  fen,
 }) => {
   const { status, activeModels } = useNetStatus()
   const { downloadModel } = useNetModels()
@@ -699,17 +913,33 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
                 evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
                 stockfishAnalysisResult={stockfishAnalysisResult}
                 candidateMoves={chessDbMoves}
+                engine={engine}
+                fen={fen}
               />
             )}
           </>
         )}
 
         {isCurrentModelReady && currentTab === 'bigLeela' && evaluations.bigLeela && ucievaluations.bigLeela && (
-          <EvaluationDisplay evaluation={evaluations.bigLeela} candidateMoves={chessDbMoves} stockfishAnalysisResult={stockfishAnalysisResult} ucievaluation={ucievaluations.bigLeela}/>
+          <EvaluationDisplay 
+            evaluation={evaluations.bigLeela} 
+            candidateMoves={chessDbMoves} 
+            stockfishAnalysisResult={stockfishAnalysisResult} 
+            ucievaluation={ucievaluations.bigLeela}
+            engine={engine}
+            fen={fen}
+          />
         )}
 
         {isCurrentModelReady && currentTab === 'elitemaia' && evaluations.elitemaia && ucievaluations.elitemaia && (
-          <EvaluationDisplay evaluation={evaluations.elitemaia} candidateMoves={chessDbMoves} stockfishAnalysisResult={stockfishAnalysisResult} ucievaluation={ucievaluations.elitemaia}/>
+          <EvaluationDisplay 
+            evaluation={evaluations.elitemaia} 
+            candidateMoves={chessDbMoves} 
+            stockfishAnalysisResult={stockfishAnalysisResult} 
+            ucievaluation={ucievaluations.elitemaia}
+            engine={engine}
+            fen={fen}
+          />
         )}
       </CardContent>
     </Card>

@@ -204,6 +204,9 @@ export interface LineEval {
     multiPv: number;
     /** The number of nodes per second evaluated by the engine. */
     nps?: number;
+    
+    /** The ending ease metric for the variation  */
+    endingEM?: number;
     /** The expected percentages of different results. */
     resultPercentages?: {
         /** The expected win percentage evaluated by the engine. */
