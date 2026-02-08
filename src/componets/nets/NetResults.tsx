@@ -291,7 +291,7 @@ const VariationEaseMetricView: React.FC<{
         borderRadius: 2, 
         p: 2,
         mt: 3
-      }}>``
+      }}>
         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
           Interpretation Guide
         </Typography>
