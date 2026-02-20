@@ -28,7 +28,7 @@ export interface MaiaEngine {
 export const MODEL_CONFIGS = {
   maia2: {
     id: 'maia2',
-    name: 'Maia 2',
+    name: 'Maia 2 Net',
     description:
       'Human-style chess analysis that mimics real players from 1100–1900 Elo. Best for understanding typical human mistakes, plans, and practical decision-making at different skill levels.',
     path: '/static/nets/maia_rapid.onnx',
@@ -50,7 +50,7 @@ export const MODEL_CONFIGS = {
 
   bigLeela: {
     id: 'bigLeela',
-    name: 'Leela T1-256',
+    name: 'Leela T1-256 Net',
     description:
       'A lightweight Leela Chess Zero network optimized for performance on low-resource devices. Provides strong positional evaluations with fast response times.',
     path: '/static/nets/t1-256x10.onnx',
@@ -61,7 +61,7 @@ export const MODEL_CONFIGS = {
 
   elitemaia: {
     id: 'elitemaia',
-    name: 'Elite Leela',
+    name: 'Elite Leela Net',
     description:
       'A high-skill Leela network trained on nearly 20 million elite Lichess games. Excels at precise tactics, deep positional understanding, and near–top-level play.',
     path: '/static/nets/eliteleelav2.onnx',
