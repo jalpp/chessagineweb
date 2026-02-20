@@ -598,21 +598,8 @@ export default function PlayVsBotsPage() {
                     Downloading {MODEL_CONFIGS[modelType!].name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Please wait while the model is being downloaded...
+                    Please wait while the Neural Net is being downloaded...
                   </Typography>
-                </Box>
-                <Box sx={{ width: "100%" }}>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">Progress</Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {Math.round(modelProgress)}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={modelProgress}
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
                 </Box>
               </Stack>
             </CardContent>
