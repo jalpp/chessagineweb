@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Box, Typography, useTheme, ToggleButtonGroup, ToggleButton, Alert, AlertTitle } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { useNetStatus } from "@/context/NetContext";
 
 interface EvalGraphProps {

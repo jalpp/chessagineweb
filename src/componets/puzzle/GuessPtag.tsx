@@ -16,7 +16,7 @@ import {
   Cancel as CancelIcon,
   EmojiEvents as TrophyIcon,
 } from '@mui/icons-material';
-import { ThemeScore } from '@/libs/themes/helper';
+import { ThemeScore, GuessState, themeLabels } from '@/libs/themes/helper';
 import { PositionEval} from '@/stockfish/engine/engine';
 
 interface GuessThemeProps {
@@ -26,21 +26,6 @@ interface GuessThemeProps {
   error: string | null;
 }
 
-interface GuessState extends ThemeScore {
-  overallEval: number;
-}
-
-const themeLabels: Record<keyof ThemeScore, string> = {
-  material: 'Material',
-  mobility: 'Mobility',
-  space: 'Space',
-  positional: 'Positional',
-  kingSafety: 'King Safety',
-  tactical: 'Tactical',
-  darksqaureControl: 'Dark Square Control',
-  lightsqaureControl: 'Light Square Control',
-  tempo: 'Tempo',
-};
 
 const GuessTheme: React.FC<GuessThemeProps> = ({ 
   scores,

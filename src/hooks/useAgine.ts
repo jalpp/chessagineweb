@@ -11,13 +11,14 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
 import { CandidateMove } from "@/libs/agine/helper";
-import { getChessDBSpeech } from "../componets/tabs/Chessdb";
+import { getChessDBSpeech } from "@/libs/agine/helper";
 import { useChessDB } from "./useChessDb";
 import { useLocalStorage } from "usehooks-ts";
-import useGameReview, { MoveAnalysis, MoveQuality } from "./useGameReview";
-import { ApiSettings } from "../componets/tabs/ModelSetting";
+import useGameReview from "./useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
+import { ApiSettings } from "@/libs/agine/helper";
 import { DEFAULT_ENGINE_LINES, DEFAULT_ENGINE_DEPTH, MAX_PV_MOVES, ANALYSIS_DELAY } from "@/libs/setting/helper";
-import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData } from "@/libs/agine/helper";
+import { AgineState, isValidFEN, createChatMessage, AgentMessage, ChatMessage, AnalysisData, EngineLineData, MoveQuality } from "@/libs/agine/helper";
 
 import { useThemeScore } from "./useThemeScore";
 import { useChatContext } from "@/context/ChatContext";

@@ -35,24 +35,7 @@ import { CandidateMove } from "@/libs/agine/helper";
 import { ChessDBEaseMetricCalculator } from "@/libs/easemetric/chessDbEaseMetric";
 import { ModelType } from "@/libs/nets/types";
 import { useSessionStorage } from "usehooks-ts";
-
-/* ----------------------------- Types ----------------------------- */
-
-interface TreeNodeData {
-  fen: string;
-  move: CandidateMove | null;
-  depth: number;
-  path: string;
-  easeMetric?: number;
-  moveNotation?: string;
-}
-
-interface TreeNodeInfo {
-  path: string;
-  children: string[];
-  easeMetric?: number;
-  moveNotation: string;
-}
+import { TreeNodeData, TreeNodeInfo } from "@/libs/agine/helper";
 
 interface TreeNodeProps {
   fen: string;
@@ -74,7 +57,6 @@ interface TreeNodeProps {
   onEaseMetricCalculated?: (path: string, easeMetric: number) => void;
 }
 
-/* ----------------------------- Tree Node ----------------------------- */
 
 const TreeNode: React.FC<TreeNodeProps> = ({
   fen,
@@ -344,7 +326,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   );
 };
 
-/* ----------------------------- Main View ----------------------------- */
+
 
 interface ChessTreeViewProps {
   initialFen: string;
@@ -352,11 +334,6 @@ interface ChessTreeViewProps {
   defaultBreadth?: number;
 }
 
-interface NodeMetrics {
-  path: string;
-  easeMetric: number;
-  moveNotation: string;
-}
 
 export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
   initialFen,

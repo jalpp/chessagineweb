@@ -38,9 +38,8 @@ import LoadLichessGameUrl, {
 } from "@/componets/game/LoadLichessGameUrl";
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
-import MultiGameNavigator, {
-  ParsedPGN,
-} from "@/componets/game/MultiGameNavigator";
+import MultiGameNavigator from "@/componets/game/MultiGameNavigator";
+import { ParsedPGN } from "@/libs/game/pgn";
 import { useNets } from "@/hooks/useNets";
 import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 

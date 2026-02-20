@@ -57,7 +57,7 @@ import {
   User2,
 } from "lucide-react";
 import { Refresh, SkipNext } from "@mui/icons-material";
-import Slider from "@/componets/stockfish/Slider";
+import Slider from "@/componets/Slider";
 import { useLocalStorage } from "usehooks-ts";
 import { PuzzleData, PuzzleQuery, PUZZLE_THEMES, DIFFICULTY_THEMES } from "@/libs/puzzle/helper";
 import GuessTheme from "@/componets/puzzle/GuessPtag";

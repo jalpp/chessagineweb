@@ -21,7 +21,7 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { useLocalStorage } from "usehooks-ts";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { useRouter } from "next/navigation";

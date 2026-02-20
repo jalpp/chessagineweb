@@ -36,7 +36,7 @@ import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../../libs/openingdatabase/helper";
 import { Arrow } from "react-chessboard";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
-import { MoveAnalysis } from "../../hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
 import { Board } from "../../libs/tacticalboard/board";

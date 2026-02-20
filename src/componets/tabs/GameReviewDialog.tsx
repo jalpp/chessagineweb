@@ -26,7 +26,7 @@ import {
   Analytics,
 } from "@mui/icons-material";
 import { BarChart, LineChart, RadarChart } from "@mui/x-charts";
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { PositionRadarAnalysis } from "./PositionRadarAnalysis";
 import { GameReviewTheme, getThemeLabelColor} from "@/libs/themes/helper";
 import { ThemeScore } from "@/libs/themes/helper";

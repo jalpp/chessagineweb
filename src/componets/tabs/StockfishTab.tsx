@@ -20,7 +20,7 @@ import {
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { LineEval, PositionEval } from "@/stockfish/engine/engine";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import Slider from "../stockfish/Slider";
+import Slider from "../Slider";
 import { EngineName } from "@/stockfish/engine/engine";
 import { useLocalStorage } from "usehooks-ts";
 

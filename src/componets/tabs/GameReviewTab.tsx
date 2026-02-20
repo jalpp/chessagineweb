@@ -25,20 +25,12 @@ import {
   Pen,
   Sparkles,
 } from "lucide-react";
-import { MoveAnalysis, MoveQuality } from "../../hooks/useGameReview";
-import { GameReviewDialog} from "./GameReviewDialog";
+import { MoveAnalysis } from "@/libs/agine/helper";
+import { GameReviewDialog } from "./GameReviewDialog";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionEval } from "@/stockfish/engine/engine";
 import EvalGraph from "./EvalGraph";
-export interface MoveStats {
-  Best: number;
-  "Very Good": number;
-  Good: number;
-  Dubious: number;
-  Mistake: number;
-  Blunder: number;
-  Book: number;
-}
+import { MoveStats, MoveQuality } from "@/libs/agine/helper";
 
 interface GameReviewTabProps {
   gameReview: MoveAnalysis[] | null;
@@ -57,7 +49,10 @@ interface GameReviewTabProps {
   blackTitle: string;
   whitePlayer: string;
   blackPlayer: string;
-  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
+  handleMoveAnnontateClick: (
+    review: MoveAnalysis,
+    customQuery?: string,
+  ) => void;
   handleGameReviewClick: (review: MoveAnalysis[], gameInfo: string) => void;
   chatLoading: boolean;
   comment: string;
@@ -129,7 +124,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   whitePlayer,
   blackPlayer,
   gameReviewProgress,
-  gameInfo
+  gameInfo,
 }) => {
   const [userThoughts, setUserThoughts] = useState<string>("");
   const [loadingStates, setLoadingStates] = useState<{
@@ -157,27 +152,27 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   }, [chatLoading]);
 
   const handleChatClick = (review: MoveAnalysis) => {
-    setLoadingStates(prev => ({
+    setLoadingStates((prev) => ({
       ...prev,
-      chat: { ...prev.chat, [review.plyNumber]: true }
+      chat: { ...prev.chat, [review.plyNumber]: true },
     }));
     handleMoveCoachClick(review);
   };
 
   const handleAnnotateClick = (review: MoveAnalysis, customQuery?: string) => {
-    setLoadingStates(prev => ({
+    setLoadingStates((prev) => ({
       ...prev,
-      annotate: { ...prev.annotate, [review.plyNumber]: true }
+      annotate: { ...prev.annotate, [review.plyNumber]: true },
     }));
     handleMoveAnnontateClick(review, customQuery);
   };
 
   const handleGameReportClick = () => {
-    setLoadingStates(prev => ({
+    setLoadingStates((prev) => ({
       ...prev,
-      gameReport: true
+      gameReport: true,
     }));
-    
+
     const stats = getStatistics();
     let newGameInfo = gameInfo;
     if (stats) {
@@ -188,7 +183,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     }
     handleGameReviewClick(gameReview!, newGameInfo);
   };
-  
+
   const getStatistics = () => {
     if (!gameReview) return null;
 
@@ -219,8 +214,13 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   };
 
   const getCurrentMoveReview = useMemo(() => {
-    if (!gameReview || currentMoveIndex <= 0 || currentMoveIndex > gameReview.length) return null;
-    
+    if (
+      !gameReview ||
+      currentMoveIndex <= 0 ||
+      currentMoveIndex > gameReview.length
+    )
+      return null;
+
     // Use direct array access since gameReview is ordered by moves
     // currentMoveIndex is 1-based, so subtract 1 for 0-based array access
     return gameReview[currentMoveIndex - 1];
@@ -228,13 +228,13 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
 
   if (!gameReview || gameReview.length === 0) {
     return (
-      <Box >
+      <Box>
         <Stack spacing={2} alignItems="center">
           <Sparkles size={32} />
           <Typography variant="h6" sx={{ textAlign: "center" }}>
             Game Analysis
           </Typography>
-          <Typography variant="body2" sx={{  textAlign: "center" }}>
+          <Typography variant="body2" sx={{ textAlign: "center" }}>
             Generate detailed move-by-move game review
           </Typography>
 
@@ -256,9 +256,11 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               <LinearProgress
                 variant="determinate"
                 value={gameReviewProgress}
-               
               />
-              <Typography variant="caption" sx={{  mt: 1, display: "block", textAlign: "center" }}>
+              <Typography
+                variant="caption"
+                sx={{ mt: 1, display: "block", textAlign: "center" }}
+              >
                 {`${Math.round(gameReviewProgress)}% Complete`}
               </Typography>
             </Box>
@@ -272,15 +274,21 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   const currentMove = getCurrentMoveReview;
 
   return (
-    <Box sx={{  p: 2 }}>
+    <Box sx={{ p: 2 }}>
       <Stack spacing={2}>
         {/* Current Move Classification */}
         {currentMove && (
-          <Card >
+          <Card>
             <CardContent sx={{ p: 2 }}>
               <Stack spacing={2}>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <Typography variant="subtitle1" >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Typography variant="subtitle1">
                     {currentMove.notation}
                   </Typography>
                   <Chip
@@ -288,7 +296,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     size="small"
                     icon={getMoveClassificationStyle(currentMove.quality).icon}
                     sx={{
-                      bgcolor: getMoveClassificationStyle(currentMove.quality).bgColor,
+                      bgcolor: getMoveClassificationStyle(currentMove.quality)
+                        .bgColor,
                       border: `1px solid ${getMoveClassificationStyle(currentMove.quality).color}40`,
                     }}
                   />
@@ -307,7 +316,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                     }
                     onClick={() => handleChatClick(currentMove)}
                     disabled={chatLoading}
-                    
                   >
                     Ask AI
                   </Button>
@@ -322,9 +330,10 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                         <Pen size={16} />
                       )
                     }
-                    onClick={() => handleAnnotateClick(currentMove, userThoughts)}
+                    onClick={() =>
+                      handleAnnotateClick(currentMove, userThoughts)
+                    }
                     disabled={chatLoading}
-                   
                   >
                     Annotate
                   </Button>
@@ -335,7 +344,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         )}
 
         {/* Analysis Notes */}
-        <Card >
+        <Card>
           <CardContent sx={{ p: 2 }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               Your Analysis Notes
@@ -350,9 +359,8 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               onChange={(e) => setUserThoughts(e.target.value)}
               disabled={chatLoading}
               size="small"
-              
             />
-            
+
             <Button
               variant="contained"
               startIcon={
@@ -369,74 +377,117 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                 py: 1,
               }}
             >
-              {loadingStates.gameReport ? "Generating Report..." : "Generate Game Report"}
+              {loadingStates.gameReport
+                ? "Generating Report..."
+                : "Generate Game Report"}
             </Button>
           </CardContent>
         </Card>
 
-     
         {stats && (
-          <Card >
+          <Card>
             <CardContent sx={{ p: 2 }}>
-              <Typography variant="subtitle2" >
-                Game Statistics
-              </Typography>
+              <Typography variant="subtitle2">Game Statistics</Typography>
               <Grid container spacing={2}>
-                <Grid >
+                <Grid>
                   <Typography variant="caption" sx={{ isplay: "block", mb: 1 }}>
-                    {whiteTitle} {whitePlayer} (White) - {calculateAccuracy(stats.whiteStats)}% Accuracy
+                    {whiteTitle} {whitePlayer} (White) -{" "}
+                    {calculateAccuracy(stats.whiteStats)}% Accuracy
                   </Typography>
                   <Stack spacing={0.5}>
-                    {Object.entries(stats.whiteStats).map(([classification, count]) => {
-                      if (count === 0) return null;
-                      const style = getMoveClassificationStyle(classification as MoveQuality);
-                      return (
-                        <Box key={classification} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Box sx={{ color: style.color, display: "flex", alignItems: "center" }}>
-                            {style.icon}
+                    {Object.entries(stats.whiteStats).map(
+                      ([classification, count]) => {
+                        if (count === 0) return null;
+                        const style = getMoveClassificationStyle(
+                          classification as MoveQuality,
+                        );
+                        return (
+                          <Box
+                            key={classification}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                color: style.color,
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              {style.icon}
+                            </Box>
+                            <Typography variant="caption">
+                              {classification}: {count}
+                            </Typography>
                           </Box>
-                          <Typography variant="caption" >
-                            {classification}: {count}
-                          </Typography>
-                        </Box>
-                      );
-                    })}
+                        );
+                      },
+                    )}
                   </Stack>
                 </Grid>
-                <Grid >
-                  <Typography variant="caption" sx={{ display: "block", mb: 1 }}>
-                    {blackTitle} {blackPlayer} (Black) - {calculateAccuracy(stats.blackStats)}% Accuracy
+                <Grid>
+                  <Typography
+                    variant="caption"
+                    sx={{ display: "block", mb: 1 }}
+                  >
+                    {blackTitle} {blackPlayer} (Black) -{" "}
+                    {calculateAccuracy(stats.blackStats)}% Accuracy
                   </Typography>
                   <Stack spacing={0.5}>
-                    {Object.entries(stats.blackStats).map(([classification, count]) => {
-                      if (count === 0) return null;
-                      const style = getMoveClassificationStyle(classification as MoveQuality);
-                      return (
-                        <Box key={classification} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Box sx={{ color: style.color, display: "flex", alignItems: "center" }}>
-                            {style.icon}
+                    {Object.entries(stats.blackStats).map(
+                      ([classification, count]) => {
+                        if (count === 0) return null;
+                        const style = getMoveClassificationStyle(
+                          classification as MoveQuality,
+                        );
+                        return (
+                          <Box
+                            key={classification}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                color: style.color,
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              {style.icon}
+                            </Box>
+                            <Typography variant="caption">
+                              {classification}: {count}
+                            </Typography>
                           </Box>
-                          <Typography variant="caption">
-                            {classification}: {count}
-                          </Typography>
-                        </Box>
-                      );
-                    })}
+                        );
+                      },
+                    )}
                   </Stack>
                 </Grid>
               </Grid>
             </CardContent>
           </Card>
         )}
-          {gameReview && gameReview.length > 0 && (
-                            <>
-                              <EvalGraph
-                                moves={gameReview}
-                                key={`eval-graph-${gameReview.length}`} 
-                              />
-                            </>
-                          )}
-        <GameReviewDialog gameReview={gameReviewTheme} currentMoveIndex={currentMoveIndex} moveAnalysis={gameReview} stockfishAnalysisResult={stockfishAnalysisResult}/>
+        {gameReview && gameReview.length > 0 && (
+          <>
+            <EvalGraph
+              moves={gameReview}
+              key={`eval-graph-${gameReview.length}`}
+            />
+          </>
+        )}
+        <GameReviewDialog
+          gameReview={gameReviewTheme}
+          currentMoveIndex={currentMoveIndex}
+          moveAnalysis={gameReview}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+        />
       </Stack>
     </Box>
   );

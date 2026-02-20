@@ -21,7 +21,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
 }) => {
   return (
     <Stack spacing={1} sx={{ width: "100%" }}>
-      {/* Black */}
+      
       <PlayerTimer
         seconds={blackTime}
         isActive={activeTimer === "black"}
@@ -30,7 +30,7 @@ export const TimerDisplay: React.FC<TimerDisplayProps> = ({
         }
       />
 
-      {/* White */}
+      
       <PlayerTimer
         seconds={whiteTime}
         isActive={activeTimer === "white"}
