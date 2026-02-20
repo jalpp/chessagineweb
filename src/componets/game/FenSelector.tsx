@@ -42,7 +42,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
 
   const cohortOptions = useMemo(() => Object.keys(cohortColors), []);
 
-  // Get unique categories
+  
   const categories = useMemo(() => {
     const cats = new Set(allPresets.map((p) => p.category));
     const dojoCategories = new Set(
@@ -56,7 +56,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
     };
   }, [allPresets]);
 
-  // Filter presets based on category and search
+  
   const filteredPresets = useMemo(() => {
     return allPresets.filter((preset) => {
       const matchesCategory =
@@ -82,7 +82,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
     });
   }, [allPresets, selectedCategory, searchText, selectedCohort]);
 
-  // Group presets by category
+
   const groupedPresets = useMemo(() => {
     const groups: Record<string, FenPreset[]> = {};
     filteredPresets.forEach((preset) => {
@@ -127,7 +127,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
         Starting Position
       </Typography>
 
-      {/* Category Filter */}
+     
       <FormControl fullWidth size="small">
         <InputLabel>Filter by Category</InputLabel>
         <Select
@@ -149,7 +149,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
         </Select>
       </FormControl>
 
-      {/* Search and Select Position */}
+      
       <Autocomplete
         options={filteredPresets}
         groupBy={(option) =>
@@ -236,7 +236,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
       
       />
 
-      {/* Statistics */}
+      
       {filteredPresets.length > 0 && (
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Chip
@@ -257,7 +257,7 @@ export const FenSelector: React.FC<FenSelectorProps> = ({
 
       <Divider>OR</Divider>
 
-      {/* Custom FEN */}
+     
       <TextField
         label="Custom FEN"
         placeholder="Paste a FEN string here"

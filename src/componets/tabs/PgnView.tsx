@@ -23,25 +23,13 @@ import CommentIcon from '@mui/icons-material/Comment';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import NotesIcon from '@mui/icons-material/Notes';
-import { MoveQuality, MoveAnalysis, } from '../../hooks/useGameReview';
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from './GameReviewTab';
 import { AgentMessage } from '@/libs/agine/helper';
 import { useLocalStorage } from 'usehooks-ts';
 import { DEFAULT_PGN_PANEL_DIMENSIONS } from '@/libs/setting/helper';
+import { MoveComment, shouldShowClassification, getMoveAnnotation } from '@/libs/agine/helper';
 
-export interface Move {
-  from: string;
-  to: string;
-  piece?: string;
-  captured?: string;
-  promotion?: string;
-}
-
-export interface MoveComment {
-  moveIndex: number;
-  comment: string;
-  isAiGenerated?: boolean;
-}
 
 type ViewMode = 'pgn' | 'movelist';
 
@@ -55,31 +43,6 @@ export interface PGNViewProps {
   onAnnotateMove?: (review: MoveAnalysis, customQuery?: string) => Promise<AgentMessage | null>;
 }
 
-// Convert move quality to PGN annotation symbols
-const getMoveAnnotation = (quality: MoveQuality): string => {
-  switch (quality) {
-    case "Best":
-      return "";
-    case "Very Good":
-      return "";
-    case "Good":
-      return "";
-    case "Dubious":
-      return "?!";
-    case "Mistake":
-      return "?";
-    case "Blunder":
-      return "??";
-    case "Book":
-      return "";
-    default:
-      return "";
-  }
-};
-
-const shouldShowClassification = (quality: MoveQuality): boolean => {
-  return quality === "Blunder" || quality === "Mistake" || quality === "Dubious" || quality === "Best" || quality === "Book" || quality === "Good" || quality === "Very Good";
-};
 
 const PGNView: React.FC<PGNViewProps> = ({
   moves,

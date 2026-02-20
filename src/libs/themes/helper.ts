@@ -77,4 +77,21 @@ export function getThemeLabelColor(theme: keyof ThemeScore): string {
     return themeColors[theme] || '#000000';
 }
 
+export interface GuessState extends ThemeScore {
+  overallEval: number;
+}
+
+export const themeLabels: Record<keyof ThemeScore, string> = {
+  material: 'Material',
+  mobility: 'Mobility',
+  space: 'Space',
+  positional: 'Positional',
+  kingSafety: 'King Safety',
+  tactical: 'Tactical',
+  darksqaureControl: 'Dark Square Control',
+  lightsqaureControl: 'Light Square Control',
+  tempo: 'Tempo',
+};
+
+
 

@@ -9,7 +9,7 @@ import {
   extractGameInfo,
 } from "@/libs/game/helper";
 import { Chess } from "chess.js";
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 
 export interface ParsedComment {
   move: string;

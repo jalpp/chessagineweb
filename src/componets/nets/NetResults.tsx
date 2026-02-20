@@ -41,7 +41,7 @@ import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMe
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useEaseMetricVariation } from "@/hooks/useEmVariation";
 import { Chess } from "chess.js";
-import { MAX_PV_MOVES } from "@/libs/setting/helper";
+import { MAIA_MODELS, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -63,32 +63,8 @@ export interface MaiaResultsProps {
   fen: string;
 }
 
-const MAIA_MODELS = [
-  "maia_kdd_1100",
-  "maia_kdd_1200",
-  "maia_kdd_1300",
-  "maia_kdd_1400",
-  "maia_kdd_1500",
-  "maia_kdd_1600",
-  "maia_kdd_1700",
-  "maia_kdd_1800",
-  "maia_kdd_1900",
-];
 
-const formatModelName = (model: string) => {
-  return model.replace("maia_kdd_", "Maia ");
-};
 
-const formatValue = (value: number) => {
-  const percentage = (value * 100).toFixed(1);
-  return `${percentage}%`;
-};
-
-const getValueColor = (value: number) => {
-  if (value > 0.55) return "#4caf50";
-  if (value < 0.3) return "#f44336";
-  return "#ff9800";
-};
 
 const getValueIcon = (value: number) => {
   if (value > 0.55) return <TrendingUp sx={{ fontSize: 16 }} />;
@@ -96,12 +72,6 @@ const getValueIcon = (value: number) => {
   return null;
 };
 
-const getEMColor = (value: number) => {
-  if (value > 0.1) return "#319333";
-  if (value < -0.1) return "#850e05";
-
-  return "#5e5549";
-};
 
 const formatPrincipalVariation = (
   pv: string[],
@@ -871,7 +841,7 @@ const DownloadAllModelsPrompt: React.FC<{
             Download Neural Nets to Start Analysis
           </Typography>
 
-          {/* Show progress for each model being downloaded */}
+         
           {downloading && (
             <Box sx={{ width: "100%", maxWidth: 500 }}>
               {allModelTypes.map((modelType) => {
@@ -984,12 +954,12 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   const [selectedMaia2Model, setSelectedMaia2Model] = useState(0);
   const [selectedTab, setSelectedTab] = useState<ModelType>("maia2");
 
-  // Check if any model is downloading
+  
   const isAnyModelDownloading = Object.values(status).some(
     (modelStatus) => modelStatus === "downloading",
   );
 
-  // Show loading if Maia is analyzing
+  
   if (isMaiaLoading) {
     return (
       <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
@@ -1009,7 +979,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
     );
   }
 
-  // Show loading if any model is downloading
+  
   if (isAnyModelDownloading) {
     const downloadingModel = (Object.keys(status) as ModelType[]).find(
       (key) => status[key] === "downloading",
@@ -1048,14 +1018,14 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
     );
   }
 
-  // If no models are active, show download all prompt
+  
   if (activeModels.length === 0) {
     return <DownloadAllModelsPrompt downloadModel={downloadModel} />;
   }
 
   const currentTab = selectedTab;
 
-  // Check if current tab model is ready
+  
   const isCurrentModelReady = status[currentTab] === "ready";
 
   return (
@@ -1065,7 +1035,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
           <Typography variant="h6">Human Moves Analysis</Typography>
         </Box>
 
-        {/* Model Tabs */}
+       
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
           <Tabs
             value={currentTab}
@@ -1084,7 +1054,6 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
           </Tabs>
         </Box>
 
-        {/* Show download prompt if selected model is not ready */}
         {!isCurrentModelReady && (
           <ModelDownloadPrompt
             modelType={currentTab}
@@ -1092,7 +1061,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
           />
         )}
 
-        {/* Maia 2 with Rating Level Selector */}
+       
         {isCurrentModelReady && currentTab === "maia2" && evaluations.maia2 && (
           <>
             <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>

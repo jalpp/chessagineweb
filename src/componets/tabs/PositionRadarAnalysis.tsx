@@ -18,7 +18,7 @@ import {
   Visibility,
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
-import { MoveAnalysis, MoveQuality } from "@/hooks/useGameReview";
+import { MoveAnalysis, MoveQuality } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from "./GameReviewTab";
 import { ThemeScore, GameReviewTheme, getThemeLabelColor } from "@/libs/themes/helper";
 import { getThemeIcon } from "./PositionalFenThemeAnalysis";

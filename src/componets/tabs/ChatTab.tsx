@@ -65,6 +65,7 @@ import {
   DEFAULT_CHAT_TECHNICAL_INFO,
 } from "@/libs/setting/helper";
 import { useChatContext } from "@/context/ChatContext";
+import { SavedPosition, chatPrompts, sessionPrompts, puzzlePrompts, playPrompts } from "@/libs/agine/helper";
 
 export interface ChatTabProps {
   gameInfo?: string;
@@ -78,72 +79,6 @@ export interface ChatTabProps {
   abortChatMessage?: () => void;
 }
 
-interface SavedPosition {
-  id: string;
-  fen: string;
-  analysis: string;
-  timestamp: Date;
-  title?: string;
-}
-
-const sessionPrompts = [
-  "How does Silman's imbalances apply here?",
-  "How does Fine's chess principles apply here?",
-  "How would you play this?",
-  "What catches your eye here?",
-  "Is this looking good or bad?",
-  "What's your gut feeling about this position?",
-  "Any cool tactics you spot?",
-  "How should I approach this?",
-  "What would you do here?",
-  "See anything interesting?",
-  "Thoughts on the position?",
-  "Which move feels right to you?",
-  "What do you think about this position?",
-];
-
-const puzzlePrompts = [
-  "Any hints you can share?",
-  "How would you approach this puzzle?",
-  "What do you see here?",
-  "Got any ideas?",
-  "What's your first thought?",
-  "Can you give me a nudge in the right direction?",
-];
-
-const playPrompts = [
-  "What would you play here?",
-  "Should I castle or wait?",
-  "Time to attack or be patient?",
-  "How do I handle this threat?",
-  "What's my opponent up to?",
-  "Good time to trade pieces?",
-  "Is this move safe enough?",
-  "What's the plan here?",
-  "Push the pawns or hold back?",
-  "How can I coordinate better?",
-  "See any tactics brewing?",
-  "What piece should I develop next?",
-];
-
-const chatPrompts = [
-  "Tell me about chess basics",
-  "How do I get better at chess?",
-  "What are your favorite tactics?",
-  "Know any cool chess stories?",
-  "How should I study openings?",
-  "Why are endgames important?",
-  "What's the difference between strategy and tactics?",
-  "How do strong players think?",
-  "What are the key chess principles?",
-  "How do you calculate moves?",
-  "Tell me about pawn structures",
-  "Positional vs tactical play - what's the deal?",
-  "Any time management tips?",
-  "What opening mistakes should I avoid?",
-  "How do I keep my king safe?",
-  "How can I recognize patterns better?",
-];
 
 export const ChatTab: React.FC<ChatTabProps> = ({
   handleChatKeyPress,
@@ -164,32 +99,31 @@ export const ChatTab: React.FC<ChatTabProps> = ({
       clearChatHistory
     } = useChatContext()
 
-    // LOCAL state for typing
+ 
   const [localInput, setLocalInput] = useState(chatInput);
 
-  // Sync when external input changes (like when cleared after send)
+  
   useEffect(() => {
     setLocalInput(chatInput);
   }, [chatInput]);
 
-  // Handle input change locally only
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalInput(e.target.value);
-    // Don't update parent on every keystroke
+    
   };
 
-  // Handle key press
+  
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Sync to parent before sending
       setChatInput(localInput);
       
       handleChatKeyPress(e);
     }
   };
 
-  // Handle send button
+
   const handleSend = () => {
     setChatInput(localInput);
     setTimeout(() => {
@@ -249,7 +183,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
     DEFAULT_CHAT_COMPACT_VIEW
   );
 
-  // Text-to-Speech state
+ 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSpeakingId, setCurrentSpeakingId] = useState<string | null>(
     null
@@ -279,7 +213,6 @@ export const ChatTab: React.FC<ChatTabProps> = ({
 
   
 
-  // Resize functionality
   const [dimensions, setDimensions] = useLocalStorage<{
     width: number;
     height: number;
@@ -294,7 +227,7 @@ export const ChatTab: React.FC<ChatTabProps> = ({
         : DEFAULT_CHAT_DIMENSIONS.height,
   });
 
-  // Add window resize listener
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -317,14 +250,14 @@ export const ChatTab: React.FC<ChatTabProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize speech synthesis
+
   useEffect(() => {
     if ("speechSynthesis" in window) {
       const loadVoices = () => {
         const voices = speechSynthesis.getVoices();
         setAvailableVoices(voices);
 
-        // Try to find a good default voice
+       
         const englishVoices = voices.filter((voice) =>
           voice.lang.startsWith("en")
         );

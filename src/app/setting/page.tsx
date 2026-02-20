@@ -1,9 +1,5 @@
 "use client";
-import {
-  Box,
-  Container,
-  Paper,
-} from "@mui/material";
+import { Box, Container, Paper } from "@mui/material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
 import ThemeSelector from "@/componets/ThemeSelector";
 

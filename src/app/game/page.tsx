@@ -38,9 +38,8 @@ import LoadLichessGameUrl, {
 } from "@/componets/game/LoadLichessGameUrl";
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
-import MultiGameNavigator, {
-  ParsedPGN,
-} from "@/componets/game/MultiGameNavigator";
+import MultiGameNavigator from "@/componets/game/MultiGameNavigator";
+import { ParsedPGN } from "@/libs/game/pgn";
 import { useNets } from "@/hooks/useNets";
 import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 
@@ -58,37 +57,33 @@ export default function PGNUploaderPage() {
     useSessionStorage<ParsedComment[]>("agine_parsed_comments", []);
   const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage(
     "agine_game_current_move",
-    0
+    0,
   );
 
   const [inputsVisible, setInputsVisible] = useSessionStorage(
     "agine_show_game",
-    true
+    true,
   );
   const [chapters, setChapters] = useSessionStorage<Chapter[]>(
     "agine_chapters",
-    []
+    [],
   );
   const [comment, setComment] = useSessionStorage("agine_comment", "");
   const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>(
     "agine_game_info",
-    {}
+    {},
   );
 
-  // Multi-game navigation state
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
   const [currentGameHash, setCurrentGameHash] = useState<string>("");
 
-  // Game review history state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
-   const [gameReviewHistory] = useLocalStorage<
-      SavedGameReview[]
-    >("chess-game-review-history", []);
-  
-
-
+  const [gameReviewHistory] = useLocalStorage<SavedGameReview[]>(
+    "chess-game-review-history",
+    [],
+  );
 
   const {
     setLlmAnalysisResult,
@@ -133,8 +128,6 @@ export default function PGNUploaderPage() {
     error,
     refetch,
     requestAnalysis,
-    legalMoves,
-    handleFutureMoveLegalClick,
     setRootCurrentMove,
     scores,
     themeScoreError,
@@ -152,15 +145,13 @@ export default function PGNUploaderPage() {
     fen: fen,
   });
 
-    useEffect(() => {
-    console.log("found game id")
+  useEffect(() => {
+    console.log("found game id");
     const loadGameId = sessionStorage.getItem("loadGameId");
-    console.log(loadGameId)
+    console.log(loadGameId);
     if (loadGameId) {
-      // Clear the flag immediately
       sessionStorage.removeItem("loadGameId");
-      
-      // Small delay to ensure everything is initialized
+
       setTimeout(() => {
         const savedGame = gameReviewHistory.find((g) => g.id === loadGameId);
         console.log("saving");
@@ -173,7 +164,7 @@ export default function PGNUploaderPage() {
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage(
     "agine_game_act_tab",
-    0
+    0,
   );
 
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -199,14 +190,11 @@ export default function PGNUploaderPage() {
     setSaveDialogOpen(true);
   };
 
-  // ==================== HELPER FUNCTIONS ====================
-
   const cleanPGN = (pgnText: string): string => {
     const lines = pgnText.split("\n");
     const headers: string[] = [];
     const moveLines: string[] = [];
 
-    // Separate headers from moves
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
@@ -216,14 +204,12 @@ export default function PGNUploaderPage() {
       }
     }
 
-    // Clean the move text (remove comments, normalize spacing)
     let movesText = moveLines.join(" ");
-    movesText = movesText.replace(/\{[^}]*\}/g, ""); // Remove comments
-    movesText = movesText.replace(/\([^)]*\)/g, ""); // Remove variations
-    movesText = movesText.replace(/\s+/g, " "); // Normalize whitespace
+    movesText = movesText.replace(/\{[^}]*\}/g, "");
+    movesText = movesText.replace(/\([^)]*\)/g, "");
+    movesText = movesText.replace(/\s+/g, " ");
     movesText = movesText.trim();
 
-    // Reconstruct PGN: headers, blank line, then moves
     if (headers.length > 0) {
       return headers.join("\n") + "\n\n" + movesText;
     }
@@ -234,16 +220,14 @@ export default function PGNUploaderPage() {
     const fenMatch = pgnText.match(/\[FEN "([^"]+)"\]/);
     return fenMatch ? fenMatch[1] : undefined;
   };
-  
 
   const parsePGNMoves = (
     pgnText: string,
-    startingFen?: string
+    startingFen?: string,
   ): { game: Chess; moveList: string[] } => {
     const cleanedPGN = cleanPGN(pgnText);
     const tempGame = new Chess(startingFen);
 
-    // Extract just the moves (without headers)
     const pgnWithoutHeaders = cleanedPGN
       .split("\n")
       .filter((line) => !line.trim().startsWith("["))
@@ -251,12 +235,11 @@ export default function PGNUploaderPage() {
       .trim();
 
     if (startingFen && pgnWithoutHeaders) {
-      // Manual move parsing for custom positions
       const moveText = pgnWithoutHeaders
-        .replace(/\d+\./g, "") // Remove move numbers
-        .replace(/\{[^}]*\}/g, "") // Remove comments
-        .replace(/\([^)]*\)/g, "") // Remove variations
-        .replace(/1-0|0-1|1\/2-1\/2|\*/g, "") // Remove result
+        .replace(/\d+\./g, "")
+        .replace(/\{[^}]*\}/g, "")
+        .replace(/\([^)]*\)/g, "")
+        .replace(/1-0|0-1|1\/2-1\/2|\*/g, "")
         .replace(/White resigned.*?!/g, "")
         .replace(/Black resigned.*?!/g, "")
         .replace(/\s+/g, " ")
@@ -273,7 +256,6 @@ export default function PGNUploaderPage() {
         }
       }
     } else if (!startingFen && pgnWithoutHeaders) {
-      // Standard position - use loadPgn
       tempGame.loadPgn(pgnWithoutHeaders);
     }
 
@@ -283,7 +265,7 @@ export default function PGNUploaderPage() {
   const initializeGameState = (
     pgn: string,
     startingFen?: string,
-    moveList?: string[]
+    moveList?: string[],
   ) => {
     const parsed = extractMovesWithComments(pgn);
     const info = extractGameInfo(pgn);
@@ -301,7 +283,6 @@ export default function PGNUploaderPage() {
     setGameReview([]);
   };
 
-
   const loadPGN = () => {
     try {
       const cleanedPGN = cleanPGN(pgnText);
@@ -317,7 +298,7 @@ export default function PGNUploaderPage() {
       console.error("Error loading PGN:", err);
       console.error("PGN text:", pgnText);
       alert(
-        `Invalid PGN input: ${err instanceof Error ? err.message : "Unknown error"}`
+        `Invalid PGN input: ${err instanceof Error ? err.message : "Unknown error"}`,
       );
       setInputsVisible(false);
     }
@@ -331,7 +312,6 @@ export default function PGNUploaderPage() {
 
       const { moveList } = parsePGNMoves(pgn, startingFen);
 
-      
       initializeGameState(pgn, startingFen, moveList);
 
       if (gameHash) {
@@ -345,45 +325,44 @@ export default function PGNUploaderPage() {
       console.error("Error loading user PGN:", err);
       console.error("PGN text:", pgn);
       alert(
-        `Invalid PGN input: ${err instanceof Error ? err.message : "Unknown error"}`
+        `Invalid PGN input: ${err instanceof Error ? err.message : "Unknown error"}`,
       );
       setInputsVisible(false);
     }
   };
 
   const loadFromHistory = (savedGame: SavedGameReview) => {
-  try {
-    console.log(savedGame);
-    
-    const cleanPgn = cleanPGN(savedGame.pgn);
-    console.log(cleanPgn);
-    const startingFen = extractStartingFen(cleanPgn);
-    console.log(startingFen);
+    try {
+      console.log(savedGame);
 
-    setPgnText(cleanPgn);
-    setMoves(savedGame.moves);
-    setGameInfo(savedGame.gameInfo);
-    setGameReview(savedGame.gameReview);
+      const cleanPgn = cleanPGN(savedGame.pgn);
+      console.log(cleanPgn);
+      const startingFen = extractStartingFen(cleanPgn);
+      console.log(startingFen);
 
-    const parsed = extractMovesWithComments(savedGame.pgn);
-    setParsedMovesWithComments(parsed);
-    setCurrentMoveIndex(0);
+      setPgnText(cleanPgn);
+      setMoves(savedGame.moves);
+      setGameInfo(savedGame.gameInfo);
+      setGameReview(savedGame.gameReview);
 
-    
-    const resetGame = new Chess(startingFen);
-    setGame(resetGame);
-    setFen(resetGame.fen());
-    setCustomPlayFen(startingFen || resetGame.fen());
-    setLlmAnalysisResult(null);
-    setComment("");
+      const parsed = extractMovesWithComments(savedGame.pgn);
+      setParsedMovesWithComments(parsed);
+      setCurrentMoveIndex(0);
 
-    setHistoryDialogOpen(false);
-    setInputsVisible(false);
-  } catch (err) {
-    console.error("Error loading game from history:", err);
-    alert("Error loading saved game");
-  }
-};
+      const resetGame = new Chess(startingFen);
+      setGame(resetGame);
+      setFen(resetGame.fen());
+      setCustomPlayFen(startingFen || resetGame.fen());
+      setLlmAnalysisResult(null);
+      setComment("");
+
+      setHistoryDialogOpen(false);
+      setInputsVisible(false);
+    } catch (err) {
+      console.error("Error loading game from history:", err);
+      alert("Error loading saved game");
+    }
+  };
 
   const goToMove = (index: number) => {
     const startingFen = extractStartingFen(pgnText);
@@ -409,76 +388,73 @@ export default function PGNUploaderPage() {
   const AnalysisContent = () => (
     <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
       {moves.length > 0 && (
-      <AgineAnalysisView
-        activeAnalysisTab={activeAnalysisTab}
-        setActiveAnalysisTab={setActiveAnalysisTab}
-        isGameReviewMode={true}
-        stockfishAnalysisResult={stockfishAnalysisResult}
-        stockfishLoading={stockfishLoading}
-        handleEngineLineClick={handleEngineLineClick}
-        engineDepth={engineDepth}
-        engineLines={engineLines}
-        sendChatMessage={sendChatMessage}
-        abortChatMessage={abortChatMessage}
-        handleChatKeyPress={handleChatKeyPress}
-        engine={engine}
-        Maiaerror={maiaError}
-        isLoading={maiaIsLoading}
-        evaluations={evaluations}
-        analyzeWithStockfish={analyzeWithStockfish}
-        formatEvaluation={formatEvaluation}
-        fen={fen}
-        formatPrincipalVariation={formatPrincipalVariation}
-        setEngineDepth={setEngineDepth}
-        setEngineLines={setEngineLines}
-        openingLoading={openingLoading}
-        openingData={openingData}
-        lichessOpeningData={lichessOpeningData}
-        lichessOpeningLoading={lichessOpeningLoading}
-        handleOpeningMoveClick={handleOpeningMoveClick}
-        chessdbdata={chessdbdata}
-        handleMoveClick={handleMoveClick}
-        queueing={queueing}
-        error={error}
-        lichessData={lichessData}
-        loading={loading}
-        refetch={refetch}
-        requestAnalysis={requestAnalysis}
-        legalMoves={legalMoves}
-        handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-        llmLoading={llmLoading}
-        moves={moves}
-        currentMoveIndex={currentMoveIndex}
-        goToMove={goToMove}
-        comment={comment}
-        gameInfo={gameInfo}
-        gameReviewTheme={gameReviewTheme}
-        generateGameReview={generateGameReview}
-        gameReviewLoading={gameReviewLoading}
-        gameReviewProgress={gameReviewProgress}
-        handleGameReviewSummaryClick={handleGameReviewSummaryClick}
-        handleMoveAnnontateClick={handleMoveAnnontateClick}
-        handleMoveCoachClick={handleMoveCoachClick}
-        gameReview={gameReview}
-        pgnText={pgnText}
-        currentMove={moves[currentMoveIndex]}
-        Customfen={customPlayFen}
-        sanEvaluations={sanEvaluations}
-        
-        isInBook={isInBook}
-        scores={scores}
-        ThemeScoreerror={themeScoreError}
-        ThemeScoreloading={themeScoreLoading}
-      />
+        <AgineAnalysisView
+          activeAnalysisTab={activeAnalysisTab}
+          setActiveAnalysisTab={setActiveAnalysisTab}
+          isGameReviewMode={true}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+          stockfishLoading={stockfishLoading}
+          handleEngineLineClick={handleEngineLineClick}
+          engineDepth={engineDepth}
+          engineLines={engineLines}
+          sendChatMessage={sendChatMessage}
+          abortChatMessage={abortChatMessage}
+          handleChatKeyPress={handleChatKeyPress}
+          engine={engine}
+          Maiaerror={maiaError}
+          isLoading={maiaIsLoading}
+          evaluations={evaluations}
+          analyzeWithStockfish={analyzeWithStockfish}
+          formatEvaluation={formatEvaluation}
+          fen={fen}
+          formatPrincipalVariation={formatPrincipalVariation}
+          setEngineDepth={setEngineDepth}
+          setEngineLines={setEngineLines}
+          openingLoading={openingLoading}
+          openingData={openingData}
+          lichessOpeningData={lichessOpeningData}
+          lichessOpeningLoading={lichessOpeningLoading}
+          handleOpeningMoveClick={handleOpeningMoveClick}
+          chessdbdata={chessdbdata}
+          handleMoveClick={handleMoveClick}
+          queueing={queueing}
+          error={error}
+          lichessData={lichessData}
+          loading={loading}
+          refetch={refetch}
+          requestAnalysis={requestAnalysis}
+          llmLoading={llmLoading}
+          moves={moves}
+          currentMoveIndex={currentMoveIndex}
+          goToMove={goToMove}
+          comment={comment}
+          gameInfo={gameInfo}
+          gameReviewTheme={gameReviewTheme}
+          generateGameReview={generateGameReview}
+          gameReviewLoading={gameReviewLoading}
+          gameReviewProgress={gameReviewProgress}
+          handleGameReviewSummaryClick={handleGameReviewSummaryClick}
+          handleMoveAnnontateClick={handleMoveAnnontateClick}
+          handleMoveCoachClick={handleMoveCoachClick}
+          gameReview={gameReview}
+          pgnText={pgnText}
+          currentMove={moves[currentMoveIndex]}
+          Customfen={customPlayFen}
+          sanEvaluations={sanEvaluations}
+          isInBook={isInBook}
+          scores={scores}
+          ThemeScoreerror={themeScoreError}
+          ThemeScoreloading={themeScoreLoading}
+        />
       )}
       {chapters.length > 0 && (
-      <ResizableChapterSelector
-        chapters={chapters}
-        onChapterSelect={(pgn) => {
-        setPgnText(pgn);
-        setTimeout(() => loadPGN(), 0);
-        }}
-      />
+        <ResizableChapterSelector
+          chapters={chapters}
+          onChapterSelect={(pgn) => {
+            setPgnText(pgn);
+            setTimeout(() => loadPGN(), 0);
+          }}
+        />
       )}
     </Stack>
   );

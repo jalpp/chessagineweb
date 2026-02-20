@@ -42,7 +42,9 @@ import { TabPanel } from "@/componets/tabs/tab";
 import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { MODEL_CONFIGS } from "@/libs/nets/types";
 import PGNView from "@/componets/tabs/PgnView";
-import SaveGameReviewDialog, { SavedGameReview } from "@/componets/game/SaveGameReviewDialog";
+import SaveGameReviewDialog, {
+  SavedGameReview,
+} from "@/componets/game/SaveGameReviewDialog";
 import { Menu, SaveIcon } from "lucide-react";
 import {
   BotType,
@@ -51,12 +53,11 @@ import {
   TIME_CONTROLS,
   TimeControl,
 } from "@/libs/agine/bothelper";
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
 import { useGameTheme } from "@/hooks/useGameTheme";
-
 
 export default function PlayVsBotsPage() {
   const theme = useTheme();
@@ -84,17 +85,15 @@ export default function PlayVsBotsPage() {
   const [whiteTime, setWhiteTime] = useState<number>(0);
   const [blackTime, setBlackTime] = useState<number>(0);
   const [activeTimer, setActiveTimer] = useState<"white" | "black" | null>(
-    null
+    null,
   );
 
   const { status, progress } = useNetStatus();
   const { downloadModel } = useNetModels();
-  
 
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
   const [interactionPanelVisible, setInteractionPanelVisible] = useState(true);
-
 
   const getActiveTimeControl = () => {
     if (timeControl === "custom") {
@@ -137,11 +136,10 @@ export default function PlayVsBotsPage() {
     gameReview,
     gameReviewLoading,
     setGameReview,
-    generateGameReview
-    
+    generateGameReview,
   } = useAgine(fen);
 
-  const { gameReviewTheme, analyzeGameTheme, isLoading } = useGameTheme()
+  const { gameReviewTheme, analyzeGameTheme, isLoading } = useGameTheme();
 
   useEffect(() => {
     if (gameStatus !== "playing" || !activeTimer) return;
@@ -177,7 +175,12 @@ export default function PlayVsBotsPage() {
   }, [fen]);
 
   useEffect(() => {
-    if (gameStatus !== "playing" || timeControl !== "custom" || getActiveTimeControl().increment === 0) return;
+    if (
+      gameStatus !== "playing" ||
+      timeControl !== "custom" ||
+      getActiveTimeControl().increment === 0
+    )
+      return;
     const movedColor = getColorThatJustMoved(game);
     applyIncrement(movedColor);
   }, [fen]);
@@ -247,8 +250,7 @@ export default function PlayVsBotsPage() {
   };
 
   const getColorThatJustMoved = (g: Chess): "white" | "black" =>
-  g.turn() === "w" ? "black" : "white";
-
+    g.turn() === "w" ? "black" : "white";
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -310,7 +312,7 @@ export default function PlayVsBotsPage() {
     setFen(newGame.fen());
     setGameStatus("playing");
     setResult("");
-    setGameReview([])
+    setGameReview([]);
     setMoveSquares({});
     setBotThinking(false);
     initializeTimers();
@@ -325,7 +327,7 @@ export default function PlayVsBotsPage() {
     setMoveSquares({});
     setBotThinking(false);
     setActiveTimer(null);
-    setGameReview([])
+    setGameReview([]);
   };
 
   const resignGame = () => {
@@ -336,7 +338,7 @@ export default function PlayVsBotsPage() {
     setResult(
       `${
         playerColor.charAt(0).toUpperCase() + playerColor.slice(1)
-      } resigned. ${winner} wins!`
+      } resigned. ${winner} wins!`,
     );
   };
 
@@ -389,7 +391,6 @@ export default function PlayVsBotsPage() {
       case "30+0":
         maxThink = Math.min(20, avgTimePerMove * 3); // Max ~20s or 3x avg
         break;
-    
     }
 
     // --- FINAL CLAMP ---
@@ -436,7 +437,7 @@ export default function PlayVsBotsPage() {
         const maiaEval = sanEvaluations.maia2?.[maiaKey];
         if (maiaEval?.policy) {
           const sorted = Object.entries(maiaEval.policy).sort(
-            ([, a], [, b]) => b - a
+            ([, a], [, b]) => b - a,
           );
           if (sorted[0]) move = sorted[0][0];
         }
@@ -444,7 +445,7 @@ export default function PlayVsBotsPage() {
         const leelaEval = sanEvaluations.bigLeela;
         if (leelaEval?.policy) {
           const sorted = Object.entries(leelaEval.policy).sort(
-            ([, a], [, b]) => b - a
+            ([, a], [, b]) => b - a,
           );
           if (sorted[0]) move = sorted[0][0];
         }
@@ -452,7 +453,7 @@ export default function PlayVsBotsPage() {
         const eliteEval = sanEvaluations.elitemaia;
         if (eliteEval?.policy) {
           const sorted = Object.entries(eliteEval.policy).sort(
-            ([, a], [, b]) => b - a
+            ([, a], [, b]) => b - a,
           );
           if (sorted[0]) move = sorted[0][0];
         }
@@ -475,7 +476,6 @@ export default function PlayVsBotsPage() {
         setGame(newGame);
         setFen(newGame.fen());
         checkGameEnd(newGame);
-      
       }
     } catch (error) {
       console.error("[BOT] makeBotMove error:", error);
@@ -487,8 +487,7 @@ export default function PlayVsBotsPage() {
   const generateAnalsyis = () => {
     generateGameReview(game.history(), startingFen || fen);
     analyzeGameTheme(game.history(), startingFen || fen);
-
-  }
+  };
 
   const checkGameEnd = (currentGame: Chess): boolean => {
     if (currentGame.isGameOver()) {
@@ -565,7 +564,6 @@ export default function PlayVsBotsPage() {
 
     const showConfigMenus = gameStatus === "setup" || gameStatus === "finished";
 
-
     if (isLoading || gameReviewLoading) {
       return (
         <Stack spacing={3} sx={{ pb: 2 }}>
@@ -623,8 +621,6 @@ export default function PlayVsBotsPage() {
       );
     }
 
- 
-
     return (
       <Stack spacing={3} sx={{ pb: 2 }}>
         {/* Show Config Menus only in setup or finished states */}
@@ -675,41 +671,41 @@ export default function PlayVsBotsPage() {
             {/* Time Control Selection */}
             <Box>
               <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-              Time Control
+                Time Control
               </Typography>
 
               <Stack direction="row" spacing={1} mb={1}>
-              {(Object.keys(TIME_CONTROLS) as TimeControl[]).map((tc) => (
-                <Button
-                key={tc}
-                variant={timeControl === tc ? "contained" : "outlined"}
-                onClick={() => setTimeControl(tc)}
-                fullWidth
-                >
-                {TIME_CONTROLS[tc].label}
-                </Button>
-              ))}
+                {(Object.keys(TIME_CONTROLS) as TimeControl[]).map((tc) => (
+                  <Button
+                    key={tc}
+                    variant={timeControl === tc ? "contained" : "outlined"}
+                    onClick={() => setTimeControl(tc)}
+                    fullWidth
+                  >
+                    {TIME_CONTROLS[tc].label}
+                  </Button>
+                ))}
               </Stack>
 
               {timeControl === "custom" && (
-              <Stack direction="row" spacing={2}>
-                <TextField
-                label="Minutes"
-                type="number"
-                slotProps={{ htmlInput: { min: 1, max: 180 } }}
-                value={customMinutes}
-                onChange={(e) => setCustomMinutes(+e.target.value)}
-                fullWidth
-                />
-                <TextField
-                label="Increment (sec)"
-                type="number"
-                slotProps={{ htmlInput: { min: 0, max: 60 } }}
-                value={customIncrement}
-                onChange={(e) => setCustomIncrement(+e.target.value)}
-                fullWidth
-                />
-              </Stack>
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Minutes"
+                    type="number"
+                    slotProps={{ htmlInput: { min: 1, max: 180 } }}
+                    value={customMinutes}
+                    onChange={(e) => setCustomMinutes(+e.target.value)}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Increment (sec)"
+                    type="number"
+                    slotProps={{ htmlInput: { min: 0, max: 60 } }}
+                    value={customIncrement}
+                    onChange={(e) => setCustomIncrement(+e.target.value)}
+                    fullWidth
+                  />
+                </Stack>
               )}
             </Box>
 
@@ -733,7 +729,7 @@ export default function PlayVsBotsPage() {
                         <MenuItem key={rating} value={rating}>
                           Maia {rating}
                         </MenuItem>
-                      )
+                      ),
                     )}
                   </Select>
                 </FormControl>
@@ -872,15 +868,17 @@ export default function PlayVsBotsPage() {
               >
                 Download PGN
               </Button>
-                <Button
+              <Button
                 variant="outlined"
                 fullWidth
-                startIcon={<AnalyticsOutlined/>}
-                disabled={gameReview.length > 0 || isLoading || gameReviewLoading}
+                startIcon={<AnalyticsOutlined />}
+                disabled={
+                  gameReview.length > 0 || isLoading || gameReviewLoading
+                }
                 onClick={generateAnalsyis}
-                >
+              >
                 {"Generate Game Review"}
-                </Button>
+              </Button>
               <Button
                 variant="contained"
                 onClick={() => setSaveDialogOpen(true)}
@@ -1034,194 +1032,211 @@ export default function PlayVsBotsPage() {
     </Card>
   );
 
-
-
-return (
-  <Box
-    sx={{
-      p: { xs: 1, sm: 2, md: 4 },
-      minHeight: "100vh",
-      height: "100%",
-      overflowY: "auto",
-    }}
-  >
-    <Stack
-      direction={{ xs: "column", lg: "row" }}
-      spacing={{ xs: 2, sm: 3, md: 4 }}
-      sx={{ width: "100%", maxWidth: "100%" }}
+  return (
+    <Box
+      sx={{
+        p: { xs: 1, sm: 2, md: 4 },
+        minHeight: "100vh",
+        height: "100%",
+        overflowY: "auto",
+      }}
     >
-      <Box
-        sx={{
-          flex: { xs: "1 1 auto", lg: "0 0 auto" },
-          width: { xs: "100%", lg: interactionPanelVisible ? "auto" : "100%" },
-          maxWidth: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: { xs: "center", lg: interactionPanelVisible ? "flex-start" : "center" },
-          px: { xs: 0, sm: 1 },
-          transition: "all 0.3s ease-in-out",
-        }}
+      <Stack
+        direction={{ xs: "column", lg: "row" }}
+        spacing={{ xs: 2, sm: 3, md: 4 }}
+        sx={{ width: "100%", maxWidth: "100%" }}
       >
-        <AiChessboardPanel
-          game={game}
-          fen={fen}
-          moveSquares={moveSquares}
-          setMoveSquares={setMoveSquares}
-          engine={engine}
-          setFen={setFen}
-          gameInfo={buildPlayGameInfo()}
-          side={playerColor}
-          setGame={setGame}
-          setLlmAnalysisResult={setLlmAnalysisResult}
-          setOpeningData={setOpeningData}
-          evaluations={evaluations}
-          setStockfishAnalysisResult={setStockfishAnalysisResult}
-          fetchOpeningData={fetchOpeningData}
-          analyzeWithStockfish={analyzeWithStockfish}
-          llmLoading={llmLoading}
-          stockfishLoading={stockfishLoading}
-          stockfishAnalysisResult={stockfishAnalysisResult}
-          openingLoading={openingLoading}
-          playMode={gameStatus === "playing"}
-        />
-
-        {/* Timer Display below chessboard */}
-        {gameStatus !== "setup" && (
-          <Box
-            sx={{
-              mt: 2,
-              width: { xs: "100%", sm: "600px", md: interactionPanelVisible ? "650px" : "750px" },
-              maxWidth: "100%",
-              transition: "width 0.3s ease-in-out",
-            }}
-          >
-            <TimerDisplay
-              whiteTime={whiteTime}
-              blackTime={blackTime}
-              selectedBot={selectedBot}
-              activeTimer={activeTimer}
-              playerColor={playerColor}
-            />
-          </Box>
-        )}
-
-        {/* Toggle Button for Desktop - Only show during gameplay */}
-        {!isMobile && gameStatus === "playing" && (
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              justifyContent: "center",
-              width: "100%",
-            }}
-          >
-            <Button
-              variant="outlined"
-              onClick={() => setInteractionPanelVisible(!interactionPanelVisible)}
-              startIcon={interactionPanelVisible ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-              size="medium"
-              sx={{
-                borderRadius: 2,
-                px: 3,
-              }}
-            >
-              {interactionPanelVisible ? "Hide Panel (Focus Mode)" : "Show Panel"}
-            </Button>
-          </Box>
-        )}
-      </Box>
-
-      {/* Desktop Interaction Panel */}
-      {!isMobile && interactionPanelVisible && (
         <Box
           sx={{
-            flex: 1,
-            width: { xs: "100%", lg: "auto" },
+            flex: { xs: "1 1 auto", lg: "0 0 auto" },
+            width: {
+              xs: "100%",
+              lg: interactionPanelVisible ? "auto" : "100%",
+            },
             maxWidth: "100%",
-            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: {
+              xs: "center",
+              lg: interactionPanelVisible ? "flex-start" : "center",
+            },
+            px: { xs: 0, sm: 1 },
             transition: "all 0.3s ease-in-out",
           }}
         >
-          <InteractionPanel />
-        </Box>
-      )}
+          <AiChessboardPanel
+            game={game}
+            fen={fen}
+            moveSquares={moveSquares}
+            setMoveSquares={setMoveSquares}
+            engine={engine}
+            setFen={setFen}
+            gameInfo={buildPlayGameInfo()}
+            side={playerColor}
+            setGame={setGame}
+            setLlmAnalysisResult={setLlmAnalysisResult}
+            setOpeningData={setOpeningData}
+            evaluations={evaluations}
+            setStockfishAnalysisResult={setStockfishAnalysisResult}
+            fetchOpeningData={fetchOpeningData}
+            analyzeWithStockfish={analyzeWithStockfish}
+            llmLoading={llmLoading}
+            stockfishLoading={stockfishLoading}
+            stockfishAnalysisResult={stockfishAnalysisResult}
+            openingLoading={openingLoading}
+            playMode={gameStatus === "playing"}
+          />
 
-      {/* Mobile Floating Action Button */}
-      {isMobile && (
-        <Fab
-          color="primary"
-          aria-label="controls"
-          onClick={() => setControlDrawerOpen(true)}
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            zIndex: 1000,
-          }}
-        >
-           <Menu/>
-        </Fab>
-      )}
-
-      {/* Mobile Drawer */}
-      <Drawer
-        anchor="bottom"
-        open={controlDrawerOpen}
-        onClose={() => setControlDrawerOpen(false)}
-        sx={{
-          "& .MuiDrawer-paper": {
-            height: "85vh",
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            overflow: "hidden",
-          },
-        }}
-      >
-        <Box
-          sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          {/* Drawer Header */}
-          <Box
-            sx={{
-              p: 2,
-              borderBottom: 1,
-              borderColor: "divider",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexShrink: 0,
-            }}
-          >
-            <Typography variant="h6" fontWeight={600}>
-              Play vs Bot
-            </Typography>
-            <Button
-              onClick={() => setControlDrawerOpen(false)}
-              startIcon={<CloseIcon />}
-              size="small"
+          {/* Timer Display below chessboard */}
+          {gameStatus !== "setup" && (
+            <Box
+              sx={{
+                mt: 2,
+                width: {
+                  xs: "100%",
+                  sm: "600px",
+                  md: interactionPanelVisible ? "650px" : "750px",
+                },
+                maxWidth: "100%",
+                transition: "width 0.3s ease-in-out",
+              }}
             >
-              Close
-            </Button>
-          </Box>
+              <TimerDisplay
+                whiteTime={whiteTime}
+                blackTime={blackTime}
+                selectedBot={selectedBot}
+                activeTimer={activeTimer}
+                playerColor={playerColor}
+              />
+            </Box>
+          )}
 
-          {/* Drawer Content */}
+          {/* Toggle Button for Desktop - Only show during gameplay */}
+          {!isMobile && gameStatus === "playing" && (
+            <Box
+              sx={{
+                mt: 2,
+                display: "flex",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
+              <Button
+                variant="outlined"
+                onClick={() =>
+                  setInteractionPanelVisible(!interactionPanelVisible)
+                }
+                startIcon={
+                  interactionPanelVisible ? (
+                    <ChevronRightIcon />
+                  ) : (
+                    <ChevronLeftIcon />
+                  )
+                }
+                size="medium"
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                }}
+              >
+                {interactionPanelVisible
+                  ? "Hide Panel (Focus Mode)"
+                  : "Show Panel"}
+              </Button>
+            </Box>
+          )}
+        </Box>
+
+        {/* Desktop Interaction Panel */}
+        {!isMobile && interactionPanelVisible && (
           <Box
             sx={{
               flex: 1,
-              overflowY: "auto",
+              width: { xs: "100%", lg: "auto" },
+              maxWidth: "100%",
+              minWidth: 0,
+              transition: "all 0.3s ease-in-out",
             }}
           >
             <InteractionPanel />
           </Box>
-        </Box>
-      </Drawer>
-    </Stack>
-  </Box>
-);
+        )}
 
+        {/* Mobile Floating Action Button */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            aria-label="controls"
+            onClick={() => setControlDrawerOpen(true)}
+            sx={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+            }}
+          >
+            <Menu />
+          </Fab>
+        )}
+
+        {/* Mobile Drawer */}
+        <Drawer
+          anchor="bottom"
+          open={controlDrawerOpen}
+          onClose={() => setControlDrawerOpen(false)}
+          sx={{
+            "& .MuiDrawer-paper": {
+              height: "85vh",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              overflow: "hidden",
+            },
+          }}
+        >
+          <Box
+            sx={{
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            {/* Drawer Header */}
+            <Box
+              sx={{
+                p: 2,
+                borderBottom: 1,
+                borderColor: "divider",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexShrink: 0,
+              }}
+            >
+              <Typography variant="h6" fontWeight={600}>
+                Play vs Bot
+              </Typography>
+              <Button
+                onClick={() => setControlDrawerOpen(false)}
+                startIcon={<CloseIcon />}
+                size="small"
+              >
+                Close
+              </Button>
+            </Box>
+
+            {/* Drawer Content */}
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: "auto",
+              }}
+            >
+              <InteractionPanel />
+            </Box>
+          </Box>
+        </Drawer>
+      </Stack>
+    </Box>
+  );
 }

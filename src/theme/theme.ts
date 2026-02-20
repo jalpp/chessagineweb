@@ -1,7 +1,7 @@
 import { deepPurple, indigo, purple, blue, green,} from "@mui/material/colors";
 import { createTheme } from "@mui/material";
 
-// Purple Theme Configuration
+
 export const purpleTheme = {
   primary: deepPurple[500],
   primaryDark: deepPurple[700],
@@ -21,7 +21,7 @@ export const purpleTheme = {
   success: "#4caf50",
 };
 
-// Dark Blue Theme Configuration
+
 export const darkBlueTheme = {
   primary: blue[600],
   primaryDark: blue[800],
@@ -41,7 +41,7 @@ export const darkBlueTheme = {
   success: "#4caf50",
 };
 
-// Forest Theme Configuration
+
 export const forestTheme = {
   primary: green[700],
   primaryDark: green[900],
@@ -61,7 +61,7 @@ export const forestTheme = {
   success: "#66bb6a",
 };
 
-// Purple Theme (MUI)
+
 export const agineTheme = createTheme({
   palette: {
     mode: 'dark',

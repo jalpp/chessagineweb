@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { User, Clock, Calendar, Trophy, Info } from "lucide-react";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { useChatContext } from "@/context/ChatContext";

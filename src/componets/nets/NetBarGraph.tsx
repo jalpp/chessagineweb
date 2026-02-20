@@ -13,15 +13,16 @@ import {
 } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import {
-
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   MAIA_MODELS,
   MaiaEvaluation,
   uciToSan,
+  modelToElo,
+  NeuralNetType
 } from "@/libs/nets/types";
 import { categorizeMove } from "@/libs/nets/classifyMoves";
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { useNetModels, useNetStatus } from "@/context/NetContext";
 
 
@@ -29,10 +30,7 @@ interface NetProbabilityChartProps {
   moves: MoveAnalysis[];
 }
 
-const modelToElo = (model: string) =>
-  Number(model.replace("maia_kdd_", ""));
 
-type EngineType = "maia2" | "bigLeela" | "eliteLeela";
 
 export const NetProbabilityChart: React.FC<NetProbabilityChartProps> = ({
   moves,
@@ -64,7 +62,7 @@ export const NetProbabilityChart: React.FC<NetProbabilityChartProps> = ({
   const [hasAnalyzedBigLeela, setHasAnalyzedBigLeela] = useState(false);
   const [hasAnalyzedEliteLeela, setHasAnalyzedEliteLeela] = useState(false);
   
-  const [activeTab, setActiveTab] = useState<EngineType>("maia2");
+  const [activeTab, setActiveTab] = useState<NeuralNetType>("maia2");
 
   const abortControllerRef = useRef<AbortController | null>(null);
 

@@ -24,12 +24,11 @@ import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
 import OpeningExplorer from "../tabs/OpeningTab";
 import ChessDBDisplay from "../tabs/Chessdb";
-import LegalMoveTab from "../tabs/LegalMoveTab";
 import ChatTab from "../tabs/ChatTab";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
 import { CandidateMove } from "@/libs/agine/helper";
-import { MoveAnalysis } from "@/hooks/useGameReview";
+import { MoveAnalysis } from "@/libs/agine/helper";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
@@ -40,8 +39,6 @@ import { useSessionStorage } from "usehooks-ts";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
 import ChessTreeView from "../tabs/ChessTreeView";
-
-
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -67,15 +64,13 @@ interface BaseAnalysisViewProps {
   loading: boolean;
   refetch: () => void;
   requestAnalysis: () => void;
-  legalMoves: string[];
-  handleFutureMoveLegalClick: (move: string) => Promise<void>;
   sendChatMessage: (
     gameInfo?: string | undefined,
     currentMove?: string | undefined,
     puzzleMode?: boolean | undefined,
     puzzleQuery?: string | undefined,
     playMode?: boolean | undefined,
-    currentMoveIndex?: number | undefined
+    currentMoveIndex?: number | undefined,
   ) => Promise<void>;
   abortChatMessage: () => void;
   handleChatKeyPress: (e: React.KeyboardEvent) => void;
@@ -98,11 +93,11 @@ interface GameReviewProps {
   gameReviewProgress?: number;
   handleGameReviewSummaryClick?: (
     review: MoveAnalysis[],
-    gameInfo: string
+    gameInfo: string,
   ) => Promise<void>;
   handleMoveAnnontateClick?: (
     review: MoveAnalysis,
-    customQuery?: string
+    customQuery?: string,
   ) => Promise<void>;
   handleMoveCoachClick?: (review: MoveAnalysis) => void;
   gameReview?: MoveAnalysis[];
@@ -113,12 +108,10 @@ interface GameReviewProps {
 interface MaiaProps extends UseMaiaEngineResult {}
 
 interface AgineAnalysisViewProps
-  extends GameReviewProps,
-    BaseAnalysisViewProps,
-    MaiaProps {
+  extends GameReviewProps, BaseAnalysisViewProps, MaiaProps {
   isGameReviewMode: boolean;
   activeAnalysisTab: number;
-  setActiveAnalysisTab: Dispatch<SetStateAction<number>>
+  setActiveAnalysisTab: Dispatch<SetStateAction<number>>;
   fen: string;
 }
 
@@ -148,8 +141,6 @@ function AgineAnalysisView({
   loading,
   refetch,
   requestAnalysis,
-  legalMoves,
-  handleFutureMoveLegalClick,
   sendChatMessage,
   abortChatMessage,
   handleChatKeyPress,
@@ -178,15 +169,16 @@ function AgineAnalysisView({
   ThemeScoreloading,
   activeAnalysisTab,
   fen,
-  setActiveAnalysisTab
+  setActiveAnalysisTab,
 }: AgineAnalysisViewProps) {
-  const [analysisTab, setAnalysisTab] = useSessionStorage<number>("agine_current_tab",0);
+  const [analysisTab, setAnalysisTab] = useSessionStorage<number>(
+    "agine_current_tab",
+    0,
+  );
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  
 
   return (
     <Card
@@ -315,8 +307,6 @@ function AgineAnalysisView({
                   />
 
                   <Divider />
-
-                
                 </AccordionDetails>
               </Accordion>
             )}
@@ -459,7 +449,6 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
 
-            
             <Accordion
               expanded={activeAnalysisTab === 3}
               onChange={() =>
@@ -495,9 +484,7 @@ function AgineAnalysisView({
                   p: { xs: 1.5, md: 2 },
                 }}
               >
-                <ChessTreeView 
-                 initialFen={fen}
-                />
+                <ChessTreeView initialFen={fen} />
               </AccordionDetails>
             </Accordion>
 
@@ -562,7 +549,6 @@ function AgineAnalysisView({
               onChange={() =>
                 setActiveAnalysisTab(activeAnalysisTab === 5 ? -1 : 5)
               }
-              
               sx={{
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
@@ -652,54 +638,10 @@ function AgineAnalysisView({
                 />
               </AccordionDetails>
             </Accordion>
-
-            <Accordion
-              expanded={activeAnalysisTab === 7}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 7 ? -1 : 7)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Legal Move Analysis
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <LegalMoveTab
-                  legalMoves={legalMoves}
-                  handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-                />
-              </AccordionDetails>
-            </Accordion>
-
           </Stack>
         </TabPanel>
 
-        <TabPanel value={analysisTab} index={1} >
+        <TabPanel value={analysisTab} index={1}>
           <ChatTab
             currentMoveIndex={currentMoveIndex}
             abortChatMessage={abortChatMessage}

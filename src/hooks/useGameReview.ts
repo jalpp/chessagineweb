@@ -8,28 +8,8 @@ import { isVeryGoodMove,evaluationToWinRate, percentToNumber, normalizeChessDBSc
 import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
 import { ChessDBEaseMetricCalculator } from "@/libs/easemetric/chessDbEaseMetric";
 import { useNets } from "./useNets";
+import { MoveAnalysis } from "@/libs/agine/helper";
 
-export type MoveQuality =
-  | "Best"
-  | "Very Good"
-  | "Good"
-  | "Dubious"
-  | "Mistake"
-  | "Blunder"
-  | "Book";
-
-export interface MoveAnalysis {
-  plyNumber: number;
-  notation: string;
-  sanNotation: string | undefined;
-  quality: MoveQuality;
-  arrowMove: Move;
-  evalMove: number;
-  fen: string;
-  easeMetric?: number;
-  currenFen: string;
-  player: "w" | "b";
-}
 
 /**
  * Some of move classification logic is taken from ChessKit devs 

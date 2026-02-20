@@ -11,20 +11,10 @@ import {
     Collapse,
     IconButton
 } from "@mui/material";
-import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { ChessPawnIcon } from "lucide-react";
-
-export interface ParsedPGN {
-    hash: string;
-    pgn: string;
-    white: string;
-    black: string;
-    date: string;
-    result: string;
-    event: string;
-}
+import { ParsedPGN, getResultColor } from "@/libs/game/pgn";
 
 interface MultiGameNavigatorProps {
     games: ParsedPGN[];
@@ -32,12 +22,6 @@ interface MultiGameNavigatorProps {
     onGameSelect: (game: ParsedPGN) => void;
 }
 
-const getResultColor = (result: string) => {
-    if (result === "1-0") return "success";
-    if (result === "0-1") return "error";
-    if (result === "1/2-1/2") return "warning";
-    return "default";
-};
 
 const MultiGameNavigator: React.FC<MultiGameNavigatorProps> = ({ 
     games, 

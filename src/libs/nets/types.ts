@@ -10,6 +10,11 @@ export type NetStatus =
 
 export type ModelType = 'maia2' | 'bigLeela' | 'elitemaia'
 
+export const modelToElo = (model: string) =>
+  Number(model.replace("maia_kdd_", ""));
+
+export type NeuralNetType = "maia2" | "bigLeela" | "eliteLeela";
+
 export interface MaiaEngine {
   maia2?: NetModel
   bigLeela?: NetModel
@@ -155,3 +160,25 @@ export const CATEGORY_LABELS = {
 export function getPolicyValue(evaluation: MaiaEvaluation, moveKey: string): number {
   return evaluation.policy[moveKey] ?? 0;
 }
+
+export const formatModelName = (model: string) => {
+  return model.replace("maia_kdd_", "Maia ");
+};
+
+export const formatValue = (value: number) => {
+  const percentage = (value * 100).toFixed(1);
+  return `${percentage}%`;
+};
+
+export const getValueColor = (value: number) => {
+  if (value > 0.55) return "#4caf50";
+  if (value < 0.3) return "#f44336";
+  return "#ff9800";
+};
+
+export const getEMColor = (value: number) => {
+  if (value > 0.1) return "#319333";
+  if (value < -0.1) return "#850e05";
+
+  return "#5e5549";
+};
