@@ -143,7 +143,7 @@ export default function AiChessboardPanel({
   const [boardSize, setBoardSize] = useLocalStorage<number>(
     "board_ui_size",
     typeof window !== "undefined" && window.innerWidth < 768
-      ? Math.min(window.innerWidth - 100, 400) // Mobile size
+      ? Math.min(window.innerWidth - 100, 400) 
       : DEFAULT_BOARD_SIZE
   );
   const [pieceType, setPieceType] = useLocalStorage<string>(
@@ -158,7 +158,7 @@ export default function AiChessboardPanel({
 
   const [boardTheme, setBoardTheme] = useLocalStorage<string>(
     "board_theme",
-    "purple" // Default to purple theme
+    "blue"
   );
   const [animationDuration, setAnimationDuration] = useLocalStorage<number>(
     "board_ui_animation_duration",
