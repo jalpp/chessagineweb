@@ -27,11 +27,8 @@ export default function PositionPage() {
     llmLoading,
     stockfishLoading,
     openingLoading,
-    legalMoves,
-    handleFutureMoveLegalClick,
     moveSquares,
     setMoveSquares,
-
     lichessOpeningData,
     lichessOpeningLoading,
     engineDepth,
@@ -101,8 +98,6 @@ export default function PositionPage() {
       loading={loading}
       refetch={refetch}
       requestAnalysis={requestAnalysis}
-      legalMoves={legalMoves}
-      handleFutureMoveLegalClick={handleFutureMoveLegalClick}
       gameReviewTheme={null}
       llmLoading={llmLoading}
       evaluations={evaluations}

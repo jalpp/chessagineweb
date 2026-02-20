@@ -87,8 +87,6 @@ export default function PGNUploaderPage() {
     >("chess-game-review-history", []);
   
 
-
-
   const {
     setLlmAnalysisResult,
     stockfishAnalysisResult,
@@ -132,8 +130,6 @@ export default function PGNUploaderPage() {
     error,
     refetch,
     requestAnalysis,
-    legalMoves,
-    handleFutureMoveLegalClick,
     setRootCurrentMove,
     scores,
     themeScoreError,
@@ -443,8 +439,6 @@ export default function PGNUploaderPage() {
         loading={loading}
         refetch={refetch}
         requestAnalysis={requestAnalysis}
-        legalMoves={legalMoves}
-        handleFutureMoveLegalClick={handleFutureMoveLegalClick}
         llmLoading={llmLoading}
         moves={moves}
         currentMoveIndex={currentMoveIndex}

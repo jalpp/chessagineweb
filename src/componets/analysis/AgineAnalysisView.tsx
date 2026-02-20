@@ -24,7 +24,6 @@ import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
 import OpeningExplorer from "../tabs/OpeningTab";
 import ChessDBDisplay from "../tabs/Chessdb";
-import LegalMoveTab from "../tabs/LegalMoveTab";
 import ChatTab from "../tabs/ChatTab";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
@@ -67,8 +66,6 @@ interface BaseAnalysisViewProps {
   loading: boolean;
   refetch: () => void;
   requestAnalysis: () => void;
-  legalMoves: string[];
-  handleFutureMoveLegalClick: (move: string) => Promise<void>;
   sendChatMessage: (
     gameInfo?: string | undefined,
     currentMove?: string | undefined,
@@ -148,8 +145,6 @@ function AgineAnalysisView({
   loading,
   refetch,
   requestAnalysis,
-  legalMoves,
-  handleFutureMoveLegalClick,
   sendChatMessage,
   abortChatMessage,
   handleChatKeyPress,
@@ -653,48 +648,7 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
 
-            <Accordion
-              expanded={activeAnalysisTab === 7}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 7 ? -1 : 7)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Legal Move Analysis
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <LegalMoveTab
-                  legalMoves={legalMoves}
-                  handleFutureMoveLegalClick={handleFutureMoveLegalClick}
-                />
-              </AccordionDetails>
-            </Accordion>
+           
 
           </Stack>
         </TabPanel>
