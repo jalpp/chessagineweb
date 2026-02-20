@@ -40,8 +40,6 @@ import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
 import ChessTreeView from "../tabs/ChessTreeView";
 
-
-
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
   stockfishLoading: boolean;
@@ -72,7 +70,7 @@ interface BaseAnalysisViewProps {
     puzzleMode?: boolean | undefined,
     puzzleQuery?: string | undefined,
     playMode?: boolean | undefined,
-    currentMoveIndex?: number | undefined
+    currentMoveIndex?: number | undefined,
   ) => Promise<void>;
   abortChatMessage: () => void;
   handleChatKeyPress: (e: React.KeyboardEvent) => void;
@@ -95,11 +93,11 @@ interface GameReviewProps {
   gameReviewProgress?: number;
   handleGameReviewSummaryClick?: (
     review: MoveAnalysis[],
-    gameInfo: string
+    gameInfo: string,
   ) => Promise<void>;
   handleMoveAnnontateClick?: (
     review: MoveAnalysis,
-    customQuery?: string
+    customQuery?: string,
   ) => Promise<void>;
   handleMoveCoachClick?: (review: MoveAnalysis) => void;
   gameReview?: MoveAnalysis[];
@@ -110,12 +108,10 @@ interface GameReviewProps {
 interface MaiaProps extends UseMaiaEngineResult {}
 
 interface AgineAnalysisViewProps
-  extends GameReviewProps,
-    BaseAnalysisViewProps,
-    MaiaProps {
+  extends GameReviewProps, BaseAnalysisViewProps, MaiaProps {
   isGameReviewMode: boolean;
   activeAnalysisTab: number;
-  setActiveAnalysisTab: Dispatch<SetStateAction<number>>
+  setActiveAnalysisTab: Dispatch<SetStateAction<number>>;
   fen: string;
 }
 
@@ -173,15 +169,16 @@ function AgineAnalysisView({
   ThemeScoreloading,
   activeAnalysisTab,
   fen,
-  setActiveAnalysisTab
+  setActiveAnalysisTab,
 }: AgineAnalysisViewProps) {
-  const [analysisTab, setAnalysisTab] = useSessionStorage<number>("agine_current_tab",0);
+  const [analysisTab, setAnalysisTab] = useSessionStorage<number>(
+    "agine_current_tab",
+    0,
+  );
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
-  
 
   return (
     <Card
@@ -310,8 +307,6 @@ function AgineAnalysisView({
                   />
 
                   <Divider />
-
-                
                 </AccordionDetails>
               </Accordion>
             )}
@@ -454,7 +449,6 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
 
-            
             <Accordion
               expanded={activeAnalysisTab === 3}
               onChange={() =>
@@ -490,9 +484,7 @@ function AgineAnalysisView({
                   p: { xs: 1.5, md: 2 },
                 }}
               >
-                <ChessTreeView 
-                 initialFen={fen}
-                />
+                <ChessTreeView initialFen={fen} />
               </AccordionDetails>
             </Accordion>
 
@@ -557,7 +549,6 @@ function AgineAnalysisView({
               onChange={() =>
                 setActiveAnalysisTab(activeAnalysisTab === 5 ? -1 : 5)
               }
-              
               sx={{
                 "&:before": { display: "none" },
                 borderRadius: { xs: 1.5, md: 2 },
@@ -647,13 +638,10 @@ function AgineAnalysisView({
                 />
               </AccordionDetails>
             </Accordion>
-
-           
-
           </Stack>
         </TabPanel>
 
-        <TabPanel value={analysisTab} index={1} >
+        <TabPanel value={analysisTab} index={1}>
           <ChatTab
             currentMoveIndex={currentMoveIndex}
             abortChatMessage={abortChatMessage}

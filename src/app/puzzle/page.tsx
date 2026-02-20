@@ -59,14 +59,19 @@ import {
 import { Refresh, SkipNext } from "@mui/icons-material";
 import Slider from "@/componets/Slider";
 import { useLocalStorage } from "usehooks-ts";
-import { PuzzleData, PuzzleQuery, PUZZLE_THEMES, DIFFICULTY_THEMES } from "@/libs/puzzle/helper";
+import {
+  PuzzleData,
+  PuzzleQuery,
+  PUZZLE_THEMES,
+  DIFFICULTY_THEMES,
+} from "@/libs/puzzle/helper";
 import GuessTheme from "@/componets/puzzle/GuessPtag";
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 
 export default function PuzzlePage() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
@@ -79,7 +84,9 @@ export default function PuzzlePage() {
   const [themesSectionExpanded, setThemesSectionExpanded] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error" | "info">("info");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<
+    "success" | "error" | "info"
+  >("info");
 
   // Theme selection state
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
@@ -101,60 +108,81 @@ export default function PuzzlePage() {
   const [hintUsed, setHintUsed] = useState(false);
   const [puzzleReseted, setPuzzleReseted] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const [puzzleLevel, setPuzzleLevel] = useLocalStorage<number>("puzzleLevel", 1500);
+  const [puzzleLevel, setPuzzleLevel] = useLocalStorage<number>(
+    "puzzleLevel",
+    1500,
+  );
 
   // Solution viewing state
   const [showingSolution, setShowingSolution] = useState(false);
   const [solutionViewIndex, setSolutionViewIndex] = useState(0);
-  const [solutionGameState, setSolutionGameState] = useState<Chess | null>(null);
+  const [solutionGameState, setSolutionGameState] = useState<Chess | null>(
+    null,
+  );
 
   // rating
 
   const [userPuzzleRating, setUserPuzzleRating] = useLocalStorage<number>(
     "agine_user_puzzle_rating",
-    1500
-  )
+    1500,
+  );
 
   const [panelVisible, setPanelVisible] = useState(true);
 
-
-  const showSnackbar = (message: string, severity: "success" | "error" | "info" = "info") => {
+  const showSnackbar = (
+    message: string,
+    severity: "success" | "error" | "info" = "info",
+  ) => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
 
   function calculateExpectedScore(puzzleRating: number): number {
-  const ratingDifference = puzzleRating - userPuzzleRating;
+    const ratingDifference = puzzleRating - userPuzzleRating;
 
-  const denominator = 1 + Math.pow(10, ratingDifference / 400);
+    const denominator = 1 + Math.pow(10, ratingDifference / 400);
 
-  const expectedScore = 1 / denominator;
+    const expectedScore = 1 / denominator;
 
-  return expectedScore;
-}
-
-  const calculateUserRating = (puzzleRating: number, isCompleted: boolean) => {
-    if(!puzzleReseted){
-    const actualScore = isCompleted ? 1 : 0;
-    const Kfactor = userPuzzleRating === 1500 ? 40 : 100;
-    const expectedScore = calculateExpectedScore(puzzleRating);
-    const newRating = Math.round(userPuzzleRating + Kfactor * (actualScore - expectedScore));
-    setUserPuzzleRating(newRating);
-    }
+    return expectedScore;
   }
 
-  const createPuzzlePrompt = useCallback((query: PuzzleQuery): string => {
-    const themesText = query.themes.length > 0 ? `This puzzle focuses on: ${query.themes.join(", ")}. themes` : "";
-    const solutionText = query.solution.length > 0 ? `The solution is: ${query.solution.join(" ")}.` : "";
-    let sideToMove = "";
-    if (puzzleData && puzzleData.FEN) {
-      const fenParts = puzzleData.FEN.split(" ");
-      if (fenParts.length > 1) {
-        sideToMove = fenParts[1] === "w" ? "White to move." : fenParts[1] === "b" ? "Black to move." : "";
-      }
+  const calculateUserRating = (puzzleRating: number, isCompleted: boolean) => {
+    if (!puzzleReseted) {
+      const actualScore = isCompleted ? 1 : 0;
+      const Kfactor = userPuzzleRating === 1500 ? 40 : 100;
+      const expectedScore = calculateExpectedScore(puzzleRating);
+      const newRating = Math.round(
+        userPuzzleRating + Kfactor * (actualScore - expectedScore),
+      );
+      setUserPuzzleRating(newRating);
     }
-    return `
+  };
+
+  const createPuzzlePrompt = useCallback(
+    (query: PuzzleQuery): string => {
+      const themesText =
+        query.themes.length > 0
+          ? `This puzzle focuses on: ${query.themes.join(", ")}. themes`
+          : "";
+      const solutionText =
+        query.solution.length > 0
+          ? `The solution is: ${query.solution.join(" ")}.`
+          : "";
+      let sideToMove = "";
+      if (puzzleData && puzzleData.FEN) {
+        const fenParts = puzzleData.FEN.split(" ");
+        if (fenParts.length > 1) {
+          sideToMove =
+            fenParts[1] === "w"
+              ? "White to move."
+              : fenParts[1] === "b"
+                ? "Black to move."
+                : "";
+        }
+      }
+      return `
     <puzzle_session>
      Phase: puzzle_starting
     ${themesText} 
@@ -163,20 +191,30 @@ export default function PuzzlePage() {
     \n
     ${solutionText}
     </puzzle_session>
-    `
-    ;
-  }, [puzzleData]);
+    `;
+    },
+    [puzzleData],
+  );
 
-  const createTransitionPuzzlePrompt = useCallback((query: PuzzleQuery, solution: string): string => {
-    const themesText = query.themes.length > 0 ? `This puzzle focuses on: ${query.themes.join(", ")}. themes` : "";
-    let sideToMove = "";
-    if (puzzleData && puzzleData.FEN) {
-      const fenParts = puzzleData.FEN.split(" ");
-      if (fenParts.length > 1) {
-        sideToMove = fenParts[1] === "w" ? "White to move." : fenParts[1] === "b" ? "Black to move." : "";
+  const createTransitionPuzzlePrompt = useCallback(
+    (query: PuzzleQuery, solution: string): string => {
+      const themesText =
+        query.themes.length > 0
+          ? `This puzzle focuses on: ${query.themes.join(", ")}. themes`
+          : "";
+      let sideToMove = "";
+      if (puzzleData && puzzleData.FEN) {
+        const fenParts = puzzleData.FEN.split(" ");
+        if (fenParts.length > 1) {
+          sideToMove =
+            fenParts[1] === "w"
+              ? "White to move."
+              : fenParts[1] === "b"
+                ? "Black to move."
+                : "";
+        }
       }
-    }
-    return `
+      return `
     <puzzle_session>
     ${themesText} 
     \n
@@ -184,29 +222,33 @@ export default function PuzzlePage() {
     \n 
     ${solution}
     </puzzle_session>
-    `
-  }, [puzzleData]);
+    `;
+    },
+    [puzzleData],
+  );
 
-
-  const convertMovesToSAN = useCallback((moves: string[], startingFEN: string): string[] => {
-    const tempGame = new Chess(startingFEN);
-    const sanMoves: string[] = [];
-    moves.forEach((move) => {
-      try {
-        const moveObj = tempGame.move({
-          from: move.substring(0, 2),
-          to: move.substring(2, 4),
-          promotion: move.substring(4) || undefined,
-        });
-        if (moveObj) {
-          sanMoves.push(moveObj.san);
+  const convertMovesToSAN = useCallback(
+    (moves: string[], startingFEN: string): string[] => {
+      const tempGame = new Chess(startingFEN);
+      const sanMoves: string[] = [];
+      moves.forEach((move) => {
+        try {
+          const moveObj = tempGame.move({
+            from: move.substring(0, 2),
+            to: move.substring(2, 4),
+            promotion: move.substring(4) || undefined,
+          });
+          if (moveObj) {
+            sanMoves.push(moveObj.san);
+          }
+        } catch (error) {
+          console.error("Error converting move to SAN:", move, error);
         }
-      } catch (error) {
-        console.error("Error converting move to SAN:", move, error);
-      }
-    });
-    return sanMoves;
-  }, []);
+      });
+      return sanMoves;
+    },
+    [],
+  );
 
   const fetchPuzzle = useCallback(
     async (themes: string[] = [], ratingFrom?: number, ratingTo?: number) => {
@@ -265,7 +307,7 @@ export default function PuzzlePage() {
         setLoading(false);
       }
     },
-    [convertMovesToSAN, createPuzzlePrompt]
+    [convertMovesToSAN, createPuzzlePrompt],
   );
 
   useEffect(() => {
@@ -292,13 +334,16 @@ export default function PuzzlePage() {
     abortChatMessage,
     scores,
     themeScoreError,
-    themeScoreLoading
+    themeScoreLoading,
   } = useAgine(fen);
 
-  const handleQuickThemeChange = useCallback((event: SelectChangeEvent<string>) => {
-    const theme = event.target.value;
-    setQuickTheme(theme);
-  }, []);
+  const handleQuickThemeChange = useCallback(
+    (event: SelectChangeEvent<string>) => {
+      const theme = event.target.value;
+      setQuickTheme(theme);
+    },
+    [],
+  );
 
   const showSolution = useCallback(() => {
     if (!puzzleData) return;
@@ -368,124 +413,156 @@ export default function PuzzlePage() {
         }
       }
     },
-    [puzzleData, solutionGameState, solutionViewIndex, solutionMoves]
+    [puzzleData, solutionGameState, solutionViewIndex, solutionMoves],
   );
 
- const onDrop = useCallback(
-  (args: PieceDropHandlerArgs) => {
-    if (puzzleComplete || puzzleFailed || showingSolution) return false;
-    try {
-      const gameCopy = new Chess(fen);
-      const source = args.sourceSquare;
-      const target = args.targetSquare;
+  const onDrop = useCallback(
+    (args: PieceDropHandlerArgs) => {
+      if (puzzleComplete || puzzleFailed || showingSolution) return false;
+      try {
+        const gameCopy = new Chess(fen);
+        const source = args.sourceSquare;
+        const target = args.targetSquare;
 
-      if (!source || !target) return false;
+        if (!source || !target) return false;
 
-      const move = gameCopy.move({
-        from: source,
-        to: target,
-        promotion: "q",
-      });
-      if (!move) return false;
-      const moveNotation = move.from + move.to + (move.promotion || "");
-      const expectedMove = solutionMoves[currentSolutionIndex];
-      
-      if (moveNotation === expectedMove) {
-        setGame(gameCopy);
-        setFen(gameCopy.fen());
-        setMoveSquares({
-          [source]: "rgba(155, 199, 0, 0.41)",
-          [target]: "rgba(155, 199, 0, 0.41)",
+        const move = gameCopy.move({
+          from: source,
+          to: target,
+          promotion: "q",
         });
-        
-        const playedMove = sanSolutionMoves[currentSolutionIndex];
-        const remainingMoves = sanSolutionMoves.slice(currentSolutionIndex + 1);
-        const solutionText = remainingMoves.length > 0 
-          ? `Move played: ${playedMove}. Remaining solution: ${remainingMoves.join(" ")}.`
-          : `Move played: ${playedMove}. Puzzle complete!`;
-        
-        if (puzzleQuery) {
-          const puzzleTransitionQuery = createTransitionPuzzlePrompt(puzzleQuery, solutionText);
-          setPuzzleQueryString(puzzleTransitionQuery);
-        }
-        
-        if (currentSolutionIndex === solutionMoves.length - 1) {
-          setPuzzleComplete(true);
-          showSnackbar(hintUsed ? "Puzzle complete! (Hint used)" : "Perfect! Puzzle solved!", "success");
-          calculateUserRating(puzzleData?.rating || 1500, true);
-        } else {
-          setTimeout(() => {
-            const nextMove = solutionMoves[currentSolutionIndex + 1];
-            if (nextMove) {
-              const opponentMove = gameCopy.move({
-                from: nextMove.substring(0, 2),
-                to: nextMove.substring(2, 4),
-                promotion: nextMove.substring(4) || undefined,
-              });
-              if (opponentMove) {
-                setGame(new Chess(gameCopy.fen()));
-                setFen(gameCopy.fen());
-                setCurrentSolutionIndex(currentSolutionIndex + 2);
+        if (!move) return false;
+        const moveNotation = move.from + move.to + (move.promotion || "");
+        const expectedMove = solutionMoves[currentSolutionIndex];
+
+        if (moveNotation === expectedMove) {
+          setGame(gameCopy);
+          setFen(gameCopy.fen());
+          setMoveSquares({
+            [source]: "rgba(155, 199, 0, 0.41)",
+            [target]: "rgba(155, 199, 0, 0.41)",
+          });
+
+          const playedMove = sanSolutionMoves[currentSolutionIndex];
+          const remainingMoves = sanSolutionMoves.slice(
+            currentSolutionIndex + 1,
+          );
+          const solutionText =
+            remainingMoves.length > 0
+              ? `Move played: ${playedMove}. Remaining solution: ${remainingMoves.join(" ")}.`
+              : `Move played: ${playedMove}. Puzzle complete!`;
+
+          if (puzzleQuery) {
+            const puzzleTransitionQuery = createTransitionPuzzlePrompt(
+              puzzleQuery,
+              solutionText,
+            );
+            setPuzzleQueryString(puzzleTransitionQuery);
+          }
+
+          if (currentSolutionIndex === solutionMoves.length - 1) {
+            setPuzzleComplete(true);
+            showSnackbar(
+              hintUsed
+                ? "Puzzle complete! (Hint used)"
+                : "Perfect! Puzzle solved!",
+              "success",
+            );
+            calculateUserRating(puzzleData?.rating || 1500, true);
+          } else {
+            setTimeout(() => {
+              const nextMove = solutionMoves[currentSolutionIndex + 1];
+              if (nextMove) {
+                const opponentMove = gameCopy.move({
+                  from: nextMove.substring(0, 2),
+                  to: nextMove.substring(2, 4),
+                  promotion: nextMove.substring(4) || undefined,
+                });
+                if (opponentMove) {
+                  setGame(new Chess(gameCopy.fen()));
+                  setFen(gameCopy.fen());
+                  setCurrentSolutionIndex(currentSolutionIndex + 2);
+                }
               }
-            }
-          }, 500);
+            }, 500);
+          }
+        } else {
+          setPuzzleFailed(true);
+          setMoveSquares({
+            [source]: "rgba(255, 0, 0, 0.41)",
+            [target]: "rgba(255, 0, 0, 0.41)",
+          });
+          showSnackbar("Wrong move! please view the solution", "error");
+          calculateUserRating(puzzleData?.rating || 1500, false);
         }
-      } else {
-        setPuzzleFailed(true);
-        setMoveSquares({
-          [source]: "rgba(255, 0, 0, 0.41)",
-          [target]: "rgba(255, 0, 0, 0.41)",
-        });
-        showSnackbar("Wrong move! please view the solution", "error");
-        calculateUserRating(puzzleData?.rating || 1500, false);
+        return true;
+      } catch (error) {
+        console.error("Move error:", error);
+        return false;
       }
-      return true;
-    } catch (error) {
-      console.error("Move error:", error);
-      return false;
-    }
-  },
-  [fen, solutionMoves, sanSolutionMoves, currentSolutionIndex, puzzleComplete, puzzleFailed, showingSolution, hintUsed, puzzleQuery, createTransitionPuzzlePrompt]
-);
+    },
+    [
+      fen,
+      solutionMoves,
+      sanSolutionMoves,
+      currentSolutionIndex,
+      puzzleComplete,
+      puzzleFailed,
+      showingSolution,
+      hintUsed,
+      puzzleQuery,
+      createTransitionPuzzlePrompt,
+    ],
+  );
 
-const handleSquareClick = useCallback(
-  ({ piece, square }: SquareHandlerArgs) => {
-    if (puzzleComplete || puzzleFailed || showingSolution) return;
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-    if (selectedSquare && legalMoves.includes(square)) {
-      // Create the args object matching PieceDropHandlerArgs
-      const chessPiece = game.get(selectedSquare as Square);
-      const args: PieceDropHandlerArgs = {
-        piece: {
-          isSparePiece: false,
-          position: selectedSquare,
-          pieceType: chessPiece ? `${chessPiece.color}${chessPiece.type.toUpperCase()}` : 'wP',
-        },
-        sourceSquare: selectedSquare,
-        targetSquare: square,
-      };
-      onDrop(args);
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-    const chessPiece = game.get(square as Square);
-    if (!chessPiece || chessPiece.color !== game.turn()) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
-      return;
-    }
-    const moves = game.moves({ square: square as Square, verbose: true });
-    const targetSquares = moves.map((move) => move.to);
-    setSelectedSquare(square);
-    setLegalMoves(targetSquares);
-  },
-  [selectedSquare, legalMoves, game, onDrop, puzzleComplete, puzzleFailed, showingSolution]
-);
+  const handleSquareClick = useCallback(
+    ({ piece, square }: SquareHandlerArgs) => {
+      if (puzzleComplete || puzzleFailed || showingSolution) return;
+      if (selectedSquare === square) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+      if (selectedSquare && legalMoves.includes(square)) {
+        // Create the args object matching PieceDropHandlerArgs
+        const chessPiece = game.get(selectedSquare as Square);
+        const args: PieceDropHandlerArgs = {
+          piece: {
+            isSparePiece: false,
+            position: selectedSquare,
+            pieceType: chessPiece
+              ? `${chessPiece.color}${chessPiece.type.toUpperCase()}`
+              : "wP",
+          },
+          sourceSquare: selectedSquare,
+          targetSquare: square,
+        };
+        onDrop(args);
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+      const chessPiece = game.get(square as Square);
+      if (!chessPiece || chessPiece.color !== game.turn()) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+        return;
+      }
+      const moves = game.moves({ square: square as Square, verbose: true });
+      const targetSquares = moves.map((move) => move.to);
+      setSelectedSquare(square);
+      setLegalMoves(targetSquares);
+    },
+    [
+      selectedSquare,
+      legalMoves,
+      game,
+      onDrop,
+      puzzleComplete,
+      puzzleFailed,
+      showingSolution,
+    ],
+  );
 
   const customSquareStyles = useMemo(() => {
     const styles: { [square: string]: React.CSSProperties } = {};
@@ -562,823 +639,974 @@ const handleSquareClick = useCallback(
   }, [puzzleData]);
 
   return (
-  <>
-    <Box sx={{ 
-      minHeight: "100vh",
-      pb: isMobile ? 10 : 4,
-      px: isMobile ? 1 : 4,
-      pt: isMobile ? 2 : 4,
-    }}>
-      {isMobile ? (
-        /* Mobile Layout - Unchanged */
-        <Stack spacing={2}>
-          {/* Header with Rating - Mobile Only */}
-          {puzzleData && (
-            <Card>
-              <CardContent sx={{ py: 1.5 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Chip
-                    icon={<User2 size={18} />}
-                    label={`Your Rating: ${Math.round(userPuzzleRating)}`}
-                    color="secondary"
-                    size="small"
-                  />
-                  <Chip
-                    icon={<Star size={18} />}
-                    label={`Rating: ${Math.round(puzzleData.rating)}`}
-                    color="primary"
-                    size="small"
-                  />
-                  <Chip
-                    label={showingSolution ? `Solution ${solutionViewIndex}/${solutionMoves.length}` : `Move ${Math.floor(currentSolutionIndex / 2) + 1}`}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Stack>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Chessboard - Mobile */}
-          <Box sx={{ width: '100%' }}>
-            <AiChessboardPanel
-              game={game}
-              fen={fen}
-              moveSquares={moveSquares}
-              setMoveSquares={setMoveSquares}
-              engine={engine}
-              puzzleMode={true}
-              onDropPuzzle={onDrop}
-              handleSquarePuzzleClick={handleSquareClick}
-              setFen={setFen}
-              setGame={setGame}
-              setLlmAnalysisResult={setLlmAnalysisResult}
-              setOpeningData={setOpeningData}
-              setStockfishAnalysisResult={setStockfishAnalysisResult}
-              fetchOpeningData={fetchOpeningData}
-              analyzeWithStockfish={analyzeWithStockfish}
-              puzzleCustomSquareStyle={customSquareStyles}
-              llmLoading={llmLoading}
-              side={puzzleData ? new Chess(puzzleData.FEN).turn() === "w" ? "white" : "black" : "white"}
-              stockfishLoading={stockfishLoading}
-              stockfishAnalysisResult={stockfishAnalysisResult}
-              openingLoading={openingLoading}
-            />
-          </Box>
-        </Stack>
-      ) : (
-        /* Desktop Layout with Toggle */
-        <Stack direction="row" spacing={4}>
-          {/* Left Side - Chessboard */}
-          <Box 
-            sx={{ 
-              flex: { xs: "1 1 auto", lg: panelVisible ? "0 0 auto" : "1 1 auto" },
-              width: { xs: '100%', lg: panelVisible ? 'auto' : '100%' },
-              maxWidth: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: { xs: 'center', lg: panelVisible ? 'flex-start' : 'center' },
-              px: { xs: 0, sm: 1 },
-              transition: 'all 0.3s ease-in-out',
-            }}
-          >
-            <AiChessboardPanel
-              game={game}
-              fen={fen}
-              moveSquares={moveSquares}
-              setMoveSquares={setMoveSquares}
-              engine={engine}
-              puzzleMode={true}
-              onDropPuzzle={onDrop}
-              handleSquarePuzzleClick={handleSquareClick}
-              setFen={setFen}
-              setGame={setGame}
-              setLlmAnalysisResult={setLlmAnalysisResult}
-              setOpeningData={setOpeningData}
-              setStockfishAnalysisResult={setStockfishAnalysisResult}
-              fetchOpeningData={fetchOpeningData}
-              analyzeWithStockfish={analyzeWithStockfish}
-              puzzleCustomSquareStyle={customSquareStyles}
-              llmLoading={llmLoading}
-              side={puzzleData ? new Chess(puzzleData.FEN).turn() === "w" ? "white" : "black" : "white"}
-              stockfishLoading={stockfishLoading}
-              stockfishAnalysisResult={stockfishAnalysisResult}
-              openingLoading={openingLoading}
-            />
-
-            {/* Toggle Button */}
-            <Box
-              sx={{
-                mt: 2,
-                display: 'flex',
-                justifyContent: 'center',
-                width: '100%',
-              }}
-            >
-              <Button
-                variant="outlined"
-                onClick={() => setPanelVisible(!panelVisible)}
-                startIcon={panelVisible ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-                size="medium"
-                sx={{
-                  borderRadius: 2,
-                  px: 3,
-                }}
-              >
-                {panelVisible ? "Hide Panel (Focus Mode)" : "Show Panel"}
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Right Side - Analysis Panel */}
-          {panelVisible && (
-            <Paper
-              elevation={3}
-              sx={{ 
-                flex: 1,
-                width: { xs: '100%', lg: 'auto' },
-                maxWidth: '100%',
-                minWidth: 0,
-                transition: 'all 0.3s ease-in-out',
-              }}
-            >
-              <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                <Tabs
-                  value={analysisTab}
-                  onChange={(_, newValue) => setAnalysisTab(newValue)}
-                >
-                  <Tab label="Puzzle Info" />
-                  <Tab label="Guess Theme Eval"/>
-                  <Tab label="AI Chat" />
-                </Tabs>
-              </Box>
-              
-              <Box sx={{ flex: 1, overflow: 'auto', mt: 2 }}>
-                <TabPanel value={analysisTab} index={0}>
-                  {loading ? (
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : (
-                    <Stack spacing={3}>
-                      {/* Theme Selection */}
-                      <Card>
-                        <CardContent>
-                          <Typography variant="h6">
-                            Puzzle Themes
-                          </Typography>
-                          <Stack spacing={2}>
-                            <FormControl fullWidth>
-                              <InputLabel>Quick Select</InputLabel>
-                              <Select
-                                value={quickTheme}
-                                onChange={handleQuickThemeChange}
-                                label="Quick Select"
-                              >
-                                <MenuItem value=""><em>Random Puzzle</em></MenuItem>
-                                {DIFFICULTY_THEMES.map((theme) => (
-                                  <MenuItem key={theme.value} value={theme.value}>
-                                    {theme.label} ({theme.difficulty})
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                            <Button
-                              variant="outlined"
-                              startIcon={<Filter />}
-                              onClick={() => setThemeDialogOpen(true)}
-                              fullWidth
-                              color="info"
-                            >
-                              Advanced Theme Selection
-                            </Button>
-                            {selectedThemes.length > 0 && (
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                <Typography variant="body2" sx={{ width: '100%', mb: 0.5 }}>
-                                  Active Themes:
-                                </Typography>
-                                {selectedThemes.map((theme) => (
-                                  <Chip
-                                    key={theme}
-                                    label={PUZZLE_THEMES.find((t) => t.tag === theme)?.description || theme}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                ))}
-                              </Stack>
-                            )}
-                          </Stack>
-                        </CardContent>
-                      </Card>
-
-                      {/* Rating Display */}
-                      {puzzleData && (
-                        <Card>
-                          <CardContent>
-                            <Stack direction="row" justifyContent="center" spacing={2}>
-                              <Chip
-                                icon={<User2 />}
-                                label={`Your Rating: ${userPuzzleRating}`}
-                                color="secondary"
-                                sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
-                              />
-                              <Chip
-                                icon={<Star />}
-                                label={`Rating: ${puzzleData.rating}`}
-                                color="primary"
-                                sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
-                              />
-                              <Chip
-                                label={showingSolution ? `Solution ${solutionViewIndex}/${solutionMoves.length}` : `Move ${Math.floor(currentSolutionIndex / 2) + 1}`}
-                                variant="outlined"
-                                sx={{ fontSize: '1rem', py: 2, height: 'auto'}}
-                              />
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Action Buttons */}
-                      <Card>
-                        <CardContent>
-                          {showingSolution ? (
-                            <Stack spacing={2}>
-                              <Typography variant="h6" sx={{ textAlign: "center" }}>
-                                Solution View ({solutionViewIndex}/{solutionMoves.length})
-                              </Typography>
-                              <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
-                                <Chip
-                                  label={`Your Rating: ${userPuzzleRating}`}
-                                  color="secondary"
-                                  icon={<User2 />}
-                                  sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
-                                />
-                                {puzzleData && (
-                                  <Chip
-                                    label={`Puzzle Rating: ${puzzleData.rating}`}
-                                    color="primary"
-                                    icon={<Star />}
-                                    sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
-                                  />
-                                )}
-                              </Stack>
-                              <Stack direction="row" spacing={2}>
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<SkipBackIcon />}
-                                  onClick={() => navigateSolution("prev")}
-                                  disabled={solutionViewIndex === 0}
-                                  fullWidth
-                                  color="info"
-                                >
-                                  Previous
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<SkipNextIcon />}
-                                  onClick={() => navigateSolution("next")}
-                                  disabled={solutionViewIndex >= solutionMoves.length}
-                                  fullWidth
-                                  color="info"
-                                >
-                                  Next
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  onClick={exitSolutionView}
-                                  fullWidth
-                                  color="warning"
-                                >
-                                  Exit
-                                </Button>
-                              </Stack>
-                            </Stack>
-                          ) : (
-                            <Stack spacing={2}>
-                              <Stack direction="row" spacing={2}>
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<Lightbulb />}
-                                  onClick={showHintMove}
-                                  disabled={puzzleComplete || showHint}
-                                  fullWidth
-                                  color="info"
-                                >
-                                  Hint
-                                </Button>
-                                {puzzleFailed && (
-                                  <Button
-                                    variant="outlined"
-                                    startIcon={<Eye />}
-                                    onClick={showSolution}
-                                    fullWidth
-                                    color="secondary"
-                                  >
-                                    Solution
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<Refresh />}
-                                  onClick={resetPuzzle}
-                                  fullWidth
-                                  color="warning"
-                                >
-                                  Reset
-                                </Button>
-                              </Stack>
-                              <Button
-                                variant="contained"
-                                startIcon={<SkipNext />}
-                                onClick={() => fetchPuzzle(selectedThemes, userPuzzleRating, userPuzzleRating + 500)}
-                                disabled={loading}
-                                fullWidth
-                                size="large"
-                                color="success"
-                              >
-                                Next Puzzle
-                              </Button>
-                            </Stack>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      {/* Status Messages */}
-                      {(puzzleComplete || puzzleFailed || showHint || error) && (
-                        <Stack spacing={2}>
-                          {puzzleComplete && (
-                            <Alert severity="success">
-                              🎉 Puzzle Complete! {hintUsed ? "(Hint used)" : "Perfect solve!"}
-                            </Alert>
-                          )}
-                          {puzzleFailed && !showingSolution && (
-                            <Alert severity="error">
-                              ❌ Wrong move! Use the Show Solution button to see the correct moves.
-                            </Alert>
-                          )}
-                          {showHint && (
-                            <Alert severity="info">
-                              💡 Hint: The highlighted squares show the best move!
-                            </Alert>
-                          )}
-                          {error && (
-                            <Alert severity="error">
-                              Puzzle combo not present! Please try other puzzle themes
-                            </Alert>
-                          )}
-                        </Stack>
-                      )}
-                    </Stack>
-                  )}
-                </TabPanel>
-
-                <TabPanel value={analysisTab} index={1}>
-                  <GuessTheme stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={themeScoreLoading} error={themeScoreError}/>
-                </TabPanel>
-
-                <TabPanel value={analysisTab} index={2}>
-                  <ChatTab
-                    abortChatMessage={abortChatMessage}
-                    sendChatMessage={sendChatMessage}
-                    puzzleMode={true}
-                    puzzleQuery={puzzleQueryString}
-                    handleChatKeyPress={handleChatKeyPress}
-                  />
-                </TabPanel>
-              </Box>
-            </Paper>
-          )}
-        </Stack>
-      )}
-
-      {/* Mobile FAB for Menu - Unchanged */}
-      {isMobile && (
-        <Fab
-          color="primary"
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            right: 16,
-            zIndex: 1000,
-          }}
-          onClick={() => setBottomDrawerOpen(true)}
-        >
-          <Menu />
-        </Fab>
-      )}
-
-      {/* Mobile Bottom Drawer - Unchanged */}
-      {isMobile && (
-        <Drawer
-          anchor="bottom"
-          open={bottomDrawerOpen}
-          onClose={() => setBottomDrawerOpen(false)}
-          PaperProps={{
-            sx: {
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              maxHeight: '90vh',
-            },
-          }}
-        >
-          <Box sx={{ p: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-              <Typography variant="h6">Puzzle Controls</Typography>
-              <IconButton onClick={() => setBottomDrawerOpen(false)}>
-                <X/>
-              </IconButton>
-            </Stack>
-
-            <Stack spacing={2}>
-              {/* Quick Actions */}
-              {showingSolution ? (
-                <>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Solution Navigation ({solutionViewIndex}/{solutionMoves.length})
-                  </Typography>
-                  <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+    <>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          pb: isMobile ? 10 : 4,
+          px: isMobile ? 1 : 4,
+          pt: isMobile ? 2 : 4,
+        }}
+      >
+        {isMobile ? (
+          /* Mobile Layout - Unchanged */
+          <Stack spacing={2}>
+            {/* Header with Rating - Mobile Only */}
+            {puzzleData && (
+              <Card>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
                     <Chip
+                      icon={<User2 size={18} />}
                       label={`Your Rating: ${Math.round(userPuzzleRating)}`}
                       color="secondary"
-                      icon={<User2 />}
-                      sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
+                      size="small"
                     />
-                    {puzzleData && (
-                      <Chip
-                        label={`Puzzle Rating: ${puzzleData.rating}`}
-                        color="primary"
-                        icon={<Star />}
-                        sx={{ fontSize: '1rem', py: 2, height: 'auto' }}
-                      />
-                    )}
-                  </Stack>
-                  <Stack direction="row" spacing={1}>
-                    <Button
+                    <Chip
+                      icon={<Star size={18} />}
+                      label={`Rating: ${Math.round(puzzleData.rating)}`}
+                      color="primary"
+                      size="small"
+                    />
+                    <Chip
+                      label={
+                        showingSolution
+                          ? `Solution ${solutionViewIndex}/${solutionMoves.length}`
+                          : `Move ${Math.floor(currentSolutionIndex / 2) + 1}`
+                      }
+                      size="small"
                       variant="outlined"
-                      startIcon={<SkipBackIcon size={20} />}
-                      onClick={() => navigateSolution("prev")}
-                      disabled={solutionViewIndex === 0}
-                      fullWidth
-                      size="large"
-                      color="info"
-                    >
-                      Prev
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<SkipNextIcon size={20} />}
-                      onClick={() => navigateSolution("next")}
-                      disabled={solutionViewIndex >= solutionMoves.length}
-                      fullWidth
-                      size="large"
-                      color="info"
-                    >
-                      Next
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={exitSolutionView}
-                      fullWidth
-                      size="large"
-                      color="warning"
-                    >
-                      Exit
-                    </Button>
+                    />
                   </Stack>
-                </>
-              ) : (
-                <>
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Lightbulb size={20} />}
-                      onClick={showHintMove}
-                      disabled={puzzleComplete || showHint}
-                      fullWidth
-                      size="large"
-                      color="info"
-                    >
-                      Hint
-                    </Button>
-                    {puzzleFailed && (
-                      <Button
-                        variant="outlined"
-                        startIcon={<Eye size={20} />}
-                        onClick={showSolution}
-                        fullWidth
-                        size="large"
-                        color="secondary"
-                      >
-                        Solution
-                      </Button>
-                    )}
-                    <Button
-                      variant="outlined"
-                      startIcon={<Refresh />}
-                      onClick={resetPuzzle}
-                      fullWidth
-                      size="large"
-                      color="warning"
-                    >
-                      Reset
-                    </Button>
-                  </Stack>
-                  <Button
-                    variant="contained"
-                    startIcon={<SkipNext />}
-                    onClick={() => {
-                      fetchPuzzle(selectedThemes, userPuzzleRating, userPuzzleRating + 500);
-                      setBottomDrawerOpen(false);
-                    }}
-                    disabled={loading}
-                    fullWidth
-                    size="large"
-                    color="success"
-                  >
-                    Next Puzzle
-                  </Button>
-                </>
-              )}
-
-              {/* Theme Selection - Collapsible */}
-              <Card>
-                <CardContent sx={{ p: 2 }}>
-                  <Stack 
-                    direction="row" 
-                    justifyContent="space-between" 
-                    alignItems="center"
-                    onClick={() => setThemesSectionExpanded(!themesSectionExpanded)}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <Typography variant="subtitle1">
-                      Puzzle Themes
-                    </Typography>
-                    {themesSectionExpanded ? <ChevronUp/> : <ChevronDown/>}
-                  </Stack>
-                  <Collapse in={themesSectionExpanded}>
-                    <Stack spacing={2} sx={{ mt: 2 }}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Quick Select</InputLabel>
-                        <Select
-                          value={quickTheme}
-                          onChange={handleQuickThemeChange}
-                          label="Quick Select"
-                        >
-                          <MenuItem value=""><em>Random</em></MenuItem>
-                          {DIFFICULTY_THEMES.map((theme) => (
-                            <MenuItem key={theme.value} value={theme.value}>
-                              {theme.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Filter size={18} />}
-                        onClick={() => {
-                          setThemeDialogOpen(true);
-                          setBottomDrawerOpen(false);
-                        }}
-                        fullWidth
-                        size="small"
-                        color="info"
-                      >
-                        Advanced Filters
-                      </Button>
-                      {selectedThemes.length > 0 && (
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          {selectedThemes.slice(0, 3).map((theme) => (
-                            <Chip
-                              key={theme}
-                              label={PUZZLE_THEMES.find((t) => t.tag === theme)?.description || theme}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))}
-                          {selectedThemes.length > 3 && (
-                            <Chip
-                              label={`+${selectedThemes.length - 3} more`}
-                              size="small"
-                              variant="outlined"
-                            />
-                          )}
-                        </Stack>
-                      )}
-                    </Stack>
-                  </Collapse>
                 </CardContent>
               </Card>
+            )}
 
-              {/* Tabs for Mobile */}
-              <Card>
-                <CardContent sx={{ p: 1 }}>
+            {/* Chessboard - Mobile */}
+            <Box sx={{ width: "100%" }}>
+              <AiChessboardPanel
+                game={game}
+                fen={fen}
+                moveSquares={moveSquares}
+                setMoveSquares={setMoveSquares}
+                engine={engine}
+                puzzleMode={true}
+                onDropPuzzle={onDrop}
+                handleSquarePuzzleClick={handleSquareClick}
+                setFen={setFen}
+                setGame={setGame}
+                setLlmAnalysisResult={setLlmAnalysisResult}
+                setOpeningData={setOpeningData}
+                setStockfishAnalysisResult={setStockfishAnalysisResult}
+                fetchOpeningData={fetchOpeningData}
+                analyzeWithStockfish={analyzeWithStockfish}
+                puzzleCustomSquareStyle={customSquareStyles}
+                llmLoading={llmLoading}
+                side={
+                  puzzleData
+                    ? new Chess(puzzleData.FEN).turn() === "w"
+                      ? "white"
+                      : "black"
+                    : "white"
+                }
+                stockfishLoading={stockfishLoading}
+                stockfishAnalysisResult={stockfishAnalysisResult}
+                openingLoading={openingLoading}
+              />
+            </Box>
+          </Stack>
+        ) : (
+          /* Desktop Layout with Toggle */
+          <Stack direction="row" spacing={4}>
+            {/* Left Side - Chessboard */}
+            <Box
+              sx={{
+                flex: {
+                  xs: "1 1 auto",
+                  lg: panelVisible ? "0 0 auto" : "1 1 auto",
+                },
+                width: { xs: "100%", lg: panelVisible ? "auto" : "100%" },
+                maxWidth: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: {
+                  xs: "center",
+                  lg: panelVisible ? "flex-start" : "center",
+                },
+                px: { xs: 0, sm: 1 },
+                transition: "all 0.3s ease-in-out",
+              }}
+            >
+              <AiChessboardPanel
+                game={game}
+                fen={fen}
+                moveSquares={moveSquares}
+                setMoveSquares={setMoveSquares}
+                engine={engine}
+                puzzleMode={true}
+                onDropPuzzle={onDrop}
+                handleSquarePuzzleClick={handleSquareClick}
+                setFen={setFen}
+                setGame={setGame}
+                setLlmAnalysisResult={setLlmAnalysisResult}
+                setOpeningData={setOpeningData}
+                setStockfishAnalysisResult={setStockfishAnalysisResult}
+                fetchOpeningData={fetchOpeningData}
+                analyzeWithStockfish={analyzeWithStockfish}
+                puzzleCustomSquareStyle={customSquareStyles}
+                llmLoading={llmLoading}
+                side={
+                  puzzleData
+                    ? new Chess(puzzleData.FEN).turn() === "w"
+                      ? "white"
+                      : "black"
+                    : "white"
+                }
+                stockfishLoading={stockfishLoading}
+                stockfishAnalysisResult={stockfishAnalysisResult}
+                openingLoading={openingLoading}
+              />
+
+              {/* Toggle Button */}
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                  width: "100%",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() => setPanelVisible(!panelVisible)}
+                  startIcon={
+                    panelVisible ? <ChevronRightIcon /> : <ChevronLeftIcon />
+                  }
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                  }}
+                >
+                  {panelVisible ? "Hide Panel (Focus Mode)" : "Show Panel"}
+                </Button>
+              </Box>
+            </Box>
+
+            {/* Right Side - Analysis Panel */}
+            {panelVisible && (
+              <Paper
+                elevation={3}
+                sx={{
+                  flex: 1,
+                  width: { xs: "100%", lg: "auto" },
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  transition: "all 0.3s ease-in-out",
+                }}
+              >
+                <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                   <Tabs
                     value={analysisTab}
                     onChange={(_, newValue) => setAnalysisTab(newValue)}
-                    variant="fullWidth"
                   >
-                    <Tab label="Info" iconPosition="start" />
-                    <Tab label="Guess Theme Eval"/>
-                    <Tab label="AI Chat" iconPosition="start" />
+                    <Tab label="Puzzle Info" />
+                    <Tab label="Guess Theme Eval" />
+                    <Tab label="AI Chat" />
                   </Tabs>
-                </CardContent>
-              </Card>
+                </Box>
 
-              {/* Tab Content */}
-              <Box sx={{ maxHeight: '40vh', overflow: 'auto' }}>
-                <TabPanel value={analysisTab} index={0}>
-                  {puzzleData && (
-                    <Stack spacing={2}>
-                      <Alert severity="info" sx={{ fontSize: '0.875rem' }}>
-                        {puzzleData.themes.length > 0 && (
-                          <>Themes: {puzzleData.themes.slice(0, 3).join(", ")}
-                          {puzzleData.themes.length > 3 && ` +${puzzleData.themes.length - 3} more`}</>
+                <Box sx={{ flex: 1, overflow: "auto", mt: 2 }}>
+                  <TabPanel value={analysisTab} index={0}>
+                    {loading ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          py: 4,
+                        }}
+                      >
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <Stack spacing={3}>
+                        {/* Theme Selection */}
+                        <Card>
+                          <CardContent>
+                            <Typography variant="h6">Puzzle Themes</Typography>
+                            <Stack spacing={2}>
+                              <FormControl fullWidth>
+                                <InputLabel>Quick Select</InputLabel>
+                                <Select
+                                  value={quickTheme}
+                                  onChange={handleQuickThemeChange}
+                                  label="Quick Select"
+                                >
+                                  <MenuItem value="">
+                                    <em>Random Puzzle</em>
+                                  </MenuItem>
+                                  {DIFFICULTY_THEMES.map((theme) => (
+                                    <MenuItem
+                                      key={theme.value}
+                                      value={theme.value}
+                                    >
+                                      {theme.label} ({theme.difficulty})
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                              <Button
+                                variant="outlined"
+                                startIcon={<Filter />}
+                                onClick={() => setThemeDialogOpen(true)}
+                                fullWidth
+                                color="info"
+                              >
+                                Advanced Theme Selection
+                              </Button>
+                              {selectedThemes.length > 0 && (
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  flexWrap="wrap"
+                                  useFlexGap
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ width: "100%", mb: 0.5 }}
+                                  >
+                                    Active Themes:
+                                  </Typography>
+                                  {selectedThemes.map((theme) => (
+                                    <Chip
+                                      key={theme}
+                                      label={
+                                        PUZZLE_THEMES.find(
+                                          (t) => t.tag === theme,
+                                        )?.description || theme
+                                      }
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  ))}
+                                </Stack>
+                              )}
+                            </Stack>
+                          </CardContent>
+                        </Card>
+
+                        {/* Rating Display */}
+                        {puzzleData && (
+                          <Card>
+                            <CardContent>
+                              <Stack
+                                direction="row"
+                                justifyContent="center"
+                                spacing={2}
+                              >
+                                <Chip
+                                  icon={<User2 />}
+                                  label={`Your Rating: ${userPuzzleRating}`}
+                                  color="secondary"
+                                  sx={{
+                                    fontSize: "1rem",
+                                    py: 2,
+                                    height: "auto",
+                                  }}
+                                />
+                                <Chip
+                                  icon={<Star />}
+                                  label={`Rating: ${puzzleData.rating}`}
+                                  color="primary"
+                                  sx={{
+                                    fontSize: "1rem",
+                                    py: 2,
+                                    height: "auto",
+                                  }}
+                                />
+                                <Chip
+                                  label={
+                                    showingSolution
+                                      ? `Solution ${solutionViewIndex}/${solutionMoves.length}`
+                                      : `Move ${Math.floor(currentSolutionIndex / 2) + 1}`
+                                  }
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: "1rem",
+                                    py: 2,
+                                    height: "auto",
+                                  }}
+                                />
+                              </Stack>
+                            </CardContent>
+                          </Card>
                         )}
-                      </Alert>
-                      {puzzleComplete && (
-                        <Alert severity="success">
-                          🎉 Solved! {hintUsed ? "(with hint)" : "Perfect!"}
-                        </Alert>
-                      )}
-                      {puzzleFailed && !showingSolution && (
-                        <Alert severity="error">
-                          ❌ Wrong move! Try again or view solution
-                        </Alert>
+
+                        {/* Action Buttons */}
+                        <Card>
+                          <CardContent>
+                            {showingSolution ? (
+                              <Stack spacing={2}>
+                                <Typography
+                                  variant="h6"
+                                  sx={{ textAlign: "center" }}
+                                >
+                                  Solution View ({solutionViewIndex}/
+                                  {solutionMoves.length})
+                                </Typography>
+                                <Stack
+                                  direction="row"
+                                  spacing={2}
+                                  justifyContent="center"
+                                  alignItems="center"
+                                >
+                                  <Chip
+                                    label={`Your Rating: ${userPuzzleRating}`}
+                                    color="secondary"
+                                    icon={<User2 />}
+                                    sx={{
+                                      fontSize: "1rem",
+                                      py: 2,
+                                      height: "auto",
+                                    }}
+                                  />
+                                  {puzzleData && (
+                                    <Chip
+                                      label={`Puzzle Rating: ${puzzleData.rating}`}
+                                      color="primary"
+                                      icon={<Star />}
+                                      sx={{
+                                        fontSize: "1rem",
+                                        py: 2,
+                                        height: "auto",
+                                      }}
+                                    />
+                                  )}
+                                </Stack>
+                                <Stack direction="row" spacing={2}>
+                                  <Button
+                                    variant="outlined"
+                                    startIcon={<SkipBackIcon />}
+                                    onClick={() => navigateSolution("prev")}
+                                    disabled={solutionViewIndex === 0}
+                                    fullWidth
+                                    color="info"
+                                  >
+                                    Previous
+                                  </Button>
+                                  <Button
+                                    variant="outlined"
+                                    startIcon={<SkipNextIcon />}
+                                    onClick={() => navigateSolution("next")}
+                                    disabled={
+                                      solutionViewIndex >= solutionMoves.length
+                                    }
+                                    fullWidth
+                                    color="info"
+                                  >
+                                    Next
+                                  </Button>
+                                  <Button
+                                    variant="contained"
+                                    onClick={exitSolutionView}
+                                    fullWidth
+                                    color="warning"
+                                  >
+                                    Exit
+                                  </Button>
+                                </Stack>
+                              </Stack>
+                            ) : (
+                              <Stack spacing={2}>
+                                <Stack direction="row" spacing={2}>
+                                  <Button
+                                    variant="outlined"
+                                    startIcon={<Lightbulb />}
+                                    onClick={showHintMove}
+                                    disabled={puzzleComplete || showHint}
+                                    fullWidth
+                                    color="info"
+                                  >
+                                    Hint
+                                  </Button>
+                                  {puzzleFailed && (
+                                    <Button
+                                      variant="outlined"
+                                      startIcon={<Eye />}
+                                      onClick={showSolution}
+                                      fullWidth
+                                      color="secondary"
+                                    >
+                                      Solution
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outlined"
+                                    startIcon={<Refresh />}
+                                    onClick={resetPuzzle}
+                                    fullWidth
+                                    color="warning"
+                                  >
+                                    Reset
+                                  </Button>
+                                </Stack>
+                                <Button
+                                  variant="contained"
+                                  startIcon={<SkipNext />}
+                                  onClick={() =>
+                                    fetchPuzzle(
+                                      selectedThemes,
+                                      userPuzzleRating,
+                                      userPuzzleRating + 500,
+                                    )
+                                  }
+                                  disabled={loading}
+                                  fullWidth
+                                  size="large"
+                                  color="success"
+                                >
+                                  Next Puzzle
+                                </Button>
+                              </Stack>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Status Messages */}
+                        {(puzzleComplete ||
+                          puzzleFailed ||
+                          showHint ||
+                          error) && (
+                          <Stack spacing={2}>
+                            {puzzleComplete && (
+                              <Alert severity="success">
+                                🎉 Puzzle Complete!{" "}
+                                {hintUsed ? "(Hint used)" : "Perfect solve!"}
+                              </Alert>
+                            )}
+                            {puzzleFailed && !showingSolution && (
+                              <Alert severity="error">
+                                ❌ Wrong move! Use the Show Solution button to
+                                see the correct moves.
+                              </Alert>
+                            )}
+                            {showHint && (
+                              <Alert severity="info">
+                                💡 Hint: The highlighted squares show the best
+                                move!
+                              </Alert>
+                            )}
+                            {error && (
+                              <Alert severity="error">
+                                Puzzle combo not present! Please try other
+                                puzzle themes
+                              </Alert>
+                            )}
+                          </Stack>
+                        )}
+                      </Stack>
+                    )}
+                  </TabPanel>
+
+                  <TabPanel value={analysisTab} index={1}>
+                    <GuessTheme
+                      stockfishAnalysisResult={stockfishAnalysisResult}
+                      scores={scores}
+                      loading={themeScoreLoading}
+                      error={themeScoreError}
+                    />
+                  </TabPanel>
+
+                  <TabPanel value={analysisTab} index={2}>
+                    <ChatTab
+                      abortChatMessage={abortChatMessage}
+                      sendChatMessage={sendChatMessage}
+                      puzzleMode={true}
+                      puzzleQuery={puzzleQueryString}
+                      handleChatKeyPress={handleChatKeyPress}
+                    />
+                  </TabPanel>
+                </Box>
+              </Paper>
+            )}
+          </Stack>
+        )}
+
+        {/* Mobile FAB for Menu - Unchanged */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            sx={{
+              position: "fixed",
+              bottom: 16,
+              right: 16,
+              zIndex: 1000,
+            }}
+            onClick={() => setBottomDrawerOpen(true)}
+          >
+            <Menu />
+          </Fab>
+        )}
+
+        {/* Mobile Bottom Drawer - Unchanged */}
+        {isMobile && (
+          <Drawer
+            anchor="bottom"
+            open={bottomDrawerOpen}
+            onClose={() => setBottomDrawerOpen(false)}
+            PaperProps={{
+              sx: {
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                maxHeight: "90vh",
+              },
+            }}
+          >
+            <Box sx={{ p: 2 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 2 }}
+              >
+                <Typography variant="h6">Puzzle Controls</Typography>
+                <IconButton onClick={() => setBottomDrawerOpen(false)}>
+                  <X />
+                </IconButton>
+              </Stack>
+
+              <Stack spacing={2}>
+                {/* Quick Actions */}
+                {showingSolution ? (
+                  <>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Solution Navigation ({solutionViewIndex}/
+                      {solutionMoves.length})
+                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      justifyContent="center"
+                      alignItems="center"
+                    >
+                      <Chip
+                        label={`Your Rating: ${Math.round(userPuzzleRating)}`}
+                        color="secondary"
+                        icon={<User2 />}
+                        sx={{ fontSize: "1rem", py: 2, height: "auto" }}
+                      />
+                      {puzzleData && (
+                        <Chip
+                          label={`Puzzle Rating: ${puzzleData.rating}`}
+                          color="primary"
+                          icon={<Star />}
+                          sx={{ fontSize: "1rem", py: 2, height: "auto" }}
+                        />
                       )}
                     </Stack>
-                  )}
-                </TabPanel>
-                <TabPanel value={analysisTab} index={1}>
-                  <GuessTheme stockfishAnalysisResult={stockfishAnalysisResult} scores={scores} loading={themeScoreLoading} error={themeScoreError}/>
-                </TabPanel>
-                <TabPanel value={analysisTab} index={2}>
-                  <ChatTab
-                    abortChatMessage={abortChatMessage}
-                    sendChatMessage={sendChatMessage}
-                    puzzleMode={true}
-                    puzzleQuery={puzzleQueryString}
-                    handleChatKeyPress={handleChatKeyPress}
-                  />
-                </TabPanel>
-              </Box>
-            </Stack>
-          </Box>
-        </Drawer>
-      )}
-    </Box>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<SkipBackIcon size={20} />}
+                        onClick={() => navigateSolution("prev")}
+                        disabled={solutionViewIndex === 0}
+                        fullWidth
+                        size="large"
+                        color="info"
+                      >
+                        Prev
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<SkipNextIcon size={20} />}
+                        onClick={() => navigateSolution("next")}
+                        disabled={solutionViewIndex >= solutionMoves.length}
+                        fullWidth
+                        size="large"
+                        color="info"
+                      >
+                        Next
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={exitSolutionView}
+                        fullWidth
+                        size="large"
+                        color="warning"
+                      >
+                        Exit
+                      </Button>
+                    </Stack>
+                  </>
+                ) : (
+                  <>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<Lightbulb size={20} />}
+                        onClick={showHintMove}
+                        disabled={puzzleComplete || showHint}
+                        fullWidth
+                        size="large"
+                        color="info"
+                      >
+                        Hint
+                      </Button>
+                      {puzzleFailed && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<Eye size={20} />}
+                          onClick={showSolution}
+                          fullWidth
+                          size="large"
+                          color="secondary"
+                        >
+                          Solution
+                        </Button>
+                      )}
+                      <Button
+                        variant="outlined"
+                        startIcon={<Refresh />}
+                        onClick={resetPuzzle}
+                        fullWidth
+                        size="large"
+                        color="warning"
+                      >
+                        Reset
+                      </Button>
+                    </Stack>
+                    <Button
+                      variant="contained"
+                      startIcon={<SkipNext />}
+                      onClick={() => {
+                        fetchPuzzle(
+                          selectedThemes,
+                          userPuzzleRating,
+                          userPuzzleRating + 500,
+                        );
+                        setBottomDrawerOpen(false);
+                      }}
+                      disabled={loading}
+                      fullWidth
+                      size="large"
+                      color="success"
+                    >
+                      Next Puzzle
+                    </Button>
+                  </>
+                )}
 
-    {/* Theme Dialog - Unchanged */}
-    <Dialog
-      open={themeDialogOpen}
-      onClose={() => setThemeDialogOpen(false)}
-      maxWidth="md"
-      fullWidth
-      fullScreen={isMobile}
-    >
-      <DialogTitle>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Settings />
-            <Typography variant="h6">Puzzle Filters</Typography>
-          </Stack>
-          {isMobile && (
-            <IconButton onClick={() => setThemeDialogOpen(false)}>
-              <X />
-            </IconButton>
-          )}
-        </Stack>
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 2 }}>
-          <Typography variant="body2">
-            Customize your puzzle practice by selecting specific themes and difficulty.
-          </Typography>
-
-          <Autocomplete
-            multiple
-            options={PUZZLE_THEMES}
-            getOptionLabel={(option) => option.description}
-            value={PUZZLE_THEMES.filter((theme) =>
-              selectedThemes.includes(theme.tag)
-            )}
-            onChange={(_, newValue) => {
-              setSelectedThemes(newValue.map((theme) => theme.tag));
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select Themes"
-                placeholder="Search themes..."
-                size={isMobile ? "small" : "medium"}
-              />
-            )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  {...getTagProps({ index })}
-                  key={option.tag}
-                  label={option.description}
-                  color="primary"
-                  size="small"
-                />
-              ))
-            }
-            renderOption={(props, option) => (
-              <Box component="li" {...props}>
-                <Typography variant="body2">
-                  {option.description}
-                </Typography>
-              </Box>
-            )}
-          />
-
-          {/* Popular Themes */}
-          <Box>
-            <Typography variant="subtitle2">
-              Popular Themes:
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {["mateIn2", "fork", "pin", "skewer", "sacrifice", "backRankMate"].map((theme) => {
-                const themeObj = PUZZLE_THEMES.find((t) => t.tag === theme);
-                if (!themeObj) return null;
-                const isSelected = selectedThemes.includes(theme);
-                return (
-                  <Chip
-                    key={theme}
-                    label={themeObj.description}
-                    color={isSelected ? "primary" : "warning"}
-                    variant={isSelected ? "filled" : "outlined"}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedThemes((prev) => prev.filter((t) => t !== theme));
-                      } else {
-                        setSelectedThemes((prev) => [...prev, theme]);
+                {/* Theme Selection - Collapsible */}
+                <Card>
+                  <CardContent sx={{ p: 2 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      onClick={() =>
+                        setThemesSectionExpanded(!themesSectionExpanded)
                       }
-                    }}
-                    size="small"
-                    sx={{ cursor: "pointer" }}
-                  />
-                );
-              })}
-            </Stack>
-          </Box>
+                      sx={{ cursor: "pointer" }}
+                    >
+                      <Typography variant="subtitle1">Puzzle Themes</Typography>
+                      {themesSectionExpanded ? <ChevronUp /> : <ChevronDown />}
+                    </Stack>
+                    <Collapse in={themesSectionExpanded}>
+                      <Stack spacing={2} sx={{ mt: 2 }}>
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Quick Select</InputLabel>
+                          <Select
+                            value={quickTheme}
+                            onChange={handleQuickThemeChange}
+                            label="Quick Select"
+                          >
+                            <MenuItem value="">
+                              <em>Random</em>
+                            </MenuItem>
+                            {DIFFICULTY_THEMES.map((theme) => (
+                              <MenuItem key={theme.value} value={theme.value}>
+                                {theme.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <Button
+                          variant="outlined"
+                          startIcon={<Filter size={18} />}
+                          onClick={() => {
+                            setThemeDialogOpen(true);
+                            setBottomDrawerOpen(false);
+                          }}
+                          fullWidth
+                          size="small"
+                          color="info"
+                        >
+                          Advanced Filters
+                        </Button>
+                        {selectedThemes.length > 0 && (
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            flexWrap="wrap"
+                            useFlexGap
+                          >
+                            {selectedThemes.slice(0, 3).map((theme) => (
+                              <Chip
+                                key={theme}
+                                label={
+                                  PUZZLE_THEMES.find((t) => t.tag === theme)
+                                    ?.description || theme
+                                }
+                                size="small"
+                                variant="outlined"
+                              />
+                            ))}
+                            {selectedThemes.length > 3 && (
+                              <Chip
+                                label={`+${selectedThemes.length - 3} more`}
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                          </Stack>
+                        )}
+                      </Stack>
+                    </Collapse>
+                  </CardContent>
+                </Card>
 
-          <Box>
-            <Typography variant="subtitle2">
-              Difficulty Rating: {puzzleLevel} - {puzzleLevel + 500}
-            </Typography>
-            <Slider
-              min={1200}
-              max={2800}
-              value={puzzleLevel}
-              setValue={(val: number) => {
-                setPuzzleLevel(val);
-              }}
-            />
-          </Box>
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        {!isMobile && (
-          <Button onClick={() => setThemeDialogOpen(false)} color="inherit">
-            Cancel
-          </Button>
+                {/* Tabs for Mobile */}
+                <Card>
+                  <CardContent sx={{ p: 1 }}>
+                    <Tabs
+                      value={analysisTab}
+                      onChange={(_, newValue) => setAnalysisTab(newValue)}
+                      variant="fullWidth"
+                    >
+                      <Tab label="Info" iconPosition="start" />
+                      <Tab label="Guess Theme Eval" />
+                      <Tab label="AI Chat" iconPosition="start" />
+                    </Tabs>
+                  </CardContent>
+                </Card>
+
+                {/* Tab Content */}
+                <Box sx={{ maxHeight: "40vh", overflow: "auto" }}>
+                  <TabPanel value={analysisTab} index={0}>
+                    {puzzleData && (
+                      <Stack spacing={2}>
+                        <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
+                          {puzzleData.themes.length > 0 && (
+                            <>
+                              Themes: {puzzleData.themes.slice(0, 3).join(", ")}
+                              {puzzleData.themes.length > 3 &&
+                                ` +${puzzleData.themes.length - 3} more`}
+                            </>
+                          )}
+                        </Alert>
+                        {puzzleComplete && (
+                          <Alert severity="success">
+                            🎉 Solved! {hintUsed ? "(with hint)" : "Perfect!"}
+                          </Alert>
+                        )}
+                        {puzzleFailed && !showingSolution && (
+                          <Alert severity="error">
+                            ❌ Wrong move! Try again or view solution
+                          </Alert>
+                        )}
+                      </Stack>
+                    )}
+                  </TabPanel>
+                  <TabPanel value={analysisTab} index={1}>
+                    <GuessTheme
+                      stockfishAnalysisResult={stockfishAnalysisResult}
+                      scores={scores}
+                      loading={themeScoreLoading}
+                      error={themeScoreError}
+                    />
+                  </TabPanel>
+                  <TabPanel value={analysisTab} index={2}>
+                    <ChatTab
+                      abortChatMessage={abortChatMessage}
+                      sendChatMessage={sendChatMessage}
+                      puzzleMode={true}
+                      puzzleQuery={puzzleQueryString}
+                      handleChatKeyPress={handleChatKeyPress}
+                    />
+                  </TabPanel>
+                </Box>
+              </Stack>
+            </Box>
+          </Drawer>
         )}
-        <Button
-          onClick={() => setSelectedThemes([])}
-          color="warning"
-          variant="outlined"
-        >
-          Clear
-        </Button>
-        <Button
-          onClick={() => {
-            fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500);
-            setThemeDialogOpen(false);
-          }}
-          color="primary"
-          variant="contained"
-        >
-          Apply & Get Puzzle
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>
 
-    {/* Snackbar for notifications - Unchanged */}
-    <Snackbar
-      open={snackbarOpen}
-      autoHideDuration={3000}
-      onClose={() => setSnackbarOpen(false)}
-      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-    >
-      <Alert 
-        onClose={() => setSnackbarOpen(false)} 
-        severity={snackbarSeverity}
-        sx={{ width: '100%' }}
+      {/* Theme Dialog - Unchanged */}
+      <Dialog
+        open={themeDialogOpen}
+        onClose={() => setThemeDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
       >
-        {snackbarMessage}
-      </Alert>
-    </Snackbar>
-  </>
-);
+        <DialogTitle>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Settings />
+              <Typography variant="h6">Puzzle Filters</Typography>
+            </Stack>
+            {isMobile && (
+              <IconButton onClick={() => setThemeDialogOpen(false)}>
+                <X />
+              </IconButton>
+            )}
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              Customize your puzzle practice by selecting specific themes and
+              difficulty.
+            </Typography>
+
+            <Autocomplete
+              multiple
+              options={PUZZLE_THEMES}
+              getOptionLabel={(option) => option.description}
+              value={PUZZLE_THEMES.filter((theme) =>
+                selectedThemes.includes(theme.tag),
+              )}
+              onChange={(_, newValue) => {
+                setSelectedThemes(newValue.map((theme) => theme.tag));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Themes"
+                  placeholder="Search themes..."
+                  size={isMobile ? "small" : "medium"}
+                />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.tag}
+                    label={option.description}
+                    color="primary"
+                    size="small"
+                  />
+                ))
+              }
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Typography variant="body2">{option.description}</Typography>
+                </Box>
+              )}
+            />
+
+            {/* Popular Themes */}
+            <Box>
+              <Typography variant="subtitle2">Popular Themes:</Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {[
+                  "mateIn2",
+                  "fork",
+                  "pin",
+                  "skewer",
+                  "sacrifice",
+                  "backRankMate",
+                ].map((theme) => {
+                  const themeObj = PUZZLE_THEMES.find((t) => t.tag === theme);
+                  if (!themeObj) return null;
+                  const isSelected = selectedThemes.includes(theme);
+                  return (
+                    <Chip
+                      key={theme}
+                      label={themeObj.description}
+                      color={isSelected ? "primary" : "warning"}
+                      variant={isSelected ? "filled" : "outlined"}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedThemes((prev) =>
+                            prev.filter((t) => t !== theme),
+                          );
+                        } else {
+                          setSelectedThemes((prev) => [...prev, theme]);
+                        }
+                      }}
+                      size="small"
+                      sx={{ cursor: "pointer" }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2">
+                Difficulty Rating: {puzzleLevel} - {puzzleLevel + 500}
+              </Typography>
+              <Slider
+                min={1200}
+                max={2800}
+                value={puzzleLevel}
+                setValue={(val: number) => {
+                  setPuzzleLevel(val);
+                }}
+              />
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          {!isMobile && (
+            <Button onClick={() => setThemeDialogOpen(false)} color="inherit">
+              Cancel
+            </Button>
+          )}
+          <Button
+            onClick={() => setSelectedThemes([])}
+            color="warning"
+            variant="outlined"
+          >
+            Clear
+          </Button>
+          <Button
+            onClick={() => {
+              fetchPuzzle(selectedThemes, puzzleLevel, puzzleLevel + 500);
+              setThemeDialogOpen(false);
+            }}
+            color="primary"
+            variant="contained"
+          >
+            Apply & Get Puzzle
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications - Unchanged */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
+  );
 }

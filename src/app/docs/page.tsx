@@ -21,7 +21,7 @@ import { renderFAQ } from "@/componets/docs/RenderFaq";
 import { renderHeader } from "@/componets/docs/RenderChessAgineHeader";
 import { renderSupportedProvider } from "@/componets/docs/RenderSupportedProvider";
 import { renderFeatures } from "@/componets/docs/RenderFeatures";
-import { agineTheme as docsTheme} from "@/theme/theme";
+import { agineTheme as docsTheme } from "@/theme/theme";
 import MCPdocs from "@/componets/docs/RenderMCPDocs";
 
 const ChessAgineDocumentation = () => {
@@ -53,7 +53,7 @@ const ChessAgineDocumentation = () => {
               <Tab label="Supported Providers" />
               <Tab label="Integrations" />
               <Tab label="FAQ" />
-              <Tab label="ChessAgine MCP"/>
+              <Tab label="ChessAgine MCP" />
             </Tabs>
           </Box>
 
@@ -96,7 +96,7 @@ const ChessAgineDocumentation = () => {
           </TabPanel>
 
           <TabPanel value={selectedTab} index={7}>
-            <MCPdocs/>
+            <MCPdocs />
           </TabPanel>
 
           <Paper sx={{ p: 3, mt: 4 }}>
@@ -104,7 +104,8 @@ const ChessAgineDocumentation = () => {
               Need Help?
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              If you encounter any issues during setup, please create an issue on Github
+              If you encounter any issues during setup, please create an issue
+              on Github
             </Typography>
           </Paper>
         </Box>

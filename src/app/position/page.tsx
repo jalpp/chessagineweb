@@ -1,8 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Stack, Drawer, Fab, useMediaQuery, useTheme, Typography, Button } from "@mui/material";
-import { Analytics as AnalyticsIcon, Close as CloseIcon } from "@mui/icons-material";
+import {
+  Box,
+  Stack,
+  Drawer,
+  Fab,
+  useMediaQuery,
+  useTheme,
+  Typography,
+  Button,
+} from "@mui/material";
+import {
+  Analytics as AnalyticsIcon,
+  Close as CloseIcon,
+} from "@mui/icons-material";
 import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
@@ -14,9 +26,9 @@ export default function PositionPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
-  
+
   const [game, setGame] = useState(new Chess());
-  const [fen, setFen] = useState(game.fen()); 
+  const [fen, setFen] = useState(game.fen());
 
   const {
     setLlmAnalysisResult,
@@ -57,11 +69,21 @@ export default function PositionPage() {
     themeScoreError,
   } = useAgine(fen);
 
-    const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = useNets({
-    fen: fen
-  })
+  const {
+    evaluations,
+    sanEvaluations,
+    isLoading: maiaIsLoading,
+    Maiaerror: maiaError,
+    lichessData,
+    isInBook,
+  } = useNets({
+    fen: fen,
+  });
 
-  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_position_act_tab", 0);
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage(
+    "agine_position_act_tab",
+    0,
+  );
 
   const AnalysisContent = () => (
     <AgineAnalysisView
@@ -112,31 +134,31 @@ export default function PositionPage() {
   return (
     <Box
       sx={{
-        p: { xs: 1, sm: 2, md: 4 }, 
+        p: { xs: 1, sm: 2, md: 4 },
         minHeight: "100vh",
         height: "100%",
         overflowY: "auto",
         overflowX: "auto",
       }}
     >
-      <Stack 
-        direction={{ xs: "column", lg: "row" }} 
+      <Stack
+        direction={{ xs: "column", lg: "row" }}
         spacing={{ xs: 2, sm: 3, md: 4 }}
         sx={{
-          width: '100%',
-          maxWidth: '100%',
-          overflow: 'visible'
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "visible",
         }}
       >
         {/* Chessboard Section */}
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             flex: { xs: "1 1 auto", lg: "0 0 auto" },
-            width: { xs: '100%', lg: 'auto' },
-            maxWidth: '100%',
-            display: 'flex',
-            justifyContent: { xs: 'center', lg: 'flex-start' },
-            px: { xs: 0, sm: 1 }
+            width: { xs: "100%", lg: "auto" },
+            maxWidth: "100%",
+            display: "flex",
+            justifyContent: { xs: "center", lg: "flex-start" },
+            px: { xs: 0, sm: 1 },
           }}
         >
           <AiChessboardPanel
@@ -162,15 +184,15 @@ export default function PositionPage() {
 
         {/* Desktop Analysis View */}
         {!isMobile && (
-          <Box 
+          <Box
             sx={{
-                  flex: 1,
-                  width: { xs: "100%", lg: "auto" },
-                  maxWidth: "100%",
-                  minWidth: 0,
-                  overflowY: "auto",
-                  maxHeight: "calc(100vh - 100px)",
-                }}
+              flex: 1,
+              width: { xs: "100%", lg: "auto" },
+              maxWidth: "100%",
+              minWidth: 0,
+              overflowY: "auto",
+              maxHeight: "calc(100vh - 100px)",
+            }}
           >
             <AnalysisContent />
           </Box>

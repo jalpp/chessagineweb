@@ -25,7 +25,12 @@ import CodeIcon from "@mui/icons-material/Code";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Cloud, Extension, SmartToy, SwapCallsOutlined } from "@mui/icons-material";
+import {
+  Cloud,
+  Extension,
+  SmartToy,
+  SwapCallsOutlined,
+} from "@mui/icons-material";
 import HomeView from "@/componets/view/HomeView";
 
 export default function HomePage() {
@@ -162,7 +167,6 @@ export default function HomePage() {
               <Button
                 variant="contained"
                 size="large"
-              
                 sx={{
                   px: 6,
                   py: 2,
@@ -290,14 +294,18 @@ export default function HomePage() {
             >
               {[
                 {
-                  icon: <CodeIcon sx={{ fontSize: 48, color: "primary.main" }} />,
+                  icon: (
+                    <CodeIcon sx={{ fontSize: 48, color: "primary.main" }} />
+                  ),
                   title: "GPL Licensed",
                   description:
                     "Full source code available under GPL license. Fork, modify, and contribute back to the community.",
                 },
                 {
                   icon: (
-                    <OpenInNewIcon sx={{ fontSize: 48, color: "primary.main" }} />
+                    <OpenInNewIcon
+                      sx={{ fontSize: 48, color: "primary.main" }}
+                    />
                   ),
                   title: "Transparent Development",
                   description:
@@ -313,7 +321,9 @@ export default function HomePage() {
                 },
                 {
                   icon: (
-                    <SecurityIcon sx={{ fontSize: 48, color: "primary.main" }} />
+                    <SecurityIcon
+                      sx={{ fontSize: 48, color: "primary.main" }}
+                    />
                   ),
                   title: "Community Driven",
                   description:
@@ -385,19 +395,22 @@ export default function HomePage() {
             </Box>
 
             <Stack spacing={4} sx={{ width: "100%" }}>
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={4}
-              >
+              <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
                 {[
                   {
-                    icon: <Cloud sx={{ fontSize: 48, color: "primary.main" }} />,
+                    icon: (
+                      <Cloud sx={{ fontSize: 48, color: "primary.main" }} />
+                    ),
                     title: "ChessAgine Cloud",
                     description:
                       "Start using ChessAgine with open source models run by ChessAgine for you to use 100% free.",
                   },
                   {
-                    icon: <StorageIcon sx={{ fontSize: 48, color: "primary.main" }} />,
+                    icon: (
+                      <StorageIcon
+                        sx={{ fontSize: 48, color: "primary.main" }}
+                      />
+                    ),
                     title: "Ollama Support",
                     description:
                       "Run models locally or via Ollama cloud. No API key required. 100% free, open source.",
@@ -450,20 +463,21 @@ export default function HomePage() {
                 ))}
               </Stack>
 
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={4}
-              >
+              <Stack direction={{ xs: "column", md: "row" }} spacing={4}>
                 {[
                   {
-                    icon: <ApiIcon sx={{ fontSize: 48, color: "primary.main" }} />,
+                    icon: (
+                      <ApiIcon sx={{ fontSize: 48, color: "primary.main" }} />
+                    ),
                     title: "Your API, Your Control",
                     description:
                       "Connect OpenAI, Anthropic Claude, or Google Gemini with your own API key. Pay only for what you use.",
                   },
                   {
                     icon: (
-                      <SecurityIcon sx={{ fontSize: 48, color: "primary.main" }} />
+                      <SecurityIcon
+                        sx={{ fontSize: 48, color: "primary.main" }}
+                      />
                     ),
                     title: "Privacy First",
                     description:
@@ -471,7 +485,9 @@ export default function HomePage() {
                   },
                   {
                     icon: (
-                      <PsychologyIcon sx={{ fontSize: 48, color: "primary.main" }} />
+                      <PsychologyIcon
+                        sx={{ fontSize: 48, color: "primary.main" }}
+                      />
                     ),
                     title: "Choose Your Model",
                     description:
@@ -546,14 +562,20 @@ export default function HomePage() {
               <Stack direction={{ xs: "column", md: "row" }} spacing={6}>
                 {[
                   {
-                    icon: <ChatIcon sx={{ fontSize: 64, color: "primary.main", mb: 3 }} />,
+                    icon: (
+                      <ChatIcon
+                        sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                      />
+                    ),
                     title: "Q/A Interactive Mode",
                     description:
                       "Just like a chess buddy, ChessAgine can ask interactive questions to make you think about chess.",
                   },
                   {
                     icon: (
-                      <SearchIcon sx={{ fontSize: 64, color: "primary.main", mb: 3 }} />
+                      <SearchIcon
+                        sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                      />
                     ),
                     title: "Web Chess Search",
                     description:
@@ -561,7 +583,9 @@ export default function HomePage() {
                   },
                   {
                     icon: (
-                      <StorageIcon sx={{ fontSize: 64, color: "primary.main", mb: 3 }} />
+                      <StorageIcon
+                        sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                      />
                     ),
                     title: "Lichess Master DB",
                     description:
@@ -623,7 +647,7 @@ export default function HomePage() {
                   },
                   {
                     icon: (
-                       <PsychologyIcon
+                      <PsychologyIcon
                         sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
                       />
                     ),
@@ -633,8 +657,9 @@ export default function HomePage() {
                   },
                   {
                     icon: (
-                      
-                     <Extension  sx={{ fontSize: 64, color: "primary.main", mb: 3 }}/>
+                      <Extension
+                        sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                      />
                     ),
                     title: "AI-Powered Puzzles",
                     description:
@@ -905,13 +930,21 @@ export default function HomePage() {
                     "Ask for puzzle hints, answer various questions ChessAgine asks you live.",
                 },
                 {
-                  icon: <SchoolIcon sx={{ fontSize: 64, color: "primary.main", mb: 3 }} />,
+                  icon: (
+                    <SchoolIcon
+                      sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                    />
+                  ),
                   title: "Learn to Think",
                   description:
                     "Develop better decision-making patterns and strategic understanding with guided analysis and explanations.",
                 },
                 {
-                  icon: <ApiIcon sx={{ fontSize: 64, color: "primary.main", mb: 3 }} />,
+                  icon: (
+                    <ApiIcon
+                      sx={{ fontSize: 64, color: "primary.main", mb: 3 }}
+                    />
+                  ),
                   title: "Cost Effective",
                   description:
                     "Use ChessAgine Cloud for free. No subscription fees or hidden costs, complete transparency.",
