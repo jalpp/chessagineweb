@@ -2,21 +2,21 @@ import { EngineName } from './engine';
 import { UciEngine } from './UciEngine';
 
 /**
- * Runs Stockfish 17
+ * Stockfish 18
  */
-export class Stockfish17 extends UciEngine {
+export class Stockfish18 extends UciEngine {
     constructor() {
-        if (!Stockfish17.isSupported()) {
-            throw new Error('Stockfish 17 is not supported');
+        if (!Stockfish18.isSupported()) {
+            throw new Error('Stockfish 17.1 is not supported');
         }
 
         const enginePath =
-            '/static/engine/stockfish-17/stockfish-17-lite.js#/static/engine/stockfish-17/stockfish-17-lite.wasm';
+            '/static/engine/stockfish-18/stockfish-18-lite-single.js#/static/engine/stockfish-18/stockfish-18-lite-single.wasm';
         const worker = UciEngine.workerFromPath(enginePath);
-        super(EngineName.Stockfish17, worker);
+        super(EngineName.Stockfish17Point, worker);
     }
 
-    
+  
     public static isSupported() {
         return (
             typeof WebAssembly === 'object' &&

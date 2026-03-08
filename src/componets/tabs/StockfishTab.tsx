@@ -41,9 +41,10 @@ export interface StockfishAnalysisProps {
 
 // Engine display names mapping
 const ENGINE_DISPLAY_NAMES = {
-    [EngineName.Stockfish17]: 'Stockfish 17 NNUE',
-    [EngineName.Stockfish17Point]: 'Stockfish 17.1 NNUE',
-    [EngineName.Stockfish16]: 'Stockfish 16 NNUE',
+    [EngineName.Stockfish17]: 'Stockfish 17 Lite NNUE',
+    [EngineName.Stockfish17Point]: 'Stockfish 17.1 Lite NNUE',
+    [EngineName.Stockfish18]: 'Stockfish 18 Lite NNUE',
+    [EngineName.Stockfish16]: 'Stockfish 16 Lite NNUE',
     [EngineName.Stockfish11]: 'Stockfish 11 HCE',
 };
 
@@ -51,6 +52,7 @@ const ENGINE_DISPLAY_NAMES = {
 const ENGINE_DESCRIPTIONS = {
     [EngineName.Stockfish17]: 'Latest 17 version with NNUE evaluation',
     [EngineName.Stockfish17Point]: 'Latest 17.1 version with NNUE evaluation',
+    [EngineName.Stockfish18]: 'Latest 18 version with NNUE evaluation',
     [EngineName.Stockfish16]: '16.1 NNUE stable version, well-tested',
     [EngineName.Stockfish11]: 'Older version, faster on weaker hardware',
 };
@@ -73,7 +75,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [enginePicked, setEnginePicked] = useLocalStorage<EngineName>(
         "stockfish-engine-picked",
-        EngineName.Stockfish17
+        EngineName.Stockfish18
     );
 
     // Handle settings changes with smooth transitions
