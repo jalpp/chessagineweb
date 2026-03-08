@@ -12,8 +12,6 @@ import {
 } from './engine';
 import { parseEvaluationResults } from './parseResults';
 
-
-
 export abstract class UciEngine {
     protected worker: EngineWorker | undefined;
     private ready = false;

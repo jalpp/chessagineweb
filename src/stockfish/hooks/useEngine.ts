@@ -5,6 +5,7 @@ import { Stockfish16 } from '../engine/Stockfish16';
 import { Stockfish17 } from '../engine/Stockfish17';
 import { UciEngine } from '../engine/UciEngine';
 import { Stockfish17Point } from '../engine/Stockfish17Point';
+import { Stockfish18 } from '../engine/Stockfish18';
 
 export const useEngine = (enabled: boolean, engineName: EngineName | undefined) => {
     const [engine, setEngine] = useState<UciEngine>();
@@ -30,6 +31,8 @@ export const useEngine = (enabled: boolean, engineName: EngineName | undefined) 
 
 const pickEngine = (engine: EngineName): UciEngine => {
     switch (engine) {
+        case EngineName.Stockfish18:
+            return new Stockfish18();
         case EngineName.Stockfish17Point:
             return new Stockfish17Point();
         case EngineName.Stockfish17:

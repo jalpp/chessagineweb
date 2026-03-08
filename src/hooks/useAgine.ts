@@ -7,7 +7,7 @@ import {
   Moves,
   getLichessOpeningStats,
 } from "@/libs/openingdatabase/helper";
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { Chess } from "chess.js";
 import { CandidateMove } from "@/libs/agine/helper";

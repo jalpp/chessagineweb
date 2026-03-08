@@ -1,7 +1,8 @@
 /** The name of an available engine. */
 export enum EngineName {
-    Stockfish17 = 'stockfish_17',
+    Stockfish18 = 'stockfish_18',
     Stockfish17Point = 'stockfish_17_point',
+    Stockfish17 = 'stockfish_17',
     Stockfish16 = 'stockfish_16',
     Stockfish11 = 'stockfish_11',
 }
@@ -35,39 +36,6 @@ export interface EngineInfo {
     location: string;
 }
 
-/** The list of engines available for use. */
-export const engines: EngineInfo[] = [
-    {
-        name: EngineName.Stockfish17,
-        fullName: 'Stockfish 17 NNUE • 79 MB',
-        shortName: 'SF 17 • 79 MB',
-        extraShortName: 'SF 17',
-        description: 'Best for desktop',
-        tech: 'NNUE',
-        techDescription: `Evaluation is performed by Stockfish's neural network.`,
-        location: 'in local browser',
-    },
-    {
-        name: EngineName.Stockfish16,
-        fullName: 'Stockfish 16.1 NNUE • 6 MB',
-        shortName: 'SF 16 • 6 MB',
-        extraShortName: 'SF 16',
-        description: 'Best for mobile and weaker desktops',
-        tech: 'NNUE',
-        techDescription: `Evaluation is performed by Stockfish's neural network.`,
-        location: 'in local browser',
-    },
-    {
-        name: EngineName.Stockfish11,
-        fullName: 'Stockfish 11 HCE',
-        shortName: 'SF 11',
-        extraShortName: 'SF 11',
-        description: 'Faster than NNUE but less accurate',
-        tech: 'HCE',
-        techDescription: `Evaluation is performed using various heuristics and rules. Faster, but much less accurate than NNUE.`,
-        location: 'in local browser',
-    },
-];
 
 /** Settings for the engine name. */
 export const ENGINE_NAME = {
@@ -133,50 +101,6 @@ export const ENGINE_HASH = {
     Max: 9,
 } as const;
 
-/** The primary evaluation types for an engine. */
-export enum PrimaryEvalType {
-    /** The numeric eval of the position. */
-    Eval = 'eval',
-    /** The engine's expected win/draw/loss percentages. */
-    WinDrawLoss = 'wdl',
-}
-
-/** Settings for the primary evaluation type of the engine. */
-export const ENGINE_PRIMARY_EVAL_TYPE = {
-    /** Local storage key for the primary evaluation type. */
-    Key: 'engine-primary-eval-type',
-    /** The default evaluation type. */
-    Default: 'eval',
-    /** The options for the primary evaluation type. */
-    Options: [
-        { value: PrimaryEvalType.Eval, label: 'Evaluation' },
-        { value: PrimaryEvalType.WinDrawLoss, label: 'Win / Draw / Loss' },
-    ],
-} as const;
-
-/** Settings for adding info on clicking the eval box. */
-export const ENGINE_ADD_INFO_ON_EVAL_CLICK = {
-    /** Local storage key for clicking the eval box behavior. */
-    Key: 'engine-add-info-on-eval-click',
-    /** The default value. */
-    Default: true,
-} as const;
-
-/** Settings for adding info on clicking a move in an engine line. */
-export const ENGINE_ADD_INFO_ON_MOVE_CLICK = {
-    /** Local storage key for clicking a move behavior. */
-    Key: 'engine-add-info-on-move-click',
-    /** The default value. */
-    Default: false,
-} as const;
-
-/** Settings for highlighting engine lines. */
-export const HIGHLIGHT_ENGINE_LINES = {
-    /** Local storage key for highlighting engine lines. */
-    Key: 'highlight-engine-lines',
-    /** The default value. */
-    Default: true,
-} as const;
 
 /** The evaluation of a specific position. */
 export interface PositionEval {
@@ -218,14 +142,7 @@ export interface LineEval {
     };
 }
 
-/** A cached evaluation of a specific position. */
-export type SavedEval = PositionEval & {
-    /** The name of the engine that generated the evaluation. */
-    engine: EngineName;
-};
 
-/** A map from FEN to saved evaluation. */
-export type SavedEvals = Record<string, SavedEval | undefined>;
 
 /** Evaluates the given position, updating the eval as the engine runs. */
 export interface EvaluatePositionWithUpdateParams {
