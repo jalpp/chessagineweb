@@ -103,9 +103,6 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
       if (responseData.status !== "ok") {
         throw new Error(`Failed to queue position: ${responseData.status}`);
       }
-
-      // Optionally show success message or handle response
-      console.log('Position queued successfully');
       
     } catch (err) {
       console.error('Failed to queue analysis:', err);
