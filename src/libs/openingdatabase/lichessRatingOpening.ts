@@ -41,18 +41,16 @@ export const fetchLichessData = async (
 ): Promise<LichessData | null> => {
   const ratings = getRatingGroups(rating);
   const params = new URLSearchParams({
-    variant: "standard",
-    fen: fen,
-    speeds: "rapid,classical",
-    ratings: ratings.join(","),
-    moves: "12",
+    source: 'lichess',
+    variant: 'standard',
+    fen,
+    speeds: 'rapid,classical',
+    ratings: ratings.join(','),
+    moves: '12',
   });
 
   try {
-    const response = await fetch(
-      `https://explorer.lichess.ovh/lichess?${params.toString()}`,
-      { signal }
-    );
+    const response = await fetch(`/api/explorer?${params.toString()}`, { signal });
 
     if (response.status === 429) {
       if (retryCount >= maxRetries) {
@@ -60,10 +58,8 @@ export const fetchLichessData = async (
         return null;
       }
 
-      // Exponential backoff: 1s, 2s, 4s
       const delay = Math.pow(2, retryCount) * 1000;
       console.log(`Lichess rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
-      
       await new Promise(resolve => setTimeout(resolve, delay));
       return fetchLichessData(fen, rating, signal, retryCount + 1, maxRetries);
     }
@@ -72,12 +68,16 @@ export const fetchLichessData = async (
       throw new Error(`Lichess API error: ${response.status}`);
     }
 
-    return response.json();
-  } catch (err) {
-    if (signal?.aborted) {
-      throw err;
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error ?? 'Unknown error');
     }
-    console.error(`Lichess fetch error:`, err);
+
+    return result.data as LichessData;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    console.error('Lichess fetch error:', err);
     return null;
   }
 };

@@ -45,6 +45,7 @@ The most underrated FOSS chess interface that combines LLMs and chess engines in
   CLERK_SECRET_KEY=your_clerk_secret // optional not needed, used for auth, or multi user setup
   AGINE_KEY=your_api_key // your OpenRouter key to use OpenRouter as backend model provider
   NEXT_PUBLIC_OLLAMA_ENDPOINT=http://localhost:11434 // to use ollama as backend model provider
+  LICHESS_API_TOKEN=your-lichess-token // optional used for Lichess Explorer API
   ```
 
 3. Run the development server:
