@@ -39,7 +39,7 @@ export interface MasterGames {
 }
 
 
-const fetchExplorerData = async (
+export const fetchExplorerData = async (
   fen: string,
   source: 'masters' | 'lichess',
   topGames: number = 15
