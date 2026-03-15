@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    serverExternalPackages: ["@mastra/*"],
     productionBrowserSourceMaps: process.env.ENABLE_SOURCE_MAPS === 'true',
     headers() {
         const headers = [

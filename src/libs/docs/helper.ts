@@ -109,23 +109,24 @@ export const LANGUAGES: LanguageOption[] = [
 ];
 
 
-
 export const PROVIDERS: Record<string, ProviderConfig> = {
   agineCloud: {
     name: 'aginecloud',
     models: [
+      'openai/gpt-oss-120b',
       'openai/gpt-oss-20b',
-      'nvidia/nemotron-nano-9b-v2',
-      'mistralai/mistral-small-3.1-24b-instruct',
       'meta-llama/llama-3.3-70b-instruct',
-      'meta-llama/llama-4-maverick',
-      'amazon/nova-2-lite-v1',
-      'google/gemini-3-pro-preview'
+      'mistralai/mistral-small-3.1-24b-instruct',
+      'qwen/qwen3-coder',
+      'nvidia/nemotron-3-super-120b-a12b',
+      'google/gemma-3-27b-it',
+      'google/gemini-3.1-pro-preview',
+      'anthropic/claude-sonnet-4.6'
     ],
     keyPrefix: '',
     website: 'https://www.chessagine.com/docs',
     docsUrl: 'https://www.chessagine.com/docs',
-    supportsRouting: false
+    supportsRouting: false,
   },
   ollama: {
     name: 'Ollama',
@@ -140,7 +141,6 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'gpt-oss:20b-cloud',
       'kimi-k2-thinking:cloud',
       'kimi-k2:1t-cloud',
-      'hf.co/NAKSTStudio/chess-gemma-commentary:F16'
     ],
     keyPrefix: '',
     website: 'https://docs.ollama.com/',
@@ -150,20 +150,16 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   openai: {
     name: 'OpenAI',
     models: [
-      'gpt-4', 
-      'gpt-4o', 
-      'gpt-4o-mini', 
-      'o3', 
-      'o3-mini', 
-      'o1', 
-      'o4-mini',
-      'gpt-5',
-      'gpt-5.1',
+      'gpt-5.4',
+      'gpt-5.4-pro',
       'gpt-5-mini',
-      'gpt-5-nano',
       'gpt-4.1',
       'gpt-4.1-mini',
-      'gpt-4.1-nano'
+      'gpt-4.1-nano',
+      'gpt-4o',
+      'gpt-4o-mini',
+      'o3',
+      'o4-mini',
     ],
     keyPrefix: 'sk-',
     website: 'https://platform.openai.com/api-keys',
@@ -173,10 +169,10 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   anthropic: {
     name: 'Anthropic Claude',
     models: [
+      'claude-opus-4-6',
+      'claude-sonnet-4-6',
       'claude-sonnet-4-5',
-      'claude-opus-4-1',
-      'claude-opus-4-5',
-      'claude-haiku-4-5'
+      'claude-haiku-4-5',
     ],
     keyPrefix: 'sk-ant-',
     website: 'https://console.anthropic.com/settings/keys',
@@ -186,13 +182,10 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   google: {
     name: 'Google Gemini',
     models: [
-      'gemini-1.5-pro',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.5-flash',
+      'gemini-3.1-pro-preview',
       'gemini-2.5-pro',
-      'gemini-3-pro-preview'
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
     ],
     keyPrefix: 'AIza',
     website: 'https://aistudio.google.com/app/apikey',
@@ -202,83 +195,64 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 };
 
 export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
- 
-  // FREE AgineCloud Models
+  // FREE AgineCloud — tool-capable free models on OpenRouter (March 2026)
   {
     provider: 'AgineCloud',
-    model: 'google/gemini-3-pro-preview',
-    useCase: 'Free advanced reasoning analysis',
+    model: 'openai/gpt-oss-120b:free',
+    useCase: 'Free advanced chess analysis with tool calling',
     cost: 'Free',
     performance: 'Best',
-    reasoning: 'Latest Gemini 3 Pro - community-hosted premium model with excellent reasoning'
+    reasoning: 'OpenAI\'s 120B open-weight model — 131K context, full tool support, near o4-mini reasoning quality. Best free model for chess analysis.',
   },
   {
     provider: 'AgineCloud',
-    model: 'google/gemini-2.0-flash-exp',
-    useCase: 'Free fast cloud analysis',
+    model: 'nvidia/nemotron-3-super-120b-a12b:free',
+    useCase: 'Free powerful reasoning with tools',
     cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Google\'s experimental model, completely free with excellent performance'
+    performance: 'Best',
+    reasoning: 'NVIDIA\'s 120B MoE model with 262K context, tools, and reasoning. Multi-environment RL training makes it exceptional for multi-step chess analysis.',
   },
   {
     provider: 'AgineCloud',
-    model: 'openai/gpt-oss-20b',
-    useCase: 'Free balanced cloud analysis',
+    model: 'qwen/qwen3-coder:free',
+    useCase: 'Free fast analysis with large context',
     cost: 'Free',
     performance: 'Better',
-    reasoning: 'Solid all-around free model for comprehensive chess analysis'
+    reasoning: 'Qwen3 Coder 480B with 262K context and strong tool use. Excellent at structured analysis and multi-step reasoning over long game histories.',
   },
   {
     provider: 'AgineCloud',
-    model: 'nvidia/nemotron-nano-9b-v2',
-    useCase: 'Free lightweight cloud analysis',
-    cost: 'Free',
-    performance: 'Good',
-    reasoning: 'Efficient NVIDIA model for quick analysis without any costs'
-  },
-  {
-    provider: 'AgineCloud',
-    model: 'mistralai/mistral-small-3.1-24b-instruct',
-    useCase: 'Free European cloud analysis',
+    model: 'meta-llama/llama-3.3-70b-instruct:free',
+    useCase: 'Free reliable general chess chat',
     cost: 'Free',
     performance: 'Better',
-    reasoning: 'Mistral\'s powerful small model, completely free for chess analysis'
+    reasoning: 'Meta\'s proven 70B model — solid tool calling, 128K context, consistently reliable. Best choice for beginners wanting a stable free experience.',
   },
-  
-  // FREE Ollama Cloud Models
-  {
-    provider: 'Ollama',
-    model: 'gpt-oss:20b-cloud',
-    useCase: 'Free cloud chess analysis - no setup needed',
-    cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Completely free cloud-based model with no API costs or local installation required'
-  },
+
+  // FREE Ollama Cloud
   {
     provider: 'Ollama',
     model: 'gpt-oss:120b-cloud',
-    useCase: 'Free advanced cloud analysis',
+    useCase: 'Free cloud analysis — no setup needed',
     cost: 'Free',
     performance: 'Best',
-    reasoning: 'Powerful free cloud model - premium quality analysis without any subscription fees'
+    reasoning: 'OpenAI\'s 120B open-weight model running on Ollama cloud. Premium quality analysis without any subscription fees.',
+  },
+  {
+    provider: 'Ollama',
+    model: 'kimi-k2:1t-cloud',
+    useCase: 'Free ultra-advanced cloud reasoning',
+    cost: 'Free',
+    performance: 'Best',
+    reasoning: 'Kimi K2\'s 1-trillion parameter cloud model. Exceptional for deep positional analysis and long game reviews.',
   },
   {
     provider: 'Ollama',
     model: 'deepseek-v3.1:671b-cloud',
-    useCase: 'Free ultra-advanced cloud analysis',
+    useCase: 'Free strong reasoning cloud model',
     cost: 'Free',
     performance: 'Best',
-    reasoning: 'Massive free cloud model with exceptional reasoning - rivals premium paid models'
-  },
-  
-  // FREE Ollama Local Models
-  {
-    provider: 'Ollama',
-    model: 'qwen3:4b',
-    useCase: 'Free offline chess analysis for beginners',
-    cost: 'Free',
-    performance: 'Good',
-    reasoning: 'Run locally on your computer - works offline and perfect for learning basics'
+    reasoning: 'DeepSeek V3.1 671B — rivals premium paid models for complex analysis at zero cost.',
   },
   {
     provider: 'Ollama',
@@ -286,107 +260,106 @@ export const MODEL_RECOMMENDATIONS: ModelRecommendation[] = [
     useCase: 'Free offline balanced analysis',
     cost: 'Free',
     performance: 'Good',
-    reasoning: 'Great local option for intermediate players - no internet required after setup'
+    reasoning: 'Great local option for intermediate players. No internet required after setup, runs on 8GB RAM.',
   },
-  {
-    provider: 'Ollama',
-    model: 'gpt-oss:20b',
-    useCase: 'Free offline advanced analysis',
-    cost: 'Free',
-    performance: 'Better',
-    reasoning: 'Powerful local model for serious study - requires more RAM but fully private'
-  },
-  
-  // Budget Paid Models
+
+  // Budget Paid
   {
     provider: 'OpenAI',
-    model: 'gpt-5-nano',
-    useCase: 'Quick analysis and chat about a game',
+    model: 'gpt-4.1-nano',
+    useCase: 'Ultra-cheap quick analysis',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Extremely affordable at $0.05/$0.40 per million tokens with solid chess understanding'
+    reasoning: 'Cheapest OpenAI model at $0.10/$0.40 per million tokens. Great for simple Q&A and move hints.',
   },
   {
     provider: 'OpenAI',
-    model: 'gpt-4o-mini',
-    useCase: 'Budget-friendly cloud analysis',
+    model: 'gpt-5-mini',
+    useCase: 'Budget fast cloud analysis',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Great balance at $0.15/$0.60 per million tokens with good chess understanding'
+    reasoning: 'GPT-5 intelligence at mini pricing ($0.25/$2.00). Strong reasoning for a budget model.',
   },
   {
-    provider: 'Claude',
-    model: 'claude-haiku-4.5',
-    useCase: 'Quick analysis and hints',
+    provider: 'Anthropic',
+    model: 'claude-haiku-4-5',
+    useCase: 'Fast hints and quick analysis',
     cost: 'Low',
     performance: 'Better',
-    reasoning: 'Fast responses at $1/$5 per million tokens with near-frontier performance'
+    reasoning: 'Fastest Claude at $1/$5 per million tokens. Near-frontier performance for rapid game feedback.',
   },
   {
-    provider: 'Gemini',
+    provider: 'Google',
     model: 'gemini-2.5-flash-lite',
-    useCase: 'Ultra-fast casual games',
+    useCase: 'Ultra-cheap high-volume analysis',
     cost: 'Low',
     performance: 'Good',
-    reasoning: 'Quickest responses at $0.10/$0.40 per million tokens for rapid gameplay'
+    reasoning: 'Cheapest Gemini at $0.10/$0.40 per million tokens. Ideal for high-frequency puzzle training.',
   },
-  
-  // Balanced Models
+
+  // Balanced
   {
     provider: 'OpenAI',
-    model: 'gpt-5',
-    useCase: 'Advanced chess analysis',
+    model: 'gpt-5.4',
+    useCase: 'Best overall reasoning and tool use',
     cost: 'Medium',
     performance: 'Best',
-    reasoning: 'Latest model at $1.25/$10 per million tokens with superior reasoning'
+    reasoning: 'Current OpenAI flagship at $2.50/$15. Excellent tool calling, 1M context, and superior chess reasoning.',
   },
   {
-    provider: 'Claude',
-    model: 'claude-sonnet-4.5',
-    useCase: 'Balanced performance',
+    provider: 'Anthropic',
+    model: 'claude-sonnet-4-6',
+    useCase: 'Best balanced performance (Feb 2026)',
     cost: 'Medium',
     performance: 'Best',
-    reasoning: 'Excellent reasoning at $3/$15 per million tokens with coding strength'
+    reasoning: 'Latest Sonnet at $3/$15. Adaptive thinking, 1M context, outstanding for deep game review.',
   },
   {
-    provider: 'Gemini',
+    provider: 'Google',
     model: 'gemini-2.5-pro',
-    useCase: 'Deep position analysis',
+    useCase: 'Deep analysis with large context',
     cost: 'Medium',
     performance: 'Best',
-    reasoning: 'Advanced analysis at $1.25/$10 per million tokens with 1M token context window'
+    reasoning: 'Best price-performance pro model at $1.25/$10. 1M context window excellent for full game analysis.',
   },
-  
-  // Premium Models
   {
     provider: 'OpenAI',
-    model: 'o1',
-    useCase: 'Deep chess training',
+    model: 'o3',
+    useCase: 'Complex multi-step chess reasoning',
+    cost: 'Medium',
+    performance: 'Best',
+    reasoning: 'Chain-of-thought reasoning at $2/$8. Outperforms GPT-5 on logic and complex positional problems.',
+  },
+
+  // Premium
+  {
+    provider: 'Anthropic',
+    model: 'claude-opus-4-6',
+    useCase: 'Ultimate chess analysis (Feb 2026)',
     cost: 'High',
     performance: 'Best',
-    reasoning: 'Exceptional reasoning at $15/$60 per million tokens for complex positions'
+    reasoning: 'Most capable Claude at $5/$25. Adaptive thinking, 14+ hour task horizon, 1M context. Best for comprehensive game review.',
   },
   {
-    provider: 'Claude',
-    model: 'claude-opus-4.5',
-    useCase: 'Ultimate chess analysis',
+    provider: 'OpenAI',
+    model: 'gpt-5.4-pro',
+    useCase: 'Maximum intelligence analysis',
     cost: 'High',
     performance: 'Best',
-    reasoning: 'Most capable at $5/$25 per million tokens for maximum intelligence'
+    reasoning: 'OpenAI\'s highest-capability model. For professional-level deep analysis where only the best will do.',
   },
   {
-    provider: 'Gemini',
-    model: 'gemini-3-pro',
-    useCase: 'Cutting-edge reasoning',
+    provider: 'Google',
+    model: 'gemini-3.1-pro-preview',
+    useCase: 'Cutting-edge multimodal reasoning',
     cost: 'High',
     performance: 'Best',
-    reasoning: 'Latest flagship at $2/$12 per million tokens with advanced multimodal reasoning'
-  }
+    reasoning: 'Google\'s latest flagship at $2/$12. Advanced agentic capabilities and best-in-class tool use.',
+  },
 ];
 
-// Pricing data (current as of December 2025, verified from official provider pricing pages)
 export const MODEL_PRICING: ModelPricing[] = [
-  // Ollama Models (All Free)
+  // Ollama (all free)
   { provider: 'Ollama', model: 'qwen3:4b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'qwen3:8b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'qwen3:30b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
@@ -395,50 +368,44 @@ export const MODEL_PRICING: ModelPricing[] = [
   { provider: 'Ollama', model: 'deepseek-v3.1:671b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'gpt-oss:120b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
   { provider: 'Ollama', model: 'gpt-oss:20b-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
-  
-  // AgineCloud Models (All Free)
-  { provider: 'AgineCloud', model: 'google/gemini-3-pro-preview', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: 'google/gemini-2.0-flash-exp', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: 'openai/gpt-oss-20b', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: 'nvidia/nemotron-nano-9b-v2', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
-  { provider: 'AgineCloud', model: 'mistralai/mistral-small-3.1-24b-instruct', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free'},
+  { provider: 'Ollama', model: 'kimi-k2-thinking:cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'Ollama', model: 'kimi-k2:1t-cloud', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
 
-  // OpenAI Models (per million tokens)
-  { provider: 'OpenAI', model: 'gpt-5-nano', inputPrice: 0.05, outputPrice: 0.40, costPer200Requests: 0.09, tier: 'Budget' },
-  { provider: 'OpenAI', model: 'gpt-4o-mini', inputPrice: 0.15, outputPrice: 0.60, costPer200Requests: 0.18, tier: 'Budget' },
+  // AgineCloud (all free except flagship)
+  { provider: 'AgineCloud', model: 'openai/gpt-oss-120b:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'openai/gpt-oss-20b:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'meta-llama/llama-3.3-70b-instruct:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'mistralai/mistral-small-3.1-24b-instruct:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'qwen/qwen3-coder:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'nvidia/nemotron-3-super-120b-a12b:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'google/gemma-3-27b-it:free', inputPrice: 0, outputPrice: 0, costPer200Requests: 0, tier: 'Free' },
+  { provider: 'AgineCloud', model: 'google/gemini-3.1-pro-preview', inputPrice: 2.00, outputPrice: 12.00, costPer200Requests: 2.80, tier: 'Premium' },
+
+  // OpenAI (March 2026 pricing)
+  { provider: 'OpenAI', model: 'gpt-4.1-nano', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.10, tier: 'Budget' },
+  { provider: 'OpenAI', model: 'gpt-4.1-mini', inputPrice: 0.40, outputPrice: 1.60, costPer200Requests: 0.40, tier: 'Budget' },
+  { provider: 'OpenAI', model: 'gpt-4o-mini', inputPrice: 0.15, outputPrice: 0.60, costPer200Requests: 0.15, tier: 'Budget' },
   { provider: 'OpenAI', model: 'gpt-5-mini', inputPrice: 0.25, outputPrice: 2.00, costPer200Requests: 0.45, tier: 'Budget' },
-  { provider: 'OpenAI', model: 'gpt-4.1-nano', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.12, tier: 'Budget' },
-  { provider: 'OpenAI', model: 'gpt-4.1-mini', inputPrice: 0.40, outputPrice: 1.60, costPer200Requests: 0.48, tier: 'Balanced' },
-  { provider: 'OpenAI', model: 'o1-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
-  { provider: 'OpenAI', model: 'o3-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
-  { provider: 'OpenAI', model: 'o4-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
-  { provider: 'OpenAI', model: 'gpt-5', inputPrice: 1.25, outputPrice: 10.00, costPer200Requests: 2.25, tier: 'Balanced' },
-  { provider: 'OpenAI', model: 'gpt-4.1', inputPrice: 2.00, outputPrice: 8.00, costPer200Requests: 2.00, tier: 'Balanced' },
   { provider: 'OpenAI', model: 'gpt-4o', inputPrice: 2.50, outputPrice: 10.00, costPer200Requests: 2.50, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'gpt-4.1', inputPrice: 2.00, outputPrice: 8.00, costPer200Requests: 2.00, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'gpt-5.4', inputPrice: 2.50, outputPrice: 15.00, costPer200Requests: 3.50, tier: 'Balanced' },
+  { provider: 'OpenAI', model: 'o4-mini', inputPrice: 1.10, outputPrice: 4.40, costPer200Requests: 1.10, tier: 'Balanced' },
   { provider: 'OpenAI', model: 'o3', inputPrice: 2.00, outputPrice: 8.00, costPer200Requests: 2.00, tier: 'Balanced' },
-  { provider: 'OpenAI', model: 'o1', inputPrice: 15.00, outputPrice: 60.00, costPer200Requests: 15.00, tier: 'Premium' },
-  
-  // Claude Models (per million tokens)
-  { provider: 'Claude', model: 'claude-3-haiku', inputPrice: 0.25, outputPrice: 1.25, costPer200Requests: 0.35, tier: 'Budget' },
-  { provider: 'Claude', model: 'claude-3-5-haiku', inputPrice: 0.80, outputPrice: 4.00, costPer200Requests: 0.96, tier: 'Budget' },
-  { provider: 'Claude', model: 'claude-haiku-4.5', inputPrice: 1.00, outputPrice: 5.00, costPer200Requests: 1.20, tier: 'Budget' },
-  { provider: 'Claude', model: 'claude-sonnet-3.7', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
-  { provider: 'Claude', model: 'claude-sonnet-4', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
-  { provider: 'Claude', model: 'claude-sonnet-4.5', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
-  { provider: 'Claude', model: 'claude-opus-4', inputPrice: 15.00, outputPrice: 75.00, costPer200Requests: 18.00, tier: 'Premium' },
-  { provider: 'Claude', model: 'claude-opus-4.1', inputPrice: 15.00, outputPrice: 75.00, costPer200Requests: 18.00, tier: 'Premium' },
-  { provider: 'Claude', model: 'claude-opus-4.5', inputPrice: 5.00, outputPrice: 25.00, costPer200Requests: 6.00, tier: 'Premium' },
-  
-  // Google Gemini Models (per million tokens)
-  { provider: 'Gemini', model: 'gemini-2.5-flash-lite', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.10, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-2.0-flash', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.10, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-1.5-flash', inputPrice: 0.35, outputPrice: 1.05, costPer200Requests: 0.28, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-2.5-flash', inputPrice: 0.30, outputPrice: 1.20, costPer200Requests: 0.30, tier: 'Budget' },
-  { provider: 'Gemini', model: 'gemini-1.5-pro', inputPrice: 1.25, outputPrice: 5.00, costPer200Requests: 1.25, tier: 'Balanced' },
-  { provider: 'Gemini', model: 'gemini-2.5-pro', inputPrice: 1.25, outputPrice: 10.00, costPer200Requests: 2.25, tier: 'Balanced' },
-  { provider: 'Gemini', model: 'gemini-3-pro', inputPrice: 2.00, outputPrice: 12.00, costPer200Requests: 2.80, tier: 'Premium' },
-];
+  { provider: 'OpenAI', model: 'gpt-5.4-pro', inputPrice: 10.00, outputPrice: 40.00, costPer200Requests: 10.00, tier: 'Premium' },
 
+  // Anthropic (March 2026 — Opus/Sonnet 4.6 are latest)
+  { provider: 'Anthropic', model: 'claude-haiku-4-5', inputPrice: 1.00, outputPrice: 5.00, costPer200Requests: 1.20, tier: 'Budget' },
+  { provider: 'Anthropic', model: 'claude-sonnet-4-5', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
+  { provider: 'Anthropic', model: 'claude-sonnet-4-6', inputPrice: 3.00, outputPrice: 15.00, costPer200Requests: 3.60, tier: 'Balanced' },
+  { provider: 'Anthropic', model: 'claude-opus-4-5', inputPrice: 5.00, outputPrice: 25.00, costPer200Requests: 6.00, tier: 'Premium' },
+  { provider: 'Anthropic', model: 'claude-opus-4-6', inputPrice: 5.00, outputPrice: 25.00, costPer200Requests: 6.00, tier: 'Premium' },
+
+  // Google Gemini (March 2026)
+  { provider: 'Google', model: 'gemini-2.5-flash-lite', inputPrice: 0.10, outputPrice: 0.40, costPer200Requests: 0.10, tier: 'Budget' },
+  { provider: 'Google', model: 'gemini-2.5-flash', inputPrice: 0.30, outputPrice: 2.50, costPer200Requests: 0.56, tier: 'Budget' },
+  { provider: 'Google', model: 'gemini-2.5-pro', inputPrice: 1.25, outputPrice: 10.00, costPer200Requests: 2.25, tier: 'Balanced' },
+  { provider: 'Google', model: 'gemini-3.1-pro-preview', inputPrice: 2.00, outputPrice: 12.00, costPer200Requests: 2.80, tier: 'Premium' },
+];
 
 export function calculateChatPrice(tokens: number, model: string){
     const modelPrice = MODEL_PRICING.find(val => val.model === model);

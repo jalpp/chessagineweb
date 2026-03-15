@@ -1,3 +1,4 @@
+import { ThemeType } from "@/context/ThemeContext";
 
 export const ANALYSIS_DELAY = 300;
 export const DEFAULT_ENGINE_DEPTH = 15;
@@ -156,4 +157,131 @@ export const is3DSet = (set: string) => {
 
 export const getCurrentThemeColors = (themeName: string) => {
   return BOARD_THEMES[themeName as keyof typeof BOARD_THEMES] || BOARD_THEMES.classic;
+};
+
+
+
+
+export const chatThemeVars: Record<ThemeType, React.CSSProperties> = {
+  dark: {
+    "--background": "oklch(0.145 0 0)",
+    "--foreground": "oklch(0.985 0 0)",
+    "--muted": "oklch(0.269 0 0)",
+    "--muted-foreground": "oklch(0.708 0 0)",
+    "--border": "oklch(1 0 0 / 10%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.922 0 0)",
+    "--primary-foreground": "oklch(0.205 0 0)",
+    "--ring": "oklch(0.556 0 0)",
+  } as React.CSSProperties,
+  light: {
+    "--background": "oklch(1 0 0)",
+    "--foreground": "oklch(0.145 0 0)",
+    "--muted": "oklch(0.97 0 0)",
+    "--muted-foreground": "oklch(0.556 0 0)",
+    "--border": "oklch(0.922 0 0)",
+    "--input": "oklch(0.922 0 0)",
+    "--primary": "oklch(0.205 0 0)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.708 0 0)",
+  } as React.CSSProperties,
+  purple: {
+    "--background": "oklch(0.18 0.04 290)",
+    "--foreground": "oklch(0.95 0.01 290)",
+    "--muted": "oklch(0.25 0.05 290)",
+    "--muted-foreground": "oklch(0.65 0.05 290)",
+    "--border": "oklch(1 0 0 / 12%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.65 0.2 290)",
+    "--primary-foreground": "oklch(0.98 0 0)",
+    "--ring": "oklch(0.65 0.2 290)",
+  } as React.CSSProperties,
+  darkBlue: {
+    "--background": "oklch(0.15 0.03 240)",
+    "--foreground": "oklch(0.95 0.01 240)",
+    "--muted": "oklch(0.22 0.04 240)",
+    "--muted-foreground": "oklch(0.65 0.04 240)",
+    "--border": "oklch(1 0 0 / 12%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.6 0.18 240)",
+    "--primary-foreground": "oklch(0.98 0 0)",
+    "--ring": "oklch(0.6 0.18 240)",
+  } as React.CSSProperties,
+  forest: {
+    "--background": "oklch(0.15 0.03 150)",
+    "--foreground": "oklch(0.95 0.01 150)",
+    "--muted": "oklch(0.22 0.04 150)",
+    "--muted-foreground": "oklch(0.65 0.04 150)",
+    "--border": "oklch(1 0 0 / 12%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.55 0.15 150)",
+    "--primary-foreground": "oklch(0.98 0 0)",
+    "--ring": "oklch(0.55 0.15 150)",
+  } as React.CSSProperties,
+  wooden: {
+    "--background": "oklch(0.25 0.04 60)",
+    "--foreground": "oklch(0.95 0.02 60)",
+    "--muted": "oklch(0.32 0.05 60)",
+    "--muted-foreground": "oklch(0.65 0.04 60)",
+    "--border": "oklch(1 0 0 / 12%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.6 0.12 60)",
+    "--primary-foreground": "oklch(0.15 0 0)",
+    "--ring": "oklch(0.6 0.12 60)",
+  } as React.CSSProperties,
+  disco: {
+    "--background": "oklch(0.12 0.05 320)",
+    "--foreground": "oklch(0.97 0.01 320)",
+    "--muted": "oklch(0.2 0.07 320)",
+    "--muted-foreground": "oklch(0.65 0.05 320)",
+    "--border": "oklch(1 0 0 / 15%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.7 0.25 320)",
+    "--primary-foreground": "oklch(0.98 0 0)",
+    "--ring": "oklch(0.7 0.25 320)",
+  } as React.CSSProperties,
+  classicChess: {
+    "--background": "oklch(0.2 0.02 80)",
+    "--foreground": "oklch(0.95 0.01 80)",
+    "--muted": "oklch(0.28 0.03 80)",
+    "--muted-foreground": "oklch(0.65 0.02 80)",
+    "--border": "oklch(1 0 0 / 12%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.75 0.1 80)",
+    "--primary-foreground": "oklch(0.15 0 0)",
+    "--ring": "oklch(0.75 0.1 80)",
+  } as React.CSSProperties,
+  marble: {
+    "--background": "oklch(0.95 0.005 220)",
+    "--foreground": "oklch(0.15 0.01 220)",
+    "--muted": "oklch(0.88 0.01 220)",
+    "--muted-foreground": "oklch(0.45 0.02 220)",
+    "--border": "oklch(0.7 0.01 220)",
+    "--input": "oklch(0.82 0.01 220)",
+    "--primary": "oklch(0.35 0.05 220)",
+    "--primary-foreground": "oklch(0.97 0 0)",
+    "--ring": "oklch(0.5 0.05 220)",
+  } as React.CSSProperties,
+  neonCyber: {
+    "--background": "oklch(0.1 0.02 200)",
+    "--foreground": "oklch(0.95 0.05 180)",
+    "--muted": "oklch(0.18 0.04 200)",
+    "--muted-foreground": "oklch(0.65 0.08 180)",
+    "--border": "oklch(0.6 0.2 180 / 30%)",
+    "--input": "oklch(0.6 0.2 180 / 20%)",
+    "--primary": "oklch(0.75 0.25 180)",
+    "--primary-foreground": "oklch(0.1 0 0)",
+    "--ring": "oklch(0.75 0.25 180)",
+  } as React.CSSProperties,
+  christmas: {
+    "--background": "oklch(0.15 0.04 20)",
+    "--foreground": "oklch(0.97 0.01 20)",
+    "--muted": "oklch(0.22 0.05 20)",
+    "--muted-foreground": "oklch(0.65 0.04 20)",
+    "--border": "oklch(1 0 0 / 12%)",
+    "--input": "oklch(1 0 0 / 15%)",
+    "--primary": "oklch(0.55 0.2 20)",
+    "--primary-foreground": "oklch(0.98 0 0)",
+    "--ring": "oklch(0.55 0.2 20)",
+  } as React.CSSProperties,
 };
