@@ -17,7 +17,6 @@ import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { PositionEval } from "@/stockfish/engine/engine";
-import { useChatContext } from "@/context/ChatContext";
 
 export interface GameInfoTabProp {
   moves: string[];
@@ -32,9 +31,6 @@ export interface GameInfoTabProp {
   stockfishAnalysisResult: PositionEval | null;
   gameReviewProgress: number;
   gameInfo: Record<string, string>;
-  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
-  handleMoveAnnontateClick: (review: MoveAnalysis, customQuery?: string) => void;
-  handleGameReviewClick: (gameReview: MoveAnalysis[], gameInfo: string) => void;
 }
 
 function GameInfoTab({
@@ -47,15 +43,11 @@ function GameInfoTab({
   gameReviewLoading,
   gameReview,
   gameReviewTheme,
-  handleMoveCoachClick,
-  handleMoveAnnontateClick,
-  handleGameReviewClick,
   fen,
   gameReviewProgress,
   stockfishAnalysisResult,
 }: GameInfoTabProp) {
 
-  const {chatLoading} = useChatContext();
   const [gameInfoOpen, setGameInfoOpen] = useState(false);
 
   const formatTimeControl = (timeControl: string) => {
@@ -218,8 +210,6 @@ function GameInfoTab({
           stockfishAnalysisResult={stockfishAnalysisResult}
           moves={moves}
           gameReviewTheme={gameReviewTheme}
-          handleMoveCoachClick={handleMoveCoachClick}
-          chatLoading={chatLoading}
           gameReviewProgress={gameReviewProgress}
           comment={comment}
           fen={fen}
@@ -228,8 +218,6 @@ function GameInfoTab({
           whitePlayer={gameInfo.White || "Unknown"}
           blackPlayer={gameInfo.Black || "Unknown"}
           gameInfo={generateGameInfoPrompt(gameInfo)}
-          handleMoveAnnontateClick={handleMoveAnnontateClick}
-          handleGameReviewClick={handleGameReviewClick}
           gameReviewLoading={gameReviewLoading}
           goToMove={goToMove}
           currentMoveIndex={currentMoveIndex}

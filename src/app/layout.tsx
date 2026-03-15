@@ -10,7 +10,7 @@ import BodyWrapper from "@/componets/BodyWrapper";
 import {NetModelContextProvider } from "@/context/NetContext";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import { ChatProvider } from "@/context/ChatContext";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -105,9 +105,7 @@ export default function RootLayout({
             <BodyWrapper>
               <NavBar/>
               <NetModelContextProvider>
-                <ChatProvider>
                     {children}
-                </ChatProvider>
                 <SpeedInsights/>
                 <Analytics/>
               </NetModelContextProvider>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState} from "react";
 import {
   Box,
   Typography,
@@ -31,30 +31,16 @@ export interface ChessDBDisplayProps {
   loading?: boolean;
   title?: string;
   showTitle?: boolean;
-  analyzeMove: (move: CandidateMove) => void;
-  llmLoading?: boolean;
   error?: string | null;
   queueing?: boolean;
   onRefresh?: () => void;
   onRequestAnalysis?: () => void;
 }
 
-export function getChessDBSpeech(data: CandidateMove[]): string {
-  let query = "Candidate Moves \n\n";
-
-  for (let i = 0; i < data.length; i++) {
-    query += `Move: ${data[i].san} Eval ${data[i].score} WinRate ${data[i].winrate} Note: ${data[i].note}\n`;
-  }
-
-  return query;
-}
 
 export function ChessDBDisplay({
   data,
   loading = false,
-  analyzeMove,
-  llmLoading = false,
-  error = null,
   queueing = false,
   onRefresh,
   onRequestAnalysis,
@@ -543,21 +529,14 @@ export function ChessDBDisplay({
         {data.map((move, index) => (
           <Paper
             key={`${move.uci}-${index}`}
-            onClick={() => analyzeMove(move)}
             sx={{
               p: isMobile ? 1.5 : 2,
-
               borderRadius: 0,
               borderLeft:
                 index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
-              cursor: llmLoading ? "not-allowed" : "pointer",
+              cursor: "pointer",
               transition: "background-color 0.2s ease",
-              "&:hover": {
-                backgroundColor: llmLoading
-                  ? "#1a1a1a"
-                  : "rgba(156, 39, 176, 0.1)",
-              },
-              filter: llmLoading ? "grayscale(50%)" : "none",
+              filter: "none",
             }}
           >
             {isMobile ? (
@@ -819,19 +798,6 @@ export function ChessDBDisplay({
           <Button onClick={handleSettingsClose}>Done</Button>
         </DialogActions>
       </Dialog>
-
-      {/* Hint */}
-      <Box sx={{ mt: 2, px: isMobile ? 0.5 : 0 }}>
-        <Typography
-          variant="caption"
-          sx={{
-            fontStyle: "italic",
-            fontSize: isMobile ? "0.7rem" : "0.75rem",
-          }}
-        >
-          Click on any move above to get AI analysis of that candidate
-        </Typography>
-      </Box>
     </Box>
   );
 }

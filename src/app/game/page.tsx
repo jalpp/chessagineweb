@@ -86,7 +86,6 @@ export default function PGNUploaderPage() {
   );
 
   const {
-    setLlmAnalysisResult,
     stockfishAnalysisResult,
     setStockfishAnalysisResult,
     openingData,
@@ -108,20 +107,10 @@ export default function PGNUploaderPage() {
     generateGameReview,
     gameReviewLoading,
     fetchOpeningData,
-    sendChatMessage,
-    handleMoveAnnontateClick,
-    handleChatKeyPress,
     setMoveSquares,
     analyzeWithStockfish,
     formatEvaluation,
     formatPrincipalVariation,
-    handleEngineLineClick,
-    handleOpeningMoveClick,
-    handleMoveClick,
-    abortChatMessage,
-    handleMoveCoachClick,
-    handleGameReviewSummaryClick,
-    handleMovePGNAnnotateClick,
     chessdbdata,
     loading,
     queueing,
@@ -278,7 +267,6 @@ export default function PGNUploaderPage() {
     const resetGame = new Chess(startingFen);
     setGame(resetGame);
     setFen(resetGame.fen());
-    setLlmAnalysisResult(null);
     setComment("");
     setGameReview([]);
   };
@@ -353,7 +341,6 @@ export default function PGNUploaderPage() {
       setGame(resetGame);
       setFen(resetGame.fen());
       setCustomPlayFen(startingFen || resetGame.fen());
-      setLlmAnalysisResult(null);
       setComment("");
 
       setHistoryDialogOpen(false);
@@ -377,7 +364,6 @@ export default function PGNUploaderPage() {
     setCurrentMoveIndex(index);
     setRootCurrentMove(index);
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
-    setLlmAnalysisResult(null);
     setStockfishAnalysisResult(null);
   };
 
@@ -394,12 +380,8 @@ export default function PGNUploaderPage() {
           isGameReviewMode={true}
           stockfishAnalysisResult={stockfishAnalysisResult}
           stockfishLoading={stockfishLoading}
-          handleEngineLineClick={handleEngineLineClick}
           engineDepth={engineDepth}
           engineLines={engineLines}
-          sendChatMessage={sendChatMessage}
-          abortChatMessage={abortChatMessage}
-          handleChatKeyPress={handleChatKeyPress}
           engine={engine}
           Maiaerror={maiaError}
           isLoading={maiaIsLoading}
@@ -414,16 +396,13 @@ export default function PGNUploaderPage() {
           openingData={openingData}
           lichessOpeningData={lichessOpeningData}
           lichessOpeningLoading={lichessOpeningLoading}
-          handleOpeningMoveClick={handleOpeningMoveClick}
           chessdbdata={chessdbdata}
-          handleMoveClick={handleMoveClick}
           queueing={queueing}
           error={error}
           lichessData={lichessData}
           loading={loading}
           refetch={refetch}
           requestAnalysis={requestAnalysis}
-          llmLoading={llmLoading}
           moves={moves}
           currentMoveIndex={currentMoveIndex}
           goToMove={goToMove}
@@ -433,9 +412,6 @@ export default function PGNUploaderPage() {
           generateGameReview={generateGameReview}
           gameReviewLoading={gameReviewLoading}
           gameReviewProgress={gameReviewProgress}
-          handleGameReviewSummaryClick={handleGameReviewSummaryClick}
-          handleMoveAnnontateClick={handleMoveAnnontateClick}
-          handleMoveCoachClick={handleMoveCoachClick}
           gameReview={gameReview}
           pgnText={pgnText}
           currentMove={moves[currentMoveIndex]}
@@ -530,7 +506,6 @@ export default function PGNUploaderPage() {
                 setMoves={setMoves}
                 setParsedMovesWithComments={setParsedMovesWithComments}
                 setPgnText={setPgnText}
-                setLlmAnalysisResult={setLlmAnalysisResult}
                 generateGameReview={generateGameReview}
                 analyzeGameTheme={analyzeGameTheme}
               />
@@ -616,7 +591,6 @@ export default function PGNUploaderPage() {
                   setGame={setGame}
                   reviewMove={gameReview[currentMoveIndex]}
                   gameReviewMode={true}
-                  setLlmAnalysisResult={setLlmAnalysisResult}
                   setOpeningData={setOpeningData}
                   setStockfishAnalysisResult={setStockfishAnalysisResult}
                   stockfishAnalysisResult={stockfishAnalysisResult}
@@ -634,7 +608,6 @@ export default function PGNUploaderPage() {
                 <PGNView
                   moves={moves}
                   moveAnalysis={gameReview}
-                  onAnnotateMove={handleMovePGNAnnotateClick}
                   gamePgn={pgnText}
                   goToMove={goToMove}
                   gameResult={gameInfo.Result}
@@ -683,7 +656,6 @@ export default function PGNUploaderPage() {
                     setMoves([]);
                     setPgnText("");
                     setGameInfo({});
-                    setLlmAnalysisResult(null);
                     setComment("");
                     setMultiGameList([]);
                     setGameReview([]);

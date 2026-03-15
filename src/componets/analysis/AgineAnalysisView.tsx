@@ -24,7 +24,6 @@ import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
 import OpeningExplorer from "../tabs/OpeningTab";
 import ChessDBDisplay from "../tabs/Chessdb";
-import ChatTab from "../tabs/ChatTab";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
 import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
 import { CandidateMove } from "@/libs/agine/helper";
@@ -43,7 +42,6 @@ import ChessTreeView from "../tabs/ChessTreeView";
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
   stockfishLoading: boolean;
-  handleEngineLineClick: (line: LineEval, lineIndex: number) => void;
   engineDepth: number;
   engineLines: number;
   engine: UciEngine | undefined;
@@ -56,25 +54,12 @@ interface BaseAnalysisViewProps {
   openingData: MasterGames | null;
   lichessOpeningData: MasterGames | null;
   lichessOpeningLoading: boolean;
-  handleOpeningMoveClick: (move: Moves) => void;
   chessdbdata: CandidateMove[] | null;
-  handleMoveClick: (move: CandidateMove) => void;
   queueing: boolean;
   error: string | null | undefined;
   loading: boolean;
   refetch: () => void;
   requestAnalysis: () => void;
-  sendChatMessage: (
-    gameInfo?: string | undefined,
-    currentMove?: string | undefined,
-    puzzleMode?: boolean | undefined,
-    puzzleQuery?: string | undefined,
-    playMode?: boolean | undefined,
-    currentMoveIndex?: number | undefined,
-  ) => Promise<void>;
-  abortChatMessage: () => void;
-  handleChatKeyPress: (e: React.KeyboardEvent) => void;
-  llmLoading: boolean;
   scores: ThemeScore | null;
   ThemeScoreloading: boolean;
   ThemeScoreerror: string | null;
@@ -91,15 +76,6 @@ interface GameReviewProps {
   Customfen?: string;
   gameReviewLoading?: boolean;
   gameReviewProgress?: number;
-  handleGameReviewSummaryClick?: (
-    review: MoveAnalysis[],
-    gameInfo: string,
-  ) => Promise<void>;
-  handleMoveAnnontateClick?: (
-    review: MoveAnalysis,
-    customQuery?: string,
-  ) => Promise<void>;
-  handleMoveCoachClick?: (review: MoveAnalysis) => void;
   gameReview?: MoveAnalysis[];
   pgnText?: string;
   currentMove?: string;
@@ -119,7 +95,6 @@ function AgineAnalysisView({
   stockfishAnalysisResult,
   stockfishLoading,
   sanEvaluations,
-  handleEngineLineClick,
   engineDepth,
   engineLines,
   engine,
@@ -133,18 +108,12 @@ function AgineAnalysisView({
   openingData,
   lichessOpeningData,
   lichessOpeningLoading,
-  handleOpeningMoveClick,
   chessdbdata,
-  handleMoveClick,
   queueing,
   error,
   loading,
   refetch,
   requestAnalysis,
-  sendChatMessage,
-  abortChatMessage,
-  handleChatKeyPress,
-  llmLoading,
   isGameReviewMode = false,
   moves,
   currentMoveIndex,
@@ -155,12 +124,7 @@ function AgineAnalysisView({
   generateGameReview,
   gameReviewLoading,
   gameReviewProgress,
-  handleGameReviewSummaryClick,
-  handleMoveAnnontateClick,
-  handleMoveCoachClick,
   gameReview,
-  pgnText,
-  currentMove,
   evaluations,
   Maiaerror,
   isLoading,
@@ -231,13 +195,6 @@ function AgineAnalysisView({
             iconPosition={isSmallMobile ? "top" : "start"}
             label={isSmallMobile ? "Analysis" : "Analysis"}
           />
-          <Tab
-            icon={
-              <ChatIcon sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" } }} />
-            }
-            iconPosition={isSmallMobile ? "top" : "start"}
-            label={isSmallMobile ? "Chat" : "AI Chat"}
-          />
         </Tabs>
       </Box>
 
@@ -299,9 +256,6 @@ function AgineAnalysisView({
                     generateGameReview={generateGameReview!}
                     gameReviewLoading={gameReviewLoading!}
                     gameReviewProgress={gameReviewProgress!}
-                    handleGameReviewClick={handleGameReviewSummaryClick!}
-                    handleMoveAnnontateClick={handleMoveAnnontateClick!}
-                    handleMoveCoachClick={handleMoveCoachClick!}
                     gameReview={gameReview!}
                     stockfishAnalysisResult={stockfishAnalysisResult}
                   />
@@ -435,11 +389,9 @@ function AgineAnalysisView({
                 <StockfishAnalysisTab
                   stockfishAnalysisResult={stockfishAnalysisResult}
                   stockfishLoading={stockfishLoading}
-                  handleEngineLineClick={handleEngineLineClick}
                   engineDepth={engineDepth}
                   engineLines={engineLines}
                   engine={engine}
-                  llmLoading={llmLoading}
                   analyzeWithStockfish={analyzeWithStockfish}
                   formatEvaluation={formatEvaluation}
                   formatPrincipalVariation={formatPrincipalVariation}
@@ -585,8 +537,6 @@ function AgineAnalysisView({
                   openingData={openingData}
                   lichessOpeningData={lichessOpeningData}
                   lichessOpeningLoading={lichessOpeningLoading}
-                  llmLoading={llmLoading}
-                  handleOpeningMoveClick={handleOpeningMoveClick}
                 />
               </AccordionDetails>
             </Accordion>
@@ -629,7 +579,6 @@ function AgineAnalysisView({
               >
                 <ChessDBDisplay
                   data={chessdbdata}
-                  analyzeMove={handleMoveClick}
                   queueing={queueing}
                   error={error}
                   loading={loading}
@@ -639,18 +588,6 @@ function AgineAnalysisView({
               </AccordionDetails>
             </Accordion>
           </Stack>
-        </TabPanel>
-
-        <TabPanel value={analysisTab} index={1}>
-          <ChatTab
-            currentMoveIndex={currentMoveIndex}
-            abortChatMessage={abortChatMessage}
-            puzzleMode={false}
-            sendChatMessage={sendChatMessage}
-            handleChatKeyPress={handleChatKeyPress}
-            gameInfo={pgnText}
-            currentMove={currentMove}
-          />
         </TabPanel>
       </Box>
     </Card>
