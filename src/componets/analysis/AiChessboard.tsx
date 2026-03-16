@@ -78,7 +78,6 @@ interface AiChessboardPanelProps {
   openingLoading: boolean;
   setGame: (chess: Chess) => void;
   setFen: (fen: string) => void;
-  setLlmAnalysisResult: (result: string | null) => void;
   setStockfishAnalysisResult: (result: PositionEval | null) => void;
   setOpeningData: (result: MasterGames | null) => void;
   puzzleMode?: boolean;
@@ -107,7 +106,6 @@ export default function AiChessboardPanel({
   moveSquares,
   setGame,
   setFen,
-  setLlmAnalysisResult,
   setStockfishAnalysisResult,
   setOpeningData,
   game,
@@ -373,12 +371,11 @@ export default function AiChessboardPanel({
     [fen, moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]
   );
 
-  // Memoized clear analysis callback
+
   const clearAnalysis = useCallback(() => {
-    setLlmAnalysisResult(null);
     setStockfishAnalysisResult(null);
     setOpeningData(null);
-  }, [setLlmAnalysisResult, setStockfishAnalysisResult, setOpeningData]);
+  }, [ setStockfishAnalysisResult, setOpeningData]);
 
   // Check if player can move in play mode
   const canPlayerMove = useCallback(() => {

@@ -34,7 +34,7 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
-import { GitHub, SmartToy } from "@mui/icons-material";
+import { ChatBubble, GitHub, SmartToy } from "@mui/icons-material";
 
 export default function NavBar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -62,6 +62,7 @@ export default function NavBar() {
     { label: "Analyze Position", href: "/position",                            icon: <FaChessBoard />, isExternal: false },
     { label: "Analyze Game",     href: "/game",                                 icon: <FaChessPawn />,  isExternal: false },
     { label: "Play Bot",         href: "/play",                                 icon: <SmartToy />,     isExternal: false },
+    { label: "Agine Chat",             href: "/chat",                                 icon: <ChatBubble />,     isExternal: false },
     { label: "Puzzles",          href: "/puzzle",                               icon: <FaPuzzlePiece />,isExternal: false },
     { label: "Settings",         href: "/setting",                              icon: <FaGear />,       isExternal: false },
     { label: "Docs",             href: "/docs",                                 icon: <FaBook />,       isExternal: false },

@@ -1,4 +1,3 @@
-"use server";
 import { openai } from "@ai-sdk/openai";
 import { Agent } from "@mastra/core/agent";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -16,7 +15,8 @@ import {
   chessAgineAnnoPrompt,
 } from "./prompt";
 import { OpenAIModel, GoogleModel, AnthropicModel, OllamaModel, AgineCloudModel } from "./types";
-import { AgineTools } from "../tools";
+import { getAgineMcpClient } from "../mcp/agineClient";
+
 
 function createModelFromRouter(requestContext: RequestContext) {
   const provider = requestContext.get("provider") as string;
@@ -50,7 +50,7 @@ function createAgineCloudModel(requestContext: RequestContext) {
     apiKey: apiKey
   })
 
-  if(modelName !== "google/gemini-3-pro-preview"){
+  if(modelName !== "google/gemini-3.1-pro-preview" && modelName !== "anthropic/claude-sonnet-4.6"){
       return agineCloudRouter(`${modelName}:free` as AgineCloudModel);
   }
 
@@ -130,21 +130,12 @@ function createModelFromContext(requestContext: RequestContext) {
   }
 }
 
-function createToolsFromContext(requestContext: RequestContext) {
-  const provider = requestContext.get("provider") as string;
 
-  if(provider.includes("agineCloud") || provider.includes("ollama")){
-    return {}
-  }
 
-  return AgineTools;
-}
-
-/* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
 export const chessAgine = new Agent({
   id: "chessagine-agent",
   name: "ChessAgine",
   instructions: ({ requestContext }) => createAgentInstruction(requestContext),
   model: ({ requestContext }) => createModelFromContext(requestContext),
-  tools: ({requestContext}) => createToolsFromContext(requestContext)
+  tools: async () => getAgineMcpClient().listTools()
 });

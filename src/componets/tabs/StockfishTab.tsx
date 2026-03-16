@@ -33,8 +33,6 @@ export interface StockfishAnalysisProps {
     setEngineLines: (lines: number) => void;
     engine: UciEngine | undefined;
     analyzeWithStockfish: () => void;
-    handleEngineLineClick: (line: LineEval, index: number) => void;
-    llmLoading: boolean;
     formatEvaluation: (line: LineEval) => string;
     formatPrincipalVariation: (pv: string[], fen: string) => string;
 }
@@ -64,9 +62,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
     setEngineDepth,
     engineLines,
     setEngineLines,
-    handleEngineLineClick,
     analyzeWithStockfish,
-    llmLoading,
     formatEvaluation,
     formatPrincipalVariation,
 }) => {
@@ -504,18 +500,15 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                 {stockfishAnalysisResult?.lines?.map((line, index) => (
                     <Paper
                         key={`line-${index}-${line.depth}-${line.cp || line.mate}`}
-                        onClick={() => handleEngineLineClick(line, index)}
                         sx={{
                             p: 2,
                           
                             borderRadius: 0,
                             borderBottom: index < stockfishAnalysisResult.lines.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none",
-                            
-                            cursor: llmLoading ? "not-allowed" : "pointer",
+                            cursor: "pointer",
                             transition: "all 0.3s ease",
                             opacity: isTransitioning ? 0.5 : 1,
-                           
-                            filter: llmLoading ? "grayscale(50%)" : "none",
+                            filter: "none",
                         }}
                     >
                         <Stack direction="row" alignItems="center" spacing={2}>
@@ -715,16 +708,6 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Hint */}
-            <Box sx={{ mt: 2 }}>
-                <Typography
-                    variant="caption"
-                    sx={{ fontStyle: "italic" }}
-                >
-                    Click on any line above to get AI analysis of that specific variation
-                </Typography>
-            </Box>
         </Box>
     );
 };

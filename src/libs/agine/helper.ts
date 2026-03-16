@@ -22,7 +22,6 @@ export interface AgentMessage {
 }
 
 export interface AgineState {
-  llmAnalysisResult: string | null;
   stockfishAnalysisResult: PositionEval | null;
   reverseStockfishAnalysisResult?: PositionEval | null;
   openingData: MasterGames | null;

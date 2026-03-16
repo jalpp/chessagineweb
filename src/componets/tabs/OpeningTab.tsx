@@ -29,17 +29,13 @@ interface OpeningExplorerProps {
   lichessOpeningData?: MasterGames | null;
   lichessOpeningLoading?: boolean;
   openingData?: MasterGames | null;
-  llmLoading: boolean;
-  handleOpeningMoveClick: (move: Moves) => void;
 }
 
 export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
   openingLoading,
   openingData,
-  llmLoading,
   lichessOpeningData,
   lichessOpeningLoading,
-  handleOpeningMoveClick,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -501,14 +497,13 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           return (
             <Paper
               key={`${move.uci}-${index}`}
-              onClick={() => handleOpeningMoveClick(move)}
               sx={{
                 p: isMobile ? 1.5 : 2,
               
                 borderRadius: 0,
                 borderBottom: index < currentData.moves.slice(0, maxMoves).length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none",
-                cursor: llmLoading ? "not-allowed" : "pointer",
-                filter: llmLoading ? "grayscale(50%)" : "none",
+                cursor: "pointer",
+                filter: "none",
               }}
             >
               {isMobile ? (
@@ -907,16 +902,6 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Hint */}
-      <Box sx={{ mt: 2, px: isMobile ? 0.5 : 0 }}>
-        <Typography
-          variant="caption"
-          sx={{  fontStyle: "italic", fontSize: isMobile ? '0.7rem' : '0.75rem' }}
-        >
-          Click on any move above to get AI analysis of that continuation
-        </Typography>
-      </Box>
     </Box>
   );
 };

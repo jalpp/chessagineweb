@@ -8,11 +8,9 @@ import {
   DialogContent, 
   DialogActions, 
   TextField, 
-  CircularProgress,
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip
@@ -40,7 +38,6 @@ export interface PGNViewProps {
   moveAnalysis: MoveAnalysis[] | null;
   goToMove?: (index: number) => void;
   currentMoveIndex: number;
-  onAnnotateMove?: (review: MoveAnalysis, customQuery?: string) => Promise<AgentMessage | null>;
 }
 
 
@@ -51,7 +48,6 @@ const PGNView: React.FC<PGNViewProps> = ({
   gamePgn,
   gameResult,
   currentMoveIndex,
-  onAnnotateMove,
 }) => {
   const [dimensions, setDimensions] = useLocalStorage<{width: number, height: number}>(
     "pgn_view_ui_dimensions",
@@ -166,36 +162,7 @@ const PGNView: React.FC<PGNViewProps> = ({
     handleCloseCommentDialog();
   };
 
-  const handleAnnotateWithAI = async () => {
-    if (!onAnnotateMove || selectedMoveIndex === null) {
-      return;
-    }
 
-    const analysis = getMoveAnalysis(selectedMoveIndex);
-    
-    // If there's no analysis for this move, we can't annotate with AI
-    if (!analysis) {
-      console.warn('No analysis data available for this move');
-      return;
-    }
-
-    setIsAnnotating(true);
-    try {
-      const annotation = await onAnnotateMove(analysis, commentText.trim() || undefined);
-      if (annotation) {
-        // Add AI annotation to existing text
-        const currentText = commentText.trim();
-        const separator = currentText ? '\n\n' : '';
-        const newText = currentText + separator + `Agine: ${annotation.message}`;
-        
-        setCommentText(newText);
-      }
-    } catch (error) {
-      console.error('Error getting AI annotation:', error);
-    } finally {
-      setIsAnnotating(false);
-    }
-  };
 
   const generateAnnotatedPGN = useCallback((): string => {
     if (!gamePgn || !moveAnalysis) return '';
@@ -720,7 +687,6 @@ const PGNView: React.FC<PGNViewProps> = ({
           <ListItemIcon>
             <CommentIcon fontSize="small" sx={{ color: '#ccc' }} />
           </ListItemIcon>
-          <ListItemText>Comment & Annotate</ListItemText>
         </MenuItem>
       </Menu>
 
@@ -787,14 +753,7 @@ const PGNView: React.FC<PGNViewProps> = ({
               },
             }}
           />
-          {isAnnotating && (
-            <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, color: '#4FC3F7' }}>
-              <CircularProgress size={16} sx={{ mr: 1, color: '#4FC3F7' }} />
-              <Typography variant="body2">
-                Getting AI analysis...
-              </Typography>
-            </Box>
-          )}
+       
         </DialogContent>
         <DialogActions>
           <Button
@@ -803,14 +762,6 @@ const PGNView: React.FC<PGNViewProps> = ({
             sx={{ color: '#888' }}
           >
             Cancel
-          </Button>
-          <Button
-            onClick={handleAnnotateWithAI}
-            disabled={isAnnotating || selectedMoveIndex === null || !getMoveAnalysis(selectedMoveIndex)}
-            startIcon={isAnnotating ? <CircularProgress size={16} /> : <AutoAwesomeIcon />}
-            sx={{ color: '#4FC3F7' }}
-          >
-            {isAnnotating ? 'Analyzing...' : 'Add AI Analysis'}
           </Button>
           <Button
             onClick={handleSubmitComment}

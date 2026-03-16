@@ -43,18 +43,11 @@ interface GameReviewTabProps {
   stockfishAnalysisResult: PositionEval | null;
   goToMove: (index: number) => void;
   currentMoveIndex: number;
-  handleMoveCoachClick: (gameReview: MoveAnalysis) => void;
   gameInfo: string;
   whiteTitle: string;
   blackTitle: string;
   whitePlayer: string;
   blackPlayer: string;
-  handleMoveAnnontateClick: (
-    review: MoveAnalysis,
-    customQuery?: string,
-  ) => void;
-  handleGameReviewClick: (review: MoveAnalysis[], gameInfo: string) => void;
-  chatLoading: boolean;
   comment: string;
 }
 
@@ -113,11 +106,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   stockfishAnalysisResult,
   gameReviewLoading,
   currentMoveIndex,
-  handleMoveCoachClick,
-  handleMoveAnnontateClick,
-  handleGameReviewClick,
   gameReviewTheme,
-  chatLoading,
   comment,
   whiteTitle,
   blackTitle,
@@ -141,31 +130,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
     setUserThoughts(comment || "");
   }, [comment]);
 
-  useEffect(() => {
-    if (!chatLoading) {
-      setLoadingStates({
-        chat: {},
-        annotate: {},
-        gameReport: false,
-      });
-    }
-  }, [chatLoading]);
-
-  const handleChatClick = (review: MoveAnalysis) => {
-    setLoadingStates((prev) => ({
-      ...prev,
-      chat: { ...prev.chat, [review.plyNumber]: true },
-    }));
-    handleMoveCoachClick(review);
-  };
-
-  const handleAnnotateClick = (review: MoveAnalysis, customQuery?: string) => {
-    setLoadingStates((prev) => ({
-      ...prev,
-      annotate: { ...prev.annotate, [review.plyNumber]: true },
-    }));
-    handleMoveAnnontateClick(review, customQuery);
-  };
 
   const handleGameReportClick = () => {
     setLoadingStates((prev) => ({
@@ -181,7 +145,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
       const blackStatsStr = `Black Stats: Best: ${blackStats.Best}, Very Good: ${blackStats["Very Good"]}, Good: ${blackStats.Good}, Dubious: ${blackStats.Dubious}, Mistake: ${blackStats.Mistake}, Blunder: ${blackStats.Blunder}, Book: ${blackStats.Book}, accuracy: ${calculateAccuracy(blackStats)}`;
       newGameInfo = `${gameInfo}\nGAME REVIEW DETAILS\n${whiteStatsStr}\n${blackStatsStr}`;
     }
-    handleGameReviewClick(gameReview!, newGameInfo);
   };
 
   const getStatistics = () => {
@@ -304,39 +267,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                 </Box>
 
                 <Stack direction="row" spacing={1}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={
-                      loadingStates.chat[currentMove.plyNumber] ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <MessageCircle size={16} />
-                      )
-                    }
-                    onClick={() => handleChatClick(currentMove)}
-                    disabled={chatLoading}
-                  >
-                    Ask AI
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={
-                      loadingStates.annotate[currentMove.plyNumber] ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <Pen size={16} />
-                      )
-                    }
-                    onClick={() =>
-                      handleAnnotateClick(currentMove, userThoughts)
-                    }
-                    disabled={chatLoading}
-                  >
-                    Annotate
-                  </Button>
                 </Stack>
               </Stack>
             </CardContent>
@@ -346,21 +276,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
         {/* Analysis Notes */}
         <Card>
           <CardContent sx={{ p: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Your Analysis Notes
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              variant="outlined"
-              placeholder="Add your thoughts about the position..."
-              value={userThoughts}
-              onChange={(e) => setUserThoughts(e.target.value)}
-              disabled={chatLoading}
-              size="small"
-            />
-
+          
             <Button
               variant="contained"
               startIcon={
@@ -371,7 +287,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                 )
               }
               onClick={handleGameReportClick}
-              disabled={!gameReview || gameReview.length === 0 || chatLoading}
+              disabled={!gameReview || gameReview.length === 0}
               sx={{
                 mt: 2,
                 py: 1,

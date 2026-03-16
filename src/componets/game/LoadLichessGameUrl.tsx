@@ -27,7 +27,6 @@ interface LoadLichessGameUrlProp {
   setComment: (comment: string) => void;
   setGameReview: (review: MoveAnalysis[]) => void;
   generateGameReview: (moves: string[]) => void;
-  setLlmAnalysisResult: (result: string | null) => void;
   analyzeGameTheme: (moveList: string[]) => void;
   setInputsVisible: (view: boolean) => void;
 }
@@ -45,7 +44,6 @@ function LoadLichessGameUrl({
   setInputsVisible,
   generateGameReview,
   analyzeGameTheme,
-  setLlmAnalysisResult,
 }: LoadLichessGameUrlProp) {
   const [loadingGame, setLoadingGame] = useState(false);
   const [gameUrl, setGameUrl] = useState("");
@@ -85,7 +83,6 @@ function LoadLichessGameUrl({
         const resetGame = new Chess();
         setGame(resetGame);
         setFen(resetGame.fen());
-        setLlmAnalysisResult(null);
         setComment("");
         setGameReview([]);
         generateGameReview(moveList);

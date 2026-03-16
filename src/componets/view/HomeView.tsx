@@ -25,6 +25,7 @@ import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useLocalStorage } from "usehooks-ts";
+import { ChatBubble } from "@mui/icons-material";
 
 const STYLES = `
   @keyframes fadeSlideUp {
@@ -107,7 +108,7 @@ const features: {
   {
     icon: BoltIcon,
     title: "Position Board",
-    description: "Set up any position and analyze it with Agine.",
+    description: "Set up any chess position",
     path: "/position",
     colorKey: "primary",
     badge: "Popular",
@@ -115,17 +116,25 @@ const features: {
   {
     icon: AnalyticsIcon,
     title: "Game Analysis",
-    description: "Upload games or paste PGN for deep analysis.",
+    description: "Upload games or paste PGN for game analysis.",
     path: "/game",
     colorKey: "secondary",
   },
   {
     icon: ExtensionIcon,
     title: "Interactive Puzzles",
-    description: "Solve puzzles interactively with Agine's guidance.",
+    description: "Solve puzzles for various themes and levels",
     path: "/puzzle",
     colorKey: "success",
     badge: "New",
+  },
+  {
+    icon: ChatBubble,
+    title: "Agine Chat",
+    description: "Have Interactive chat about chess",
+    path: "/chat",
+    colorKey: "success",
+    badge: "Popular",
   },
   {
     icon: SportsEsportsIcon,

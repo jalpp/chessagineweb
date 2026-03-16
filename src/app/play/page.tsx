@@ -20,7 +20,6 @@ import {
   Alert,
   Tabs,
   Tab,
-  LinearProgress,
   TextField,
   CircularProgress,
 } from "@mui/material";
@@ -36,7 +35,6 @@ import {
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
-import ChatTab from "@/componets/tabs/ChatTab";
 import useAgine from "@/hooks/useAgine";
 import { TabPanel } from "@/componets/tabs/tab";
 import { useNetStatus, useNetModels } from "@/context/NetContext";
@@ -115,10 +113,6 @@ export default function PlayVsBotsPage() {
     moveSquares,
     setMoveSquares,
     engine,
-    sendChatMessage,
-    handleChatKeyPress,
-    abortChatMessage,
-    setLlmAnalysisResult,
     setOpeningData,
     setStockfishAnalysisResult,
     fetchOpeningData,
@@ -278,7 +272,6 @@ export default function PlayVsBotsPage() {
 
     setFen(resetGame.fen());
     setCurrentMoveIndex(index);
-    setLlmAnalysisResult(null);
     setStockfishAnalysisResult(null);
   };
 
@@ -1003,15 +996,6 @@ export default function PlayVsBotsPage() {
                 overflow: "hidden",
               }}
             >
-              <ChatTab
-                playMode={true}
-                sendChatMessage={sendChatMessage}
-                handleChatKeyPress={handleChatKeyPress}
-                abortChatMessage={abortChatMessage}
-                gameInfo={game.pgn()}
-                currentMove={game.history().slice(-1)[0]}
-                currentMoveIndex={game.history().length}
-              />
             </Box>
           </TabPanel>
         )}
@@ -1061,7 +1045,6 @@ export default function PlayVsBotsPage() {
             gameInfo={buildPlayGameInfo()}
             side={playerColor}
             setGame={setGame}
-            setLlmAnalysisResult={setLlmAnalysisResult}
             setOpeningData={setOpeningData}
             evaluations={evaluations}
             setStockfishAnalysisResult={setStockfishAnalysisResult}

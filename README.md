@@ -9,24 +9,14 @@
 The most underrated FOSS chess interface that combines LLMs and chess engines into one unified platform. 
 ---
 
-## Preview
-
-<p align="center">
-  <img src="/public/static/images/aginelatestui.png" alt="ChessAgine_Preview" >
-</p>
-(Agine analyzing position using free open source model)
-
-
 ## Features
 
 - **Multi-AI Support**: Compatible with OpenAI, Claude, Gemini, and Ollama models  
-- **Chess-Aware AI**: Advanced position analysis and contextual understanding via implementation of **Chess Context Protocol (CCP)**  
 - **Stockfish Integration**: Powered by Stockfish 17.1 engine for accurate evaluation
 - **Neural Network Integration**: Support for Maia 2, Leela and Elite Leela neural net to see most human made moves for given position  
 - **Opening Explorer**: Comprehensive opening database integration  
 - **Puzzle Training**: Interactive chess puzzles for skill improvement  
 - **Game Review**: Generate game review and ask Agine for specific move analysis
-- **hallucinations Checker** checks the previous responses hallucinations  
 - **Ollama Integration**: Run LLMs locally or via cloud and connect to ChessAgine. open source, and no API key required  
 - **Mobile/Tablet UI support**: Able to talk to Agine on mobile/tablet
 - **Full local web app**: Run ChessAgine GUI + Ollama to have entire app running on your own machine/hardware/cloud
@@ -55,12 +45,6 @@ The most underrated FOSS chess interface that combines LLMs and chess engines in
 
 4. Open [http://localhost:3000](http://localhost:3000) to see ChessAgine running locally
 
-
-## Chess Context Protocol (CCP)
-
-ChessAgine is a **Chess Context Protocol Client (CCPC)** to the CCP.
-To read more about the protocol (beta), explore `/chessContextProtocol`.
-This protocol allows Chess GUIs to integrate engines and LLMs seamlessly.
 
 ## ChessAgine MCP
 ChessAgine has a comprehensive MCP server that brings CCP to your MCP Client like Claude desktop,

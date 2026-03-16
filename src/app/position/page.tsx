@@ -31,7 +31,6 @@ export default function PositionPage() {
   const [fen, setFen] = useState(game.fen());
 
   const {
-    setLlmAnalysisResult,
     stockfishAnalysisResult,
     setStockfishAnalysisResult,
     openingData,
@@ -49,15 +48,9 @@ export default function PositionPage() {
     setEngineLines,
     engine,
     fetchOpeningData,
-    sendChatMessage,
-    handleChatKeyPress,
     analyzeWithStockfish,
     formatEvaluation,
     formatPrincipalVariation,
-    handleEngineLineClick,
-    abortChatMessage,
-    handleOpeningMoveClick,
-    handleMoveClick,
     chessdbdata,
     loading,
     queueing,
@@ -93,16 +86,13 @@ export default function PositionPage() {
       fen={fen}
       stockfishAnalysisResult={stockfishAnalysisResult}
       stockfishLoading={stockfishLoading}
-      handleEngineLineClick={handleEngineLineClick}
-      engineDepth={engineDepth}
-      abortChatMessage={abortChatMessage}
-      handleChatKeyPress={handleChatKeyPress}
-      sendChatMessage={sendChatMessage}
       lichessData={lichessData}
       isInBook={isInBook}
       sanEvaluations={sanEvaluations}
       engineLines={engineLines}
       engine={engine}
+      engineDepth={engineDepth}
+      chessdbdata={chessdbdata}
       analyzeWithStockfish={analyzeWithStockfish}
       formatEvaluation={formatEvaluation}
       formatPrincipalVariation={formatPrincipalVariation}
@@ -112,16 +102,12 @@ export default function PositionPage() {
       openingData={openingData}
       lichessOpeningData={lichessOpeningData}
       lichessOpeningLoading={lichessOpeningLoading}
-      handleOpeningMoveClick={handleOpeningMoveClick}
-      chessdbdata={chessdbdata}
-      handleMoveClick={handleMoveClick}
       queueing={queueing}
       error={error}
       loading={loading}
       refetch={refetch}
       requestAnalysis={requestAnalysis}
       gameReviewTheme={null}
-      llmLoading={llmLoading}
       evaluations={evaluations}
       isLoading={maiaIsLoading}
       Maiaerror={maiaError}
@@ -169,7 +155,6 @@ export default function PositionPage() {
             engine={engine}
             setFen={setFen}
             setGame={setGame}
-            setLlmAnalysisResult={setLlmAnalysisResult}
             setOpeningData={setOpeningData}
             evaluations={evaluations}
             setStockfishAnalysisResult={setStockfishAnalysisResult}

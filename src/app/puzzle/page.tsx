@@ -38,7 +38,6 @@ import { Chess } from "chess.js";
 import { useCallback, useEffect, useMemo } from "react";
 import { Square } from "chess.js";
 import { TabPanel } from "@/componets/tabs/tab";
-import ChatTab from "@/componets/tabs/ChatTab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
@@ -315,7 +314,6 @@ export default function PuzzlePage() {
   }, []);
 
   const {
-    setLlmAnalysisResult,
     stockfishAnalysisResult,
     setStockfishAnalysisResult,
     setOpeningData,
@@ -328,10 +326,7 @@ export default function PuzzlePage() {
     setAnalysisTab,
     engine,
     fetchOpeningData,
-    sendChatMessage,
-    handleChatKeyPress,
     analyzeWithStockfish,
-    abortChatMessage,
     scores,
     themeScoreError,
     themeScoreLoading,
@@ -699,7 +694,6 @@ export default function PuzzlePage() {
                 handleSquarePuzzleClick={handleSquareClick}
                 setFen={setFen}
                 setGame={setGame}
-                setLlmAnalysisResult={setLlmAnalysisResult}
                 setOpeningData={setOpeningData}
                 setStockfishAnalysisResult={setStockfishAnalysisResult}
                 fetchOpeningData={fetchOpeningData}
@@ -752,7 +746,6 @@ export default function PuzzlePage() {
                 handleSquarePuzzleClick={handleSquareClick}
                 setFen={setFen}
                 setGame={setGame}
-                setLlmAnalysisResult={setLlmAnalysisResult}
                 setOpeningData={setOpeningData}
                 setStockfishAnalysisResult={setStockfishAnalysisResult}
                 fetchOpeningData={fetchOpeningData}
@@ -1120,16 +1113,6 @@ export default function PuzzlePage() {
                       error={themeScoreError}
                     />
                   </TabPanel>
-
-                  <TabPanel value={analysisTab} index={2}>
-                    <ChatTab
-                      abortChatMessage={abortChatMessage}
-                      sendChatMessage={sendChatMessage}
-                      puzzleMode={true}
-                      puzzleQuery={puzzleQueryString}
-                      handleChatKeyPress={handleChatKeyPress}
-                    />
-                  </TabPanel>
                 </Box>
               </Paper>
             )}
@@ -1427,15 +1410,6 @@ export default function PuzzlePage() {
                       scores={scores}
                       loading={themeScoreLoading}
                       error={themeScoreError}
-                    />
-                  </TabPanel>
-                  <TabPanel value={analysisTab} index={2}>
-                    <ChatTab
-                      abortChatMessage={abortChatMessage}
-                      sendChatMessage={sendChatMessage}
-                      puzzleMode={true}
-                      puzzleQuery={puzzleQueryString}
-                      handleChatKeyPress={handleChatKeyPress}
                     />
                   </TabPanel>
                 </Box>
