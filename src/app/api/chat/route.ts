@@ -6,58 +6,57 @@ import { auth } from "@clerk/nextjs/server";
 
 export const maxDuration = 30;
 
+const PREMIUM_MODELS = [
+  "google/gemini-3.1-pro-preview",
+  "anthropic/claude-sonnet-4.6",
+  "qwen/qwen3.5-9b",
+  "meta-llama/llama-3.1-8b-instruct",
+];
+
 export async function POST(req: Request) {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   const isAuthenticated = !!userId;
+  const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
   const { messages, apiSettings } = await req.json();
 
-  if (!apiSettings?.provider || !apiSettings?.model) {
+  
+  apiSettings.provider = "agineCloud";
+
+  
+  if (!apiSettings?.model) {
     return Response.json(
-      { error: "API settings are required (provider, model)" },
-      { status: 400 }
+      { error: "API settings are required (model)" },
+      { status: 400 },
     );
   }
 
-  if (apiSettings.provider === "agineCloud" && !isAuthenticated) {
+
+  if (!isAuthenticated) {
     return Response.json(
-      { error: "Please sign up to use agineCloud models. You need an account because agineCloud models run on community donated resources. You can optionally direct insert an API key for Google, OpenAI, Anthropic in chat settings or run models locally via Ollama. You can read more about set up in docs page." },
-      { status: 401 }
+      {
+        error:
+          "Please sign up to use Agine Chat. agineCloud models run on community donated resources. " +
+          "You can read more about setup on the docs page.",
+      },
+      { status: 401 },
     );
   }
 
-  if (
-    ["anthropic", "google", "openai"].includes(apiSettings.provider) &&
-    !apiSettings.apiKey
-  ) {
+  
+  if (PREMIUM_MODELS.includes(apiSettings.model) && !isPaidTier) {
     return Response.json(
-      { error: "API key is required for this provider" },
-      { status: 400 }
-    );
-  }
-
-  if (
-    apiSettings.provider === "ollama" &&
-    (!apiSettings.ollamaBaseUrl ||
-      !/^http:\/\/.+/i.test(apiSettings.ollamaBaseUrl))
-  ) {
-    return Response.json(
-      { error: "Ollama base ngrok endpoint required and must be a valid http:// URL. Please set up the URL by reading chessAgine docs" },
-      { status: 400 }
+      {
+        error:
+          `The model "${apiSettings.model}" is only available on the paid tier. ` +
+          "Please upgrade your plan at /pricing to access premium models.",
+      },
+      { status: 403 },
     );
   }
 
   const requestContext = new RequestContext();
-  requestContext.set("provider", apiSettings.provider);
   requestContext.set("model", apiSettings.model);
-  requestContext.set("apiKey", apiSettings.apiKey || "");
-  requestContext.set("mode", "question");
-  requestContext.set("isRouted", apiSettings.isRouted ?? false);
-  requestContext.set("lang", apiSettings.language || "English");
-
-  if (apiSettings.provider === "ollama" && apiSettings.ollamaBaseUrl) {
-    requestContext.set("ollamaBaseUrl", apiSettings.ollamaBaseUrl);
-  }
 
   const agent = mastra.getAgent("chessAgine");
 

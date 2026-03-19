@@ -148,22 +148,13 @@ const FEATURES: FeatureDetail[] = [
     ],
   },
   {
-    name: "AI Chat",
+    name: "Agine Chat",
     icon: <ChatIcon />,
     description: "Interactive AI-powered chess companion for learning and analysis",
     capabilities: [
-      "Multiple chat modes for different use cases",
-      "Position-specific prompts and suggestions",
-      "Copy and share conversation history",
-      "Bookmark positions to Agine library",
-      "Customizable chat settings",
-      "Available in Analysis, Game Analysis, and Puzzle pages",
-    ],
-    highlights: [
-      "Interactive Q&A Mode: Asks targeted chess questions to deepen understanding",
-      "Default Position Analysis: Comprehensive position breakdowns",
-      "Self-Eval Toggle: Auto-checks AI responses for accuracy",
-      "Grader Toggle: Evaluates quality of your own position analysis",
+      "Access to Chess engines like Stockfish",
+      "Position-specific analysis",
+      "Game review related PGN input analysis",
     ],
   },
   {

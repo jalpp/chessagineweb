@@ -216,12 +216,7 @@ export interface MoveStats {
 }
 
 export interface ApiSettings {
-  provider: "openai" | "anthropic" | "google" | "ollama" | "aginecloud";
   model: string;
-  apiKey: string;
-  language: string;
-  isRouted: boolean;
-  ollamaBaseUrl?: string;
 }
 
 export type MoveQuality =

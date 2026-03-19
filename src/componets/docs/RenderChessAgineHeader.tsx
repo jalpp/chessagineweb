@@ -19,9 +19,6 @@ import {
   
 } from "@mui/icons-material";
 
-
-
-
 export const renderHeader = () => (
   <>
     <Paper
@@ -40,30 +37,7 @@ export const renderHeader = () => (
       </Typography>
     </Paper>
 
-    {/* Security Alert */}
-    <Alert severity="warning" sx={{ mb: 4 }}>
-      <AlertTitle>Important Security Information</AlertTitle>
-      <Typography variant="body2">
-        <strong>ChessAgine DOES NOT store your API keys on our servers.</strong>{" "}
-        Your keys are only stored in your browser local storage and encrypted
-        during transmission.
-      </Typography>
-      <Typography variant="body2">
-        <SecurityIcon sx={{ fontSize: 16, mr: 1, verticalAlign: "middle" }} />
-        <strong>
-          Never share your API keys with anyone and rotate them regularly.
-        </strong>{" "}
-        Your API keys are accessible only to you, not to developers or other
-        users.
-      </Typography>
-    </Alert>
-    <Alert severity="warning" sx={{ mb: 4 }}>
-      <AlertTitle>ChessAgine Cloud Beta</AlertTitle>
-      <Typography variant="body2">
-        <strong>ChessAgine Cloud is in Beta, if you experiece rate limits please try again at later time.</strong>{" "}
-      </Typography>
-    </Alert>
-
+  
     <Card sx={{ mb: 4 }}>
       <CardContent>
         <Typography variant="h5" gutterBottom color="primary.text">
