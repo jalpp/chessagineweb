@@ -175,18 +175,13 @@ const ModelSetting: React.FC = () => {
                   const isLocked = isPremium && !isPaidTier;
 
                   return (
-                    // Key fix: NO span wrapper. Use `disabled` directly on MenuItem.
-                    // MUI Select can traverse disabled MenuItems fine — the span was
-                    // what broke click propagation for adjacent free model items.
                     <MenuItem
                       key={model}
                       value={model}
                       disabled={isLocked}
                       sx={{
                         pl: 3,
-                        // Keep locked items visible but muted — don't hide them
                         opacity: isLocked ? 0.55 : 1,
-                        // Restore pointer so the Chip's href still works when locked
                         pointerEvents: "auto",
                       }}
                     >

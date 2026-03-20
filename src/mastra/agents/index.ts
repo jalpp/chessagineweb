@@ -4,7 +4,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { agineSystemPrompt } from "./prompt";
 import { AgineCloudModel } from "./types";
 import { getAgineMcpClient } from "../mcp/agineClient";
-import { displayChessboardTool } from "./tools";
+import { displayChessboardTool, loadGameTool } from "./tools";
 
 function createAgineCloudModel(requestContext: RequestContext) {
  
@@ -45,6 +45,7 @@ export const chessAgine = new Agent({
     return {
       ...mcpTools,
       display_chessboard_for_fen: displayChessboardTool,
+      load_chess_game: loadGameTool
     };
   },
 });
