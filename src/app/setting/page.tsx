@@ -1,27 +1,50 @@
 "use client";
-import { Box, Container, Paper } from "@mui/material";
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  Divider,
+  Button,
+  Card,
+  CardContent,
+} from "@mui/material";
+import { Star as StarIcon } from "@mui/icons-material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
 import ThemeSelector from "@/componets/ThemeSelector";
+import { useAuth } from "@clerk/nextjs";
+import { SignIn } from "@clerk/nextjs";
 
 const SettingsPage = () => {
+  const { isSignedIn} = useAuth();
+
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        py: 4,
-      }}
-    >
+    <Box sx={{ minHeight: "100vh", py: 4 }}>
       <Container maxWidth="md">
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-          }}
-        >
+        <Paper elevation={3} sx={{ p: 4 }}>
+          {/* Theme — public */}
           <ThemeSelector />
-          <Box mt={4}>
-            <ModelSetting />
-          </Box>
+
+          <Divider sx={{ my: 4 }} />
+
+          {isSignedIn ? (
+            <Box>
+              <ModelSetting />
+            </Box>
+          ) : (
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              gap={3}
+              py={4}
+            >
+              <Typography variant="body1" color="text.secondary">
+                Sign in to configure ChessAgine&apos;s AI model settings.
+              </Typography>
+              <SignIn />
+            </Box>
+          )}
         </Paper>
       </Container>
     </Box>

@@ -22,12 +22,34 @@ import {
 } from "@mui/icons-material";
 import { FAQ_ITEMS } from "@/libs/docs/helper";
 
+const CATEGORIES = [
+  {
+    key: "general",
+    label: "General Questions",
+    Icon: LearnIcon,
+  },
+  {
+    key: "technical",
+    label: "Technical Questions",
+    Icon: InfoIcon,
+  },
+  {
+    key: "cost",
+    label: "Plans & Pricing",
+    Icon: CostIcon,
+  },
+  {
+    key: "privacy",
+    label: "Privacy & Security",
+    Icon: SecurityIcon,
+  },
+] as const;
+
 export const renderFAQ = () => (
   <Box>
     <Typography
       variant="h4"
       gutterBottom
-      color="primary.text"
       sx={{ display: "flex", alignItems: "center", gap: 1 }}
     >
       <HelpIcon />
@@ -39,51 +61,41 @@ export const renderFAQ = () => (
         <Typography
           variant="h6"
           gutterBottom
-          color="primary.text"
           sx={{ display: "flex", alignItems: "center", gap: 1 }}
         >
           <CommunityIcon />
           About ChessAgine
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          ChessAgine is designed to be your friendly AI chess companion, think
-          of it as a knowledgeable chess buddy who is always available to chat,
-          analyze positions, and help you explore the wonderful world of chess.
-          It is NOT a formal coach with structured lessons, but rather a
-          conversational partner that adapts to your curiosity and learning
-          style.
+          ChessAgine is your friendly AI chess companion — a knowledgeable
+          chess buddy who's always available to chat, analyze positions, and
+          help you explore chess. It's not a formal coaching program; it's a
+          conversational partner that adapts to your curiosity. All chess tools
+          are free. Agine Chat gives you access to AI models — free community
+          models included, with stronger premium models available on the paid
+          tier.
         </Typography>
       </CardContent>
     </Card>
 
-    {["general", "technical", "cost", "privacy"].map((category) => (
-      <Box key={category} sx={{ mb: 3 }}>
-        <Typography
-          variant="h6"
-          gutterBottom
-          color="primary.text"
-          sx={{ textTransform: "capitalize", mb: 2 }}
-        >
-          {category === "general" && (
-            <LearnIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-          )}
-          {category === "technical" && (
-            <InfoIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-          )}
-          {category === "cost" && (
-            <CostIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-          )}
-          {category === "privacy" && (
-            <SecurityIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-          )}
-          {category} Questions
-        </Typography>
+    {CATEGORIES.map(({ key, label, Icon }) => {
+      const items = FAQ_ITEMS.filter((item) => item.category === key);
+      if (!items.length) return null;
+      return (
+        <Box key={key} sx={{ mb: 4 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+          >
+            <Icon fontSize="small" />
+            {label}
+          </Typography>
 
-        {FAQ_ITEMS.filter((item) => item.category === category).map(
-          (faq, index) => (
+          {items.map((faq, index) => (
             <Accordion key={index} sx={{ mb: 1 }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="body1" color="primary.text">
+                <Typography variant="body1" fontWeight={500}>
                   {faq.question}
                 </Typography>
               </AccordionSummary>
@@ -93,32 +105,29 @@ export const renderFAQ = () => (
                 </Typography>
               </AccordionDetails>
             </Accordion>
-          )
-        )}
-      </Box>
-    ))}
+          ))}
+        </Box>
+      );
+    })}
 
-    <Card sx={{ mt: 4 }}>
+    <Card sx={{ mt: 2 }}>
       <CardContent>
         <Typography
           variant="h6"
           gutterBottom
-          color="primary.text"
           sx={{ display: "flex", alignItems: "center", gap: 1 }}
         >
           <SupportIcon />
-          Still Have Questions?
+          Still have questions?
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          Can not find what you are looking for? Create an issue on ChessAgine Github
+          Can't find what you're looking for? Open an issue on GitHub.
         </Typography>
         <Button
           variant="outlined"
-          color="primary"
           startIcon={<InfoIcon />}
           href="https://github.com/jalpp/chessagineweb/issues"
           target="_blank"
-          sx={{ mr: 2 }}
         >
           Create GitHub Issue
         </Button>

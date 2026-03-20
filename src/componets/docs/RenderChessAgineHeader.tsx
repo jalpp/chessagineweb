@@ -1,127 +1,154 @@
 import {
+  Box,
   Typography,
   Card,
   CardContent,
-  Alert,
-  AlertTitle,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Paper,
+  Chip,
 } from "@mui/material";
 import {
   Security as SecurityIcon,
-  AttachMoney as CostIcon,
-  Psychology as IntelligenceIcon,
-  CheckCircle as CheckCircleIcon,
-  SwapHorizontalCircleOutlined,
-  
+  Star as StarIcon,
+  Cloud as CloudIcon,
+  Psychology as PsychologyIcon,
+  Extension as ExtensionIcon,
+  Lock as LockIcon,
 } from "@mui/icons-material";
-
-
-
 
 export const renderHeader = () => (
   <>
-    <Paper
-      sx={{
-        p: 4,
-        mb: 4,
-    
-   
-      }}
-    >
-      <Typography variant="h3" component="h1" gutterBottom>
+    <Paper sx={{ p: 4, mb: 4 }}>
+      <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
         Welcome to ChessAgine
       </Typography>
-      <Typography variant="h6">
-        Your AI-powered chess companion with plug-and-play provider integration
+      <Typography variant="h6" color="text.secondary">
+        Your AI-powered chess companion, brainstorm chess positions, review games,
+        explore openings, and bouch ideas about chess!
       </Typography>
     </Paper>
 
-    {/* Security Alert */}
-    <Alert severity="warning" sx={{ mb: 4 }}>
-      <AlertTitle>Important Security Information</AlertTitle>
-      <Typography variant="body2">
-        <strong>ChessAgine DOES NOT store your API keys on our servers.</strong>{" "}
-        Your keys are only stored in your browser local storage and encrypted
-        during transmission.
-      </Typography>
-      <Typography variant="body2">
-        <SecurityIcon sx={{ fontSize: 16, mr: 1, verticalAlign: "middle" }} />
-        <strong>
-          Never share your API keys with anyone and rotate them regularly.
-        </strong>{" "}
-        Your API keys are accessible only to you, not to developers or other
-        users.
-      </Typography>
-    </Alert>
-    <Alert severity="warning" sx={{ mb: 4 }}>
-      <AlertTitle>ChessAgine Cloud Beta</AlertTitle>
-      <Typography variant="body2">
-        <strong>ChessAgine Cloud is in Beta, if you experiece rate limits please try again at later time.</strong>{" "}
-      </Typography>
-    </Alert>
+    <Box
+      display="grid"
+      gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
+      gap={3}
+      mb={4}
+    >
+      <Card variant="outlined">
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CloudIcon color="primary" />
+            <Typography variant="h6" fontWeight={600}>
+              Free Plan
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            All chess tools are free. Agine Chat includes three community
+            AI models, no setup required.
+          </Typography>
+          <Box display="flex" flexWrap="wrap" gap={0.75}>
+            {[
+              "arcee-ai/trinity-large-preview",
+              "z-ai/glm-4.5-air",
+              "stepfun/step-3.5-flash",
+            ].map((m) => (
+              <Chip
+                key={m}
+                label={m}
+                size="small"
+                variant="outlined"
+                sx={{ fontFamily: "monospace", fontSize: "0.7rem" }}
+              />
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Card variant="outlined" sx={{ borderColor: "primary.main" }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <StarIcon color="primary" />
+            <Typography variant="h6" fontWeight={600}>
+              Paid Tier
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Unlock premium models with more tool calls, extended chess
+            context, and dedicated resources.
+          </Typography>
+          <Box display="flex" flexWrap="wrap" gap={0.75}>
+            {[
+              "google/gemini-3.1-pro-preview",
+              "anthropic/claude-sonnet-4.6",
+              "qwen/qwen3.5-9b",
+              "meta-llama/llama-3.1-8b-instruct",
+            ].map((m) => (
+              <Chip
+                key={m}
+                label={m}
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontFamily: "monospace", fontSize: "0.7rem" }}
+              />
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
 
     <Card sx={{ mb: 4 }}>
       <CardContent>
-        <Typography variant="h5" gutterBottom color="primary.text">
-          ChessAgine Settings
+        <Typography variant="h5" gutterBottom fontWeight={600}>
+          What's included
         </Typography>
-        <List>
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon/>
+        <List disablePadding>
+          <ListItem disableGutters>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <ExtensionIcon color="success" />
             </ListItemIcon>
             <ListItemText
-              primary="Agine Cloud (beta)"
-              secondary="Pick a open source model and start using ChessAgine for free! No API or local setup required!"
+              primary="All chess tools, free forever"
+              secondary="Position analysis, game review, puzzles, play bot, opening explorer. No account needed."
             />
           </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <CheckCircleIcon  />
+          <ListItem disableGutters>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <CloudIcon color="success" />
             </ListItemIcon>
             <ListItemText
-              primary="Ollama Support"
-              secondary="No API keys required run models locally or connect via ngrok/cloud for instant access and use ChessAgine for 100% Free!"
+              primary="Agine Chat with community models"
+              secondary="Sign in and start chatting immediately. Three free AI models powered by community resources."
             />
           </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <SwapHorizontalCircleOutlined color="success" />
+          <ListItem disableGutters>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <PsychologyIcon color="primary" />
             </ListItemIcon>
             <ListItemText
-              primary="OpenRouter Support"
-              secondary="Use one single router to load funds and use multiple AI models via OpenRouter"
+              primary="Use Premium models with paid tier"
+              secondary="Stronger models, more tool calls per session, deeper chess context window, dedicated infrastructure."
             />
           </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <CostIcon color="success" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Cost Control"
-              secondary="You pay only for what you use, directly to the provider or the router"
-            />
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <IntelligenceIcon color="success" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Model Choice"
-              secondary="Select any supported model based on your budget and needs"
-            />
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <SecurityIcon color="success" />
+          <ListItem disableGutters>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <LockIcon color="success" />
             </ListItemIcon>
             <ListItemText
               primary="Privacy & Security"
-              secondary="Direct connection to providers without intermediary costs or risks"
+              secondary="Conversations are session-only. ChessAgine never stores any chat messages on servers."
+            />
+          </ListItem>
+          <ListItem disableGutters>
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <SecurityIcon color="success" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Open source"
+              secondary="ChessAgine is FOSS, fork it, modify it, run it locally. Full transparency."
             />
           </ListItem>
         </List>
