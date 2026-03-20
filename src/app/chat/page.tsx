@@ -1,5 +1,4 @@
 "use client";
-
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import {
   useChatRuntime,
@@ -21,21 +20,29 @@ import {
   Button,
   Typography,
   Box,
+  Badge,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
   Close as CloseIcon,
   Star as StarIcon,
+  Psychology as BrainIcon,
 } from "@mui/icons-material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
 import { DisplayChessboardToolUI } from "@/componets/uitools/DisplayChessBoard";
+import { LoadGameToolUI } from "@/componets/uitools/LoadGameUi";
+import KnowledgePanel from "@/componets/tabs/KnowledgePanel";
+import { KnowledgeProvider, useKnowledge } from "@/context/KnowledgeContext";
 
-export default function ChatPage() {
+function ChatPageInner() {
   const { isSignedIn, has } = useAuth();
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
   const { currentTheme } = useTheme();
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+
+  const { buildKnowledgeContext, selectedIds } = useKnowledge();
 
   const runtime = useChatRuntime({
     transport: new AssistantChatTransport({
@@ -44,8 +51,13 @@ export default function ChatPage() {
         const model =
           localStorage.getItem("selected-model") ||
           "arcee-ai/trinity-large-preview:free";
+
+        const knowledgeContext =
+          isPaidTier ? buildKnowledgeContext() : null;
+
         return {
           apiSettings: { model },
+          ...(knowledgeContext ? { knowledgeContext } : {}),
         };
       },
     }),
@@ -73,11 +85,11 @@ export default function ChatPage() {
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <DisplayChessboardToolUI />
+      <LoadGameToolUI/>
+      
 
       <TooltipProvider>
         <div style={vars} className="h-screen flex flex-col">
-
-          {/* Top bar: upsell (free users) + settings icon */}
           <Box
             display="flex"
             alignItems="center"
@@ -110,7 +122,7 @@ export default function ChatPage() {
                   }}
                 >
                   You&apos;re on the free plan. Upgrade to unlock premium models
-                  like Gemini Pro and Claude Sonnet, for smarter chess queries.
+                  and Chess Knowledge Cards.
                 </Typography>
                 <Typography
                   variant="caption"
@@ -136,6 +148,26 @@ export default function ChatPage() {
               <Box flex={1} />
             )}
 
+            {/* Knowledge Cards button — paid only */}
+            {isPaidTier && (
+              <Tooltip title="Chess Knowledge Cards">
+                <IconButton
+                  onClick={() => setKnowledgeOpen(true)}
+                  size="small"
+                  sx={{ flexShrink: 0 }}
+                >
+                  <Badge
+                    badgeContent={selectedIds.size}
+                    color="primary"
+                    max={99}
+                    invisible={selectedIds.size === 0}
+                  >
+                    <BrainIcon fontSize="small" />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+            )}
+
             <Tooltip title="Model Settings">
               <IconButton
                 onClick={() => setModelDialogOpen(true)}
@@ -146,13 +178,10 @@ export default function ChatPage() {
               </IconButton>
             </Tooltip>
           </Box>
-
-          {/* Chat thread */}
           <Box flex={1} overflow="hidden">
             <Thread />
           </Box>
 
-          {/* Model settings modal */}
           <Dialog
             open={modelDialogOpen}
             onClose={() => setModelDialogOpen(false)}
@@ -178,8 +207,23 @@ export default function ChatPage() {
               <ModelSetting />
             </DialogContent>
           </Dialog>
+
+          {isPaidTier && (
+            <KnowledgePanel
+              open={knowledgeOpen}
+              onClose={() => setKnowledgeOpen(false)}
+            />
+          )}
         </div>
       </TooltipProvider>
     </AssistantRuntimeProvider>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <KnowledgeProvider>
+      <ChatPageInner />
+    </KnowledgeProvider>
   );
 }

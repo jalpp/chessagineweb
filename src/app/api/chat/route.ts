@@ -6,6 +6,9 @@ import { auth } from "@clerk/nextjs/server";
 
 export const maxDuration = 30;
 
+/** Max allowed knowledge context size on the server (extra safety net: 160 KB = 20 cards × 8 KB) */
+const MAX_KNOWLEDGE_BYTES = 160 * 1024;
+
 const PREMIUM_MODELS = [
   "google/gemini-3.1-pro-preview",
   "anthropic/claude-sonnet-4.6",
@@ -18,19 +21,16 @@ export async function POST(req: Request) {
   const isAuthenticated = !!userId;
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
-  const { messages, apiSettings } = await req.json();
+  const { messages, apiSettings, knowledgeContext } = await req.json();
 
-  
   apiSettings.provider = "agineCloud";
 
-  
   if (!apiSettings?.model) {
     return Response.json(
       { error: "API settings are required (model)" },
       { status: 400 },
     );
   }
-
 
   if (!isAuthenticated) {
     return Response.json(
@@ -43,7 +43,6 @@ export async function POST(req: Request) {
     );
   }
 
-  
   if (PREMIUM_MODELS.includes(apiSettings.model) && !isPaidTier) {
     return Response.json(
       {
@@ -55,12 +54,50 @@ export async function POST(req: Request) {
     );
   }
 
+  if (knowledgeContext) {
+    if (!isPaidTier) {
+      return Response.json(
+        {
+          error:
+            "Chess Knowledge Cards are a paid feature. " +
+            "Please upgrade your plan at /pricing.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const contextBytes = new TextEncoder().encode(knowledgeContext).length;
+    if (contextBytes > MAX_KNOWLEDGE_BYTES) {
+      return Response.json(
+        { error: "Knowledge context exceeds the maximum allowed size." },
+        { status: 400 },
+      );
+    }
+  }
+  // ───────────────────────────────────────────────────────────────────────
+
   const requestContext = new RequestContext();
   requestContext.set("model", apiSettings.model);
 
+  // Prepend knowledge as a system message when present
+  const augmentedMessages = knowledgeContext
+    ? [
+        {
+          role: "system" as const,
+          content: [
+            "## Chess Knowledge Cards",
+            "The user has provided the following reference material. Use it to inform your responses where relevant.",
+            "",
+            knowledgeContext,
+          ].join("\n"),
+        },
+        ...messages,
+      ]
+    : messages;
+
   const agent = mastra.getAgent("chessAgine");
 
-  const stream = await agent.stream(messages, {
+  const stream = await agent.stream(augmentedMessages, {
     requestContext,
   });
 
