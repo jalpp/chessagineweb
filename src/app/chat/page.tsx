@@ -28,6 +28,7 @@ import {
   Star as StarIcon,
 } from "@mui/icons-material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
+import { DisplayChessboardToolUI } from "@/componets/uitools/DisplayChessBoard";
 
 export default function ChatPage() {
   const { isSignedIn, has } = useAuth();
@@ -41,7 +42,8 @@ export default function ChatPage() {
       api: "/api/chat",
       body: async () => {
         const model =
-          localStorage.getItem("selected-model") || "openai/gpt-oss-20b";
+          localStorage.getItem("selected-model") ||
+          "arcee-ai/trinity-large-preview:free";
         return {
           apiSettings: { model },
         };
@@ -70,9 +72,12 @@ export default function ChatPage() {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <DisplayChessboardToolUI />
+
       <TooltipProvider>
         <div style={vars} className="h-screen flex flex-col">
 
+          {/* Top bar: upsell (free users) + settings icon */}
           <Box
             display="flex"
             alignItems="center"
@@ -104,10 +109,9 @@ export default function ChatPage() {
                     display: { xs: "none", sm: "block" },
                   }}
                 >
-                  You&apos;re on the free plan. Upgrade to unlock base premium models
+                  You&apos;re on the free plan. Upgrade to unlock premium models
                   like Gemini Pro and Claude Sonnet, for smarter chess queries.
                 </Typography>
-                {/* Short version for mobile */}
                 <Typography
                   variant="caption"
                   noWrap
@@ -143,10 +147,12 @@ export default function ChatPage() {
             </Tooltip>
           </Box>
 
+          {/* Chat thread */}
           <Box flex={1} overflow="hidden">
             <Thread />
           </Box>
 
+          {/* Model settings modal */}
           <Dialog
             open={modelDialogOpen}
             onClose={() => setModelDialogOpen(false)}
