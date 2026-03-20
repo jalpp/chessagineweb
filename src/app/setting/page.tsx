@@ -16,8 +16,7 @@ import { useAuth } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
 
 const SettingsPage = () => {
-  const { isSignedIn, has } = useAuth();
-  const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
+  const { isSignedIn} = useAuth();
 
   return (
     <Box sx={{ minHeight: "100vh", py: 4 }}>
