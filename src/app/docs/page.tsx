@@ -9,12 +9,15 @@ import {
   Tabs,
   CssBaseline,
 } from "@mui/material";
+import { PricingTable } from "@clerk/nextjs";
 
 import { TabPanel } from "@/componets/tabs/tab";
 import { renderFAQ } from "@/componets/docs/RenderFaq";
 import { renderHeader } from "@/componets/docs/RenderChessAgineHeader";
 import { renderFeatures } from "@/componets/docs/RenderFeatures";
 import MCPdocs from "@/componets/docs/RenderMCPDocs";
+
+const TABS = ["Features", "FAQ", "Pricing", "ChessAgine MCP"];
 
 const ChessAgineDocumentation = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -29,6 +32,7 @@ const ChessAgineDocumentation = () => {
       <Container maxWidth="lg">
         <Box sx={{ py: 4 }}>
           {renderHeader()}
+
           <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
             <Tabs
               value={selectedTab}
@@ -38,9 +42,9 @@ const ChessAgineDocumentation = () => {
               variant="scrollable"
               scrollButtons="auto"
             >
-              <Tab label="Features" />
-              <Tab label="FAQ" />
-              <Tab label="ChessAgine MCP" />
+              {TABS.map((label) => (
+                <Tab key={label} label={label} />
+              ))}
             </Tabs>
           </Box>
 
@@ -53,16 +57,34 @@ const ChessAgineDocumentation = () => {
           </TabPanel>
 
           <TabPanel value={selectedTab} index={2}>
+            <Box mb={3}>
+              <Typography variant="h4" fontWeight={700} gutterBottom>
+                Pricing
+              </Typography>
+            </Box>
+            
+            <PricingTable newSubscriptionRedirectUrl="/chat" />
+
+            <Box textAlign="center" mt={3}>
+              <Typography variant="caption" color="text.secondary">
+                Free models run on community-donated resources. Premium models
+                run on dedicated infrastructure for faster, more reliable
+                responses.
+              </Typography>
+            </Box>
+          </TabPanel>
+
+          {/* MCP */}
+          <TabPanel value={selectedTab} index={3}>
             <MCPdocs />
           </TabPanel>
 
           <Paper sx={{ p: 3, mt: 4 }}>
-            <Typography variant="h6" gutterBottom color="primary.text">
+            <Typography variant="h6" gutterBottom>
               Need Help?
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              If you encounter any issues during setup, please create an issue
-              on Github
+              If you encounter any issues, please create an issue on GitHub.
             </Typography>
           </Paper>
         </Box>

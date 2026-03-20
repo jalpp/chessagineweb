@@ -14,12 +14,6 @@ export interface TabPanelProps {
   value: number;
 }
 
-export interface FAQItem {
-  question: string;
-  answer: string;
-  category: 'general' | 'technical' | 'cost' | 'privacy';
-}
-
 interface LanguageOption {
   code: string;
   name: string;
@@ -89,110 +83,107 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   },
 };
 
+export interface FAQItem {
+  question: string;
+  answer: string;
+  category: "general" | "technical" | "cost" | "privacy";
+}
+
 export const FAQ_ITEMS: FAQItem[] = [
+  // ── General ──────────────────────────────────────────────────────────────
   {
     question: "What is ChessAgine and how is it different from a chess coach?",
-    answer: "ChessAgine is your AI chess buddy, not a formal coach. Think of it as a knowledgeable friend who's always available to chat about chess, analyze positions, explain concepts, and help you explore the game. Unlike a structured coaching program, ChessAgine adapts to your curiosity and provides conversational, friendly guidance whenever you need it.",
-    category: "general"
+    answer:
+      "ChessAgine is your AI chess buddy, not a formal coach. Think of it as a knowledgeable friend who's always available to chat about chess, analyze positions, explain concepts, and help you explore the game. Unlike a structured coaching program, ChessAgine adapts to your curiosity and provides conversational, friendly guidance whenever you need it.",
+    category: "general",
   },
   {
     question: "Is ChessAgine suitable for beginners?",
-    answer: "Absolutely! ChessAgine is designed to be helpful for players of all levels. It can explain basic rules, teach fundamental concepts, suggest beginner-friendly openings, and provide encouragement. The AI adapts its explanations to your level and asks clarifying questions to better understand what you want to learn.",
-    category: "general"
-  },
-  {
-    question: "Can I use ChessAgine completely free?",
-    answer: "Yes! ChessAgine offers multiple free options: AgineCloud provides instant access to free community-hosted models including Gemini 3 Pro preview and other open-source models. Just select AgineCloud in settings and start analyzing. Alternatively, Ollama offers both cloud models (instant, no setup) and local models (offline, maximum privacy). Both are completely free forever!",
-    category: "cost"
-  },
-  {
-    question: "What is AgineCloud and how do I use it?",
-    answer: "AgineCloud is a ChessAgine-hosted, community-driven cloud provider that's free to use. It runs affordable open-source models and some premium models like Gemini 3 Pro that run on community donations, so everyone shares the resources. To use it: simply select AgineCloud in the settings tab and start using it immediately - no API keys or setup required. Since it's in beta, you might encounter rate limits that reset every 24 hours.",
-    category: "technical"
-  },
-  {
-    question: "What's the difference between AgineCloud, Ollama, and paid API models?",
-    answer: "AgineCloud: Free cloud-based provider hosted by ChessAgine. Select it in settings and start immediately - perfect for instant access. Ollama: Free models you run on your own device. Requires installation and setup following instructions, but gives you offline access and complete privacy. Paid APIs (OpenAI, Anthropic, Google): You insert your own API key from these providers and pay only for what you use. Generally faster with more advanced models, but costs money based on usage.",
-    category: "technical"
-  },
-  {
-    question: "What's the difference between Ollama Cloud and Ollama Local models?",
-    answer: "Ollama Cloud models (with '-cloud' suffix) run on Ollama's free servers - you just connect ChessAgine and start analyzing, no setup required. Local models run on your own computer after installing Ollama from ollama.com, giving you offline access and maximum privacy but requiring adequate RAM. Both are completely free! Cloud models are easier to start with, while local models work without internet and keep everything private.",
-    category: "technical"
+    answer:
+      "Absolutely! ChessAgine is designed to be helpful for players of all levels. It can explain basic rules, teach fundamental concepts, suggest beginner-friendly openings, and provide encouragement. The AI adapts its explanations to your level and asks clarifying questions to better understand what you want to learn.",
+    category: "general",
   },
   {
     question: "Can ChessAgine help improve my chess rating?",
-    answer: "While ChessAgine isn't a replacement for structured training or human coaching, it can definitely support your improvement journey. It can help you understand your games, explain tactical patterns, suggest areas to focus on, and provide practice scenarios. Think of it as a study companion that's available 24/7.",
-    category: "general"
-  },
-  {
-    question: "Can ChessAgine make mistakes or give incorrect analysis?",
-    answer: "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information - this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. For critical analysis, consider using higher-tier models like o1, GPT-5, Claude Opus-4.5, or Gemini 3 Pro. Free models may have more limitations than premium ones.",
-    category: "technical"
-  },
-  {
-    question: "Is ChessAgine trained on millions of chess games?",
-    answer: "ChessAgine itself is not specially trained - it uses base AI models' existing training. ChessAgine is FOSS (free and open-source software) that applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, but ChessAgine enhances their chess capabilities through prompt engineering and integration techniques. You can even fork ChessAgine and run it locally if you want!",
-    category: "technical"
-  },
-  {
-    question: "How can I get more accurate results from ChessAgine?",
-    answer: "To improve accuracy: 1) Use higher-tier models (like GPT-5, Claude Opus-4.5, Gemini 3 Pro, or o1) which generally provide better reasoning, 2) Be specific in your questions, 3) Ask follow-up questions if something seems unclear, 4) Cross-reference important analysis with multiple sources. For free options, larger models typically perform better - AgineCloud's Gemini 3 Pro or Ollama's larger models (like gpt-oss:120b) give better results.",
-    category: "technical"
-  },
-  {
-    question: "How accurate is ChessAgine's chess analysis?",
-    answer: "ChessAgine provides good general chess understanding and can explain concepts well, but it's not a chess engine like Stockfish. For precise move evaluation, it integrates with Stockfish. For learning and understanding concepts, ChessAgine excels at providing clear, conversational explanations. However, like all AI, it can make errors, so use it as a learning tool rather than an absolute authority.",
-    category: "technical"
-  },
-  {
-    question: "Do different AI models give different quality results?",
-    answer: "Absolutely! More advanced models (like o1, GPT-5, Claude Opus-4.5, Gemini 3 Pro) generally provide more accurate analysis, better strategic understanding, and fewer mistakes compared to budget or free models. Free models from AgineCloud and Ollama are great for learning and casual analysis. If you need reliable analysis for important games, investing in a premium model can make a significant difference.",
-    category: "technical"
-  },
-  {
-    question: "Should I use free models or paid API models?",
-    answer: "It depends on your needs! Free options (AgineCloud/Ollama) are perfect for: learning basics, casual analysis, unlimited practice without cost concerns, and offline use (Ollama local). Paid APIs are better for: faster responses, more sophisticated analysis, heavy usage without rate limits, and professional-level chess study. Many users start with free options and upgrade to paid models for important analysis.",
-    category: "cost"
-  },
-  {
-    question: "How much does it typically cost to use ChessAgine with paid APIs?",
-    answer: "With AgineCloud and Ollama: $0 - completely free! With paid APIs: Costs vary by model and usage. Budget models like GPT-5-nano ($0.05/$0.40 per million tokens) or Gemini Flash-Lite ($0.10/$0.40): expect $0.50-$2 per month for casual use. Mid-tier models like GPT-5 or Claude Sonnet: $2-$10 monthly for regular use. Premium models: $10-$30+ for heavy usage. The cost analysis tab shows detailed breakdowns for different patterns.",
-    category: "cost"
-  },
-  {
-    question: "Where do I set up payment information to use ChessAgine?",
-    answer: "For AgineCloud/Ollama models: No payment needed - they're completely free. For paid APIs: You set up payment directly with the AI provider (OpenAI, Anthropic, or Google), not within ChessAgine. Visit your chosen provider's website, create an account, add payment methods, generate an API key, then insert that key into ChessAgine settings.",
-    category: "cost"
-  },
-  {
-    question: "Is my chess data and conversation history private?",
-    answer: "Privacy depends on your provider: AgineCloud: Conversations are processed through community-hosted servers. Ollama Local: Maximum privacy - everything runs on your computer, nothing leaves your device. Ollama Cloud: Processed on Ollama's servers. Paid APIs: ChessAgine doesn't store conversations - they go directly between your browser and the provider. Check each provider's privacy policy for details on data handling.",
-    category: "privacy"
-  },
-  {
-    question: "Can I use multiple AI providers with ChessAgine?",
-    answer: "Yes! You can set up AgineCloud for instant free access, install Ollama for local free models, AND add API keys for OpenAI, Anthropic, and Google, then switch between them. This lets you use different models for different purposes - perhaps AgineCloud for quick questions, Ollama for offline study, and a powerful paid model for deep analysis. Mix and match based on your needs!",
-    category: "technical"
-  },
-  {
-    question: "What happens if I run out of API credits for paid models?",
-    answer: "If your API credits are exhausted, you'll need to add more funds to your provider account. ChessAgine will show you the error message from the provider. You can add credits directly through their platform. Alternatively, switch to AgineCloud or Ollama models which never run out since they're free.",
-    category: "cost"
-  },
-  {
-    question: "Can ChessAgine analyze games from chess.com or Lichess?",
-    answer: "Yes! You can paste PGN games from any platform, and ChessAgine can analyze them. With the Lichess integration, you can also explore opening databases and get additional context for your games.",
-    category: "technical"
-  },
-  {
-    question: "What computer specs do I need to run Ollama local models?",
-    answer: "It varies by model size: qwen3:4b needs ~4GB RAM, qwen3:8b needs ~8GB RAM, gpt-oss:20b needs ~20GB RAM, and larger models like gpt-oss:120b need 64GB+ RAM. Most modern computers can run the smaller models (4b-8b) just fine. Start with a smaller model and upgrade if you have the resources and want better analysis quality. If you don't want to worry about local setup, use AgineCloud or Ollama Cloud models instead!",
-    category: "technical"
+    answer:
+      "While ChessAgine isn't a replacement for structured training or human coaching, it can definitely support your improvement journey. It can help you understand your games, explain tactical patterns, suggest areas to focus on, and provide practice scenarios. Think of it as a study companion that's available 24/7.",
+    category: "general",
   },
   {
     question: "Is ChessAgine open source? Can I run it myself?",
-    answer: "Yes! ChessAgine is FOSS (free and open-source software). You can fork the project on GitHub and run it locally if you want complete control over your setup. This gives you full customization options and the ability to modify it for your specific needs. Most users prefer the hosted version at chessagine.com for convenience, but the option to self-host is always available.",
-    category: "technical"
-  }
+    answer:
+      "Yes! ChessAgine is FOSS (free and open-source software). You can fork the project on GitHub and run it locally if you want complete control over your setup. Most users prefer the hosted version at chessagine.com for convenience, but the option to self-host is always available.",
+    category: "general",
+  },
+
+  // ── Technical ─────────────────────────────────────────────────────────────
+  {
+    question: "What is AgineCloud and how do I use it?",
+    answer:
+      "AgineCloud is ChessAgine's built-in cloud provider. Free accounts get access to three community-hosted open-source models instantly — no API keys or setup required. Paid tier users unlock four additional premium models including Google Gemini Pro and Claude Sonnet, running on dedicated resources for faster, more reliable responses.",
+    category: "technical",
+  },
+  {
+    question: "Can ChessAgine make mistakes or give incorrect analysis?",
+    answer:
+      "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information — this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. Premium models on the paid tier generally make fewer errors than free models.",
+    category: "technical",
+  },
+  {
+    question: "Is ChessAgine trained on millions of chess games?",
+    answer:
+      "ChessAgine itself is not specially trained, it uses base AI models' existing training. ChessAgine is FOSS that applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, and ChessAgine enhances their capabilities through prompt engineering and tool integrations.",
+    category: "technical",
+  },
+  {
+    question: "How accurate is ChessAgine's chess analysis?",
+    answer:
+      "ChessAgine provides good general chess understanding and conversational explanations. For precise move evaluation it integrates with Stockfish. Premium models on the paid tier (Gemini Pro, Claude Sonnet) deliver noticeably better strategic reasoning and fewer errors than the free community models.",
+    category: "technical",
+  },
+  {
+    question: "Do different AI models give different quality results?",
+    answer:
+      "Absolutely. Premium models (Gemini Pro, Claude Sonnet, Qwen, Llama) provide more accurate analysis, better strategic understanding, more tool calls per session, and a larger chess context window. Free community models are great for learning and casual analysis. If you need reliable analysis for important games, upgrading to the paid tier makes a significant difference.",
+    category: "technical",
+  },
+  {
+    question: "Can ChessAgine analyze games from chess.com or Lichess?",
+    answer:
+      "Yes! You can paste PGN games from any platform and ChessAgine can analyze them. With the Lichess integration you can also explore opening databases and get additional context for your games.",
+    category: "technical",
+  },
+
+  {
+    question: "Can I use ChessAgine completely free?",
+    answer:
+      "Yes! All chess tools — position analysis, game review, puzzles, play bot, and opening explorer — are completely free. Agine Chat is also free with access to three community-hosted AI models. The only thing behind the paid tier is access to stronger premium AI models with more tool calls and a deeper chess context window.",
+    category: "cost",
+  },
+  {
+    question: "What is included in the free plan vs. the paid tier?",
+    answer:
+      "Free plan: all chess tools, Agine Chat, three community AI models (arcee-ai/trinity-large-preview, z-ai/glm-4.5-air, stepfun/step-3.5-flash), basic chess context window. Paid tier: everything in free, plus four premium models (google/gemini-3.1-pro-preview, anthropic/claude-sonnet-4.6, qwen/qwen3.5-9b, meta-llama/llama-3.1-8b-instruct), more tool calls per session, extended chess context window, dedicated resources, and priority response speed.",
+    category: "cost",
+  },
+  {
+    question: "How do I upgrade to the paid tier?",
+    answer:
+      "Visit the Pricing page and click 'Upgrade'. You'll be taken through a secure checkout powered by Clerk Billing. Once subscribed, premium models become available immediately in your model settings.",
+    category: "cost",
+  },
+  {
+    question: "Can I cancel my paid tier subscription?",
+    answer:
+      "Yes, you can cancel at any time from your account billing settings. You'll retain paid tier access until the end of your current billing period, then revert to the free plan.",
+    category: "cost",
+  },
+
+
+  {
+    question: "Is my chess data and conversation history private?",
+    answer:
+      "Conversations are processed through AgineCloud's servers to generate AI responses. ChessAgine does not store your conversation history beyond the active session. For complete privacy, you can self-host ChessAgine — see the GitHub repo for instructions.",
+    category: "privacy",
+  },
 ];

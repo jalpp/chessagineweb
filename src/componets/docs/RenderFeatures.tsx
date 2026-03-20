@@ -11,7 +11,6 @@ import {
   ListItemText,
   Chip,
   Divider,
-  Paper,
 } from "@mui/material";
 import {
   Calculate as CalculateIcon,
@@ -26,8 +25,6 @@ import {
   Timeline as TimelineIcon,
   CheckCircle as CheckCircleIcon,
   AutoAwesome as AutoAwesomeIcon,
-  Speed as SpeedIcon,
-  EmojiEvents as TrophyIcon,
 } from "@mui/icons-material";
 
 interface FeatureDetail {
@@ -40,9 +37,27 @@ interface FeatureDetail {
 
 const FEATURES: FeatureDetail[] = [
   {
+    name: "Agine Chat",
+    icon: <ChatIcon />,
+    description:
+      "Interactive AI-powered chess companion for learning and analysis. Free models available on all accounts; premium models on paid tier.",
+    capabilities: [
+      "Stockfish engine integration for precise move evaluation",
+      "Position-specific analysis from the board to brainstorm ideas",
+      "PGN game review via chat",
+      "Free tier: 3 community models",
+      "Paid tier: 4 premium models + more tool calls + extended chess context",
+    ],
+    highlights: [
+      "No setup — start chatting instantly",
+      "Paid tier unlocks Gemini Pro, Claude Sonnet, Qwen & Llama",
+    ],
+  },
+  {
     name: "Position Theme Analysis",
     icon: <CalculateIcon />,
-    description: "Mathematical estimation of chess position themes using advanced algorithms",
+    description:
+      "Mathematical estimation of chess position themes using advanced algorithms.",
     capabilities: [
       "Material evaluation and balance",
       "Mobility analysis for all pieces",
@@ -50,92 +65,93 @@ const FEATURES: FeatureDetail[] = [
       "Positional advantage assessment",
       "King safety evaluation",
       "Tactical pattern detection",
-      "Dark square control measurement",
-      "Light square control measurement",
+      "Dark & light square control measurement",
       "Tempo advantage tracking",
     ],
     highlights: [
-      "Guess the Eval: Test your evaluation skills by guessing Stockfish's eval",
-      "Theme Scores: Compare your estimation with calculated theme scores",
+      "Guess the Eval: test your evaluation skills vs. Stockfish",
+      "Theme Scores: compare your estimate with calculated theme scores",
     ],
   },
   {
     name: "Stockfish Analysis",
     icon: <SettingsIcon />,
-    description: "Comprehensive chess engine analysis with multiple Stockfish versions",
+    description:
+      "Comprehensive chess engine analysis with multiple Stockfish versions, running entirely in the browser.",
     capabilities: [
-      "Multiple engine versions: Stockfish 17.1, 17, 16.1, and 11",
-      "Browser-based engine execution (no server needed)",
-      "Adjustable engine depth (12-30 ply)",
-      "Multi-PV analysis (1-5 lines)",
+      "Stockfish 17.1, 17, 16.1, and 11 support",
+      "Browser-based execution — no server required",
+      "Adjustable depth (12–30 ply)",
+      "Multi-PV analysis (1–5 lines)",
       "Detailed move variations",
       "Real-time evaluation updates",
-      "Tactical analysis and best move suggestions",
     ],
     highlights: [
-      "Run powerful chess engines directly in your browser",
-      "Customize analysis depth and number of variations",
+      "Runs directly in your browser — no installs",
+      "Customize depth and number of variations",
     ],
   },
   {
     name: "Variation Tree Viewer",
     icon: <TreeIcon />,
-    description: "Visualize and explore chess variations as an interactive tree structure",
+    description:
+      "Visualize and explore chess variations as an interactive tree structure.",
     capabilities: [
       "Configurable tree depth and breadth",
       "ChessDB integration for move data",
-      "Ease metric calculation for positions",
+      "Ease metric calculation per position",
       "Visual representation of move paths",
       "Position difficulty assessment",
       "Branch exploration and navigation",
     ],
     highlights: [
-      "Ease Metric: Shows how easy or hard each position is to play",
-      "Interactive tree navigation through variations",
+      "Ease Metric: shows how easy or hard each position is to play",
+      "Interactive navigation through variations",
     ],
   },
   {
     name: "Neural Network Analysis",
     icon: <PsychologyIcon />,
-    description: "Advanced AI analysis using multiple neural network models",
+    description:
+      "Advanced AI analysis using multiple neural network models — runs locally in your browser.",
     capabilities: [
-      "Maia2 (1100-1900 rating range): Human-like play trained on actual player games",
-      "Leela T1-256: Self-play trained neural network for objective evaluation",
-      "Elite Maia: Specialized network trained on 2500+ rated Lichess master games",
+      "Maia2 (1100–1900): human-like play trained on real player games",
+      "Leela T1-256: self-play trained for objective evaluation",
+      "Elite Maia: trained on 2500+ rated Lichess master games",
       "Policy network visualization (move probabilities)",
       "Value network evaluation (position assessment)",
-      "Download and run networks locally in browser",
-      "No external API calls required",
+      "Download and run networks locally — no API calls",
     ],
     highlights: [
       "Choose the right network for your skill level",
-      "See how human players vs. engines evaluate positions differently",
+      "See how humans vs. engines evaluate positions differently",
     ],
   },
   {
     name: "Opening Explorer",
     icon: <SearchIcon />,
-    description: "Comprehensive opening database with master and player game statistics",
+    description:
+      "Comprehensive opening database with master and player game statistics.",
     capabilities: [
       "Lichess master database integration",
       "Lichess player database statistics",
       "Move occurrence frequency",
-      "Win/Draw/Loss percentages for each move",
-      "Number of games reaching each position",
-      "Top master games featuring the position",
+      "Win/Draw/Loss percentages per move",
+      "Top master games from each position",
       "Opening name and ECO code identification",
     ],
     highlights: [
       "Compare how masters vs. regular players handle positions",
-      "Study actual games from the position",
+      "Study actual games from any position",
     ],
   },
   {
     name: "Chess Database (ChessDB)",
     icon: <StorageIcon />,
-    description: "Query extensive chess database for position evaluations and move rankings",
+    description:
+      "Query an extensive chess database for position evaluations and move rankings.",
     capabilities: [
-      "Position evaluation (centipawn score)",
+      "Position evaluation in centipawns",
       "Move win percentage calculations",
       "Move ranking and popularity",
       "ChessDB expert notes and annotations",
@@ -148,44 +164,34 @@ const FEATURES: FeatureDetail[] = [
     ],
   },
   {
-    name: "Agine Chat",
-    icon: <ChatIcon />,
-    description: "Interactive AI-powered chess companion for learning and analysis",
-    capabilities: [
-      "Access to Chess engines like Stockfish",
-      "Position-specific analysis",
-      "Game review related PGN input analysis",
-    ],
-  },
-  {
     name: "Game Analysis",
     icon: <TimelineIcon />,
-    description: "Comprehensive game import and analysis with multiple data sources",
+    description:
+      "Comprehensive game import and analysis with multiple data sources and detailed move classification.",
     capabilities: [
-      "Lichess study import",
-      "Lichess game URL import",
+      "Lichess study & game URL import",
       "Direct PGN input (copy/paste)",
       "Search and import Lichess user games",
-      "PGN file upload (1 to 5000 games)",
-      "Bulk game analysis support",
+      "PGN file upload (1–5000 games)",
       "Automatic game review with move classification",
       "Evaluation graph with move annotations",
+      "Neural Network Move Probability (0–1 scale)",
+      "Improbable Move Detection with adjustable threshold",
+      "Candidate Move Analysis: ChessDB Win% & Notes",
     ],
     highlights: [
       "Move Classification: Blunder, Mistake, Dubious, Good, Brilliant, Best, Book",
-      "Neural Network Move Probability: See how likely each move was (0-1 scale)",
-      "Improbable Move Detection: Graph showing probability changes with adjustable threshold",
-      "Candidate Move Analysis: Compare human move probability vs. objective quality (ChessDB Win% & Notes)",
-      "Move Categories: Expected Strong, Common Mistake, Hidden Gem, Rare Blunder (5% threshold)",
+      "Move Categories: Expected Strong, Common Mistake, Hidden Gem, Rare Blunder",
     ],
   },
   {
     name: "Play Bot",
     icon: <GameIcon />,
-    description: "Practice against neural networks and Stockfish at various difficulty levels",
+    description:
+      "Practice against neural networks and Stockfish at various difficulty levels.",
     capabilities: [
-      "Play against multiple neural networks",
-      "Stockfish opponents at different strengths",
+      "Multiple neural network opponents",
+      "Stockfish at adjustable strength",
       "Custom position setup",
       "Time control configuration",
       "Rating-based difficulty levels",
@@ -201,74 +207,81 @@ const FEATURES: FeatureDetail[] = [
   {
     name: "Puzzle Training",
     icon: <PuzzleIcon />,
-    description: "Tactical puzzle practice with comprehensive Lichess puzzle database",
+    description:
+      "Tactical puzzle practice with the full Lichess puzzle database.",
     capabilities: [
-      "Filter by puzzle themes",
+      "Filter by puzzle themes (forks, pins, skewers, etc.)",
       "Rating-based puzzle selection",
-      "Start at 1500 rating and progress",
       "Lichess puzzle database integration",
-      "Theme-based training (forks, pins, etc.)",
       "Rating-adjusted difficulty",
+      "Track puzzle rating progress",
     ],
     highlights: [
-      "Guess the Eval Mode: Estimate Stockfish evaluation and theme scores for each puzzle",
-      "Track your puzzle rating progress",
+      "Guess the Eval Mode: estimate Stockfish eval and theme scores per puzzle",
+      "Progress tracking across sessions",
     ],
   },
 ];
 
 export const renderFeatures = () => (
   <Box>
-    <Typography variant="h4" gutterBottom color="primary.text" sx={{ mb: 3 }}>
-      ChessAgine Features Overview
+    <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
+      ChessAgine Features
     </Typography>
-
 
     <Grid container spacing={3}>
       {FEATURES.map((feature, index) => (
-        <Grid sx={{xs: 12}} key={index}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-                <Box sx={{ color: "primary.main" }}>{feature.icon}</Box>
-                <Typography variant="h5" color="primary.text">
+        <Grid
+          key={index}
+          size={{ xs: 12, md: 6 }}
+          sx={{ display: "flex" }}
+        >
+          <Card variant="outlined" sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
+            <CardContent sx={{ flex: 1 }}>
+              {/* Header */}
+              <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
+                <Box sx={{ color: "primary.main", display: "flex" }}>
+                  {feature.icon}
+                </Box>
+                <Typography variant="h6" fontWeight={600}>
                   {feature.name}
                 </Typography>
               </Box>
 
-              <Typography variant="body1" color="text.secondary" paragraph>
+              <Typography variant="body2" color="text.secondary" mb={2}>
                 {feature.description}
               </Typography>
 
+              {/* Highlights */}
               {feature.highlights && feature.highlights.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {feature.highlights.map((highlight, idx) => (
-                      <Chip
-                        key={idx}
-                        label={highlight}
-                        size="small"
-                        color="success"
-                        icon={<AutoAwesomeIcon />}
-                      />
-                    ))}
-                  </Box>
+                <Box display="flex" flexWrap="wrap" gap={0.75} mb={2}>
+                  {feature.highlights.map((h, i) => (
+                    <Chip
+                      key={i}
+                      label={h}
+                      size="small"
+                      color="success"
+                      icon={<AutoAwesomeIcon />}
+                      sx={{ fontSize: "0.7rem", height: 24 }}
+                    />
+                  ))}
                 </Box>
               )}
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ mb: 2 }} />
 
-              <Typography variant="subtitle2" gutterBottom color="primary.text">
-                Key Capabilities:
+              {/* Capabilities */}
+              <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                Capabilities
               </Typography>
-              <List dense>
-                {feature.capabilities.map((capability, idx) => (
-                  <ListItem key={idx} sx={{ py: 0.5 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <CheckCircleIcon sx={{ fontSize: 18 }} color="success" />
+              <List dense disablePadding>
+                {feature.capabilities.map((c, i) => (
+                  <ListItem key={i} disableGutters sx={{ py: 0.25 }}>
+                    <ListItemIcon sx={{ minWidth: 28 }}>
+                      <CheckCircleIcon sx={{ fontSize: 16 }} color="success" />
                     </ListItemIcon>
                     <ListItemText
-                      primary={capability}
+                      primary={c}
                       primaryTypographyProps={{
                         variant: "body2",
                         color: "text.secondary",
