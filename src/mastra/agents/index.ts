@@ -5,34 +5,37 @@ import { agineSystemPrompt } from "./prompt";
 import { AgineCloudModel } from "./types";
 import { getAgineMcpClient } from "../mcp/agineClient";
 import { displayChessboardTool, loadGameTool } from "./tools";
+import { resolveRouting } from "./router";
+
+
+function createAgentInstruction(requestContext: RequestContext) {
+  const lang = (requestContext.get("lang") as string) || "English";
+  return agineSystemPrompt.replace("[ENGLISH]", lang);
+}
 
 function createAgineCloudModel(requestContext: RequestContext) {
- 
-  const rawModel = requestContext.get("model") as string;
-  const modelName = rawModel.replace(/^"|"$/g, "");
+  const isPaidTier = (requestContext.get("isPaidTier") as boolean) ?? false;
+  const userId     = (requestContext.get("userId") as string) ?? null;
+  const messages   = (requestContext.get("messages") as Array<{ role: string; content: any }>) ?? [];
+
+  const { resolvedModel, extraBody, budgetTier, complexity } = resolveRouting({
+    requestContext,
+    isPaidTier,
+    userId,
+    messages,
+  });
+
+  console.log(
+    `[router] user=${userId ?? "anon"} tier=${budgetTier} complexity=${complexity} model=${resolvedModel}`
+  );
 
   const apiKey = process.env.AGINE_KEY;
   const agineCloudRouter = createOpenRouter({ apiKey });
 
-  const premiumModels = [
-    "google/gemini-3.1-pro-preview",
-    "anthropic/claude-sonnet-4.6",
-    "qwen/qwen3.5-9b",
-    "meta-llama/llama-3.1-8b-instruct"
-  ];
 
-  const resolvedModel = premiumModels.includes(modelName)
-    ? modelName
-    : `${modelName}:free`;
-
-  return agineCloudRouter(resolvedModel as AgineCloudModel);
-}
-
-function createAgentInstruction(requestContext: RequestContext) {
-  const lang = (requestContext.get("lang") as string) || "English";
-  const replaceLangKey = "[ENGLISH]";
-
-  return agineSystemPrompt.replace(replaceLangKey, lang);
+  return agineCloudRouter(resolvedModel as AgineCloudModel, {
+    extraBody,
+  });
 }
 
 export const chessAgine = new Agent({
@@ -45,7 +48,7 @@ export const chessAgine = new Agent({
     return {
       ...mcpTools,
       display_chessboard_for_fen: displayChessboardTool,
-      load_chess_game: loadGameTool
+      load_chess_game: loadGameTool,
     };
   },
 });
