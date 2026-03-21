@@ -4,9 +4,8 @@ import { mastra } from "@/mastra";
 import { RequestContext } from "@mastra/core/request-context";
 import { auth } from "@clerk/nextjs/server";
 
-export const maxDuration = 30;
+export const maxDuration = 200;
 
-/** Max allowed knowledge context size on the server (extra safety net: 160 KB = 20 cards × 8 KB) */
 const MAX_KNOWLEDGE_BYTES = 160 * 1024;
 
 const PREMIUM_MODELS = [
