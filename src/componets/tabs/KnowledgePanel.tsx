@@ -1,4 +1,3 @@
-// components/tabs/KnowledgePanel.tsx
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
