@@ -72,6 +72,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
       'stepfun/step-3.5-flash',
       'z-ai/glm-4.5-air',
       'qwen/qwen3.5-9b',
+      'nvidia/nemotron-3-super-120b-a12b',
       'meta-llama/llama-3.1-8b-instruct',
       'google/gemini-3.1-pro-preview',
       'anthropic/claude-sonnet-4.6'
@@ -90,7 +91,6 @@ export interface FAQItem {
 }
 
 export const FAQ_ITEMS: FAQItem[] = [
-  // ── General ──────────────────────────────────────────────────────────────
   {
     question: "What is ChessAgine and how is it different from a chess coach?",
     answer:
@@ -116,13 +116,18 @@ export const FAQ_ITEMS: FAQItem[] = [
     category: "general",
   },
 
-  // ── Technical ─────────────────────────────────────────────────────────────
   {
     question: "What is AgineCloud and how do I use it?",
     answer:
       "AgineCloud is ChessAgine's built-in cloud provider. Free accounts get access to three community-hosted open-source models instantly — no API keys or setup required. Paid tier users unlock four additional premium models including Google Gemini Pro and Claude Sonnet, running on dedicated resources for faster, more reliable responses.",
     category: "technical",
   },
+  {
+    question: "What are Knowledge Cards?",
+    answer:
+      "Knowledge Cards are a premium feature that let you teach ChessAgine about your own chess knowledge. Create custom cards to share your favorite openings, tactical patterns, endgame techniques, or personal chess insights. ChessAgine will reference your Knowledge Cards during analysis and conversations, making it a truly personalized chess assistant that understands your unique playing style and preferences.",
+    category: "cost",
+    },
   {
     question: "Can ChessAgine make mistakes or give incorrect analysis?",
     answer:

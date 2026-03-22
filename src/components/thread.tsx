@@ -96,7 +96,7 @@ const ThreadWelcome: FC = () => {
           </p>
             <div className="aui-thread-welcome-message-disclaimer mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900 text-xs dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
             <p className="font-medium">⚠️ Disclaimer</p>
-            <p className="mt-1">ChessAgine is a chess buddy AI, not a formal coach or an authority. It can make mistakes. Please check every message and treat conversations as casual chess sessions.</p>
+            <p className="mt-1">ChessAgine is a chess buddy AI, not a formal coach or an authority. It can make mistakes. Please check every message and please challenge and interact with ChessAgine as you would with a strong training partner or peer..</p>
             </div>
         </div>
       </div>
