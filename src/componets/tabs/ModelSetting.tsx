@@ -30,6 +30,7 @@ export type AgineCloudModel =
   | "qwen/qwen3.5-9b"
   | "meta-llama/llama-3.1-8b-instruct"
   | "google/gemini-3.1-pro-preview"
+  | "nvidia/nemotron-3-super-120b-a12b"
   | "anthropic/claude-sonnet-4.6";
 
 export type ModelOnlySettings = Pick<ApiSettings, "model">;
@@ -40,6 +41,7 @@ export const PREMIUM_MODELS: AgineCloudModel[] = [
   "google/gemini-3.1-pro-preview",
   "anthropic/claude-sonnet-4.6",
   "qwen/qwen3.5-9b",
+  "nvidia/nemotron-3-super-120b-a12b",
   "meta-llama/llama-3.1-8b-instruct",
 ];
 
