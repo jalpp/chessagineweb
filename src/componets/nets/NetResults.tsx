@@ -41,18 +41,20 @@ import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMe
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useEaseMetricVariation } from "@/hooks/useEmVariation";
 import { Chess } from "chess.js";
-import { MAIA_MODELS, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
+import { MAIA_MODELS, MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
 
 export interface MaiaResultsProps {
   evaluations: {
     maia2?: { [key: string]: MaiaEvaluation } | null;
     bigLeela?: MaiaEvaluation | null;
     elitemaia?: MaiaEvaluation | null;
+    maia3?: { [key: string]: MaiaEvaluation } | null;
   };
   ucievaluations: {
     maia2?: { [key: string]: MaiaEvaluation } | null;
     bigLeela?: MaiaEvaluation | null;
     elitemaia?: MaiaEvaluation | null;
+    maia3?: { [key: string]: MaiaEvaluation } | null;
   };
   isMaiaLoading: boolean;
   chessDbMoves: CandidateMove[] | null;
@@ -939,6 +941,186 @@ const DownloadAllModelsPrompt: React.FC<{
   );
 };
 
+// ── Maia 3 Display Component ──────────────────────────────────────────────────
+
+interface Maia3DisplayProps {
+  evaluations: { [key: string]: MaiaEvaluation };
+  stockfishAnalysisResult: PositionEval | null;
+  chessDbMoves: CandidateMove[] | null;
+  engine?: UciEngine | null;
+  fen: string;
+  selectedModel: number;
+  onModelChange: (idx: number) => void;
+}
+
+const Maia3Display: React.FC<Maia3DisplayProps> = ({
+  evaluations,
+  stockfishAnalysisResult,
+  chessDbMoves,
+  engine,
+  fen,
+  selectedModel,
+  onModelChange,
+}) => {
+  const currentModelKey = MAIA3_MODELS[selectedModel];
+  const currentEval = evaluations[currentModelKey];
+  const currentRating = MAIA3_RATING_VALUES[selectedModel];
+
+  // Build win probability curve data across all rating levels
+  const winProbData = MAIA3_MODELS.map((model, idx) => ({
+    rating: MAIA3_RATING_VALUES[idx],
+    winProb: evaluations[model]?.value ?? null,
+  })).filter((d) => d.winProb !== null);
+
+  const getRatingColor = (rating: number) => {
+    if (rating <= 800) return "#9c27b0";
+    if (rating <= 1000) return "#673ab7";
+    if (rating <= 1200) return "#3f51b5";
+    if (rating <= 1400) return "#2196f3";
+    if (rating <= 1600) return "#03a9f4";
+    if (rating <= 1800) return "#009688";
+    if (rating <= 2000) return "#4caf50";
+    if (rating <= 2200) return "#ff9800";
+    if (rating <= 2400) return "#f44336";
+    return "#b71c1c";
+  };
+
+  return (
+    <Box>
+      {/* Rating range badge */}
+      <Box display="flex" alignItems="center" gap={1} mb={2}>
+        <Chip
+          label="600–2600 Elo"
+          size="small"
+          sx={{
+            background: "linear-gradient(90deg, #9c27b0, #b71c1c)",
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: "0.7rem",
+          }}
+        />
+        <Typography variant="caption" color="text.secondary">
+          Single unified model with continuous rating conditioning
+        </Typography>
+      </Box>
+
+      {/* Rating slider */}
+      <Box sx={{ mb: 3 }}>
+        <Box display="flex" justifyContent="space-between" mb={1}>
+          <Typography variant="body2" color="text.secondary">
+            Rating Level
+          </Typography>
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            sx={{ color: getRatingColor(currentRating) }}
+          >
+            {currentRating} Elo
+          </Typography>
+        </Box>
+        <Slider
+          value={selectedModel}
+          min={0}
+          max={MAIA3_MODELS.length - 1}
+          step={1}
+          onChange={(_, val) => onModelChange(val as number)}
+          marks={[
+            { value: 0, label: "600" },
+            { value: 5, label: "1100" },
+            { value: 10, label: "1600" },
+            { value: 15, label: "2100" },
+            { value: 20, label: "2600" },
+          ]}
+          sx={{
+            "& .MuiSlider-thumb": {
+              bgcolor: getRatingColor(currentRating),
+            },
+            "& .MuiSlider-track": {
+              bgcolor: getRatingColor(currentRating),
+            },
+          }}
+        />
+      </Box>
+
+      {/* Win probability across all ratings */}
+      {winProbData.length > 0 && (
+        <Box
+          sx={{
+            mb: 3,
+            p: 2,
+            borderRadius: 2,
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.02)",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" mb={1.5}>
+            Win Probability by Rating Level
+          </Typography>
+          <Box display="flex" gap={0.5} alignItems="flex-end" height={48}>
+            {winProbData.map((d) => {
+              const isSelected = d.rating === currentRating;
+              const pct = Math.round((d.winProb ?? 0) * 100);
+              return (
+                <Box
+                  key={d.rating}
+                  onClick={() =>
+                    onModelChange(MAIA3_RATING_VALUES.indexOf(d.rating))
+                  }
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    gap: 0.25,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: `${Math.max(4, pct * 0.44)}px`,
+                      bgcolor: isSelected
+                        ? getRatingColor(d.rating)
+                        : "rgba(255,255,255,0.15)",
+                      borderRadius: "2px 2px 0 0",
+                      transition: "all 0.2s",
+                      border: isSelected
+                        ? `1px solid ${getRatingColor(d.rating)}`
+                        : "none",
+                    }}
+                  />
+                </Box>
+              );
+            })}
+          </Box>
+          <Box display="flex" justifyContent="space-between" mt={0.5}>
+            <Typography variant="caption" color="text.secondary">
+              600
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Win % at {currentRating}: {Math.round((currentEval?.value ?? 0) * 100)}%
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              2600
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* Main evaluation display */}
+      {currentEval && (
+        <EvaluationDisplay
+          evaluation={currentEval}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+          candidateMoves={chessDbMoves}
+          engine={engine}
+          fen={fen}
+        />
+      )}
+    </Box>
+  );
+};
+
 export const NetResults: React.FC<MaiaResultsProps> = ({
   evaluations,
   stockfishAnalysisResult,
@@ -952,7 +1134,8 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   const { status, activeModels } = useNetStatus();
   const { downloadModel } = useNetModels();
   const [selectedMaia2Model, setSelectedMaia2Model] = useState(0);
-  const [selectedTab, setSelectedTab] = useState<ModelType>("maia2");
+  const [selectedMaia3Model, setSelectedMaia3Model] = useState(10); // default 1600
+  const [selectedTab, setSelectedTab] = useState<ModelType>("maia3");
 
   
   const isAnyModelDownloading = Object.values(status).some(
@@ -1119,6 +1302,19 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
               fen={fen}
             />
           )}
+
+        {/* ── Maia 3: 600–2600 Elo ── */}
+        {isCurrentModelReady && currentTab === "maia3" && evaluations.maia3 && ucievaluations.maia3 &&(
+          <Maia3Display
+            evaluations={evaluations.maia3}
+            stockfishAnalysisResult={stockfishAnalysisResult}
+            chessDbMoves={chessDbMoves}
+            engine={engine}
+            fen={fen}
+            selectedModel={selectedMaia3Model}
+            onModelChange={setSelectedMaia3Model}
+          />
+        )}
       </CardContent>
     </Card>
   );

@@ -6,7 +6,7 @@ const nextConfig = {
     return [
      
       {
-        source: "/(position|play|puzzle|game)/:path*",
+        source: "/(position|play|puzzle|game|ort)/:path*",
         headers: ENGINE_HEADERS,
       },
       {

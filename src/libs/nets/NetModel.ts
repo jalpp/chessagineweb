@@ -7,7 +7,7 @@ interface NetModelOptions {
   setStatus: (status: NetStatus) => void
   setProgress: (progress: number) => void
   setError: (error: string) => void
-  modelType?: 'maia2' | 'leela'
+  modelType?: 'maia2' | 'leela' | 'maia3'
 }
 
 // Global download locks to prevent duplicate downloads across all instances

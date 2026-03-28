@@ -8,7 +8,7 @@ export type NetStatus =
   | 'ready'
   | 'error'
 
-export type ModelType = 'maia2' | 'bigLeela' | 'elitemaia'
+export type ModelType = 'maia2' | 'bigLeela' | 'elitemaia' | 'maia3'
 
 export const modelToElo = (model: string) =>
   Number(model.replace("maia_kdd_", ""));
@@ -69,10 +69,27 @@ export const MODEL_CONFIGS = {
     hasRatingLevels: false,
     modelType: 'leela' as const,
   },
+  maia3: {
+    id: 'maia3',
+    name: 'Maia 3',
+    description:
+      'The latest Maia model — a single unified network covering 600–2600 Elo using continuous rating conditioning. Provides the most accurate human-style move predictions across all skill levels.',
+    path: '/static/nets/maia3_simplified.onnx',
+    workerPath: '/maia3-worker.js',
+    modelVersion: '3',
+    size: '44mb',
+    hasRatingLevels: true,
+    modelType: 'maia3' as const,
+    ratingLevels: Array.from({ length: 21 }, (_, i) => `maia_kdd_${600 + i * 100}`),
+    ratingValues: Array.from({ length: 21 }, (_, i) => 600 + i * 100),
+  },
 } as const
 
 
 export const MAIA_MODELS = MODEL_CONFIGS.maia2.ratingLevels
+
+export const MAIA3_MODELS = MODEL_CONFIGS.maia3.ratingLevels
+export const MAIA3_RATING_VALUES = MODEL_CONFIGS.maia3.ratingValues
 
 export const MAIA_MODELS_WITH_NAMES = MAIA_MODELS.map((model) => ({
   id: model,
