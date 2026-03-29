@@ -362,6 +362,7 @@ const VariationEaseMetricView: React.FC<{
 
 const EvaluationDisplay: React.FC<{
   evaluation: MaiaEvaluation;
+  supportsem: boolean;
   ucievaluation?: MaiaEvaluation | null;
   candidateMoves?: CandidateMove[] | null;
   stockfishAnalysisResult: PositionEval | null;
@@ -371,6 +372,7 @@ const EvaluationDisplay: React.FC<{
 }> = ({
   ucievaluation,
   evaluation,
+  supportsem,
   candidateMoves,
   showQuadrantAnalysis = true,
   stockfishAnalysisResult,
@@ -386,6 +388,7 @@ const EvaluationDisplay: React.FC<{
   );
 
   const { variations, isLoading } = useEaseMetricVariation(
+    supportsem,
     fen,
     engine || null,
     ucievaluation || evaluation,
@@ -403,7 +406,7 @@ const EvaluationDisplay: React.FC<{
   }, [evaluation, candidateMoves, improbableThreshold]);
 
   const easeMetric = React.useMemo(() => {
-    if (!candidateMoves || candidateMoves.length === 0 || !ucievaluation)
+    if (!candidateMoves || candidateMoves.length === 0 || !ucievaluation || !supportsem)
       return null;
     const easeMetricCalculator = new StockfishEaseMetricCalculator(true);
     try {
@@ -419,7 +422,7 @@ const EvaluationDisplay: React.FC<{
   const hasQuadrantData = quadrantMoves.length > 0;
   const hasEaseData = easeMetric !== null;
   const hasVariationData =
-    stockfishAnalysisResult && stockfishAnalysisResult.lines.length > 0;
+    stockfishAnalysisResult && stockfishAnalysisResult.lines.length > 0 || !supportsem;
 
   const handleThresholdChange = (event: Event, newValue: number | number[]) => {
     setImprobableThreshold(newValue as number);
@@ -446,8 +449,8 @@ const EvaluationDisplay: React.FC<{
               {hasQuadrantData && (
                 <Tab label="Candidate Analysis" value="quadrant" />
               )}
-              {hasEaseData && <Tab label="Ease Metric Analysis" value="ease" />}
-              {hasVariationData && (
+              {hasEaseData && supportsem && <Tab label="Ease Metric Analysis" value="ease" />}
+              {hasVariationData && supportsem && (
                 <Tab label="Variation Analysis" value="variations" />
               )}
             </Tabs>
@@ -496,7 +499,7 @@ const EvaluationDisplay: React.FC<{
             <MovesList policy={evaluation.policy} />
           </Box>
 
-          {hasVariationData && (
+          {hasVariationData && supportsem && (
             <Box mt={3}>
               <Button
                 variant="outlined"
@@ -1111,6 +1114,7 @@ const Maia3Display: React.FC<Maia3DisplayProps> = ({
       {currentEval && (
         <EvaluationDisplay
           evaluation={currentEval}
+          supportsem={false}
           stockfishAnalysisResult={stockfishAnalysisResult}
           candidateMoves={chessDbMoves}
           engine={engine}
@@ -1266,6 +1270,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             {evaluations.maia2[MAIA_MODELS[selectedMaia2Model]] && (
               <EvaluationDisplay
                 evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
+                supportsem={false}
                 stockfishAnalysisResult={stockfishAnalysisResult}
                 candidateMoves={chessDbMoves}
                 engine={engine}
@@ -1282,6 +1287,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             <EvaluationDisplay
               evaluation={evaluations.bigLeela}
               candidateMoves={chessDbMoves}
+              supportsem={true}
               stockfishAnalysisResult={stockfishAnalysisResult}
               ucievaluation={ucievaluations.bigLeela}
               engine={engine}
@@ -1296,6 +1302,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             <EvaluationDisplay
               evaluation={evaluations.elitemaia}
               candidateMoves={chessDbMoves}
+              supportsem={false}
               stockfishAnalysisResult={stockfishAnalysisResult}
               ucievaluation={ucievaluations.elitemaia}
               engine={engine}

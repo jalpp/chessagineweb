@@ -17,6 +17,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
   Chat as ChatIcon,
+  Cloud as CloudIcon,
 } from "@mui/icons-material";
 
 import StockfishAnalysisTab from "../tabs/StockfishTab";

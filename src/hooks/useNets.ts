@@ -255,6 +255,8 @@ export const useNets = ({
 
         newEvaluations.maia3 = maia3Evaluations;
         newSanEvaluations.maia3 = maia3SanEvaluations;
+
+        console.log(newSanEvaluations.maia3);
       }
 
       if (!currentAbortController.signal.aborted) {
