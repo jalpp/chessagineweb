@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNetModels, useNetStatus } from "@/context/NetContext";
-import { convertToSanEvaluation, MAIA_MODELS, MaiaEvaluation, ModelType, SanMaiaEvaluation } from "@/libs/nets/types";
+import { convertToSanEvaluation, MAIA_MODELS, MAIA3_MODELS, MAIA3_RATING_VALUES, MaiaEvaluation, ModelType, SanMaiaEvaluation } from "@/libs/nets/types";
 import {
   getMaiaCacheKey,
   readMaiaCache,
@@ -23,6 +23,7 @@ export interface MaiaEngineAnalysis {
   maia2?: { [key: string]: MaiaEvaluation } | null;
   bigLeela?: MaiaEvaluation | null;
   elitemaia?: MaiaEvaluation | null;
+  maia3?: { [key: string]: MaiaEvaluation } | null;
 }
 
 export interface UseMaiaEngineResult {
@@ -31,11 +32,13 @@ export interface UseMaiaEngineResult {
     maia2?: { [key: string]: SanMaiaEvaluation } | null;
     bigLeela?: SanMaiaEvaluation | null;
     elitemaia?: SanMaiaEvaluation | null;
+    maia3?: { [key: string]: SanMaiaEvaluation } | null;
   };
   lichessData: {
     maia2?: { [key: string]: LichessData } | null;
     bigLeela?: LichessData | null;
     elitemaia?: LichessData | null;
+    maia3?: { [key: string]: LichessData } | null;
   };
   isInBook: boolean;
   isLoading: boolean;
@@ -53,7 +56,7 @@ export const useNets = ({
   bookThreshold = 21,
   gameReviewMode = false,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
-  const { maia2, bigLeela, elitemaia } = useNetModels();
+  const { maia2, bigLeela, elitemaia, maia3 } = useNetModels();
   const { status, activeModels } = useNetStatus();
 
   const [evaluations, setEvaluations] = useState<
@@ -223,6 +226,39 @@ export const useNets = ({
         
       }
 
+      // Maia 3 — covers 600–2600 Elo with continuous rating conditioning
+      if (
+        modelsToUse.includes("maia3") &&
+        maia3 &&
+        status.maia3 === "ready"
+      ) {
+        if (currentAbortController.signal.aborted) return;
+
+        // Batch all 21 rating levels (600–2600) in a single inference call
+        const positions = MAIA3_RATING_VALUES.map((rating) => ({
+          fen: fenToAnalyze,
+          eloSelf: rating,
+          eloOppo: rating,
+        }));
+
+        const results = await maia3.batchEvaluate(positions);
+
+        if (currentAbortController.signal.aborted) return;
+
+        const maia3Evaluations: { [key: string]: MaiaEvaluation } = {};
+        const maia3SanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
+
+        MAIA3_MODELS.forEach((model, index) => {
+          maia3Evaluations[model] = results[index];
+          maia3SanEvaluations[model] = convertToSanEvaluation(results[index], fenToAnalyze);
+        });
+
+        newEvaluations.maia3 = maia3Evaluations;
+        newSanEvaluations.maia3 = maia3SanEvaluations;
+
+        console.log(newSanEvaluations.maia3);
+      }
+
       if (!currentAbortController.signal.aborted) {
         const cacheEntry = {
           evaluations: newEvaluations,
@@ -258,9 +294,11 @@ export const useNets = ({
     maia2,
     bigLeela,
     elitemaia,
+    maia3,
     status.maia2,
     status.bigLeela,
     status.elitemaia,
+    status.maia3,
     activeModels,
     enabledModels,
     useLichessBook,

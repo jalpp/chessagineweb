@@ -10,6 +10,7 @@ import { DEFAULT_ENGINE_DEPTH, DEFAULT_ENGINE_LINES, MAX_PV_MOVES } from "@/libs
 import { useLocalStorage } from "usehooks-ts";
 
 export function useEaseMetricVariation(
+  supportsEM: boolean,
   Rfen: string,
   engine: UciEngine | null,
   RnetEval: MaiaEvaluation,
@@ -35,6 +36,11 @@ export function useEaseMetricVariation(
   const stockfishVariationCal = new StockfishVEaseMetricCalculator(true);
 
   const computeEmVariation = async () => {
+
+    if(!supportsEM){
+      return;
+    }
+
     if (!RPositionEval) {
       console.log("useEaseMetricV: Root positionEval not present, exiting");
       return;

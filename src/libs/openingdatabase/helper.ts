@@ -1,4 +1,3 @@
-
 interface Opening {
   eco: string;
   name: string;
@@ -38,78 +37,83 @@ export interface MasterGames {
   topGames: Game[];
 }
 
+// ── Posira response types ──────────────────────────────────────────────────
+
+interface PosiraMove {
+  san: string;
+  uci: string;
+  games: number;
+  white_wins: number;
+  draws: number;
+  black_wins: number;
+  white_pct: number;
+  draw_pct: number;
+  black_pct: number;
+  score: number;
+  play_rate: number;
+}
+
+interface PosiraExplorerResponse {
+  fen: string;
+  total_games: number;
+  opening?: { eco: string; name: string };
+  moves: PosiraMove[];
+}
+
+// ── Map Posira response → MasterGames (shared format used across the app) ──
+
+function posiraToMasterGames(data: PosiraExplorerResponse): MasterGames {
+  return {
+    opening: data.opening ?? { eco: "", name: "Unknown" },
+    white: data.moves.reduce((s, m) => s + m.white_wins, 0),
+    draws: data.moves.reduce((s, m) => s + m.draws, 0),
+    black: data.moves.reduce((s, m) => s + m.black_wins, 0),
+    moves: data.moves.map((m) => ({
+      uci: m.uci,
+      san: m.san,
+      averageRating: 0,
+      white: m.white_wins,
+      draws: m.draws,
+      black: m.black_wins,
+      game: {} as Game,
+      opening: data.opening ?? { eco: "", name: "Unknown" },
+    })),
+    topGames: [],
+  };
+}
+
+// ── Fetcher ────────────────────────────────────────────────────────────────
 
 export const fetchExplorerData = async (
   fen: string,
-  source: 'masters' | 'lichess',
-  topGames: number = 15
+  _source: "masters" | "lichess" = "masters",
+  _topGames = 15,
+  options?: { speeds?: string; ratings?: string; top_n?: number },
 ): Promise<MasterGames | null> => {
   try {
-    const params = new URLSearchParams({
-      fen,
-      source,
-      moves: '12',
-      topGames: String(topGames),
-    });
+    const params = new URLSearchParams({ endpoint: "explorer", fen });
+    if (options?.speeds) params.set("speeds", options.speeds);
+    if (options?.ratings) params.set("ratings", options.ratings);
+    if (options?.top_n) params.set("top_n", String(options.top_n));
 
-    const response = await fetch(`/api/explorer?${params.toString()}`);
+    const response = await fetch(`/api/posira?${params.toString()}`);
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Posira API error: ${response.status}`);
 
     const result = await response.json();
+    if (!result.success) throw new Error(result.error ?? "Unknown error");
 
-    if (!result.success) {
-      throw new Error(result.error ?? 'Unknown error');
-    }
-
-    return result.data as MasterGames;
+    return posiraToMasterGames(result.data as PosiraExplorerResponse);
   } catch (error) {
-    console.error('Error fetching opening stats:', error);
+    console.error("Error fetching opening stats:", error);
     return null;
   }
 };
 
-
 export const getOpeningStats = (fen: string): Promise<MasterGames | null> =>
-  fetchExplorerData(fen, 'masters', 15);
+  fetchExplorerData(fen, "masters", 15, { top_n: 12 });
 
+// Kept for backward compat — now also hits Posira, filtered to rapid/classical speeds
 export const getLichessOpeningStats = (fen: string): Promise<MasterGames | null> =>
-  fetchExplorerData(fen, 'lichess', 4);
+  fetchExplorerData(fen, "lichess", 4, { speeds: "rapid,classical", top_n: 12 });
 
-export const getOpeningStatSpeech = (masterData: MasterGames): string => {
-  const { opening, white, draws, black, moves, topGames } = masterData;
-
-  const totalGames = (white ?? 0) + (draws ?? 0) + (black ?? 0);
-  if (totalGames === 0) {
-    return "There is no game data available for this opening.";
-  }
-
-  const whiteWinRate = ((white / totalGames) * 100 || 0).toFixed(2);
-  const drawRate = ((draws / totalGames) * 100 || 0).toFixed(2);
-  const blackWinRate = ((black / totalGames) * 100 || 0).toFixed(2);
-
-  let speech = `Opening: ${opening?.name ?? "Unknown"} (${opening?.eco ?? "N/A"}). `;
-  speech += `Out of ${totalGames} master-level games, White wins ${whiteWinRate} percent, draws occur ${drawRate} percent, and Black wins ${blackWinRate} percent. `;
-
-  if (moves?.length) {
-    speech += "The most common next moves are: ";
-    moves.forEach((move, index) => {
-      const moveTotal = (move.white ?? 0) + (move.draws ?? 0) + (move.black ?? 0);
-      const moveWhite = ((move.white / moveTotal) * 100 || 0).toFixed(2);
-      const moveDraw = ((move.draws / moveTotal) * 100 || 0).toFixed(2);
-      const moveBlack = ((move.black / moveTotal) * 100 || 0).toFixed(2);
-      speech += `Move ${index + 1}: ${move.san ?? "Unknown"}, played in games with average rating ${move.averageRating ?? 0}. White wins ${moveWhite} percent, draws ${moveDraw} percent, Black wins ${moveBlack} percent. `;
-    });
-  }
-
-  if (topGames?.length) {
-    speech += "Some notable games include: ";
-    topGames.slice(0, 3).forEach((game, index) => {
-      speech += `Game ${index + 1}: Game URL: https://lichess.org/${game.id} ${game.white?.name ?? "Unknown"} (rating ${game.white?.rating ?? "N/A"}) versus ${game.black?.name ?? "Unknown"} (rating ${game.black?.rating ?? "N/A"}), played in ${game.month ?? "N/A"} ${game.year ?? "N/A"}. `;
-    });
-  }
-
-  return speech.trim();
-};

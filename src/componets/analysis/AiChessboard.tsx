@@ -58,14 +58,10 @@ import {
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
 import { MaiaEvaluation } from "@/libs/nets/types";
-
+import { MaiaEngineAnalysis } from "@/hooks/useNets";
 export type BoardOrientation = "white" | "black";
 
-export interface MaiaEngineAnalysis {
-  maia2?: { [key: string]: MaiaEvaluation } | null;
-  bigLeela?: MaiaEvaluation | null;
-  elitemaia?: MaiaEvaluation | null;
-}
+
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -633,6 +629,7 @@ export default function AiChessboardPanel({
     };
 
     addPolicyArrow(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
+    addPolicyArrow(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#04a9f0");
     addPolicyArrow(evaluations?.bigLeela?.policy, "#400ac8ff");
     addPolicyArrow(evaluations?.elitemaia?.policy, "#c60b75ff");
 
