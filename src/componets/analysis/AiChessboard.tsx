@@ -629,9 +629,9 @@ export default function AiChessboardPanel({
     };
 
     addPolicyArrow(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
-    addPolicyArrow(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#04a9f0");
+    addPolicyArrow(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
     addPolicyArrow(evaluations?.bigLeela?.policy, "#400ac8ff");
-    addPolicyArrow(evaluations?.elitemaia?.policy, "#c60b75ff");
+    addPolicyArrow(evaluations?.elitemaia?.policy, "rgb(235, 49, 154)");
 
     return arrows;
   }, [
