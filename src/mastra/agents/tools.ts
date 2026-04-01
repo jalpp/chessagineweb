@@ -6,7 +6,6 @@ export const displayChessboardTool = createTool({
   description:
     "Display a chess position on an interactive chessboard inside a chat window. " +
     "Call this whenever you want to show a position visually — " +
-    "e.g. after analysing a FEN, suggesting a move, or illustrating an opening. " +
     "Always prefer calling this over describing the board in text.",
   inputSchema: z.object({
     fen: z
