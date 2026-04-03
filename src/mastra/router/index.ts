@@ -1,27 +1,56 @@
-
 export type QueryTier = "light" | "medium" | "heavy";
 
+interface ModelPricing {
+  inputPer1M: number;
+  outputPer1M: number;
+}
 
-const TIER_COST_ESTIMATE: Record<QueryTier, number> = {
-  light:  0.000_1,   
-  medium: 0.003,     
-  heavy:  0.025,     
+const MODEL_PRICING: Record<string, ModelPricing> = {
+  "minimax/minimax-m2.7": { inputPer1M: 0.8, outputPer1M: 2.2 },
+  "minimax/minimax-m2.5": { inputPer1M: 0.2, outputPer1M: 1.1 },
+  "anthropic/claude-sonnet-4.6": { inputPer1M: 3.0, outputPer1M: 15.0 },
+  "google/gemini-3.1-pro-preview": { inputPer1M: 1.25, outputPer1M: 5.0 },
+  "qwen/qwen3.5-9b": { inputPer1M: 0.1, outputPer1M: 0.3 },
+  "nvidia/nemotron-3-super-120b-a12b": { inputPer1M: 0.42, outputPer1M: 0.42 },
+  "meta-llama/llama-3.1-8b-instruct": { inputPer1M: 0.055, outputPer1M: 0.055 },
 };
 
-const BUDGET_WARN_USD = 10.0;   
-const BUDGET_HARD_USD = 14.0; 
+const FALLBACK_PRICING: ModelPricing = { inputPer1M: 1.0, outputPer1M: 3.0 };
+
+function getPricing(model: string): ModelPricing {
+  return MODEL_PRICING[model] ?? FALLBACK_PRICING;
+}
+
+export function calculateCost(
+  model: string,
+  promptTokens: number,
+  completionTokens: number,
+): number {
+  const { inputPer1M, outputPer1M } = getPricing(model);
+  return (
+    (promptTokens * inputPer1M + completionTokens * outputPer1M) / 1_000_000
+  );
+}
 
 const spendMap = new Map<string, number>();
 
-export function recordSpend(userId: string, tier: QueryTier): void {
+export function recordActualSpend(
+  userId: string,
+  model: string,
+  promptTokens: number,
+  completionTokens: number,
+): void {
+  const cost = calculateCost(model, promptTokens, completionTokens);
   const prev = spendMap.get(userId) ?? 0;
-  spendMap.set(userId, prev + TIER_COST_ESTIMATE[tier]);
+  spendMap.set(userId, prev + cost);
 }
 
 export function getEstimatedSpend(userId: string): number {
   return spendMap.get(userId) ?? 0;
 }
 
+const BUDGET_WARN_USD = 10.0;
+const BUDGET_HARD_USD = 14.0;
 
 const HEAVY_PATTERNS = [
   /\bgame.?review\b/i,
@@ -43,7 +72,7 @@ const HEAVY_PATTERNS = [
   /\bdeep.{0,10}(analys|dive)/i,
   /\bgenerate.{0,10}review\b/i,
   /\bpgn\b.{0,40}(review|analys)/i,
-  /lichess\.org\//i,         
+  /lichess\.org\//i,
 ];
 
 const MEDIUM_PATTERNS = [
@@ -67,8 +96,9 @@ const MEDIUM_PATTERNS = [
   /\bchessdb\b/i,
 ];
 
-
-export function classifyQuery(messages: Array<{ role: string; content: unknown }>): QueryTier {
+export function classifyQuery(
+  messages: Array<{ role: string; content: unknown }>,
+): QueryTier {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   if (!lastUser) return "light";
 
@@ -86,41 +116,44 @@ export function classifyQuery(messages: Array<{ role: string; content: unknown }
   return "light";
 }
 
-
-export const LIGHT_MODEL  = "minimax/minimax-m2.7";
+export const LIGHT_MODEL = "minimax/minimax-m2.7";
 export const MEDIUM_MODEL = "minimax/minimax-m2.5";
-export const HEAVY_MODEL  = "anthropic/claude-sonnet-4.6"; 
+export const HEAVY_MODEL = "anthropic/claude-sonnet-4.6";
 
+export interface ResolveModelResult {
+  model: string;
+  tier: QueryTier;
+  reason: string;
+}
 
 export function resolveModel(
   userSelectedModel: string,
   tier: QueryTier,
   estimatedSpend: number,
-): { model: string; tier: QueryTier; reason: string } {
-
-    const isFreeChoice = userSelectedModel.endsWith(":free") || userSelectedModel === LIGHT_MODEL;
+): ResolveModelResult {
+  // Free / always-allowed models bypass all routing logic
+  const isFreeChoice =
+    userSelectedModel.endsWith(":free") || userSelectedModel === LIGHT_MODEL;
   if (isFreeChoice) {
-    return { model: userSelectedModel, tier: "light", reason: "user-free-choice" };
+    return {
+      model: userSelectedModel,
+      tier: "light",
+      reason: "user-free-choice",
+    };
   }
 
   if (estimatedSpend >= BUDGET_HARD_USD) {
     return { model: LIGHT_MODEL, tier: "light", reason: "budget-hard-cap" };
   }
 
- 
   let effectiveTier = tier;
   if (estimatedSpend >= BUDGET_WARN_USD && tier === "heavy") {
     effectiveTier = "medium";
   }
 
-  
-  if (effectiveTier === "light") {
+  if (effectiveTier === "light")
     return { model: LIGHT_MODEL, tier: "light", reason: "query-is-light" };
-  }
-
-  if (effectiveTier === "medium") {
+  if (effectiveTier === "medium")
     return { model: MEDIUM_MODEL, tier: "medium", reason: "query-is-medium" };
-  }
-
   return { model: HEAVY_MODEL, tier: "heavy", reason: "query-is-heavy" };
 }

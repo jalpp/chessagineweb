@@ -1,3 +1,4 @@
+// app/api/chat/route.ts
 import { createUIMessageStreamResponse } from "ai";
 import { toAISdkStream } from "@mastra/ai-sdk";
 import { mastra } from "@/mastra";
@@ -7,15 +8,13 @@ import { auth } from "@clerk/nextjs/server";
 import {
   classifyQuery,
   resolveModel,
-  recordSpend,
+  recordActualSpend,
   getEstimatedSpend,
 } from "@/mastra/router";
 
 export const maxDuration = 200;
 
-
 const MAX_AGENT_STEPS = 15;
-
 const MAX_KNOWLEDGE_BYTES = 160 * 1024;
 
 const PREMIUM_MODELS = [
@@ -87,30 +86,28 @@ export async function POST(req: Request) {
 
   const requestContext = new RequestContext();
 
+  let resolvedModel = apiSettings.model;
+
   if (isPaidTier && userId) {
     const tier = classifyQuery(messages);
     const estimatedSpend = getEstimatedSpend(userId);
-    const { model: routedModel, tier: effectiveTier, reason } = resolveModel(
-      apiSettings.model,
-      tier,
-      estimatedSpend,
-    );
+    const {
+      model: routedModel,
+      tier: effectiveTier,
+      reason,
+    } = resolveModel(apiSettings.model, tier, estimatedSpend);
 
-   
-    recordSpend(userId, effectiveTier);
+    resolvedModel = routedModel;
 
-   
-    requestContext.set("model", apiSettings.model);      
-    requestContext.set("resolvedModel", routedModel);   
+    requestContext.set("model", apiSettings.model);
+    requestContext.set("resolvedModel", resolvedModel);
     requestContext.set("routingTier", effectiveTier);
     requestContext.set("routingReason", reason);
-
   } else {
     requestContext.set("model", apiSettings.model);
     requestContext.set("resolvedModel", apiSettings.model);
   }
 
- 
   const augmentedMessages = knowledgeContext
     ? [
         {
@@ -134,14 +131,37 @@ export async function POST(req: Request) {
       maxSteps: MAX_AGENT_STEPS,
     });
 
+    if (isPaidTier && userId) {
+      const capturedUserId = userId;
+      const capturedModel = resolvedModel;
+      stream.usage
+        .then((usage) => {
+          recordActualSpend(
+            capturedUserId,
+            capturedModel,
+            usage.inputTokens ?? 0,
+            usage.outputTokens ?? 0,
+          );
+        })
+        .catch(() => {
+          // usage unavailable (e.g. provider didn't return it) — skip recording
+        });
+    }
+
     return createUIMessageStreamResponse({
       stream: toAISdkStream(stream, { from: "agent" }) as any,
     });
   } catch (err: any) {
-    
-    if (err?.message?.includes("MCP error")) {
+    // BUG FIX: only reset the MCP client for genuine MCP transport/protocol
+    // errors, not any error whose message happens to contain "MCP error".
+    const isMcpError =
+      err?.name === "McpError" ||
+      /^MCP (connection|protocol|transport) error/i.test(err?.message ?? "");
+
+    if (isMcpError) {
       resetAgineMcpClient();
     }
+
     throw err;
   }
 }

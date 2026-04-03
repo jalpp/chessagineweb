@@ -8,7 +8,7 @@ import {
 
 import { getAgineMcpClient } from "../mcp/agineClient";
 import { displayChessboardTool, loadGameTool } from "./tools";
-import { classifyQuery, recordSpend, resolveModel } from "../router";
+import { classifyQuery } from "../router";
 
 const PREMIUM_MODELS = new Set<string>([
   "google/gemini-3.1-pro-preview",
@@ -33,8 +33,9 @@ function createAgineCloudModel(requestContext: RequestContext) {
 
   const resolvedName = (requestContext.get("resolvedModel") as string) || modelName;
 
+  const routerModel = resolvedName + presetSlug;
 
-  return openRouter(`${resolvedName}${presetSlug}`);
+  return openRouter(routerModel);
 }
 
 function buildInstructions(requestContext: RequestContext): string {
@@ -107,7 +108,7 @@ async function buildPinnedTools() {
   };
 }
 
-export { classifyQuery, resolveModel, recordSpend };
+export { classifyQuery};
 
 export const chessAgine = new Agent({
   id: "chessagine-agent",
