@@ -4,8 +4,17 @@ import { mastra } from "@/mastra";
 import { resetAgineMcpClient } from "@/mastra/mcp/agineClient";
 import { RequestContext } from "@mastra/core/request-context";
 import { auth } from "@clerk/nextjs/server";
+import {
+  classifyQuery,
+  resolveModel,
+  recordSpend,
+  getEstimatedSpend,
+} from "@/mastra/router";
 
 export const maxDuration = 200;
+
+
+const MAX_AGENT_STEPS = 15;
 
 const MAX_KNOWLEDGE_BYTES = 160 * 1024;
 
@@ -75,12 +84,33 @@ export async function POST(req: Request) {
       );
     }
   }
-  // ───────────────────────────────────────────────────────────────────────
 
   const requestContext = new RequestContext();
-  requestContext.set("model", apiSettings.model);
 
-  // Prepend knowledge as a system message when present
+  if (isPaidTier && userId) {
+    const tier = classifyQuery(messages);
+    const estimatedSpend = getEstimatedSpend(userId);
+    const { model: routedModel, tier: effectiveTier, reason } = resolveModel(
+      apiSettings.model,
+      tier,
+      estimatedSpend,
+    );
+
+   
+    recordSpend(userId, effectiveTier);
+
+   
+    requestContext.set("model", apiSettings.model);      
+    requestContext.set("resolvedModel", routedModel);   
+    requestContext.set("routingTier", effectiveTier);
+    requestContext.set("routingReason", reason);
+
+  } else {
+    requestContext.set("model", apiSettings.model);
+    requestContext.set("resolvedModel", apiSettings.model);
+  }
+
+ 
   const augmentedMessages = knowledgeContext
     ? [
         {
@@ -99,14 +129,18 @@ export async function POST(req: Request) {
   const agent = mastra.getAgent("chessAgine");
 
   try {
-    const stream = await agent.stream(augmentedMessages, { requestContext });
+    const stream = await agent.stream(augmentedMessages, {
+      requestContext,
+      maxSteps: MAX_AGENT_STEPS,
+    });
+
     return createUIMessageStreamResponse({
       stream: toAISdkStream(stream, { from: "agent" }) as any,
     });
   } catch (err: any) {
-    // Reset MCP client so next request gets a fresh connection
+    
     if (err?.message?.includes("MCP error")) {
-      resetAgineMcpClient(); // export a reset fn from agineClient.ts
+      resetAgineMcpClient();
     }
     throw err;
   }

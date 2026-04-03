@@ -8,6 +8,7 @@ import {
 
 import { getAgineMcpClient } from "../mcp/agineClient";
 import { displayChessboardTool, loadGameTool } from "./tools";
+import { classifyQuery, recordSpend, resolveModel } from "../router";
 
 const PREMIUM_MODELS = new Set<string>([
   "google/gemini-3.1-pro-preview",
@@ -18,7 +19,7 @@ const PREMIUM_MODELS = new Set<string>([
 
 function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
-  const modelName = raw.replace(/^"|"$/g, "");
+  const modelName = raw.replace(/^\"|\"$/g, "");
 
   const presetSlug = "@preset/chessagine";
 
@@ -30,11 +31,10 @@ function createAgineCloudModel(requestContext: RequestContext) {
     return openRouter(`openrouter/auto${presetSlug}`);
   }
 
-  const resolvedModel = PREMIUM_MODELS.has(modelName)
-    ? modelName
-    : `${modelName}:free`;
+  const resolvedName = (requestContext.get("resolvedModel") as string) || modelName;
 
-  return openRouter(`${resolvedModel}${presetSlug}`);
+
+  return openRouter(`${resolvedName}${presetSlug}`);
 }
 
 function buildInstructions(requestContext: RequestContext): string {
@@ -87,7 +87,6 @@ const unicodeNormalizer = new UnicodeNormalizer({
 async function buildToolSearchProcessor() {
   const tools = await buildTools();
 
-
   const searchableTools = Object.fromEntries(
     Object.entries(tools).filter(([id]) => !PINNED_MCP_TOOL_IDS.has(id)),
   );
@@ -107,6 +106,8 @@ async function buildPinnedTools() {
     load_chess_game: loadGameTool,
   };
 }
+
+export { classifyQuery, resolveModel, recordSpend };
 
 export const chessAgine = new Agent({
   id: "chessagine-agent",
