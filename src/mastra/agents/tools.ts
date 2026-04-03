@@ -10,11 +10,11 @@ export const displayChessboardTool = createTool({
   inputSchema: z.object({
     fen: z
       .string()
-      .describe(
-        "The FEN string of the position to display. " +
-          "Use the starting position FEN if no specific position is given: " +
-          "'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'",
-      ),
+      .regex(
+        /^([rnbqkpRNBQKP1-8]+\/){7}[rnbqkpRNBQKP1-8]+ [bw] [KQkq-]+ [a-h][1-8]|[a-h][1-8]|[a-h][1-8]|[a-h][1-8]|- \d+ \d+$/,
+        "Invalid FEN format",
+      )
+      .describe("FEN string representing the board position"),
     caption: z
       .string()
       .optional()
@@ -57,7 +57,7 @@ move list, Stockfish analysis, AI review, etc.) directly in the chat window.
  
 Prefer this over describing a game in text whenever a visual board makes sense.
   `.trim(),
- 
+
   inputSchema: z.object({
     source: z
       .enum(["lichess_url", "lichess_study", "pgn_text"])
@@ -67,14 +67,14 @@ Prefer this over describing a game in text whenever a visual board makes sense.
           "'lichess_study' for a study/chapter URL, " +
           "'pgn_text' for raw PGN pasted by the user.",
       ),
- 
+
     value: z
       .string()
       .describe(
         "The raw value for the chosen source: " +
           "a full Lichess URL, study URL, or PGN string.",
       ),
- 
+
     autoReview: z
       .boolean()
       .optional()
@@ -83,7 +83,7 @@ Prefer this over describing a game in text whenever a visual board makes sense.
         "Whether to automatically trigger the AI game review after loading. " +
           "Set to false if the user only wants to browse moves.",
       ),
- 
+
     caption: z
       .string()
       .optional()
@@ -91,7 +91,7 @@ Prefer this over describing a game in text whenever a visual board makes sense.
         "Short label shown above the embedded panel, e.g. 'Your game vs. Magnus'.",
       ),
   }),
- 
+
   outputSchema: z.object({
     source: z.enum(["lichess_url", "lichess_study", "pgn_text"]),
     value: z.string(),
@@ -102,12 +102,12 @@ Prefer this over describing a game in text whenever a visual board makes sense.
     /** Resolved only for lichess_study */
     lichessStudyId: z.string().optional(),
   }),
- 
+
   execute: async ({ source, value, autoReview = true, caption }) => {
     // Extract IDs server-side so the client UI doesn't have to parse URLs
     let lichessGameId: string | undefined;
     let lichessStudyId: string | undefined;
- 
+
     if (source === "lichess_url") {
       // https://lichess.org/abc123[/white|/black]
       const match = value.match(/lichess\.org\/([a-zA-Z0-9]{8})/);
@@ -117,7 +117,7 @@ Prefer this over describing a game in text whenever a visual board makes sense.
       const match = value.match(/lichess\.org\/study\/([a-zA-Z0-9]+)/);
       lichessStudyId = match?.[1];
     }
- 
+
     return {
       source,
       value,
