@@ -104,8 +104,8 @@ export async function POST(req: Request) {
     requestContext.set("routingTier", effectiveTier);
     requestContext.set("routingReason", reason);
   } else {
-    requestContext.set("model", `${apiSettings.model}:free`);
-    requestContext.set("resolvedModel", `${apiSettings.model}:free`);
+    requestContext.set("model", apiSettings.model.replace(/"/g, "") + ":free");
+    requestContext.set("resolvedModel", apiSettings.model.replace(/"/g, "") + ":free");
   }
 
   const augmentedMessages = knowledgeContext
