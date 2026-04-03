@@ -102,14 +102,7 @@ async function buildToolSearchProcessor() {
 }
 
 async function buildPinnedTools() {
-  const mcpTools = await getAgineMcpClient().listTools();
-
-  const pinned = Object.fromEntries(
-    Object.entries(mcpTools).filter(([id]) => PINNED_MCP_TOOL_IDS.has(id)),
-  );
-
   return {
-    ...pinned,
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
   };

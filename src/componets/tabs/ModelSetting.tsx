@@ -24,9 +24,7 @@ import { ApiSettings } from "@/libs/agine/helper";
 import { useAuth } from "@clerk/nextjs";
 
 export type AgineCloudModel =
-  | "arcee-ai/trinity-large-preview:free"
-  | "z-ai/glm-4.5-air:free"
-  | "stepfun/step-3.5-flash:free"
+  | "qwen/qwen3.6-plus:free"
   | "qwen/qwen3.5-9b"
   | "meta-llama/llama-3.1-8b-instruct"
   | "google/gemini-3.1-pro-preview"
@@ -35,7 +33,7 @@ export type AgineCloudModel =
 
 export type ModelOnlySettings = Pick<ApiSettings, "model">;
 
-const DEFAULT_MODEL = "arcee-ai/trinity-large-preview:free";
+const DEFAULT_MODEL = "qwen/qwen3.6-plus:free";
 
 export const PREMIUM_MODELS: AgineCloudModel[] = [
   "google/gemini-3.1-pro-preview",
