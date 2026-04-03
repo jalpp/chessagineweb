@@ -59,7 +59,7 @@ function ChatPageInner() {
           apiSettings: { model },
           ...(knowledgeContext ? { knowledgeContext } : {}),
         };
-      },
+      }, 
     }),
   });
 

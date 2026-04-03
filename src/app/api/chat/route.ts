@@ -1,6 +1,7 @@
 import { createUIMessageStreamResponse } from "ai";
 import { toAISdkStream } from "@mastra/ai-sdk";
 import { mastra } from "@/mastra";
+import { resetAgineMcpClient } from "@/mastra/mcp/agineClient";
 import { RequestContext } from "@mastra/core/request-context";
 import { auth } from "@clerk/nextjs/server";
 
@@ -101,7 +102,16 @@ export async function POST(req: Request) {
     requestContext,
   });
 
+  try {
+  const stream = await agent.stream(augmentedMessages, { requestContext });
   return createUIMessageStreamResponse({
     stream: toAISdkStream(stream, { from: "agent" }) as any,
   });
+} catch (err: any) {
+  // Reset MCP client so next request gets a fresh connection
+  if (err?.message?.includes("MCP error")) {
+    resetAgineMcpClient(); // export a reset fn from agineClient.ts
+  }
+  throw err;
+}
 }
