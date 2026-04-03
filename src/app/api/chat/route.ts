@@ -98,20 +98,16 @@ export async function POST(req: Request) {
 
   const agent = mastra.getAgent("chessAgine");
 
-  const stream = await agent.stream(augmentedMessages, {
-    requestContext,
-  });
-
   try {
-  const stream = await agent.stream(augmentedMessages, { requestContext });
-  return createUIMessageStreamResponse({
-    stream: toAISdkStream(stream, { from: "agent" }) as any,
-  });
-} catch (err: any) {
-  // Reset MCP client so next request gets a fresh connection
-  if (err?.message?.includes("MCP error")) {
-    resetAgineMcpClient(); // export a reset fn from agineClient.ts
+    const stream = await agent.stream(augmentedMessages, { requestContext });
+    return createUIMessageStreamResponse({
+      stream: toAISdkStream(stream, { from: "agent" }) as any,
+    });
+  } catch (err: any) {
+    // Reset MCP client so next request gets a fresh connection
+    if (err?.message?.includes("MCP error")) {
+      resetAgineMcpClient(); // export a reset fn from agineClient.ts
+    }
+    throw err;
   }
-  throw err;
-}
 }

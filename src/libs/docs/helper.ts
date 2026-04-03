@@ -68,9 +68,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   agineCloud: {
     name: 'aginecloud',
     models: [
-      'arcee-ai/trinity-large-preview',
-      'stepfun/step-3.5-flash',
-      'z-ai/glm-4.5-air',
+      'qwen/qwen3.6-plus',
       'qwen/qwen3.5-9b',
       'nvidia/nemotron-3-super-120b-a12b',
       'meta-llama/llama-3.1-8b-instruct',
