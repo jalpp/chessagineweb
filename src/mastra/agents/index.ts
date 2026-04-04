@@ -31,7 +31,8 @@ function createAgineCloudModel(requestContext: RequestContext) {
     return openRouter(`openrouter/auto${presetSlug}`);
   }
 
-  const resolvedName = (requestContext.get("resolvedModel") as string) || modelName;
+  const resolvedName =
+    (requestContext.get("resolvedModel") as string) || modelName;
 
   const routerModel = resolvedName + presetSlug;
 
@@ -51,7 +52,6 @@ const MCP_IGNORE_TOOL_IDS = new Set([
   "fetch-lichess-study-pgn",
   "get-lichess-master-games",
 ]);
-
 
 const PINNED_MCP_TOOL_IDS = new Set([
   "parse-pgn-into-move-fens",
@@ -95,8 +95,8 @@ async function buildToolSearchProcessor() {
   return new ToolSearchProcessor({
     tools: searchableTools,
     search: {
-      topK: 7,   
-      minScore: 0.05, 
+      topK: 7,
+      minScore: 0.05,
     },
   });
 }
@@ -108,7 +108,7 @@ async function buildPinnedTools() {
   };
 }
 
-export { classifyQuery};
+export { classifyQuery };
 
 export const chessAgine = new Agent({
   id: "chessagine-agent",

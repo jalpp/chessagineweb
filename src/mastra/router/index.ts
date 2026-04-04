@@ -7,7 +7,7 @@ interface ModelPricing {
 
 const MODEL_PRICING: Record<string, ModelPricing> = {
   "minimax/minimax-m2.7": { inputPer1M: 0.8, outputPer1M: 2.2 },
-  "minimax/minimax-m2.5": { inputPer1M: 0.2, outputPer1M: 1.1 },
+  "google/gemini-3-flash-preview": { inputPer1M: 0.1, outputPer1M: 0.4 },
   "anthropic/claude-sonnet-4.6": { inputPer1M: 3.0, outputPer1M: 15.0 },
   "google/gemini-3.1-pro-preview": { inputPer1M: 1.25, outputPer1M: 5.0 },
   "qwen/qwen3.5-9b": { inputPer1M: 0.1, outputPer1M: 0.3 },
@@ -19,6 +19,16 @@ const FALLBACK_PRICING: ModelPricing = { inputPer1M: 1.0, outputPer1M: 3.0 };
 
 function getPricing(model: string): ModelPricing {
   return MODEL_PRICING[model] ?? FALLBACK_PRICING;
+}
+
+const IS_DEV = false;
+
+function routerLog(label: string, data: Record<string, unknown>): void {
+  if (!IS_DEV) return;
+  const lines = Object.entries(data)
+    .map(([k, v]) => `  ${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+    .join("\n");
+  console.log(`\n[router:${label}]\n${lines}`);
 }
 
 export function calculateCost(
@@ -34,19 +44,34 @@ export function calculateCost(
 
 const spendMap = new Map<string, number>();
 
-export function recordActualSpend(
+export async function recordActualSpend(
   userId: string,
   model: string,
   promptTokens: number,
   completionTokens: number,
-): void {
+): Promise<void> {
   const cost = calculateCost(model, promptTokens, completionTokens);
   const prev = spendMap.get(userId) ?? 0;
-  spendMap.set(userId, prev + cost);
+  const next = prev + cost;
+  spendMap.set(userId, next);
+
+  routerLog("recordActualSpend", {
+    userId,
+    model,
+    promptTokens,
+    completionTokens,
+    cost: `$${cost.toFixed(6)}`,
+    totalSpend: `$${next.toFixed(6)}`,
+  });
 }
 
-export function getEstimatedSpend(userId: string): number {
-  return spendMap.get(userId) ?? 0;
+export async function getEstimatedSpend(userId: string): Promise<number> {
+  const spend = spendMap.get(userId) ?? 0;
+  routerLog("getEstimatedSpend", {
+    userId,
+    spend: `$${spend.toFixed(6)}`,
+  });
+  return spend;
 }
 
 const BUDGET_WARN_USD = 10.0;
@@ -73,6 +98,9 @@ const HEAVY_PATTERNS = [
   /\bgenerate.{0,10}review\b/i,
   /\bpgn\b.{0,40}(review|analys)/i,
   /lichess\.org\//i,
+  /\b(review|check|look at)\b.{0,30}\b(my|this|the)\b.{0,10}\bgame\b/i,
+  /\bwhat (did i do|went) wrong\b/i,
+  /\bwhere did i (go wrong|blunder|miss)\b/i,
 ];
 
 const MEDIUM_PATTERNS = [
@@ -96,28 +124,89 @@ const MEDIUM_PATTERNS = [
   /\bchessdb\b/i,
 ];
 
+function extractPartsText(parts: unknown[]): string {
+  return parts
+    .map((part) => {
+      if (typeof part === "string") return part;
+      if (
+        part !== null &&
+        typeof part === "object" &&
+        "text" in part &&
+        typeof (part as Record<string, unknown>).text === "string"
+      ) {
+        return (part as { text: string }).text;
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .join(" ");
+}
+
+function extractTextFromMessage(msg: Record<string, unknown>): string {
+  if (Array.isArray(msg.parts) && msg.parts.length > 0) {
+    return extractPartsText(msg.parts);
+  }
+  if (typeof msg.content === "string") {
+    return msg.content;
+  }
+  if (Array.isArray(msg.content)) {
+    return extractPartsText(msg.content);
+  }
+  return "";
+}
+
 export function classifyQuery(
-  messages: Array<{ role: string; content: unknown }>,
+  messages: Array<Record<string, unknown>>,
 ): QueryTier {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  if (!lastUser) return "light";
 
-  const text =
-    typeof lastUser.content === "string"
-      ? lastUser.content
-      : JSON.stringify(lastUser.content);
+  if (!lastUser) {
+    routerLog("classifyQuery", {
+      result: "light",
+      reason: "no user message found in history",
+      messageCount: messages.length,
+    });
+    return "light";
+  }
+
+  const text = extractTextFromMessage(lastUser);
+  const preview = text.length > 120 ? text.slice(0, 120) + "…" : text;
 
   for (const re of HEAVY_PATTERNS) {
-    if (re.test(text)) return "heavy";
+    if (re.test(text)) {
+      routerLog("classifyQuery", {
+        result: "heavy",
+        matchedPattern: re.toString(),
+        messageCount: messages.length,
+        lastMessagePreview: preview,
+      });
+      return "heavy";
+    }
   }
+
   for (const re of MEDIUM_PATTERNS) {
-    if (re.test(text)) return "medium";
+    if (re.test(text)) {
+      routerLog("classifyQuery", {
+        result: "medium",
+        matchedPattern: re.toString(),
+        messageCount: messages.length,
+        lastMessagePreview: preview,
+      });
+      return "medium";
+    }
   }
+
+  routerLog("classifyQuery", {
+    result: "light",
+    reason: "no pattern matched",
+    messageCount: messages.length,
+    lastMessagePreview: preview,
+  });
   return "light";
 }
 
 export const LIGHT_MODEL = "minimax/minimax-m2.7";
-export const MEDIUM_MODEL = "minimax/minimax-m2.5";
+export const MEDIUM_MODEL = "google/gemini-3-flash-preview";
 export const HEAVY_MODEL = "anthropic/claude-sonnet-4.6";
 
 export interface ResolveModelResult {
@@ -131,42 +220,62 @@ export function resolveModel(
   tier: QueryTier,
   estimatedSpend: number,
 ): ResolveModelResult {
-  // Free / always-allowed models bypass all routing logic
+  const baseCtx = {
+    userSelectedModel,
+    classifiedTier: tier,
+    estimatedSpend: `$${estimatedSpend.toFixed(4)}`,
+    budgetWarn: `$${BUDGET_WARN_USD}`,
+    budgetHard: `$${BUDGET_HARD_USD}`,
+  };
+
   const isFreeChoice =
     userSelectedModel.endsWith(":free") || userSelectedModel === LIGHT_MODEL;
   if (isFreeChoice) {
-    return {
-      model: userSelectedModel,
-      tier: "light",
-      reason: "user-free-choice",
-    };
+    const result = { model: userSelectedModel, tier: "light" as QueryTier, reason: "user-free-choice" };
+    routerLog("resolveModel", { ...baseCtx, ...result, decision: "bypassed — free choice" });
+    return result;
   }
 
   if (estimatedSpend >= BUDGET_HARD_USD) {
-    return { model: LIGHT_MODEL, tier: "light", reason: "budget-hard-cap" };
+    const result = { model: LIGHT_MODEL, tier: "light" as QueryTier, reason: "budget-hard-cap" };
+    routerLog("resolveModel", { ...baseCtx, ...result, decision: "hard cap hit — forced to light model" });
+    return result;
   }
 
   let effectiveTier = tier;
   if (estimatedSpend >= BUDGET_WARN_USD && tier === "heavy") {
     effectiveTier = "medium";
+    routerLog("resolveModel", {
+      ...baseCtx,
+      decision: "budget warn — downgraded heavy → medium",
+    });
   }
 
-   const isRoutingModel =
-    userSelectedModel === LIGHT_MODEL  ||
+  const isRoutingModel =
+    userSelectedModel === LIGHT_MODEL ||
     userSelectedModel === MEDIUM_MODEL ||
     userSelectedModel === HEAVY_MODEL;
- 
+
   if (!isRoutingModel) {
-    return {
-      model: userSelectedModel,
-      tier: effectiveTier,
-      reason: "user-explicit-choice",
-    };
+    const result = { model: userSelectedModel, tier: effectiveTier, reason: "user-explicit-choice" };
+    routerLog("resolveModel", { ...baseCtx, ...result, decision: "non-routing model — honouring user pick" });
+    return result;
   }
 
-  if (effectiveTier === "light")
-    return { model: LIGHT_MODEL, tier: "light", reason: "query-is-light" };
-  if (effectiveTier === "medium")
-    return { model: MEDIUM_MODEL, tier: "medium", reason: "query-is-medium" };
-  return { model: HEAVY_MODEL, tier: "heavy", reason: "query-is-heavy" };
+  let result: ResolveModelResult;
+  if (effectiveTier === "light") {
+    result = { model: LIGHT_MODEL, tier: "light", reason: "query-is-light" };
+  } else if (effectiveTier === "medium") {
+    result = { model: MEDIUM_MODEL, tier: "medium", reason: "query-is-medium" };
+  } else {
+    result = { model: HEAVY_MODEL, tier: "heavy", reason: "query-is-heavy" };
+  }
+
+  routerLog("resolveModel", {
+    ...baseCtx,
+    effectiveTier,
+    ...result,
+    decision: `routing model slot → ${result.model}`,
+  });
+  return result;
 }
