@@ -41,6 +41,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // BUG FIX: apiSettings.model can arrive with surrounding quotes from the
+  // client (e.g. '"anthropic/claude-sonnet-4.6"'). Strip them once here so
+  // every downstream consumer — PREMIUM_MODELS check, resolveModel,
+  // RequestContext, cost tracking — always sees a clean model string.
+  // Without this the OpenRouter modelId ends up as
+  // '"anthropic/claude-sonnet-4.6"@preset/chessagine' which is invalid.
+  const selectedModel = apiSettings.model.replace(/^"|"$/g, "");
+
   if (!isAuthenticated) {
     return Response.json(
       {
@@ -52,11 +60,11 @@ export async function POST(req: Request) {
     );
   }
 
-  if (PREMIUM_MODELS.includes(apiSettings.model) && !isPaidTier) {
+  if (PREMIUM_MODELS.includes(selectedModel) && !isPaidTier) {
     return Response.json(
       {
         error:
-          `The model "${apiSettings.model}" is only available on the paid tier. ` +
+          `The model "${selectedModel}" is only available on the paid tier. ` +
           "Please upgrade your plan at /pricing to access premium models.",
       },
       { status: 403 },
@@ -86,26 +94,26 @@ export async function POST(req: Request) {
 
   const requestContext = new RequestContext();
 
-  let resolvedModel = apiSettings.model;
+  let resolvedModel = selectedModel;
 
   if (isPaidTier && userId) {
     const tier = classifyQuery(messages);
-    const estimatedSpend = getEstimatedSpend(userId);
+    const estimatedSpend = await getEstimatedSpend(userId);
     const {
       model: routedModel,
       tier: effectiveTier,
       reason,
-    } = resolveModel(apiSettings.model, tier, estimatedSpend);
+    } = resolveModel(selectedModel, tier, estimatedSpend);
 
     resolvedModel = routedModel;
 
-    requestContext.set("model", apiSettings.model);
+    requestContext.set("model", selectedModel);
     requestContext.set("resolvedModel", resolvedModel);
     requestContext.set("routingTier", effectiveTier);
     requestContext.set("routingReason", reason);
   } else {
-    requestContext.set("model", apiSettings.model.replace(/"/g, "") + ":free");
-    requestContext.set("resolvedModel", apiSettings.model.replace(/"/g, "") + ":free");
+    requestContext.set("model", selectedModel + ":free");
+    requestContext.set("resolvedModel", selectedModel + ":free");
   }
 
   const augmentedMessages = knowledgeContext
@@ -136,7 +144,7 @@ export async function POST(req: Request) {
       const capturedModel = resolvedModel;
       stream.usage
         .then((usage) => {
-          recordActualSpend(
+          return recordActualSpend(
             capturedUserId,
             capturedModel,
             usage.inputTokens ?? 0,
