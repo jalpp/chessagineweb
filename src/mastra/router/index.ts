@@ -151,6 +151,19 @@ export function resolveModel(
     effectiveTier = "medium";
   }
 
+   const isRoutingModel =
+    userSelectedModel === LIGHT_MODEL  ||
+    userSelectedModel === MEDIUM_MODEL ||
+    userSelectedModel === HEAVY_MODEL;
+ 
+  if (!isRoutingModel) {
+    return {
+      model: userSelectedModel,
+      tier: effectiveTier,
+      reason: "user-explicit-choice",
+    };
+  }
+
   if (effectiveTier === "light")
     return { model: LIGHT_MODEL, tier: "light", reason: "query-is-light" };
   if (effectiveTier === "medium")
