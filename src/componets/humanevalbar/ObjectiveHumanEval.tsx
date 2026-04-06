@@ -134,10 +134,22 @@ export const ObjectiveHumanEval: React.FC<ObjectiveHumanEvalProps> = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 2 }}>
-        <CircularProgress size={18} />
-        <Typography variant="body2" color="text.secondary">Running Maia 3 evaluations…</Typography>
-      </Box>
+      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+            <BrainIcon sx={{ fontSize: 18, color: "primary.main" }} />
+            <Typography variant="subtitle2" fontWeight={700}>Objective Human Eval</Typography>
+            <Chip label="Maia 3" size="small" color="primary" sx={{ fontSize: "10px", height: 18, fontWeight: 600 }} />
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
+            <CircularProgress size={20} />
+            <Typography variant="body2" color="text.secondary">
+              Maia 3 is computing evaluations…
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
     );
   }
 

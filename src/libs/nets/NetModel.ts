@@ -18,19 +18,20 @@ class NetModel {
   private readonly modelUrl: string
   protected readonly options: NetModelOptions
   private readonly storage = new NetModelStorage()
-  private initPromise: Promise<void>
+  private initPromise: Promise<void> | null = null  // null = not started yet
 
   constructor(options: NetModelOptions) {
-  this.modelUrl = options.model
-  this.options = options
-  this.initPromise = Promise.resolve() 
-}
+    this.modelUrl = options.model
+    this.options = options
+  }
 
-public async initializeIfNeeded() {
-  if (this.initPromise !== Promise.resolve()) return
-  this.options.setStatus('loading')
-  this.initPromise = this.initialize()
-}
+  
+  public async initializeIfNeeded() {
+    if (this.initPromise !== null) return   // already started or done
+    this.options.setStatus('loading')
+    this.initPromise = this.initialize()
+    await this.initPromise
+  }
 
   private async initialize() {
     try {
@@ -38,13 +39,13 @@ public async initializeIfNeeded() {
 
       const cached = await this.storage.getModel(this.modelUrl)
       if (!cached) {
-        console.log(`No cache found for ${this.modelUrl}, starting download...`)
+        console.log(`No cache for ${this.modelUrl}, downloading...`)
         this.options.setStatus('no-cache')
         await this.downloadModel()
         return
       }
 
-      console.log(`Cache found for ${this.modelUrl}, initializing...`)
+      console.log(`Cache hit for ${this.modelUrl}, loading ONNX session...`)
       await this.initializeModel(cached)
       this.options.setStatus('ready')
     } catch (err) {
@@ -57,7 +58,6 @@ public async initializeIfNeeded() {
 
   async downloadModel() {
     try {
-      // Check if this model is already being downloaded
       if (downloadLocks.has(this.modelUrl)) {
         console.log(`Download already in progress for ${this.modelUrl}, waiting...`)
         this.options.setStatus('downloading')
@@ -67,7 +67,6 @@ public async initializeIfNeeded() {
         return
       }
 
-      // Create a new download promise
       const downloadPromise = this._performDownload()
       downloadLocks.set(this.modelUrl, downloadPromise)
 
@@ -76,7 +75,6 @@ public async initializeIfNeeded() {
         await this.initializeModel(buffer)
         this.options.setStatus('ready')
       } finally {
-        // Clean up the lock after download completes (success or failure)
         downloadLocks.delete(this.modelUrl)
       }
     } catch (e) {
@@ -99,8 +97,6 @@ public async initializeIfNeeded() {
     }
 
     const reader = res.body.getReader()
-    const len = Number(res.headers.get('Content-Length') ?? 0)
-
     const chunks: Uint8Array[] = []
     let received = 0
 
@@ -124,10 +120,10 @@ public async initializeIfNeeded() {
       offset += c.length
     }
 
-    // Store in IndexedDB
     await this.storage.storeModel(this.modelUrl, buffer.buffer)
     console.log(`Stored in IndexedDB: ${this.modelUrl}`)
 
+    this.options.setProgress(100)
     return buffer.buffer
   }
 
@@ -135,20 +131,16 @@ public async initializeIfNeeded() {
     console.log(`Initializing ONNX model: ${this.modelUrl}`)
     this.model = await InferenceSession.create(buffer)
     console.log(`Model ready: ${this.modelUrl}`)
-    // console.log('ONNX inputs:', this.model.inputNames)
-    // console.log('ONNX outputs:', this.model.outputNames)
   }
 
   public get getModel() {
     return this.model
   }
 
-  // Wait for initialization to complete
   public async waitUntilReady(): Promise<void> {
-    await this.initPromise
+    if (this.initPromise) await this.initPromise
   }
 
-  // Check if model is ready
   public isReady(): boolean {
     return this.model !== undefined && this.model !== null
   }

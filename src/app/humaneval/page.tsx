@@ -9,6 +9,7 @@ import {
   Button,
   Chip,
   Divider,
+  CircularProgress,
   useMediaQuery,
   useTheme,
   Drawer,
@@ -23,6 +24,7 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { useNets } from "@/hooks/useNets";
+import { useNetStatus } from "@/context/NetContext";
 import { ObjectiveHumanEval } from "@/componets/humanevalbar/ObjectiveHumanEval";
 import { SubjectiveHumanEval } from "@/componets/humanevalbar/SubjectiveHumanEval";
 import { HumanEvalBar } from "@/componets/humanevalbar/HumanEvalBar";
@@ -47,7 +49,13 @@ export default function HumanEvalBarPage() {
   const activeFen = game.fen();
   const sideToMove = activeFen.split(" ")[1] === "b" ? "Black" : "White";
 
-  const { evaluations, isLoading, Maiaerror: maiaError } = useNets({ fen: activeFen });
+  const { evaluations, isLoading, Maiaerror: maiaError, evaluationsFen } = useNets({ fen: activeFen });
+  const { status } = useNetStatus();
+
+  // Only show calculating state when Maia 3 is actually downloaded and ready.
+  // If not downloaded, evaluationsFen never updates, causing infinite loading.
+  const maia3Ready = status.maia3 === "ready";
+  const isCalculating = maia3Ready && (isLoading || evaluationsFen !== activeFen);
 
   // Sidebar bar: Maia3@2600 only — falls back to 0.5 (equal) if not loaded yet
   const sidebarWinProb = evaluations.maia3?.[MAIA3_MODELS[DEFAULT_MAIA3_IDX]]?.value ?? 0.5;
@@ -90,7 +98,7 @@ export default function HumanEvalBarPage() {
 
   const AnalysisPanel = () => (
     <Stack spacing={2.5}>
-      <ObjectiveHumanEval evaluations={evaluations} isLoading={isLoading} error={maiaError} />
+      <ObjectiveHumanEval evaluations={evaluations} isLoading={isCalculating} error={maiaError} />
       <SubjectiveHumanEval />
     </Stack>
   );
@@ -144,12 +152,44 @@ export default function HumanEvalBarPage() {
 
             {/* Eval bar left of board */}
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5, pt: "1px" }}>
-              <HumanEvalBar winProb={sidebarWinProb} height={400} showLabels />
+              <Box sx={{ position: "relative" }}>
+                <HumanEvalBar
+                  winProb={sidebarWinProb}
+                  height={400}
+                  showLabels
+                />
+                {/* Loading overlay on the bar while Maia is computing */}
+                {isCalculating && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 0.5,
+                      bgcolor: "rgba(0,0,0,0.45)",
+                      borderRadius: 1,
+                      zIndex: 3,
+                    }}
+                  >
+                    <CircularProgress size={14} sx={{ color: "#fff" }} />
+                  </Box>
+                )}
+              </Box>
               <Typography
                 variant="caption"
-                sx={{ fontSize: "9px", color: "text.disabled", textAlign: "center", maxWidth: 52, lineHeight: 1.3, mt: 0.25 }}
+                sx={{
+                  fontSize: "9px",
+                  color: isCalculating ? "text.disabled" : "text.disabled",
+                  textAlign: "center",
+                  maxWidth: 52,
+                  lineHeight: 1.3,
+                  mt: 0.25,
+                }}
               >
-                {sidebarLabel}
+                {isCalculating ? "calculating…" : sidebarLabel}
               </Typography>
             </Box>
 
