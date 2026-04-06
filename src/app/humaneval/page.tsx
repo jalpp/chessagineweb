@@ -29,7 +29,7 @@ import { HumanEvalBar } from "@/componets/humanevalbar/HumanEvalBar";
 import { MAIA3_MODELS, MAIA3_RATING_VALUES } from "@/libs/nets/types";
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const DEFAULT_MAIA3_IDX = 10; // 1600 Elo
+const DEFAULT_MAIA3_IDX = 20; // 2600 Elo
 
 function isValidFen(fen: string): boolean {
   try { new Chess(fen); return true; } catch { return false; }
@@ -49,22 +49,9 @@ export default function HumanEvalBarPage() {
 
   const { evaluations, isLoading, Maiaerror: maiaError } = useNets({ fen: activeFen });
 
-  // Sidebar bar: prefer Maia3@1600, else bigLeela, else elitemaia, else 0.5 (equal)
-  const sidebarWinProb = (() => {
-    const m3 = evaluations.maia3?.[MAIA3_MODELS[DEFAULT_MAIA3_IDX]];
-    if (m3) return m3.value;
-    if (evaluations.bigLeela) return evaluations.bigLeela.value;
-    if (evaluations.elitemaia) return evaluations.elitemaia.value;
-    return 0.5;
-  })();
-
-  const sidebarLabel = (() => {
-    const m3 = evaluations.maia3?.[MAIA3_MODELS[DEFAULT_MAIA3_IDX]];
-    if (m3) return `Maia3 ${MAIA3_RATING_VALUES[DEFAULT_MAIA3_IDX]}`;
-    if (evaluations.bigLeela) return "Leela T1";
-    if (evaluations.elitemaia) return "Elite Leela";
-    return "No net";
-  })();
+  // Sidebar bar: Maia3@2600 only — falls back to 0.5 (equal) if not loaded yet
+  const sidebarWinProb = evaluations.maia3?.[MAIA3_MODELS[DEFAULT_MAIA3_IDX]]?.value ?? 0.5;
+  const sidebarLabel = `Maia3 ${MAIA3_RATING_VALUES[DEFAULT_MAIA3_IDX]}`;
 
   // ── Board interaction ─────────────────────────────────────────────────────
   const onDrop = useCallback((args: PieceDropHandlerArgs) => {
@@ -119,9 +106,9 @@ export default function HumanEvalBarPage() {
           <Chip label="Beta" size="small" variant="outlined" sx={{ fontSize: "10px" }} />
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 620 }}>
-          Evaluate any position through a human lens. <strong>Objective eval</strong> uses neural
-          net Q values converted to centipawns via the Lichess sigmoid.{" "}
-          <strong>Subjective eval</strong> lets you enter your own W/D/L estimates and computes Q.
+          An estimated human eval bar that predicts the human objective eval using{" "}
+          <strong>Maia WDL probabilities</strong>, and human estimated eval by{" "}
+          <strong>subjective WDL rates</strong>.
         </Typography>
       </Box>
 

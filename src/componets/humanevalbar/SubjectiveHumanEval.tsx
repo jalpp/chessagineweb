@@ -80,11 +80,10 @@ export const SubjectiveHumanEval: React.FC = () => {
     []
   );
 
-  const q = wdlToQ(wdl);
-  // Convert to white-relative [-1, 1] range (same convention as rest of app)
-  // wdlToQ gives [0,1]; eval bar expects [-1,1]
-  const qNormalized = q * 2 - 1;
-  const cp = qToCp(qNormalized);
+  // wdlToQ returns [0,1] — a white win probability — which is exactly what HumanEvalBar expects
+  const winProb = wdlToQ(wdl);
+  const q = winProb * 2 - 1; // [-1,1] for formula display
+  const cp = qToCp(q);
   const total = wdl.win + wdl.draw + wdl.loss;
   const isValid = Math.abs(total - 100) < 1;
 
@@ -225,14 +224,14 @@ export const SubjectiveHumanEval: React.FC = () => {
                 sx={{ display: "block", fontSize: "10px", color: "text.secondary", mb: 0.5 }}
               >
                 = ({wdl.win} + 0.5 × {wdl.draw}) / {total} ={" "}
-                <strong>{q.toFixed(4)}</strong>
+                <strong>{winProb.toFixed(4)}</strong>
               </Typography>
               <Typography
                 variant="caption"
                 sx={{ display: "block", fontSize: "10px", color: "text.secondary" }}
               >
                 CP ≈{" "}
-                <strong style={{ color: getQColor(q) }}>
+                <strong style={{ color: getQColor(winProb) }}>
                   {isValid
                     ? (cp >= 0 ? "+" : "") + (cp / 100).toFixed(2)
                     : "—"}
@@ -259,7 +258,7 @@ export const SubjectiveHumanEval: React.FC = () => {
               flexShrink: 0,
             }}
           >
-            <HumanEvalBar winProb={isValid ? (qNormalized + 1) / 2 : 0.5} height={280} />
+            <HumanEvalBar winProb={isValid ? winProb : 0.5} height={280} />
             <Chip
               label={isValid ? `Q = ${q.toFixed(3)}` : "—"}
               size="small"
