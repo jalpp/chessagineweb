@@ -34,6 +34,18 @@ export class NetModelStorage {
     })
   }
 
+  /**
+   * Derives a stable cache key from the model URL so each model
+   * gets its own IndexedDB record. Previously all models used the
+   * hardcoded key 'maia-rapid-model', causing them to overwrite each other.
+   */
+  private modelKey(modelUrl: string): string {
+    // Use the filename portion of the URL as the key, e.g.
+    // '/static/nets/maia3_simplified.onnx' → 'model:maia3_simplified.onnx'
+    const filename = modelUrl.split('/').pop() ?? modelUrl
+    return `model:${filename}`
+  }
+
   async storeModel(modelUrl: string, buffer: ArrayBuffer): Promise<void> {
     try {
       const db = await this.openDB()
@@ -41,7 +53,7 @@ export class NetModelStorage {
       const store = transaction.objectStore(this.storeName)
 
       const modelData: ModelStorage = {
-        id: 'maia-rapid-model',
+        id: this.modelKey(modelUrl),   // ← per-model key
         url: modelUrl,
         data: new Blob([buffer]),
         timestamp: Date.now(),
@@ -54,7 +66,7 @@ export class NetModelStorage {
         request.onerror = () => reject(request.error)
       })
 
-      console.log('Maia model stored in IndexedDB')
+      console.log(`Model stored in IndexedDB: ${this.modelKey(modelUrl)}`)
     } catch (error) {
       console.error('Failed to store model in IndexedDB:', error)
       throw error
@@ -62,74 +74,49 @@ export class NetModelStorage {
   }
 
   async getModel(modelUrl: string): Promise<ArrayBuffer | null> {
-    console.log('Storage: getModel called with URL:', modelUrl)
+    const key = this.modelKey(modelUrl)
+    console.log(`Storage: getModel key=${key}`)
 
     try {
-      console.log('Storage: Opening IndexedDB...')
       const db = await this.openDB()
       const transaction = db.transaction([this.storeName], 'readonly')
       const store = transaction.objectStore(this.storeName)
 
-      console.log('Storage: Requesting model data...')
-      const modelData = await new Promise<ModelStorage | null>(
-        (resolve, reject) => {
-          const request = store.get('maia-rapid-model')
-          request.onsuccess = () => {
-            console.log(
-              'Storage: IndexedDB request successful, result:',
-              request.result ? 'Found' : 'Not found',
-            )
-            resolve(request.result || null)
-          }
-          request.onerror = () => {
-            console.log('Storage: IndexedDB request error:', request.error)
-            reject(request.error)
-          }
-        },
-      )
+      const modelData = await new Promise<ModelStorage | null>((resolve, reject) => {
+        const request = store.get(key)
+        request.onsuccess = () => resolve(request.result || null)
+        request.onerror = () => reject(request.error)
+      })
 
       if (!modelData) {
-        console.log(
-          'Storage: No model data found in IndexedDB (normal for first time)',
-        )
+        console.log(`Storage: No cache for key=${key}`)
         return null
       }
 
-      // Check if URL matches (for cache invalidation)
+      // Invalidate if the URL changed (e.g. model path updated)
       if (modelData.url !== modelUrl) {
-        console.log('Storage: Model URL changed, clearing old cache')
-        console.log('Storage: Cached URL:', modelData.url)
-        console.log('Storage: Requested URL:', modelUrl)
-        await this.deleteModel()
-        console.log(
-          'Storage: Old cache cleared, model needs to be re-downloaded',
-        )
+        console.log(`Storage: URL mismatch for key=${key}, clearing`)
+        await this.deleteModel(modelUrl)
         return null
       }
 
-      console.log('Storage: Converting Blob to ArrayBuffer...')
-      // Convert Blob back to ArrayBuffer
       const buffer = await modelData.data.arrayBuffer()
-      console.log(
-        'Storage: Successfully retrieved model, size:',
-        buffer.byteLength,
-      )
+      console.log(`Storage: Cache hit key=${key} size=${buffer.byteLength}`)
       return buffer
     } catch (error) {
       console.error('Storage: IndexedDB operation failed:', error)
-      // Don't throw - return null to indicate model not available
       return null
     }
   }
 
-  async deleteModel(): Promise<void> {
+  async deleteModel(modelUrl: string): Promise<void> {
     try {
       const db = await this.openDB()
       const transaction = db.transaction([this.storeName], 'readwrite')
       const store = transaction.objectStore(this.storeName)
 
       await new Promise<void>((resolve, reject) => {
-        const request = store.delete('maia-rapid-model')
+        const request = store.delete(this.modelKey(modelUrl))
         request.onsuccess = () => resolve()
         request.onerror = () => reject(request.error)
       })
@@ -147,9 +134,7 @@ export class NetModelStorage {
   }> {
     try {
       const supported = 'indexedDB' in window
-      if (!supported) {
-        return { supported: false }
-      }
+      if (!supported) return { supported: false }
 
       let quota: number | undefined
       let usage: number | undefined
@@ -160,25 +145,7 @@ export class NetModelStorage {
         usage = estimate.usage
       }
 
-      const db = await this.openDB()
-      const transaction = db.transaction([this.storeName], 'readonly')
-      const store = transaction.objectStore(this.storeName)
-
-      const modelData = await new Promise<ModelStorage | null>(
-        (resolve, reject) => {
-          const request = store.get('maia-rapid-model')
-          request.onsuccess = () => resolve(request.result || null)
-          request.onerror = () => reject(request.error)
-        },
-      )
-
-      return {
-        supported: true,
-        quota,
-        usage,
-        modelSize: modelData?.size,
-        modelTimestamp: modelData?.timestamp,
-      }
+      return { supported: true, quota, usage }
     } catch (error) {
       console.error('Failed to get storage info:', error)
       return { supported: false }
@@ -189,11 +156,7 @@ export class NetModelStorage {
     try {
       if ('storage' in navigator && 'persist' in navigator.storage) {
         const isPersistent = await navigator.storage.persist()
-        console.log(
-          isPersistent
-            ? 'Persistent storage granted'
-            : 'Persistent storage denied',
-        )
+        console.log(isPersistent ? 'Persistent storage granted' : 'Persistent storage denied')
         return isPersistent
       }
       return false
@@ -205,8 +168,15 @@ export class NetModelStorage {
 
   async clearAllStorage(): Promise<void> {
     try {
-      await this.deleteModel()
-      console.log('Maia storage cleared')
+      const db = await this.openDB()
+      const transaction = db.transaction([this.storeName], 'readwrite')
+      const store = transaction.objectStore(this.storeName)
+      await new Promise<void>((resolve, reject) => {
+        const request = store.clear()
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(request.error)
+      })
+      console.log('All model storage cleared')
     } catch (error) {
       console.warn('Failed to clear storage:', error)
     }
