@@ -26,7 +26,8 @@ import {
   FaChessBoard, 
   FaPuzzlePiece, 
   FaGear,
-  FaBook
+  FaBook,
+  FaDiscord
 } from "react-icons/fa6";
 import { useClerk } from "@clerk/nextjs";
 import {
@@ -34,7 +35,8 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
-import { ChatBubble, GitHub, SmartToy } from "@mui/icons-material";
+import { ChatBubble, GitHub, SmartToy, BarChart } from "@mui/icons-material";
+
 
 export default function NavBar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -62,11 +64,14 @@ export default function NavBar() {
     { label: "Analyze Position", href: "/position",                            icon: <FaChessBoard />, isExternal: false },
     { label: "Analyze Game",     href: "/game",                                 icon: <FaChessPawn />,  isExternal: false },
     { label: "Play Bot",         href: "/play",                                 icon: <SmartToy />,     isExternal: false },
+    { label: "Human Eval",         href: "/humaneval",                                 icon: <BarChart />,     isExternal: false },
     { label: "Agine Chat",             href: "/chat",                                 icon: <ChatBubble />,     isExternal: false },
     { label: "Puzzles",          href: "/puzzle",                               icon: <FaPuzzlePiece />,isExternal: false },
     { label: "Settings",         href: "/setting",                              icon: <FaGear />,       isExternal: false },
     { label: "Docs",             href: "/docs",                                 icon: <FaBook />,       isExternal: false },
     { label: "Github",           href: "https://github.com/jalpp/chessagineweb",icon: <GitHub />,       isExternal: true  },
+    { label: "Discord",           href: "https://discord.gg/bCPwe6XWcH",icon: <FaDiscord />,       isExternal: true  },
+
   ];
 
   return (
