@@ -72,9 +72,9 @@ $$cp \approx \frac{\ln\!\left(\dfrac{1-Q}{1+Q}\right)}{-0.00368208}$$
 
 ---
 
-## Step 4: Human Equivalence Estimate Function
+## Step 4: Human Estimate Eval Function
 
-We define the **Human Equivalence Estimate** $HEE(Q)$ as the inverted sigmoid applied to any quality score $Q$:
+We define the **Human Estimate Eval** $HEE(Q)$ as the inverted sigmoid applied to any quality score $Q$:
 
 $$HEE(Q) \approx \frac{\ln\!\left(\dfrac{1-Q}{1+Q}\right)}{-0.00368208}$$
 
