@@ -8,7 +8,7 @@ import {
 
 import { getAgineMcpClient } from "../mcp/agineClient";
 import { displayChessboardTool, loadGameTool } from "./tools";
-import { classifyQuery } from "../router";
+
 
 const PREMIUM_MODELS = new Set<string>([
   "google/gemini-3.1-pro-preview",
@@ -107,8 +107,6 @@ async function buildPinnedTools() {
     load_chess_game: loadGameTool,
   };
 }
-
-export { classifyQuery };
 
 export const chessAgine = new Agent({
   id: "chessagine-agent",

@@ -46,14 +46,12 @@ export const renderHeader = () => (
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            All chess tools are free. Agine Chat includes three community
-            AI models, no setup required.
+            All chess tools are free. Agine Chat on free tier allows access to small random selected 
+            AI models from openRouter, no setup required.
           </Typography>
           <Box display="flex" flexWrap="wrap" gap={0.75}>
             {[
-              "arcee-ai/trinity-large-preview",
-              "z-ai/glm-4.5-air",
-              "stepfun/step-3.5-flash",
+              "openrouter/free",
             ].map((m) => (
               <Chip
                 key={m}
@@ -121,7 +119,7 @@ export const renderHeader = () => (
             </ListItemIcon>
             <ListItemText
               primary="Agine Chat with community models"
-              secondary="Sign in and start chatting immediately. Three free AI models powered by community resources."
+              secondary="Sign in and start chatting immediately. random free AI models powered by community resources."
             />
           </ListItem>
           <ListItem disableGutters>

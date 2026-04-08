@@ -68,7 +68,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
   agineCloud: {
     name: 'aginecloud',
     models: [
-      'qwen/qwen3.6-plus',
+      'openrouter/free',
       'qwen/qwen3.5-9b',
       'nvidia/nemotron-3-super-120b-a12b',
       'meta-llama/llama-3.1-8b-instruct',
@@ -92,7 +92,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is ChessAgine and how is it different from a chess coach?",
     answer:
-      "ChessAgine is your AI chess buddy, not a formal coach. Think of it as a knowledgeable friend who's always available to chat about chess, analyze positions, explain concepts, and help you explore the game. Unlike a structured coaching program, ChessAgine adapts to your curiosity and provides conversational, friendly guidance whenever you need it.",
+      "ChessAgine is your AI chess buddy, NOT a formal coach. Think of it as a knowledgeable friend who's always available to chat about chess, analyze positions, explain concepts, and help you explore the game. Unlike a structured coaching program, ChessAgine adapts to your curiosity and provides conversational, friendly guidance whenever you need it.",
     category: "general",
   },
   {
@@ -117,7 +117,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is AgineCloud and how do I use it?",
     answer:
-      "AgineCloud is ChessAgine's built-in cloud provider. Free accounts get access to three community-hosted open-source models instantly — no API keys or setup required. Paid tier users unlock four additional premium models including Google Gemini Pro and Claude Sonnet, running on dedicated resources for faster, more reliable responses.",
+      "AgineCloud is ChessAgine's built-in cloud provider. Free accounts get access to free random openrouter open-source models instantly. Paid tier users unlock four additional premium models including Google Gemini Pro and Claude Sonnet, running on dedicated resources for faster, more reliable responses.",
     category: "technical",
   },
   {
@@ -135,13 +135,13 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "Is ChessAgine trained on millions of chess games?",
     answer:
-      "ChessAgine itself is not specially trained, it uses base AI models' existing training. ChessAgine is FOSS that applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, and ChessAgine enhances their capabilities through prompt engineering and tool integrations.",
+      "ChessAgine itself is not specially trained, it uses base AI models' existing training. ChessAgine is FOSS that applies various AI engineering techniques to convert general AI models into chess-aware assistants. The underlying models have seen chess content during training, and ChessAgine enhances their capabilities through external chess services integrations.",
     category: "technical",
   },
   {
     question: "How accurate is ChessAgine's chess analysis?",
     answer:
-      "ChessAgine provides good general chess understanding and conversational explanations. For precise move evaluation it integrates with Stockfish. Premium models on the paid tier (Gemini Pro, Claude Sonnet) deliver noticeably better strategic reasoning and fewer errors than the free community models.",
+      "ChessAgine provides good general chess understanding and conversational explanations. For precise move evaluation it integrates with Stockfish. Premium models on the paid tier (Gemini Pro, Claude Sonnet) deliver noticeably better strategic reasoning and fewer errors than the free openrouter models.",
     category: "technical",
   },
   {
@@ -151,22 +151,28 @@ export const FAQ_ITEMS: FAQItem[] = [
     category: "technical",
   },
   {
-    question: "Can ChessAgine analyze games from chess.com or Lichess?",
+    question: "Can ChessAgine analyze games from Lichess?",
     answer:
       "Yes! You can paste PGN games from any platform and ChessAgine can analyze them. With the Lichess integration you can also explore opening databases and get additional context for your games.",
     category: "technical",
   },
+  {
+    question: "What is the daily usage limit, and why is it in place for paid tier users?",
+    answer:
+    "Paid tier users have a daily limit to ensure fair resource allocation and server stability. This helps us maintain affordable pricing while providing reliable service to all users. The limit is generous enough for typical chess study sessions. If you hit the daily limit, you can still continue using agine but with a free model.",
+    category: "cost",
+  },
 
   {
-    question: "Can I use ChessAgine completely free?",
+    question: "Can I use ChessAgine for completely free?",
     answer:
-      "Yes! All chess tools — position analysis, game review, puzzles, play bot, and opening explorer — are completely free. Agine Chat is also free with access to three community-hosted AI models. The only thing behind the paid tier is access to stronger premium AI models with more tool calls and a deeper chess context window.",
+      "Yes! All chess tools — position analysis, game review, puzzles, play bot, and opening explorer — are completely free. Agine Chat is also free with access to random free open router AI models. The only thing behind the paid tier is access to stronger premium AI models with more tool calls and a deeper chess context window with custom chess knowledgecards.",
     category: "cost",
   },
   {
     question: "What is included in the free plan vs. the paid tier?",
     answer:
-      "Free plan: all chess tools, Agine Chat, three community AI models (arcee-ai/trinity-large-preview, z-ai/glm-4.5-air, stepfun/step-3.5-flash), basic chess context window. Paid tier: everything in free, plus four premium models (google/gemini-3.1-pro-preview, anthropic/claude-sonnet-4.6, qwen/qwen3.5-9b, meta-llama/llama-3.1-8b-instruct), more tool calls per session, extended chess context window, dedicated resources, and priority response speed.",
+      "Free plan: all chess tools, Agine Chat, random open router free models, basic chess context window. Paid tier: everything in free, plus four premium models (google/gemini-3.1-pro-preview, anthropic/claude-sonnet-4.6, qwen/qwen3.5-9b, meta-llama/llama-3.1-8b-instruct), more tool calls per session, extended chess context window, dedicated resources, and priority response speed, and allowing agine to access your own chess knowledge cards for personalized context.",
     category: "cost",
   },
   {
@@ -186,7 +192,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "Is my chess data and conversation history private?",
     answer:
-      "Conversations are processed through AgineCloud's servers to generate AI responses. ChessAgine does not store your conversation history beyond the active session. For complete privacy, you can self-host ChessAgine — see the GitHub repo for instructions.",
+      "Conversations are processed through AgineCloud's servers to generate AI responses. ChessAgine does not store your conversation history beyond the active session. For complete privacy, you can self-host ChessAgine, see the GitHub repo for instructions.",
     category: "privacy",
   },
 ];
