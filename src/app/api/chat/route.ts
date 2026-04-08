@@ -5,12 +5,12 @@ import { mastra } from "@/mastra";
 import { resetAgineMcpClient } from "@/mastra/mcp/agineClient";
 import { RequestContext } from "@mastra/core/request-context";
 import { auth } from "@clerk/nextjs/server";
+import { calculateCost, FREE_FALLBACK_MODEL } from "@/mastra/router";
 import {
-  classifyQuery,
-  resolveModel,
-  recordActualSpend,
-  getEstimatedSpend,
-} from "@/mastra/router";
+  getDailyUsage,
+  incrementDailyUsage,
+  isDailyLimitHit,
+} from "@/lib/usage";
 
 export const maxDuration = 200;
 
@@ -37,16 +37,11 @@ export async function POST(req: Request) {
   if (!apiSettings?.model) {
     return Response.json(
       { error: "API settings are required (model)" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
-  // BUG FIX: apiSettings.model can arrive with surrounding quotes from the
-  // client (e.g. '"anthropic/claude-sonnet-4.6"'). Strip them once here so
-  // every downstream consumer — PREMIUM_MODELS check, resolveModel,
-  // RequestContext, cost tracking — always sees a clean model string.
-  // Without this the OpenRouter modelId ends up as
-  // '"anthropic/claude-sonnet-4.6"@preset/chessagine' which is invalid.
+ 
   const selectedModel = apiSettings.model.replace(/^"|"$/g, "");
 
   if (!isAuthenticated) {
@@ -56,7 +51,7 @@ export async function POST(req: Request) {
           "Please sign up to use Agine Chat. agineCloud models run on community donated resources. " +
           "You can read more about setup on the docs page.",
       },
-      { status: 401 },
+      { status: 401 }
     );
   }
 
@@ -67,7 +62,7 @@ export async function POST(req: Request) {
           `The model "${selectedModel}" is only available on the paid tier. ` +
           "Please upgrade your plan at /pricing to access premium models.",
       },
-      { status: 403 },
+      { status: 403 }
     );
   }
 
@@ -79,7 +74,7 @@ export async function POST(req: Request) {
             "Chess Knowledge Cards are a paid feature. " +
             "Please upgrade your plan at /pricing.",
         },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -87,34 +82,34 @@ export async function POST(req: Request) {
     if (contextBytes > MAX_KNOWLEDGE_BYTES) {
       return Response.json(
         { error: "Knowledge context exceeds the maximum allowed size." },
-        { status: 400 },
+        { status: 400 }
       );
     }
   }
 
-  const requestContext = new RequestContext();
 
   let resolvedModel = selectedModel;
+  let dailyLimitHit = false;
 
   if (isPaidTier && userId) {
-    const tier = classifyQuery(messages);
-    const estimatedSpend = await getEstimatedSpend(userId);
-    const {
-      model: routedModel,
-      tier: effectiveTier,
-      reason,
-    } = resolveModel(selectedModel, tier, estimatedSpend);
+    const usage = await getDailyUsage(userId);
+    dailyLimitHit = isDailyLimitHit(usage);
 
-    resolvedModel = routedModel;
+    if (dailyLimitHit && PREMIUM_MODELS.includes(selectedModel)) {
+      resolvedModel = FREE_FALLBACK_MODEL;
+    }
+  } else if (!isPaidTier) {
 
-    requestContext.set("model", selectedModel);
-    requestContext.set("resolvedModel", resolvedModel);
-    requestContext.set("routingTier", effectiveTier);
-    requestContext.set("routingReason", reason);
-  } else {
-    requestContext.set("model", selectedModel + ":free");
-    requestContext.set("resolvedModel", selectedModel + ":free");
+    if (!selectedModel.endsWith(":free")) {
+      resolvedModel = selectedModel + ":free";
+    }
   }
+
+ 
+  const requestContext = new RequestContext();
+  requestContext.set("model", resolvedModel);
+  requestContext.set("resolvedModel", resolvedModel);
+  requestContext.set("dailyLimitHit", dailyLimitHit);
 
   const augmentedMessages = knowledgeContext
     ? [
@@ -139,29 +134,37 @@ export async function POST(req: Request) {
       maxSteps: MAX_AGENT_STEPS,
     });
 
+    // Record actual token spend after streaming completes (fire and forget)
     if (isPaidTier && userId) {
       const capturedUserId = userId;
       const capturedModel = resolvedModel;
       stream.usage
         .then((usage) => {
-          return recordActualSpend(
-            capturedUserId,
+          const cost = calculateCost(
             capturedModel,
             usage.inputTokens ?? 0,
-            usage.outputTokens ?? 0,
+            usage.outputTokens ?? 0
           );
+          const totalTokens = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
+          return incrementDailyUsage(capturedUserId, totalTokens, cost);
         })
         .catch(() => {
-          // usage unavailable (e.g. provider didn't return it) — skip recording
+          // Usage unavailable — skip recording
         });
+    }
+
+    // Surface limit status to the client via response headers
+    const responseHeaders: Record<string, string> = {};
+    if (dailyLimitHit) {
+      responseHeaders["X-Daily-Limit-Hit"] = "true";
+      responseHeaders["X-Resolved-Model"] = resolvedModel;
     }
 
     return createUIMessageStreamResponse({
       stream: toAISdkStream(stream, { from: "agent" }) as any,
+      headers: responseHeaders,
     });
   } catch (err: any) {
-    // BUG FIX: only reset the MCP client for genuine MCP transport/protocol
-    // errors, not any error whose message happens to contain "MCP error".
     const isMcpError =
       err?.name === "McpError" ||
       /^MCP (connection|protocol|transport) error/i.test(err?.message ?? "");
