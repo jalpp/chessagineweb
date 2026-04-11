@@ -27,8 +27,7 @@ const SettingsPage = () => {
           {isSignedIn ? (
             <Box>
               <ModelSetting />
-              <Divider sx={{ my: 4 }} />
-              <IntegrationSettings />
+              
             </Box>
           ) : (
             <Box

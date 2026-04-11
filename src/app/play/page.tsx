@@ -968,7 +968,6 @@ export default function PlayVsBotsPage() {
           onChange={(_, newValue) => setActiveTab(newValue)}
         >
           <Tab label="Controls" />
-          {gameStatus !== "playing" && <Tab label="Chat" />}
         </Tabs>
       </Box>
 

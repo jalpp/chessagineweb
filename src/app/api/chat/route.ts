@@ -3,7 +3,7 @@ import { toAISdkStream } from "@mastra/ai-sdk";
 import { resetAgineMcpClient } from "@/mastra/mcp/agineClient";
 import { createChessAgineAgent } from "@/mastra/agents";
 import { RequestContext } from "@mastra/core/request-context";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { calculateCost, FREE_FALLBACK_MODEL } from "@/mastra/router";
 import {
   getDailyUsage,
@@ -125,6 +125,21 @@ export async function POST(req: Request) {
     }
   }
 
+  // Fetch the Lichess username from Clerk public metadata (set during OAuth connect)
+  let lichessUsername: string | undefined;
+  if (userId) {
+    try {
+      const client = await clerkClient();
+      const user = await client.users.getUser(userId);
+      const raw = user.publicMetadata?.lichessUsername;
+      if (typeof raw === "string" && raw.trim()) {
+        lichessUsername = raw.trim();
+      }
+    } catch {
+      // Non-critical — agent still works without it
+    }
+  }
+
   const requestContext = new RequestContext();
   requestContext.set("model", resolvedModel);
   requestContext.set("resolvedModel", resolvedModel);
@@ -132,23 +147,30 @@ export async function POST(req: Request) {
   if (personalOpenRouterKey) {
     requestContext.set("personalOpenRouterKey", personalOpenRouterKey);
   }
+  const systemParts: string[] = [];
 
-  const augmentedMessages = knowledgeContext
-    ? [
-        {
-          role: "system" as const,
-          content: [
-            "## Chess Knowledge Cards",
-            "The user has provided the following reference material. Use it to inform your responses where relevant.",
-            "",
-            knowledgeContext,
-          ].join("\n"),
-        },
-        ...messages,
-      ]
-    : messages;
+  if (lichessUsername) {
+    systemParts.push(
+      "## Lichess Username",
+      `The user's Lichess username is "${lichessUsername}". Use this automatically when fetching their games, studies, or any Lichess data, do not ask them for their username.`
+    );
+  }
 
-  // Build a per-request agent configured with the user's tokens and tier
+  if (knowledgeContext) {
+    systemParts.push(
+      "## Chess Knowledge Cards",
+      "The user has provided the following reference material. Use it to inform your responses where relevant.",
+      "",
+      knowledgeContext
+    );
+  }
+
+  const augmentedMessages =
+    systemParts.length > 0
+      ? [{ role: "system" as const, content: systemParts.join("\n") }, ...messages]
+      : messages;
+
+ 
   const agent = await createChessAgineAgent(
     { lichessToken, chessboardmagicToken },
     isPaidTier
@@ -160,7 +182,7 @@ export async function POST(req: Request) {
       maxSteps: MAX_AGENT_STEPS,
     });
 
-    // Record actual token spend after streaming completes (fire and forget)
+
     if (isPaidTier && userId) {
       const capturedUserId = userId;
       const capturedModel = resolvedModel;
@@ -180,7 +202,6 @@ export async function POST(req: Request) {
         });
     }
 
-    // Surface limit status to the client via response headers
     const responseHeaders: Record<string, string> = {};
     if (dailyLimitHit) {
       responseHeaders["X-Daily-Limit-Hit"] = "true";

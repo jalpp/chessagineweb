@@ -25,6 +25,7 @@ import {
 } from "@mui/icons-material";
 import { useLocalStorage } from "usehooks-ts";
 import { useAuth } from "@clerk/nextjs";
+import LichessConnectButton from "@/componets/lichess/LichessConnectButton";
 
 interface TokenFieldProps {
   label: string;
@@ -189,25 +190,22 @@ const IntegrationSettings: React.FC = () => {
         Free Features
       </Typography>
 
-      <TokenField
-        label="Lichess API Token"
-        storageKey="lichess-token"
-        placeholder="enter your token"
-        description={
-          <>
-            Connect your Lichess account to let Agine access your studies and pull
-            personalized content.{" "}
-            <Link
-              href="https://lichess.org/account/oauth/token/create"
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="caption"
-            >
-              Generate a Lichess token →
+      <Card variant="outlined" sx={{ mb: 2 }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" gap={1} mb={1}>
+            <Typography variant="subtitle2" fontWeight={600}>
+              Lichess Account
+            </Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+            Connect your Lichess account so Agine can access your studies and game history.{" "}
+            <Link href="https://lichess.org" target="_blank" rel="noopener noreferrer" variant="caption">
+              lichess.org
             </Link>
-          </>
-        }
-      />
+          </Typography>
+          <LichessConnectButton />
+        </CardContent>
+      </Card>
 
       <Divider sx={{ my: 3 }} />
 
