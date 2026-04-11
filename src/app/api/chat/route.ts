@@ -1,8 +1,7 @@
-// app/api/chat/route.ts
 import { createUIMessageStreamResponse } from "ai";
 import { toAISdkStream } from "@mastra/ai-sdk";
-import { mastra } from "@/mastra";
 import { resetAgineMcpClient } from "@/mastra/mcp/agineClient";
+import { createChessAgineAgent } from "@/mastra/agents";
 import { RequestContext } from "@mastra/core/request-context";
 import { auth } from "@clerk/nextjs/server";
 import { calculateCost, FREE_FALLBACK_MODEL } from "@/mastra/router";
@@ -30,7 +29,7 @@ export async function POST(req: Request) {
   const isAuthenticated = !!userId;
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
-  const { messages, apiSettings, knowledgeContext } = await req.json();
+  const { messages, apiSettings, knowledgeContext, tokens } = await req.json();
 
   apiSettings.provider = "agineCloud";
 
@@ -41,7 +40,6 @@ export async function POST(req: Request) {
     );
   }
 
- 
   const selectedModel = apiSettings.model.replace(/^"|"$/g, "");
 
   if (!isAuthenticated) {
@@ -66,6 +64,28 @@ export async function POST(req: Request) {
     );
   }
 
+  
+  const lichessToken =
+    typeof tokens?.lichessToken === "string" && tokens.lichessToken.trim()
+      ? tokens.lichessToken.trim()
+      : undefined;
+
+ 
+  const chessboardmagicToken =
+    isPaidTier &&
+    typeof tokens?.chessboardmagicToken === "string" &&
+    tokens.chessboardmagicToken.trim()
+      ? tokens.chessboardmagicToken.trim()
+      : undefined;
+
+
+  const personalOpenRouterKey =
+    isPaidTier &&
+    typeof tokens?.openrouterToken === "string" &&
+    tokens.openrouterToken.trim()
+      ? tokens.openrouterToken.trim()
+      : undefined;
+
   if (knowledgeContext) {
     if (!isPaidTier) {
       return Response.json(
@@ -87,7 +107,6 @@ export async function POST(req: Request) {
     }
   }
 
-
   let resolvedModel = selectedModel;
   let dailyLimitHit = false;
 
@@ -96,20 +115,23 @@ export async function POST(req: Request) {
     dailyLimitHit = isDailyLimitHit(usage);
 
     if (dailyLimitHit && PREMIUM_MODELS.includes(selectedModel)) {
-      resolvedModel = FREE_FALLBACK_MODEL;
+      // If user has a personal OpenRouter key, keep their chosen model;
+      // otherwise fall back to the free fallback model
+      resolvedModel = personalOpenRouterKey ? selectedModel : FREE_FALLBACK_MODEL;
     }
   } else if (!isPaidTier) {
-
     if (!selectedModel.endsWith(":free")) {
       resolvedModel = selectedModel + ":free";
     }
   }
 
- 
   const requestContext = new RequestContext();
   requestContext.set("model", resolvedModel);
   requestContext.set("resolvedModel", resolvedModel);
   requestContext.set("dailyLimitHit", dailyLimitHit);
+  if (personalOpenRouterKey) {
+    requestContext.set("personalOpenRouterKey", personalOpenRouterKey);
+  }
 
   const augmentedMessages = knowledgeContext
     ? [
@@ -126,7 +148,11 @@ export async function POST(req: Request) {
       ]
     : messages;
 
-  const agent = mastra.getAgent("chessAgine");
+  // Build a per-request agent configured with the user's tokens and tier
+  const agent = await createChessAgineAgent(
+    { lichessToken, chessboardmagicToken },
+    isPaidTier
+  );
 
   try {
     const stream = await agent.stream(augmentedMessages, {
@@ -145,7 +171,8 @@ export async function POST(req: Request) {
             usage.inputTokens ?? 0,
             usage.outputTokens ?? 0
           );
-          const totalTokens = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
+          const totalTokens =
+            (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
           return incrementDailyUsage(capturedUserId, totalTokens, cost);
         })
         .catch(() => {

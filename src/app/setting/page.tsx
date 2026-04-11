@@ -5,12 +5,9 @@ import {
   Paper,
   Typography,
   Divider,
-  Button,
-  Card,
-  CardContent,
 } from "@mui/material";
-import { Star as StarIcon } from "@mui/icons-material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
+import IntegrationSettings from "@/componets/tabs/IntegrationSetting";
 import ThemeSelector from "@/componets/ThemeSelector";
 import { useAuth } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
@@ -30,6 +27,8 @@ const SettingsPage = () => {
           {isSignedIn ? (
             <Box>
               <ModelSetting />
+              <Divider sx={{ my: 4 }} />
+              <IntegrationSettings />
             </Box>
           ) : (
             <Box

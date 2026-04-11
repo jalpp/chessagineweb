@@ -12,6 +12,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Divider,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -22,6 +23,7 @@ import { useLocalStorage } from "usehooks-ts";
 import { PROVIDERS } from "@/libs/docs/helper";
 import { ApiSettings } from "@/libs/agine/helper";
 import { useAuth } from "@clerk/nextjs";
+import IntegrationSettings from "./IntegrationSetting";
 
 export type AgineCloudModel =
   | "openrouter/free"
@@ -56,9 +58,26 @@ const ModelSetting: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [validationError, setValidationError] = useState("");
 
+  // Sync tempModel when savedModel changes from localStorage
   useEffect(() => {
     setTempModel(savedModel);
   }, [savedModel]);
+
+  // Auto-clear validation error after 5 seconds
+  useEffect(() => {
+    if (validationError) {
+      const timer = setTimeout(() => setValidationError(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [validationError]);
+
+  // Auto-clear success message after 3 seconds
+  useEffect(() => {
+    if (saveSuccess) {
+      const timer = setTimeout(() => setSaveSuccess(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveSuccess]);
 
   const allModels = Object.entries(PROVIDERS).flatMap(([providerKey, config]) =>
     config.models.map((model) => ({
@@ -80,7 +99,6 @@ const ModelSetting: React.FC = () => {
     setSavedModel(tempModel);
     setValidationError("");
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const handleReset = () => {
@@ -97,7 +115,10 @@ const ModelSetting: React.FC = () => {
   }
 
   const selectedEntry = allModels.find((m) => m.model === tempModel);
-  const isSelectedPremium = PREMIUM_MODELS.includes(tempModel as AgineCloudModel);
+  // Derived value - recalculated on every render
+  const isSelectedPremium = PREMIUM_MODELS.includes(
+    tempModel as AgineCloudModel,
+  );
 
   return (
     <Box>
@@ -107,14 +128,18 @@ const ModelSetting: React.FC = () => {
         </Alert>
       )}
 
-      
       {!isPaidTier && (
         <Alert
           severity="warning"
           icon={<StarIcon />}
           sx={{ mb: 3 }}
           action={
-            <Button color="warning" size="small" variant="outlined" href="/pricing">
+            <Button
+              color="warning"
+              size="small"
+              variant="outlined"
+              href="/pricing"
+            >
               Upgrade
             </Button>
           }
@@ -134,10 +159,19 @@ const ModelSetting: React.FC = () => {
           <Box display="flex" alignItems="center" gap={1} mb={2}>
             <Typography variant="h6">Model Selection</Typography>
             {selectedEntry && (
-              <Chip size="small" label={selectedEntry.providerName} variant="outlined" />
+              <Chip
+                size="small"
+                label={selectedEntry.providerName}
+                variant="outlined"
+              />
             )}
             {isSelectedPremium && isPaidTier && (
-              <Chip size="small" label="Premium" color="primary" icon={<StarIcon />} />
+              <Chip
+                size="small"
+                label="Premium"
+                color="primary"
+                icon={<StarIcon />}
+              />
             )}
           </Box>
 
@@ -149,11 +183,17 @@ const ModelSetting: React.FC = () => {
               onChange={(e) => setTempModel(e.target.value)}
               MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
               renderValue={(value) => {
-                const isPremium = PREMIUM_MODELS.includes(value as AgineCloudModel);
+                const isPremium = PREMIUM_MODELS.includes(
+                  value as AgineCloudModel,
+                );
                 return (
                   <Box display="flex" alignItems="center" gap={1}>
-                    {isPremium && isPaidTier && <StarIcon fontSize="small" color="primary" />}
-                    {isPremium && !isPaidTier && <LockIcon fontSize="small" color="disabled" />}
+                    {isPremium && isPaidTier && (
+                      <StarIcon fontSize="small" color="primary" />
+                    )}
+                    {isPremium && !isPaidTier && (
+                      <LockIcon fontSize="small" color="disabled" />
+                    )}
                     <Typography variant="body2">{value}</Typography>
                   </Box>
                 );
@@ -161,17 +201,27 @@ const ModelSetting: React.FC = () => {
             >
               {Object.entries(PROVIDERS).map(([providerKey, config]) => [
                 // Provider group header — no value prop so it won't interfere with selection
-                <MenuItem key={`header-${providerKey}`} disabled sx={{ opacity: "1 !important" }}>
+                <MenuItem
+                  key={`header-${providerKey}`}
+                  disabled
+                  sx={{ opacity: "1 !important" }}
+                >
                   <Typography
                     variant="caption"
-                    sx={{ fontWeight: 700, textTransform: "uppercase", opacity: 0.5 }}
+                    sx={{
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      opacity: 0.5,
+                    }}
                   >
                     {config.name}
                   </Typography>
                 </MenuItem>,
 
                 ...config.models.map((model) => {
-                  const isPremium = PREMIUM_MODELS.includes(model as AgineCloudModel);
+                  const isPremium = PREMIUM_MODELS.includes(
+                    model as AgineCloudModel,
+                  );
                   const isLocked = isPremium && !isPaidTier;
 
                   return (
@@ -204,7 +254,9 @@ const ModelSetting: React.FC = () => {
                             component="a"
                             href="/pricing"
                             clickable
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            onClick={(e: React.MouseEvent) =>
+                              e.stopPropagation()
+                            }
                             sx={{ fontSize: "0.65rem", height: 20 }}
                           />
                         )}
@@ -227,7 +279,10 @@ const ModelSetting: React.FC = () => {
             </Select>
           </FormControl>
 
-          <Typography variant="caption" sx={{ mt: 1, display: "block", fontStyle: "italic" }}>
+          <Typography
+            variant="caption"
+            sx={{ mt: 1, display: "block", fontStyle: "italic" }}
+          >
             {isPaidTier
               ? "You have access to all models, including premium ones."
               : "Free models are available now. Upgrade for premium models."}
@@ -254,6 +309,8 @@ const ModelSetting: React.FC = () => {
           Save
         </Button>
       </Box>
+      <Divider sx={{ my: 4 }} />
+      <IntegrationSettings />
     </Box>
   );
 };
