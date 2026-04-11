@@ -132,6 +132,13 @@ export const FAQ_ITEMS: FAQItem[] = [
       "Yes, like all AI models, ChessAgine can make mistakes or occasionally provide incorrect information — this is called 'hallucination'. It might miscalculate variations, give inaccurate historical facts, or misunderstand complex positions. Always use your own judgment and cross-reference important information. Premium models on the paid tier generally make fewer errors than free models.",
     category: "technical",
   },
+
+  {
+    question: "What external services and integrations does ChessAgine connect to?",
+    answer:
+      "ChessAgine integrates with several chess services: Stockfish and Maia engines for position analysis and evaluation, Lichess for game import and opening databases (enhanced with your API token), Posira for additional chess data, and ChessBoardMagic for board visualization. You can also connect your Lichess studies with an API token to give ChessAgine context about your personal chess knowledge and study history.",
+    category: "technical",
+  },
   {
     question: "Is ChessAgine trained on millions of chess games?",
     answer:
@@ -159,7 +166,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is the daily usage limit, and why is it in place for paid tier users?",
     answer:
-    "Paid tier users have a daily limit to ensure fair resource allocation and server stability. This helps us maintain affordable pricing while providing reliable service to all users. The limit is generous enough for typical chess study sessions. If you hit the daily limit, you can still continue using agine but with a free model.",
+    "Paid tier users have a daily limit to ensure fair resource allocation and server stability. This helps us maintain affordable pricing while providing reliable service to all users. The limit is generous enough for typical chess study sessions. If you hit the daily limit, you can still continue using agine but with a free model. Or optionally set your own openRouter token",
     category: "cost",
   },
 

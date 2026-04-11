@@ -31,6 +31,7 @@ import {
   Psychology as BrainIcon,
   Warning as WarningIcon,
   Block as BlockIcon,
+  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
 import { DisplayChessboardToolUI } from "@/componets/uitools/DisplayChessBoard";
@@ -53,6 +54,11 @@ function ChatPageInner() {
       "openrouter/free",
     );
 
+  const [lichessToken] = useLocalStorage<string>("lichess-token", "");
+  const [chessboardmagicToken] = useLocalStorage<string>("chessboardmagic-token", "");
+  const [openrouterToken] = useLocalStorage<string>("openrouter-token", "");
+  const isPersonalTokenSet = !!openrouterToken && openrouterToken.length > 0;
+
   const { buildKnowledgeContext, selectedIds } = useKnowledge();
 
   const dailyUsage = useTokenLimit(isPaidTier);
@@ -68,9 +74,16 @@ function ChatPageInner() {
         const knowledgeContext =
           isPaidTier ? buildKnowledgeContext() : null;
 
+        const tokens = {
+          ...(lichessToken ? { lichessToken } : {}),
+          ...(isPaidTier && chessboardmagicToken ? { chessboardmagicToken } : {}),
+          ...(isPaidTier && openrouterToken ? { openrouterToken } : {}),
+        };
+
         return {
           apiSettings: { model },
           ...(knowledgeContext ? { knowledgeContext } : {}),
+          ...(Object.keys(tokens).length > 0 ? { tokens } : {}),
         };
       },
     }),
@@ -249,22 +262,44 @@ function ChatPageInner() {
             </Tooltip>
           </Box>
 
-          {/* ── Daily limit banner ── */}
+          
           {isPaidTier && dailyUsage.limitHit && (
             <Alert
-              severity="error"
-              icon={<BlockIcon fontSize="small" />}
-              sx={{ borderRadius: 0, py: 0.5 }}
+              severity={isPersonalTokenSet ? "info" : "error"}
+              icon={isPersonalTokenSet ? <CheckCircleIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+              sx={{ 
+                borderRadius: 0, 
+                py: 0.75,
+                backgroundColor: isPersonalTokenSet 
+                  ? "rgba(33, 150, 243, 0.08)" 
+                  : "rgba(244, 67, 54, 0.08)",
+                borderLeft: `4px solid ${isPersonalTokenSet ? "#2196F3" : "#f44336"}`,
+              }}
               action={
-                <Typography variant="caption" sx={{ alignSelf: "center", pr: 1 }}>
+                <Typography variant="caption" sx={{ alignSelf: "center", pr: 1, color: "text.secondary" }}>
                   Resets at midnight UTC
                 </Typography>
               }
             >
-              <Typography variant="caption">
-                <strong>Daily limit reached.</strong> Premium models are paused
-                — you&apos;re chatting on the free model until tomorrow.
-              </Typography>
+              {isPersonalTokenSet ? (
+                <Box display="flex" flexDirection="column" gap={0.5}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: "#1976D2" }}>
+                    ✓ Using your personal OpenRouter token
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    AgineCloud daily limit reached, but you can continue using premium models with your personal account.
+                  </Typography>
+                </Box>
+              ) : (
+                <Box display="flex" flexDirection="column" gap={0.5}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: "#d32f2f" }}>
+                    ⚠ Daily limit reached
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Premium models are paused — you&apos;re using the free model. Add your own OpenRouter token in settings to continue with premium models.
+                  </Typography>
+                </Box>
+              )}
             </Alert>
           )}
 
@@ -278,7 +313,7 @@ function ChatPageInner() {
               <Typography variant="caption">
                 <strong>Heads up:</strong> You&apos;ve used 80% of today&apos;s
                 budget (${dailyUsage.costUSD.toFixed(3)} / $
-                {dailyUsage.budgetUSD?.toFixed(2)}). Premium models will pause
+                {dailyUsage.budgetUSD?.toFixed(2)}). AgineCloud's Premium models will pause
                 at the daily limit.
               </Typography>
             </Alert>
@@ -311,7 +346,7 @@ function ChatPageInner() {
             </DialogTitle>
             <DialogContent>
 
-              {isPaidTier && dailyUsage.limitHit && (
+              {isPaidTier && dailyUsage.limitHit && !isPersonalTokenSet && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   Daily limit hit — premium models will fall back to the free
                   model until midnight UTC.

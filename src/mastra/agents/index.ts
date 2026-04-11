@@ -6,16 +6,8 @@ import {
   UnicodeNormalizer,
 } from "@mastra/core/processors";
 
-import { getAgineMcpClient } from "../mcp/agineClient";
+import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
 import { displayChessboardTool, loadGameTool } from "./tools";
-
-
-const PREMIUM_MODELS = new Set<string>([
-  "google/gemini-3.1-pro-preview",
-  "anthropic/claude-sonnet-4.6",
-  "qwen/qwen3.5-9b",
-  "meta-llama/llama-3.1-8b-instruct",
-]);
 
 function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
@@ -23,9 +15,14 @@ function createAgineCloudModel(requestContext: RequestContext) {
 
   const presetSlug = "@preset/chessagine";
 
-  const openRouter = createOpenRouter({
-    apiKey: process.env.AGINE_KEY,
-  });
+  const personalOpenRouterKey = requestContext.get("personalOpenRouterKey") as string | undefined;
+  const dailyLimitHit = requestContext.get("dailyLimitHit") as boolean | undefined;
+
+  const apiKey = (personalOpenRouterKey && dailyLimitHit)
+    ? personalOpenRouterKey
+    : process.env.AGINE_KEY;
+
+  const openRouter = createOpenRouter({ apiKey });
 
   if (!modelName) {
     return openRouter(`openrouter/auto${presetSlug}`);
@@ -34,23 +31,31 @@ function createAgineCloudModel(requestContext: RequestContext) {
   const resolvedName =
     (requestContext.get("resolvedModel") as string) || modelName;
 
-  const routerModel = resolvedName + presetSlug;
+  const routerModel = (personalOpenRouterKey && dailyLimitHit)
+    ? resolvedName
+    : resolvedName + presetSlug;
 
   return openRouter(routerModel);
 }
 
 function buildInstructions(requestContext: RequestContext): string {
   const lang = (requestContext.get("lang") as string) || "English";
-  return "You are a chess agent, you speak in [LANG]".replace("[LANG]", lang);
+  return "You are ChessAgine, a chess buddy. Use search_tools to discover available chess analysis tools and load_tools to load them on demand based on what the user needs."
+    .replace("[LANG]", lang);
 }
 
-const MCP_IGNORE_TOOL_IDS = new Set([
+const MCP_RENDER_TOOL_IDS = new Set([
   "render_chess_board",
   "render_pgn_viewer",
-  "get-lichess-username",
+]);
+
+const LICHESS_AUTH_TOOL_IDS = new Set([
   "fetch-lichess-studies",
   "fetch-lichess-study-pgn",
-  "get-lichess-master-games",
+]);
+
+const IGNORE_TOOL_IDS = new Set([
+  "get-lichess-username",
 ]);
 
 const PINNED_MCP_TOOL_IDS = new Set([
@@ -60,19 +65,91 @@ const PINNED_MCP_TOOL_IDS = new Set([
   "get-boardstate-for-fen",
   "get-boardstate-for-move",
   "is-legal-move",
+  "search_tools",
+  "load_tools",
 ]);
 
-async function buildTools() {
-  const mcpTools = await getAgineMcpClient().listTools();
+
+function wrapToolsWithAuth(
+  tools: Record<string, any>,
+  tokens?: AgineTokens,
+  isPaidTier?: boolean
+) {
+  return Object.fromEntries(
+    Object.entries(tools).map(([id, tool]) => {
+      return [
+        id,
+        {
+          ...tool,
+
+          async execute(args: any, context: any) {
+            let newArgs = { ...args };
+
+  
+            if (LICHESS_AUTH_TOOL_IDS.has(id) && tokens?.lichessToken) {
+              newArgs = {
+                ...newArgs,
+                token: tokens.lichessToken, 
+              };
+            }
+
+ 
+            if (
+              id.includes("chessboardmagic") &&
+              isPaidTier &&
+              tokens?.chessboardmagicToken
+            ) {
+              newArgs = {
+                ...newArgs,
+                token: tokens.chessboardmagicToken, 
+              };
+            }
+
+            return tool.execute(newArgs, context);
+          },
+        },
+      ];
+    })
+  );
+}
+
+async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
+ 
+  const mcpClient = getAgineMcpClient();
+
+  const mcpTools = await mcpClient.listTools();
 
   const filteredMcpTools = Object.fromEntries(
-    Object.entries(mcpTools)
-      .filter(([id]) => !MCP_IGNORE_TOOL_IDS.has(id))
-      .filter(([id]) => !id.includes("chessboardmagic")),
+    Object.entries(mcpTools).filter(([id]) => {
+      // Ignore render tools
+      if (MCP_RENDER_TOOL_IDS.has(id)) return false;
+
+    
+      if (IGNORE_TOOL_IDS.has(id)) return false;
+
+ 
+      if (LICHESS_AUTH_TOOL_IDS.has(id)) {
+        return !!tokens?.lichessToken;
+      }
+
+     
+      if (id.includes("chessboardmagic")) {
+        return !!(isPaidTier && tokens?.chessboardmagicToken);
+      }
+
+      return true;
+    })
+  );
+
+ 
+  const wrappedTools = wrapToolsWithAuth(
+    filteredMcpTools,
+    tokens,
+    isPaidTier
   );
 
   return {
-    ...filteredMcpTools,
+    ...wrappedTools,
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
   };
@@ -85,8 +162,8 @@ const unicodeNormalizer = new UnicodeNormalizer({
   trim: true,
 });
 
-async function buildToolSearchProcessor() {
-  const tools = await buildTools();
+async function buildToolSearchProcessor(tokens?: AgineTokens, isPaidTier?: boolean) {
+  const tools = await buildTools(tokens, isPaidTier);
 
   const searchableTools = Object.fromEntries(
     Object.entries(tools).filter(([id]) => !PINNED_MCP_TOOL_IDS.has(id)),
@@ -108,6 +185,25 @@ async function buildPinnedTools() {
   };
 }
 
+export async function createChessAgineAgent(
+  tokens?: AgineTokens,
+  isPaidTier?: boolean
+) {
+  const tools = await buildTools(tokens, isPaidTier);
+
+  const toolSearchProcessor = await buildToolSearchProcessor(tokens, isPaidTier);
+
+  return new Agent({
+    id: "chessagine-agent",
+    name: "ChessAgine",
+    instructions: ({ requestContext }) => buildInstructions(requestContext),
+    model: ({ requestContext }) => createAgineCloudModel(requestContext),
+    tools,
+    inputProcessors: [unicodeNormalizer, toolSearchProcessor],
+  });
+}
+
+// Default agent (no auth)
 export const chessAgine = new Agent({
   id: "chessagine-agent",
   name: "ChessAgine",
