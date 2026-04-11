@@ -44,13 +44,16 @@ const FEATURES: FeatureDetail[] = [
     capabilities: [
       "Stockfish engine integration for precise move evaluation",
       "Position-specific analysis from the board to brainstorm ideas",
+      "Call external chess engines like Stockfish and Maia on demand",
       "PGN game review via chat",
-      "Free tier: 3 community models",
+      "access your opening repertoire via Lichess Study and ChessBoardMagic integration",
+      "Free tier: access to random smaller models for quick analysis",
       "Paid tier: 4 premium models + more tool calls + extended chess context",
     ],
     highlights: [
       "No setup — start chatting instantly",
       "Paid tier unlocks Gemini Pro, Claude Sonnet, Qwen & Llama",
+      "Paid tier unlocks external integrations like Chessboardmagic and using personal OpenRouter account"
     ],
   },
   {
@@ -79,7 +82,7 @@ const FEATURES: FeatureDetail[] = [
     description:
       "Comprehensive chess engine analysis with multiple Stockfish versions, running entirely in the browser.",
     capabilities: [
-      "Stockfish 17.1, 17, 16.1, and 11 support",
+      "Stockfish 18, 17.1, 17, 16.1, and 11 support",
       "Browser-based execution — no server required",
       "Adjustable depth (12–30 ply)",
       "Multi-PV analysis (1–5 lines)",
@@ -116,6 +119,7 @@ const FEATURES: FeatureDetail[] = [
       "Advanced AI analysis using multiple neural network models — runs locally in your browser.",
     capabilities: [
       "Maia2 (1100–1900): human-like play trained on real player games",
+      "Maia3 (600-2600): human like play and analysis, trained on real player games and improvement over maia2",
       "Leela T1-256: self-play trained for objective evaluation",
       "Elite Maia: trained on 2500+ rated Lichess master games",
       "Policy network visualization (move probabilities)",
@@ -124,6 +128,7 @@ const FEATURES: FeatureDetail[] = [
     ],
     highlights: [
       "Choose the right network for your skill level",
+      "Human Estimated Eval (HEE) Eval bar to see human level eval using Maia3",
       "See how humans vs. engines evaluate positions differently",
     ],
   },

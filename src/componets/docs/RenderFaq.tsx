@@ -67,13 +67,13 @@ export const renderFAQ = () => (
           About ChessAgine
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          ChessAgine is your friendly AI chess companion — a knowledgeable
-          chess buddy who's always available to chat, analyze positions, and
+          ChessAgine is your friendly AI chess companion, a knowledgeable
+          chess buddy who's always available to chat, analyze and brainstorm positions, and
           help you explore chess. It's not a formal coaching program; it's a
           conversational partner that adapts to your curiosity. All chess tools
-          are free. Agine Chat gives you access to AI models — free community
+          are free. Agine Chat gives you access to open souce AI
           models included, with stronger premium models available on the paid
-          tier.
+          tier, with extended chess context.
         </Typography>
       </CardContent>
     </Card>
@@ -121,12 +121,12 @@ export const renderFAQ = () => (
           Still have questions?
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          Can't find what you're looking for? Open an issue on GitHub.
+          Can't find what you're looking for? Join the Discord
         </Typography>
         <Button
           variant="outlined"
           startIcon={<InfoIcon />}
-          href="https://github.com/jalpp/chessagineweb/issues"
+          href="https://discord.gg/7zdFpxzd9b"
           target="_blank"
         >
           Create GitHub Issue

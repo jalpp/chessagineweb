@@ -67,9 +67,7 @@ const ChessAgineDocumentation = () => {
 
             <Box textAlign="center" mt={3}>
               <Typography variant="caption" color="text.secondary">
-                Free models run on community-donated resources. Premium models
-                run on dedicated infrastructure for faster, more reliable
-                responses.
+                Free models are from random free OpenRouter models, paid tier supports model on AgineCloud with daily cap limit.
               </Typography>
             </Box>
           </TabPanel>

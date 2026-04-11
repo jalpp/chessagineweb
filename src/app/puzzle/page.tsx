@@ -74,7 +74,6 @@ export default function PuzzlePage() {
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
-  const [puzzleQueryString, setPuzzleQueryString] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -286,7 +285,6 @@ export default function PuzzlePage() {
         };
         setPuzzleQuery(newPuzzleQuery);
         const queryString = createPuzzlePrompt(newPuzzleQuery);
-        setPuzzleQueryString(queryString);
         setPuzzleComplete(false);
         setPuzzleFailed(false);
         setPuzzleReseted(false);
@@ -446,14 +444,6 @@ export default function PuzzlePage() {
             remainingMoves.length > 0
               ? `Move played: ${playedMove}. Remaining solution: ${remainingMoves.join(" ")}.`
               : `Move played: ${playedMove}. Puzzle complete!`;
-
-          if (puzzleQuery) {
-            const puzzleTransitionQuery = createTransitionPuzzlePrompt(
-              puzzleQuery,
-              solutionText,
-            );
-            setPuzzleQueryString(puzzleTransitionQuery);
-          }
 
           if (currentSolutionIndex === solutionMoves.length - 1) {
             setPuzzleComplete(true);
@@ -809,7 +799,6 @@ export default function PuzzlePage() {
                   >
                     <Tab label="Puzzle Info" />
                     <Tab label="Guess Theme Eval" />
-                    <Tab label="AI Chat" />
                   </Tabs>
                 </Box>
 
@@ -1372,7 +1361,6 @@ export default function PuzzlePage() {
                     >
                       <Tab label="Info" iconPosition="start" />
                       <Tab label="Guess Theme Eval" />
-                      <Tab label="AI Chat" iconPosition="start" />
                     </Tabs>
                   </CardContent>
                 </Card>

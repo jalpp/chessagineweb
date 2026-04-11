@@ -119,7 +119,7 @@ export const renderHeader = () => (
             </ListItemIcon>
             <ListItemText
               primary="Agine Chat with community models"
-              secondary="Sign in and start chatting immediately. random free AI models powered by community resources."
+              secondary="Sign in and start chatting immediately, to chat with small LLMs about chess."
             />
           </ListItem>
           <ListItem disableGutters>
@@ -146,7 +146,7 @@ export const renderHeader = () => (
             </ListItemIcon>
             <ListItemText
               primary="Open source"
-              secondary="ChessAgine is FOSS, fork it, modify it, run it locally. Full transparency."
+              secondary="ChessAgine is FOSS, with transparent development."
             />
           </ListItem>
         </List>
