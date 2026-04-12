@@ -1,3 +1,5 @@
+import { BYO_ANTHROPIC_MODELS, BYO_GEMINI_MODELS, BYO_OPENROUTER_MODELS, PREMIUM_MODELS } from "../agine/modelConstants";
+
 export interface ProviderConfig {
   name: string;
   models: string[];
@@ -67,18 +69,35 @@ export const LANGUAGES: LanguageOption[] = [
 export const PROVIDERS: Record<string, ProviderConfig> = {
   agineCloud: {
     name: 'aginecloud',
-    models: [
-      'openrouter/free',
-      'qwen/qwen3.5-9b',
-      'nvidia/nemotron-3-super-120b-a12b',
-      'meta-llama/llama-3.1-8b-instruct',
-      'google/gemini-3.1-pro-preview',
-      'anthropic/claude-sonnet-4.6'
-    ],
+    models: PREMIUM_MODELS,
     keyPrefix: '',
     website: 'https://www.chessagine.com/docs',
     docsUrl: 'https://www.chessagine.com/docs',
     supportsRouting: false,
+  },
+  byoAnthropic: {
+    name: 'Anthropic (Your Key)',
+    models: BYO_ANTHROPIC_MODELS,
+    keyPrefix: 'sk-ant-',
+    website: 'https://console.anthropic.com',
+    docsUrl: 'https://docs.anthropic.com',
+    supportsRouting: false,
+  },
+  byoGemini: {
+    name: 'Google Gemini (Your Key)',
+    models: BYO_GEMINI_MODELS,
+    keyPrefix: 'AIza',
+    website: 'https://aistudio.google.com/apikey',
+    docsUrl: 'https://ai.google.dev/docs',
+    supportsRouting: false,
+  },
+  byoOpenAI: {
+    name: 'OpenRouter (Your Key)',
+    models: BYO_OPENROUTER_MODELS,
+    keyPrefix: 'sk-or-',
+    website: 'https://openrouter.ai/keys',
+    docsUrl: 'https://openrouter.ai/docs',
+    supportsRouting: true,
   },
 };
 

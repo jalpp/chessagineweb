@@ -1,6 +1,8 @@
 import { Agent } from "@mastra/core/agent";
 import { RequestContext } from "@mastra/core/request-context";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   ToolSearchProcessor,
   UnicodeNormalizer,
@@ -8,15 +10,41 @@ import {
 
 import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
 import { displayChessboardTool, loadGameTool } from "./tools";
+import {
+  BYO_ANTHROPIC_MODELS,
+  BYO_GEMINI_MODELS,
+  BYO_OPENROUTER_MODELS,
+} from "@/libs/agine/modelConstants";
 
 function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
   const modelName = raw.replace(/^\"|\"$/g, "");
 
-  const presetSlug = "@preset/chessagine";
+  const resolvedName =
+    (requestContext.get("resolvedModel") as string) || modelName;
 
+  const personalAnthropicKey = requestContext.get("personalAnthropicKey") as string | undefined;
+  const personalGeminiKey = requestContext.get("personalGeminiKey") as string | undefined;
   const personalOpenRouterKey = requestContext.get("personalOpenRouterKey") as string | undefined;
   const dailyLimitHit = requestContext.get("dailyLimitHit") as boolean | undefined;
+
+  if (BYO_ANTHROPIC_MODELS.includes(resolvedName) && personalAnthropicKey) {
+    const anthropic = createAnthropic({ apiKey: personalAnthropicKey });
+    return anthropic(resolvedName);
+  }
+
+  if (BYO_GEMINI_MODELS.includes(resolvedName) && personalGeminiKey) {
+    const google = createGoogleGenerativeAI({ apiKey: personalGeminiKey });
+    return google(resolvedName);
+  }
+
+  if (BYO_OPENROUTER_MODELS.includes(resolvedName) && personalOpenRouterKey) {
+    const fixedName = resolvedName.replace(":user","");
+    const openRouterByo = createOpenRouter({ apiKey: personalOpenRouterKey });
+    return openRouterByo(fixedName);
+  }
+
+  const presetSlug = "@preset/chessagine";
 
   const apiKey = (personalOpenRouterKey && dailyLimitHit)
     ? personalOpenRouterKey
@@ -27,9 +55,6 @@ function createAgineCloudModel(requestContext: RequestContext) {
   if (!modelName) {
     return openRouter(`openrouter/auto${presetSlug}`);
   }
-
-  const resolvedName =
-    (requestContext.get("resolvedModel") as string) || modelName;
 
   const routerModel = (personalOpenRouterKey && dailyLimitHit)
     ? resolvedName

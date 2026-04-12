@@ -57,7 +57,11 @@ function ChatPageInner() {
   const [lichessToken] = useLocalStorage<string>("lichess-token", "");
   const [chessboardmagicToken] = useLocalStorage<string>("chessboardmagic-token", "");
   const [openrouterToken] = useLocalStorage<string>("openrouter-token", "");
+  const [anthropicToken] = useLocalStorage<string>("anthropic-token", "");
+  const [geminiToken] = useLocalStorage<string>("gemini-token", "");
   const isPersonalTokenSet = !!openrouterToken && openrouterToken.length > 0;
+  const isPersonalGeminiTokenSet = !!geminiToken && geminiToken.length > 0;
+  const isPersonalClaudeTokenSet = !!anthropicToken && anthropicToken.length > 0;
 
   const { buildKnowledgeContext, selectedIds } = useKnowledge();
 
@@ -78,6 +82,8 @@ function ChatPageInner() {
           ...(lichessToken ? { lichessToken } : {}),
           ...(isPaidTier && chessboardmagicToken ? { chessboardmagicToken } : {}),
           ...(isPaidTier && openrouterToken ? { openrouterToken } : {}),
+          ...(anthropicToken ? { anthropicToken } : {}),
+          ...(geminiToken ? { geminiToken } : {}),
         };
 
         return {
@@ -281,10 +287,10 @@ function ChatPageInner() {
                 </Typography>
               }
             >
-              {isPersonalTokenSet ? (
+              {isPersonalTokenSet || isPersonalGeminiTokenSet || isPersonalClaudeTokenSet ? (
                 <Box display="flex" flexDirection="column" gap={0.5}>
                   <Typography variant="caption" sx={{ fontWeight: 600, color: "#1976D2" }}>
-                    ✓ Using your personal OpenRouter token
+                    ✓ Using your personal API token
                   </Typography>
                   <Typography variant="caption" sx={{ color: "text.secondary" }}>
                     AgineCloud daily limit reached, but you can continue using premium models with your personal account.
@@ -348,7 +354,7 @@ function ChatPageInner() {
 
               {isPaidTier && dailyUsage.limitHit && !isPersonalTokenSet && (
                 <Alert severity="error" sx={{ mb: 2 }}>
-                  Daily limit hit — premium models will fall back to the free
+                  Daily limit hit, premium models will fall back to the free
                   model until midnight UTC.
                 </Alert>
               )}
