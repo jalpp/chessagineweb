@@ -10,19 +10,18 @@ import {
   incrementDailyUsage,
   isDailyLimitHit,
 } from "@/lib/usage";
+import {
+  PREMIUM_MODELS,
+  BYO_ANTHROPIC_MODELS,
+  BYO_GEMINI_MODELS,
+  BYO_OPENROUTER_MODELS,
+  BYO_MODELS,
+} from "@/libs/agine/modelConstants";
 
 export const maxDuration = 200;
 
 const MAX_AGENT_STEPS = 15;
 const MAX_KNOWLEDGE_BYTES = 160 * 1024;
-
-const PREMIUM_MODELS = [
-  "google/gemini-3.1-pro-preview",
-  "anthropic/claude-sonnet-4.6",
-  "qwen/qwen3.5-9b",
-  "nvidia/nemotron-3-super-120b-a12b",
-  "meta-llama/llama-3.1-8b-instruct",
-];
 
 export async function POST(req: Request) {
   const { userId, has } = await auth();
@@ -64,6 +63,16 @@ export async function POST(req: Request) {
     );
   }
 
+  if (BYO_MODELS.includes(selectedModel) && !isPaidTier) {
+    return Response.json(
+      {
+        error:
+          `The model "${selectedModel}" is only available on the paid tier. ` +
+          "Please upgrade your plan at /pricing to access BYO models.",
+      },
+      { status: 403 }
+    );
+  }
   
   const lichessToken =
     typeof tokens?.lichessToken === "string" && tokens.lichessToken.trim()
@@ -85,6 +94,50 @@ export async function POST(req: Request) {
     tokens.openrouterToken.trim()
       ? tokens.openrouterToken.trim()
       : undefined;
+
+  const personalAnthropicKey =
+    typeof tokens?.anthropicToken === "string" && tokens.anthropicToken.trim()
+      ? tokens.anthropicToken.trim()
+      : undefined;
+
+  const personalGeminiKey =
+    typeof tokens?.geminiToken === "string" && tokens.geminiToken.trim()
+      ? tokens.geminiToken.trim()
+      : undefined;
+
+
+  if (BYO_ANTHROPIC_MODELS.includes(selectedModel) && !personalAnthropicKey) {
+    return Response.json(
+      {
+        error:
+          `The model "${selectedModel}" requires your own Anthropic API key. ` +
+          "Please add it in Settings → API Integrations → Anthropic API Key.",
+      },
+      { status: 403 }
+    );
+  }
+
+  if (BYO_GEMINI_MODELS.includes(selectedModel) && !personalGeminiKey) {
+    return Response.json(
+      {
+        error:
+          `The model "${selectedModel}" requires your own Google Gemini API key. ` +
+          "Please add it in Settings → API Integrations → Google Gemini API Key.",
+      },
+      { status: 403 }
+    );
+  }
+
+  if (BYO_OPENROUTER_MODELS.includes(selectedModel) && !personalOpenRouterKey) {
+    return Response.json(
+      {
+        error:
+          `The model "${selectedModel}" requires your own OpenRouter API key. ` +
+          "Please add it in Settings → API Integrations → OpenRouter API Key.",
+      },
+      { status: 403 }
+    );
+  }
 
   if (knowledgeContext) {
     if (!isPaidTier) {
@@ -110,22 +163,24 @@ export async function POST(req: Request) {
   let resolvedModel = selectedModel;
   let dailyLimitHit = false;
 
-  if (isPaidTier && userId) {
-    const usage = await getDailyUsage(userId);
-    dailyLimitHit = isDailyLimitHit(usage);
 
-    if (dailyLimitHit && PREMIUM_MODELS.includes(selectedModel)) {
-      // If user has a personal OpenRouter key, keep their chosen model;
-      // otherwise fall back to the free fallback model
-      resolvedModel = personalOpenRouterKey ? selectedModel : FREE_FALLBACK_MODEL;
-    }
-  } else if (!isPaidTier) {
-    if (!selectedModel.endsWith(":free")) {
-      resolvedModel = selectedModel + ":free";
+  const isByoModel = BYO_MODELS.includes(selectedModel);
+
+  if (!isByoModel) {
+    if (isPaidTier && userId) {
+      const usage = await getDailyUsage(userId);
+      dailyLimitHit = isDailyLimitHit(usage);
+
+      if (dailyLimitHit && PREMIUM_MODELS.includes(selectedModel)) {
+        resolvedModel = personalOpenRouterKey ? selectedModel : FREE_FALLBACK_MODEL;
+      }
+    } else if (!isPaidTier) {
+      if (!selectedModel.endsWith(":free")) {
+        resolvedModel = selectedModel + ":free";
+      }
     }
   }
 
-  // Fetch the Lichess username from Clerk public metadata (set during OAuth connect)
   let lichessUsername: string | undefined;
   if (userId) {
     try {
@@ -146,6 +201,12 @@ export async function POST(req: Request) {
   requestContext.set("dailyLimitHit", dailyLimitHit);
   if (personalOpenRouterKey) {
     requestContext.set("personalOpenRouterKey", personalOpenRouterKey);
+  }
+  if (personalAnthropicKey) {
+    requestContext.set("personalAnthropicKey", personalAnthropicKey);
+  }
+  if (personalGeminiKey) {
+    requestContext.set("personalGeminiKey", personalGeminiKey);
   }
   const systemParts: string[] = [];
 
