@@ -4,19 +4,17 @@ const nextConfig = {
   productionBrowserSourceMaps: process.env.ENABLE_SOURCE_MAPS === "true",
   headers() {
     return [
-      // Pages that use ONNX (chess engine + Maia nets) need COEP + COOP
-      // so SharedArrayBuffer / WASM threads work correctly.
+
       {
         source: "/(position|play|puzzle|game)/:path*",
         headers: ENGINE_HEADERS,
       },
-      // /_next/static must also send COEP so that when an engine page loads,
-      // the ort.bundle.min.*.mjs chunk (bundled by Next.js) isn't blocked.
+  
       {
         source: "/_next/static/:path*",
         headers: ENGINE_HEADERS,
       },
-      // Public model + static assets: long-lived cache + COEP
+
       {
         source: "/static/:path*",
         headers: ENGINE_HEADERS.concat({

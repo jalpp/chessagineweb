@@ -131,7 +131,7 @@ export default function PlayVsBotsPage() {
     gameReviewLoading,
     setGameReview,
     generateGameReview,
-  } = useAgine(fen);
+  } = useAgine(fen, "game");
 
   const { gameReviewTheme, analyzeGameTheme, isLoading } = useGameTheme();
 

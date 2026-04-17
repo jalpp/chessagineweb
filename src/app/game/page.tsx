@@ -121,7 +121,7 @@ export default function PGNUploaderPage() {
     scores,
     themeScoreError,
     themeScoreLoading,
-  } = useAgine(fen);
+  } = useAgine(fen, "game");
 
   const {
     evaluations,

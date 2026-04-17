@@ -16,6 +16,7 @@ interface UseMaiaEngineOptions {
   useLichessBook?: boolean;
   bookThreshold?: number;
   gameReviewMode?: boolean;
+  supported?: boolean;
 }
 
 
@@ -54,8 +55,23 @@ export const useNets = ({
   enabledModels,
   useLichessBook = true,
   bookThreshold = 21,
+  supported = true,
   gameReviewMode = false,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
+
+  if (!supported) {
+    return {
+      evaluations: {},
+      sanEvaluations: {},
+      lichessData: {},
+      isInBook: false,
+      isLoading: false,
+      Maiaerror: null,
+      evaluationsFen: null,
+      analyzePositionNet: async () => undefined,
+    };
+  }
+
   const { maia2, bigLeela, elitemaia, maia3 } = useNetModels();
   const { status, activeModels } = useNetStatus();
 

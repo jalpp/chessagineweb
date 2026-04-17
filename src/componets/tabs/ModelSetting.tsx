@@ -32,6 +32,8 @@ import {
 } from "@/libs/agine/modelConstants";
 import { useAuth } from "@clerk/nextjs";
 import IntegrationSettings from "./IntegrationSetting";
+import { usePersistedSettings } from "@/hooks/usePersistedStorage";
+import { useSettings } from "@/context/SettingContext";
 
 export type AgineCloudModel =
   | "openrouter/free"
@@ -63,7 +65,8 @@ const ModelSetting: React.FC = () => {
   const { isSignedIn, has } = useAuth();
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
-  const [savedModel, setSavedModel] = useLocalStorage<string>("selected-model", FREE_MODEL);
+  const { selectedModel: savedModel, saveSettings } = useSettings();
+  const setSavedModel = (m: string) => saveSettings({ selected_model: m });
   const [anthropicToken] = useLocalStorage<string>("anthropic-token", "");
   const [geminiToken] = useLocalStorage<string>("gemini-token", "");
   const [openrouterToken] = useLocalStorage<string>("openrouter-token", "");

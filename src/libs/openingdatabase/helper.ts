@@ -1,3 +1,4 @@
+
 interface Opening {
   eco: string;
   name: string;
@@ -37,8 +38,6 @@ export interface MasterGames {
   topGames: Game[];
 }
 
-// ── Posira response types ──────────────────────────────────────────────────
-
 interface PosiraMove {
   san: string;
   uci: string;
@@ -60,7 +59,6 @@ interface PosiraExplorerResponse {
   moves: PosiraMove[];
 }
 
-// ── Map Posira response → MasterGames (shared format used across the app) ──
 
 function posiraToMasterGames(data: PosiraExplorerResponse): MasterGames {
   return {
@@ -82,26 +80,36 @@ function posiraToMasterGames(data: PosiraExplorerResponse): MasterGames {
   };
 }
 
-// ── Fetcher ────────────────────────────────────────────────────────────────
 
 export const fetchExplorerData = async (
   fen: string,
+  actionType: "unsupported" | "game" | "position" | "puzzle",
   _source: "masters" | "lichess" = "masters",
   _topGames = 15,
   options?: { speeds?: string; ratings?: string; top_n?: number },
 ): Promise<MasterGames | null> => {
+  if (actionType === "unsupported") {
+    return null;
+  }
+
   try {
     const params = new URLSearchParams({ endpoint: "explorer", fen });
+
     if (options?.speeds) params.set("speeds", options.speeds);
     if (options?.ratings) params.set("ratings", options.ratings);
     if (options?.top_n) params.set("top_n", String(options.top_n));
 
     const response = await fetch(`/api/posira?${params.toString()}`);
 
-    if (!response.ok) throw new Error(`Posira API error: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`Posira API error: ${response.status}`);
+    }
 
     const result = await response.json();
-    if (!result.success) throw new Error(result.error ?? "Unknown error");
+
+    if (!result.success) {
+      throw new Error(result.error ?? "Unknown error");
+    }
 
     return posiraToMasterGames(result.data as PosiraExplorerResponse);
   } catch (error) {
@@ -110,10 +118,24 @@ export const fetchExplorerData = async (
   }
 };
 
-export const getOpeningStats = (fen: string): Promise<MasterGames | null> =>
-  fetchExplorerData(fen, "masters", 15, { top_n: 12 });
 
-// Kept for backward compat — now also hits Posira, filtered to rapid/classical speeds
-export const getLichessOpeningStats = (fen: string): Promise<MasterGames | null> =>
-  fetchExplorerData(fen, "lichess", 4, { speeds: "rapid,classical", top_n: 12 });
+export const getOpeningStats = (
+  fen: string,
+  actionType: "unsupported" | "game" | "position" | "puzzle"
+): Promise<MasterGames | null> => {
+  return fetchExplorerData(fen, actionType, "masters", 15, {
+    top_n: 12,
+  });
+};
+
+export const getLichessOpeningStats = (
+  fen: string,
+  actionType: "unsupported" | "game" | "position" | "puzzle"
+): Promise<MasterGames | null> => {
+  return fetchExplorerData(fen, actionType, "lichess", 4, {
+    speeds: "rapid,classical",
+    top_n: 12,
+  });
+};
+
 
