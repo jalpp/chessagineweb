@@ -60,6 +60,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   }, [engine]);
 
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
+  const validGameReviewDepth = engineDepth > 15 || engineDepth < 12 ? 15 : engineDepth;
   const {
     gameReview,
     setGameReview,
@@ -69,7 +70,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
     generateGameReview,
     rootCurrentMove,
     setRootCurrentMove,
-  } = useGameReview(engine, engineDepth);
+  } = useGameReview(engine, validGameReviewDepth);
 
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);

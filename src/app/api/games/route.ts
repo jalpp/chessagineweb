@@ -1,15 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/connector";
 import { NextRequest } from "next/server";
+import { decodePGN } from "pgnpack";
 
 interface GameReview {
   _id: string;
   userId: string;
   title: string;
   pgnPacked: string;
-  pgnRaw: string;
-  white: string;
-  black: string;
+  // pgnRaw intentionally NOT stored — decoded on read
   result: string;
   moveCount: number;
   gameReview: unknown[];
@@ -24,7 +23,6 @@ async function getCol() {
   return db.collection<GameReview>("game_reviews");
 }
 
-// Auth + plan check helper to avoid repetition
 async function checkAccess() {
   const { userId, has } = await auth();
   if (!userId) return { error: "Unauthorized", status: 401 } as const;
@@ -43,7 +41,21 @@ export async function GET() {
     .limit(200)
     .toArray();
 
-  return Response.json(docs);
+  
+  const decoded = await Promise.all(
+    docs.map(async (doc) => {
+      let pgn = "";
+      try {
+        pgn = await decodePGN(doc.pgnPacked);
+      } catch {
+        pgn = "";
+      }
+      const { pgnPacked, ...rest } = doc as GameReview & { pgnPacked: string };
+      return { ...rest, pgn };
+    })
+  );
+
+  return Response.json(decoded);
 }
 
 export async function POST(req: NextRequest) {
@@ -52,41 +64,44 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const {
-    id, title, pgnPacked, pgnRaw,
-    white, black, result, moveCount,
+    id, title, pgnPacked,
+    result, moveCount,
     gameReview, gameReviewTheme, moves, gameInfo,
   } = body;
 
-  if (!id || !pgnRaw) return Response.json({ error: "Missing required fields" }, { status: 400 });
-
-  // Validate id is a plain string, not an object/injection attempt
+  if (!id || !pgnPacked) return Response.json({ error: "Missing required fields" }, { status: 400 });
   if (typeof id !== "string") return Response.json({ error: "Invalid id" }, { status: 400 });
+  if (typeof pgnPacked !== "string") return Response.json({ error: "Invalid pgnPacked" }, { status: 400 });
 
   const col = await getCol();
+
+  const existing = await col.findOne({ userId: access.userId, pgnPacked });
+  if (existing) {
+    return Response.json({ ok: true, duplicate: true, existingId: existing._id });
+  }
+
   await col.updateOne(
     { _id: id },
     {
       $setOnInsert: {
         _id: id,
-        userId: access.userId,
-        title:           title          ?? "",
-        pgnPacked:       pgnPacked      ?? "",
-        pgnRaw,
-        white:           white          ?? "",
-        black:           black          ?? "",
-        result:          result         ?? "",
-        moveCount:       moveCount      ?? 0,
-        gameReview:      gameReview     ?? [],
+        userId:          access.userId,
+        title:           title           ?? "",
+        pgnPacked,
+        // pgnRaw is intentionally never stored
+        result:          result          ?? "",
+        moveCount:       moveCount       ?? 0,
+        gameReview:      gameReview      ?? [],
         gameReviewTheme: gameReviewTheme ?? null,
-        moves:           moves          ?? [],
-        gameInfo:        gameInfo       ?? {},
+        moves:           moves           ?? [],
+        gameInfo:        gameInfo        ?? {},
         savedAt:         new Date(),
       },
     },
     { upsert: true }
   );
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, duplicate: false });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -98,7 +113,6 @@ export async function DELETE(req: NextRequest) {
   if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
 
   const col = await getCol();
-  // userId in the filter ensures a user can only delete their own docs
   await col.deleteOne({ _id: id, userId: access.userId });
 
   return Response.json({ ok: true });
