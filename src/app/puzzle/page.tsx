@@ -328,7 +328,7 @@ export default function PuzzlePage() {
     scores,
     themeScoreError,
     themeScoreLoading,
-  } = useAgine(fen);
+  } = useAgine(fen, "puzzle");
 
   const handleQuickThemeChange = useCallback(
     (event: SelectChangeEvent<string>) => {
@@ -628,6 +628,7 @@ export default function PuzzlePage() {
       <Box
         sx={{
           minHeight: "100vh",
+          position: "relative",
           pb: isMobile ? 10 : 4,
           px: isMobile ? 1 : 4,
           pt: isMobile ? 2 : 4,
@@ -684,9 +685,7 @@ export default function PuzzlePage() {
                 handleSquarePuzzleClick={handleSquareClick}
                 setFen={setFen}
                 setGame={setGame}
-                setOpeningData={setOpeningData}
                 setStockfishAnalysisResult={setStockfishAnalysisResult}
-                fetchOpeningData={fetchOpeningData}
                 analyzeWithStockfish={analyzeWithStockfish}
                 puzzleCustomSquareStyle={customSquareStyles}
                 llmLoading={llmLoading}
@@ -736,9 +735,7 @@ export default function PuzzlePage() {
                 handleSquarePuzzleClick={handleSquareClick}
                 setFen={setFen}
                 setGame={setGame}
-                setOpeningData={setOpeningData}
                 setStockfishAnalysisResult={setStockfishAnalysisResult}
-                fetchOpeningData={fetchOpeningData}
                 analyzeWithStockfish={analyzeWithStockfish}
                 puzzleCustomSquareStyle={customSquareStyles}
                 llmLoading={llmLoading}
@@ -812,7 +809,6 @@ export default function PuzzlePage() {
                           py: 4,
                         }}
                       >
-                        <CircularProgress />
                       </Box>
                     ) : (
                       <Stack spacing={3}>
@@ -1406,6 +1402,23 @@ export default function PuzzlePage() {
           </Drawer>
         )}
       </Box>
+
+      {(loading || !puzzleData) && (
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            bgcolor: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(4px)",
+            zIndex: 2000,
+          }}
+        >
+          <CircularProgress size={64} />
+        </Box>
+      )}
 
       {/* Theme Dialog - Unchanged */}
       <Dialog

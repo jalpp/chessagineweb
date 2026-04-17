@@ -49,15 +49,13 @@ export default function HumanEvalBarPage() {
   const activeFen = game.fen();
   const sideToMove = activeFen.split(" ")[1] === "b" ? "Black" : "White";
 
-  const { evaluations, isLoading, Maiaerror: maiaError, evaluationsFen } = useNets({ fen: activeFen });
+  const { evaluations, isLoading, Maiaerror: maiaError, evaluationsFen } = useNets({ fen: activeFen, useLichessBook: false });
   const { status } = useNetStatus();
 
-  // Only show calculating state when Maia 3 is actually downloaded and ready.
-  // If not downloaded, evaluationsFen never updates, causing infinite loading.
   const maia3Ready = status.maia3 === "ready";
   const isCalculating = maia3Ready && (isLoading || evaluationsFen !== activeFen);
 
-  // Sidebar bar: Maia3@2600 only — falls back to 0.5 (equal) if not loaded yet
+
   const sidebarWinProb = evaluations.maia3?.[MAIA3_MODELS[DEFAULT_MAIA3_IDX]]?.value ?? 0.5;
   const sidebarLabel = `Maia3 ${MAIA3_RATING_VALUES[DEFAULT_MAIA3_IDX]}`;
 

@@ -3,18 +3,14 @@ import { EngineName, PositionEval, LineEval } from "@/stockfish/engine/engine";
 import {
   MasterGames,
   getOpeningStats,
-  Moves,
   getLichessOpeningStats,
 } from "@/libs/openingdatabase/helper";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Chess } from "chess.js";
 import { useChessDB } from "./useChessDb";
-import { useLocalStorage } from "usehooks-ts";
 import useGameReview from "./useGameReview";
-import { MoveAnalysis } from "@/libs/agine/helper";
+
 import {
-  DEFAULT_ENGINE_LINES,
-  DEFAULT_ENGINE_DEPTH,
   MAX_PV_MOVES,
   ANALYSIS_DELAY,
 } from "@/libs/setting/helper";
@@ -30,8 +26,9 @@ import {
   readStockfishCache,
   writeStockfishCache,
 } from "@/stockfish/engine/cache";
+import { useSettings } from "@/context/SettingContext";
 
-export default function useAgine(fen: string) {
+export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle") {
   const [state, setState] = useState<AgineState>({
     stockfishAnalysisResult: null,
     reverseStockfishAnalysisResult: null,
@@ -45,21 +42,12 @@ export default function useAgine(fen: string) {
     analysisTab: 0,
   });
 
-  const [engineDepth, setEngineDepth] = useLocalStorage<number>(
-    "engineDepth",
-    DEFAULT_ENGINE_DEPTH
-  );
-  const [engineLines, setEngineLines] = useLocalStorage<number>(
-    "engineLines",
-    DEFAULT_ENGINE_LINES
-  );
+  const { saveSettings, engineDepth, engineLines, enginePicked: enginePickedRaw } = useSettings();
+  const setEngineDepth = (v: number) => saveSettings({ engine_depth: v });
+  const setEngineLines = (v: number) => saveSettings({ engine_lines: v });
+  const enginePicked = enginePickedRaw as EngineName;
 
-  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen });
-
-  const [enginePicked] = useLocalStorage<EngineName>(
-    "stockfish-engine-picked",
-    EngineName.Stockfish17Point
-  );
+  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle" });
 
   const engine = useEngine(true, enginePicked);
   const [stockfishFen, setStockfishFen] = useState<string | null>(null);
@@ -72,6 +60,7 @@ export default function useAgine(fen: string) {
   }, [engine]);
 
   const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
+  const validGameReviewDepth = engineDepth > 15 || engineDepth < 12 ? 15 : engineDepth;
   const {
     gameReview,
     setGameReview,
@@ -81,7 +70,7 @@ export default function useAgine(fen: string) {
     generateGameReview,
     rootCurrentMove,
     setRootCurrentMove,
-  } = useGameReview(engine, engineDepth);
+  } = useGameReview(engine, validGameReviewDepth);
 
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
   const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
@@ -234,11 +223,12 @@ export default function useAgine(fen: string) {
   // ==================== OPENING DATA ====================
 
   const fetchOpeningData = useCallback(async (): Promise<void> => {
+    if(analysisType === "puzzle") return;
     const currentFen = currentFenRef.current;
     updateState({ openingLoading: true });
     try {
-      const data = await getOpeningStats(currentFen);
-      if (currentFenRef.current === currentFen) {
+      const data = await getOpeningStats(currentFen, analysisType);
+      if (currentFenRef.current === currentFen && data !== null) {
         updateState({ openingData: data, openingLoading: false });
       }
     } catch {
@@ -246,14 +236,15 @@ export default function useAgine(fen: string) {
         updateState({ openingData: null, openingLoading: false });
       }
     }
-  }, [updateState]);
+  }, [updateState, analysisType]);
 
   const fetchLichessOpeningData = useCallback(async (): Promise<void> => {
+    if(analysisType === "puzzle") return;
     const currentFen = currentFenRef.current;
     updateState({ lichessOpeningLoading: true });
     try {
-      const data = await getLichessOpeningStats(currentFen);
-      if (currentFenRef.current === currentFen) {
+      const data = await getLichessOpeningStats(currentFen, analysisType);
+      if (currentFenRef.current === currentFen && data !== null) {
         updateState({ lichessOpeningData: data, lichessOpeningLoading: false });
       }
     } catch {
@@ -261,27 +252,37 @@ export default function useAgine(fen: string) {
         updateState({ lichessOpeningData: null, lichessOpeningLoading: false });
       }
     }
-  }, [updateState]);
+  }, [updateState, analysisType]);
 
   // ==================== EFFECTS ====================
 
-  useEffect(() => {
-    if (!engine || !fen) return;
-    updateState({
-      stockfishAnalysisResult: null,
-      reverseStockfishAnalysisResult: null,
-      openingData: null,
-    });
-    const timeoutId = setTimeout(() => {
-      if (currentFenRef.current === fen) {
-        analyzeWithStockfish();
-        fetchOpeningData();
-        fetchLichessOpeningData();
-      }
-    }, ANALYSIS_DELAY);
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fen, engine, engineDepth, engineLines]);
+useEffect(() => {
+  if (!engine || !fen || analysisType === "unsupported" || analysisType === "puzzle") return;
+  updateState({
+    stockfishAnalysisResult: null,
+    reverseStockfishAnalysisResult: null,
+  });
+  const timeoutId = setTimeout(() => {
+    if (currentFenRef.current === fen) {
+      analyzeWithStockfish();
+    }
+  }, ANALYSIS_DELAY);
+  return () => clearTimeout(timeoutId);
+
+}, [fen, engine, engineDepth, engineLines, analysisType]);
+
+
+useEffect(() => {
+  if (!fen || analysisType === "unsupported" || analysisType === "puzzle") return;
+  updateState({ openingData: null });
+  const timeoutId = setTimeout(() => {
+    if (currentFenRef.current === fen) {
+      fetchOpeningData();
+      fetchLichessOpeningData();
+    }
+  }, ANALYSIS_DELAY);
+  return () => clearTimeout(timeoutId);
+}, [fen, analysisType]);
 
   return {
     // Stockfish

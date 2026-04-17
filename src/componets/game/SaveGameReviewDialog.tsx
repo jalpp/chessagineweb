@@ -22,9 +22,9 @@ import {
 } from "@mui/icons-material";
 
 import { MoveAnalysis } from "@/libs/agine/helper";
-import { useLocalStorage } from "usehooks-ts";
 import { GameReviewTheme } from "@/libs/themes/helper";
 import { useRouter } from "next/navigation";
+import { useGameStorage } from "@/hooks/useGameStorage";
 
 export interface SavedGameReview {
   id: string;
@@ -64,9 +64,7 @@ function SaveGameReviewDialog({
   gameReviewTheme,
   pgnText,
 }: SaveGameReviewProp) {
-  const [gameReviewHistory, setGameReviewHistory] = useLocalStorage<
-    SavedGameReview[]
-  >("chess-game-review-history", []);
+  const { games: gameReviewHistory, saveGame, deleteGame } = useGameStorage();
 
   const router = useRouter();
 
@@ -80,7 +78,7 @@ function SaveGameReviewDialog({
   };
 
   const deleteFromHistory = (id: string) => {
-    setGameReviewHistory((prev) => prev.filter((game) => game.id !== id));
+    deleteGame(id);
   };
 
   const formatDate = (isoString: string) => {
@@ -95,8 +93,7 @@ function SaveGameReviewDialog({
 
   const handleSaveConfirm = () => {
     const gameTitle = saveTitle.trim() || generateGameTitle();
-    const gameId =
-      Date.now().toString() 
+    const gameId = Date.now().toString();
     const savedGame: SavedGameReview = {
       id: gameId,
       gameInfo,
@@ -108,18 +105,14 @@ function SaveGameReviewDialog({
       title: gameTitle,
     };
 
-    setGameReviewHistory((prev) => [savedGame, ...prev]);
+    saveGame(savedGame);
     setSaveDialogOpen(false);
     setSaveTitle("");
 
     if (isBotGame) {
       sessionStorage.setItem("loadGameId", gameId);
-
       router.push("/game");
-
-      setTimeout(() => {
-        setSaveDialogOpen(false);
-      }, 500);
+      setTimeout(() => setSaveDialogOpen(false), 500);
     } else {
       alert("Saved game successfully!");
     }

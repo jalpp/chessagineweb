@@ -23,8 +23,9 @@ import {
   Queue,
 } from "@mui/icons-material";
 
-import { useLocalStorage } from "usehooks-ts";
+import { usePersistedSettings } from "@/hooks/usePersistedStorage";
 import { CandidateMove } from "@/libs/agine/helper";
+import { useSettings } from "@/context/SettingContext";
 
 export interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
@@ -50,14 +51,9 @@ export function ChessDBDisplay({
 
   const [chessDBEnabled, setChessDBEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showScores, setShowScores] = useLocalStorage<boolean>(
-    "chessdb_ui_show_scores",
-    true
-  );
-  const [showWinrates, setShowWinrates] = useLocalStorage<boolean>(
-    "chessdb_ui_show_winrate",
-    true
-  );
+  const { saveSettings, chessdbShowScores: showScores, chessdbShowWinrates: showWinrates } = useSettings();
+  const setShowScores   = (v: boolean) => saveSettings({ chessdb_show_scores: v });
+  const setShowWinrates = (v: boolean) => saveSettings({ chessdb_show_winrates: v });
 
   // Calculate maximum possible moves from current position
   const availableMoves = data ? data.length : 0;

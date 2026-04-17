@@ -1,4 +1,9 @@
-import { BYO_ANTHROPIC_MODELS, BYO_GEMINI_MODELS, BYO_OPENROUTER_MODELS, PREMIUM_MODELS } from "../agine/modelConstants";
+import {
+  BYO_ANTHROPIC_MODELS,
+  BYO_GEMINI_MODELS,
+  BYO_OPENROUTER_MODELS,
+  PREMIUM_MODELS,
+} from "../agine/modelConstants";
 
 export interface ProviderConfig {
   name: string;
@@ -8,7 +13,6 @@ export interface ProviderConfig {
   docsUrl: string;
   supportsRouting: boolean;
 }
-
 
 export interface TabPanelProps {
   children?: React.ReactNode;
@@ -23,80 +27,83 @@ interface LanguageOption {
   flag: string;
 }
 
-
 export const LANGUAGES: LanguageOption[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹' },
-  { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇵🇹' },
-  { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' },
-  { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
-  { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
-  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
-  { code: 'sv', name: 'Swedish', nativeName: 'Svenska', flag: '🇸🇪' },
-  { code: 'no', name: 'Norwegian', nativeName: 'Norsk', flag: '🇳🇴' },
-  { code: 'da', name: 'Danish', nativeName: 'Dansk', flag: '🇩🇰' },
-  { code: 'fi', name: 'Finnish', nativeName: 'Suomi', flag: '🇫🇮' },
-  { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
-  { code: 'cs', name: 'Czech', nativeName: 'Čeština', flag: '🇨🇿' },
-  { code: 'hu', name: 'Hungarian', nativeName: 'Magyar', flag: '🇭🇺' },
-  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷' },
-  { code: 'he', name: 'Hebrew', nativeName: 'עברית', flag: '🇮🇱' },
-  { code: 'th', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭' },
-  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
-  { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩' },
-  { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu', flag: '🇲🇾' },
-  { code: 'tl', name: 'Filipino', nativeName: 'Filipino', flag: '🇵🇭' },
-  { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
-  { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' },
-  { code: 'bg', name: 'Bulgarian', nativeName: 'Български', flag: '🇧🇬' },
-  { code: 'ro', name: 'Romanian', nativeName: 'Română', flag: '🇷🇴' },
-  { code: 'hr', name: 'Croatian', nativeName: 'Hrvatski', flag: '🇭🇷' },
-  { code: 'sr', name: 'Serbian', nativeName: 'Српски', flag: '🇷🇸' },
-  { code: 'sk', name: 'Slovak', nativeName: 'Slovenčina', flag: '🇸🇰' },
-  { code: 'sl', name: 'Slovenian', nativeName: 'Slovenščina', flag: '🇸🇮' },
-  { code: 'et', name: 'Estonian', nativeName: 'Eesti', flag: '🇪🇪' },
-  { code: 'lv', name: 'Latvian', nativeName: 'Latviešu', flag: '🇱🇻' },
-  { code: 'lt', name: 'Lithuanian', nativeName: 'Lietuvių', flag: '🇱🇹' },
+  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸" },
+  { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸" },
+  { code: "fr", name: "French", nativeName: "Français", flag: "🇫🇷" },
+  { code: "de", name: "German", nativeName: "Deutsch", flag: "🇩🇪" },
+  { code: "it", name: "Italian", nativeName: "Italiano", flag: "🇮🇹" },
+  { code: "pt", name: "Portuguese", nativeName: "Português", flag: "🇵🇹" },
+  { code: "ru", name: "Russian", nativeName: "Русский", flag: "🇷🇺" },
+  { code: "ja", name: "Japanese", nativeName: "日本語", flag: "🇯🇵" },
+  { code: "ko", name: "Korean", nativeName: "한국어", flag: "🇰🇷" },
+  { code: "zh", name: "Chinese", nativeName: "中文", flag: "🇨🇳" },
+  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🇸🇦" },
+  { code: "hi", name: "Hindi", nativeName: "हिन्दी", flag: "🇮🇳" },
+  { code: "nl", name: "Dutch", nativeName: "Nederlands", flag: "🇳🇱" },
+  { code: "sv", name: "Swedish", nativeName: "Svenska", flag: "🇸🇪" },
+  { code: "no", name: "Norwegian", nativeName: "Norsk", flag: "🇳🇴" },
+  { code: "da", name: "Danish", nativeName: "Dansk", flag: "🇩🇰" },
+  { code: "fi", name: "Finnish", nativeName: "Suomi", flag: "🇫🇮" },
+  { code: "pl", name: "Polish", nativeName: "Polski", flag: "🇵🇱" },
+  { code: "cs", name: "Czech", nativeName: "Čeština", flag: "🇨🇿" },
+  { code: "hu", name: "Hungarian", nativeName: "Magyar", flag: "🇭🇺" },
+  { code: "tr", name: "Turkish", nativeName: "Türkçe", flag: "🇹🇷" },
+  { code: "he", name: "Hebrew", nativeName: "עברית", flag: "🇮🇱" },
+  { code: "th", name: "Thai", nativeName: "ไทย", flag: "🇹🇭" },
+  { code: "vi", name: "Vietnamese", nativeName: "Tiếng Việt", flag: "🇻🇳" },
+  {
+    code: "id",
+    name: "Indonesian",
+    nativeName: "Bahasa Indonesia",
+    flag: "🇮🇩",
+  },
+  { code: "ms", name: "Malay", nativeName: "Bahasa Melayu", flag: "🇲🇾" },
+  { code: "tl", name: "Filipino", nativeName: "Filipino", flag: "🇵🇭" },
+  { code: "sw", name: "Swahili", nativeName: "Kiswahili", flag: "🇰🇪" },
+  { code: "uk", name: "Ukrainian", nativeName: "Українська", flag: "🇺🇦" },
+  { code: "bg", name: "Bulgarian", nativeName: "Български", flag: "🇧🇬" },
+  { code: "ro", name: "Romanian", nativeName: "Română", flag: "🇷🇴" },
+  { code: "hr", name: "Croatian", nativeName: "Hrvatski", flag: "🇭🇷" },
+  { code: "sr", name: "Serbian", nativeName: "Српски", flag: "🇷🇸" },
+  { code: "sk", name: "Slovak", nativeName: "Slovenčina", flag: "🇸🇰" },
+  { code: "sl", name: "Slovenian", nativeName: "Slovenščina", flag: "🇸🇮" },
+  { code: "et", name: "Estonian", nativeName: "Eesti", flag: "🇪🇪" },
+  { code: "lv", name: "Latvian", nativeName: "Latviešu", flag: "🇱🇻" },
+  { code: "lt", name: "Lithuanian", nativeName: "Lietuvių", flag: "🇱🇹" },
 ];
-
 
 export const PROVIDERS: Record<string, ProviderConfig> = {
   agineCloud: {
-    name: 'aginecloud',
+    name: "aginecloud",
     models: PREMIUM_MODELS,
-    keyPrefix: '',
-    website: 'https://www.chessagine.com/docs',
-    docsUrl: 'https://www.chessagine.com/docs',
+    keyPrefix: "",
+    website: "https://www.chessagine.com/docs",
+    docsUrl: "https://www.chessagine.com/docs",
     supportsRouting: false,
   },
   byoAnthropic: {
-    name: 'Anthropic (Your Key)',
+    name: "Anthropic (Your Key)",
     models: BYO_ANTHROPIC_MODELS,
-    keyPrefix: 'sk-ant-',
-    website: 'https://console.anthropic.com',
-    docsUrl: 'https://docs.anthropic.com',
+    keyPrefix: "sk-ant-",
+    website: "https://console.anthropic.com",
+    docsUrl: "https://docs.anthropic.com",
     supportsRouting: false,
   },
   byoGemini: {
-    name: 'Google Gemini (Your Key)',
+    name: "Google Gemini (Your Key)",
     models: BYO_GEMINI_MODELS,
-    keyPrefix: 'AIza',
-    website: 'https://aistudio.google.com/apikey',
-    docsUrl: 'https://ai.google.dev/docs',
+    keyPrefix: "AIza",
+    website: "https://aistudio.google.com/apikey",
+    docsUrl: "https://ai.google.dev/docs",
     supportsRouting: false,
   },
   byoOpenAI: {
-    name: 'OpenRouter (Your Key)',
+    name: "OpenRouter (Your Key)",
     models: BYO_OPENROUTER_MODELS,
-    keyPrefix: 'sk-or-',
-    website: 'https://openrouter.ai/keys',
-    docsUrl: 'https://openrouter.ai/docs',
+    keyPrefix: "sk-or-",
+    website: "https://openrouter.ai/keys",
+    docsUrl: "https://openrouter.ai/docs",
     supportsRouting: true,
   },
 };
@@ -132,7 +139,12 @@ export const FAQ_ITEMS: FAQItem[] = [
       "Yes! ChessAgine is FOSS (free and open-source software). You can fork the project on GitHub and run it locally if you want complete control over your setup. Most users prefer the hosted version at chessagine.com for convenience, but the option to self-host is always available.",
     category: "general",
   },
-
+  {
+    question: "How does ChessAgine save my games?",
+    answer:
+      "As a paid user you have access to saving your game + detailed chessAgine game review to cloud, as free tier user or with no account you can still save the game but locally on your browser storage.",
+    category: "technical",
+  },
   {
     question: "What is AgineCloud and how do I use it?",
     answer:
@@ -144,7 +156,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     answer:
       "Knowledge Cards are a premium feature that let you teach ChessAgine about your own chess knowledge. Create custom cards to share your favorite openings, tactical patterns, endgame techniques, or personal chess insights. ChessAgine will reference your Knowledge Cards during analysis and conversations, making it a truly personalized chess assistant that understands your unique playing style and preferences.",
     category: "cost",
-    },
+  },
   {
     question: "Can ChessAgine make mistakes or give incorrect analysis?",
     answer:
@@ -153,7 +165,8 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
 
   {
-    question: "What external services and integrations does ChessAgine connect to?",
+    question:
+      "What external services and integrations does ChessAgine connect to?",
     answer:
       "ChessAgine integrates with several chess services: Stockfish and Maia engines for position analysis and evaluation, Lichess for game import and opening databases (enhanced with your API token), Posira for additional chess data, and ChessBoardMagic for board visualization. You can also connect your Lichess studies with an API token to give ChessAgine context about your personal chess knowledge and study history.",
     category: "technical",
@@ -183,9 +196,10 @@ export const FAQ_ITEMS: FAQItem[] = [
     category: "technical",
   },
   {
-    question: "What is the daily usage limit, and why is it in place for paid tier users?",
+    question:
+      "What is the daily usage limit, and why is it in place for paid tier users?",
     answer:
-    "Paid tier users have a daily limit to ensure fair resource allocation and server stability. This helps us maintain affordable pricing while providing reliable service to all users. The limit is generous enough for typical chess study sessions. If you hit the daily limit, you can still continue using agine but with a free model. Or optionally set your own openRouter token",
+      "Paid tier users have a daily limit to ensure fair resource allocation and server stability. This helps us maintain affordable pricing while providing reliable service to all users. The limit is generous enough for typical chess study sessions. If you hit the daily limit, you can still continue using agine but with a free model. Or optionally set your own openRouter token",
     category: "cost",
   },
 
@@ -213,7 +227,6 @@ export const FAQ_ITEMS: FAQItem[] = [
       "Yes, you can cancel at any time from your account billing settings. You'll retain paid tier access until the end of your current billing period, then revert to the free plan.",
     category: "cost",
   },
-
 
   {
     question: "Is my chess data and conversation history private?",

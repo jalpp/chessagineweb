@@ -18,15 +18,15 @@ import {
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import NotesIcon from '@mui/icons-material/Notes';
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from './GameReviewTab';
-import { AgentMessage } from '@/libs/agine/helper';
 import { useLocalStorage } from 'usehooks-ts';
+import { usePersistedSettings } from '@/hooks/usePersistedStorage';
 import { DEFAULT_PGN_PANEL_DIMENSIONS } from '@/libs/setting/helper';
 import { MoveComment, shouldShowClassification, getMoveAnnotation } from '@/libs/agine/helper';
+import { useSettings } from '@/context/SettingContext';
 
 
 type ViewMode = 'pgn' | 'movelist';
@@ -53,7 +53,9 @@ const PGNView: React.FC<PGNViewProps> = ({
     "pgn_view_ui_dimensions",
     DEFAULT_PGN_PANEL_DIMENSIONS
   );
-  const [viewMode, setViewMode] = useLocalStorage<ViewMode>("pgn_view_mode", "pgn");
+  const { saveSettings, pgnViewMode } = useSettings();
+  const viewMode = pgnViewMode as ViewMode;
+  const setViewMode = (v: ViewMode) => saveSettings({ pgn_view_mode: v });
   const [isResizing, setIsResizing] = useState(false);
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [selectedMoveIndex, setSelectedMoveIndex] = useState<number | null>(null);

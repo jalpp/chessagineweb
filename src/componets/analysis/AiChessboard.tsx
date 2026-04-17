@@ -41,27 +41,20 @@ import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import PGNView from "../tabs/PgnView";
 import { Board } from "../../libs/tacticalboard/board";
 import { useLocalStorage } from "usehooks-ts";
+import { usePersistedSettings } from "@/hooks/usePersistedStorage";
 import {
   BOARD_THEMES,
-  DEFAULT_BOARD_ANIMATION_DURATION,
-  DEFAULT_BOARD_FLIPPED,
-  DEFAULT_BOARD_HANGING_PIECE,
   DEFAULT_BOARD_PANEL_DIMENSIONS,
-  DEFAULT_BOARD_SEMI_PROTECTED_PIECE,
-  DEFAULT_BOARD_SHOW_COORDINATE,
-  DEFAULT_BOARD_SHOW_FEN,
-  DEFAULT_BOARD_SIZE,
   getCurrentThemeColors,
   is3DSet,
   PIECE_STYLE_TYPES,
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
-import { MaiaEvaluation } from "@/libs/nets/types";
 import { MaiaEngineAnalysis } from "@/hooks/useNets";
+import { useSettings } from "@/context/SettingContext";
+
 export type BoardOrientation = "white" | "black";
-
-
 
 interface AiChessboardPanelProps {
   fen: string;
@@ -70,12 +63,12 @@ interface AiChessboardPanelProps {
   engine: UciEngine | undefined;
   analyzeWithStockfish: () => void;
   stockfishLoading: boolean;
-  fetchOpeningData: () => void;
+  fetchOpeningData?: () => void;
   openingLoading: boolean;
   setGame: (chess: Chess) => void;
   setFen: (fen: string) => void;
   setStockfishAnalysisResult: (result: PositionEval | null) => void;
-  setOpeningData: (result: MasterGames | null) => void;
+  setOpeningData?: (result: MasterGames | null) => void;
   puzzleMode?: boolean;
   playMode?: boolean;
   gameReviewMode?: boolean;
@@ -123,62 +116,44 @@ export default function AiChessboardPanel({
   engineThinking = false,
 }: AiChessboardPanelProps) {
   const [customFen, setCustomFen] = useState("");
-  const [isFlipped, setIsFlipped] = useLocalStorage<boolean>(
-    "board_ui_flipped",
-    DEFAULT_BOARD_FLIPPED
-  );
+  const {
+    saveSettings,
+    boardFlipped: isFlipped,
+    boardSize,
+    boardPieceType: pieceType,
+    boardShowCoords: showCoordinates,
+    boardTheme,
+    boardAnimDuration: animationDuration,
+    boardShowEvalBar: showEvalBar,
+    boardShowFen: showFen,
+    boardShowHanging: showHangingPieces,
+    boardShowSemiProtected: showSemiProtectedPieces,
+  } = useSettings()
+
+  const setIsFlipped = (v: boolean) => saveSettings({ board_ui_flipped: v });
+  const setBoardSize = (v: number) => saveSettings({ board_ui_size: v });
+  const setPieceType = (v: string) => saveSettings({ board_piece_type: v });
+  const setShowCoordinates = (v: boolean) =>
+    saveSettings({ board_show_coordinates: v });
+  const setBoardTheme = (v: string) => saveSettings({ board_theme: v });
+  const setAnimationDuration = (v: number) =>
+    saveSettings({ board_ui_animation_duration: v });
+  const setEvalBar = (v: boolean) =>
+    saveSettings({ board_ui_show_eval_bar: v });
+  const setShowFen = (v: boolean) => saveSettings({ board_ui_show_fen: v });
+  const setShowHangingPieces = (v: boolean) =>
+    saveSettings({ board_ui_show_hanging_piece: v });
+  const setShowSemiProtectedPieces = (v: boolean) =>
+    saveSettings({ board_ui_show_semiprotected: v });
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [showArrows, setShowArrows] = useState(
-    puzzleMode || playMode ? false : true
+    puzzleMode || playMode ? false : true,
   );
-  const [boardSize, setBoardSize] = useLocalStorage<number>(
-    "board_ui_size",
-    typeof window !== "undefined" && window.innerWidth < 768
-      ? Math.min(window.innerWidth - 100, 400) 
-      : DEFAULT_BOARD_SIZE
-  );
-  const [pieceType, setPieceType] = useLocalStorage<string>(
-    "board_piece_type",
-    "Cburnett"
-  );
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showCoordinates, setShowCoordinates] = useLocalStorage<boolean>(
-    "board_show_coordinates",
-    DEFAULT_BOARD_SHOW_COORDINATE
-  );
-
-  const [boardTheme, setBoardTheme] = useLocalStorage<string>(
-    "board_theme",
-    "blue"
-  );
-  const [animationDuration, setAnimationDuration] = useLocalStorage<number>(
-    "board_ui_animation_duration",
-    DEFAULT_BOARD_ANIMATION_DURATION
-  );
-
-  const [showEvalBar, setEvalBar] = useLocalStorage<boolean>(
-    "board_ui_show_eval_bar",
-    true
-  );
-
-  const [showFen, setShowFen] = useLocalStorage<boolean>(
-    "board_ui_show_fen",
-    DEFAULT_BOARD_SHOW_FEN
-  );
-
-  // Piece highlighting settings
-  const [showHangingPieces, setShowHangingPieces] = useLocalStorage<boolean>(
-    "board_ui_show_hanging_piece",
-    DEFAULT_BOARD_HANGING_PIECE
-  );
-  const [showSemiProtectedPieces, setShowSemiProtectedPieces] =
-    useLocalStorage<boolean>(
-      "board_ui_show_semiprotectedpiece",
-      DEFAULT_BOARD_SEMI_PROTECTED_PIECE
-    );
 
   // Resize functionality
 
@@ -285,11 +260,11 @@ export default function AiChessboardPanel({
 
         const newWidth = Math.min(
           maxWidth,
-          Math.max(minWidth, startDimensionsRef.current.width + deltaX)
+          Math.max(minWidth, startDimensionsRef.current.width + deltaX),
         );
         const newHeight = Math.min(
           maxHeight,
-          Math.max(minHeight, startDimensionsRef.current.height + deltaY)
+          Math.max(minHeight, startDimensionsRef.current.height + deltaY),
         );
 
         // Auto-adjust board size based on panel width
@@ -308,7 +283,7 @@ export default function AiChessboardPanel({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [panelDimensions]
+    [panelDimensions],
   );
 
   // Memoize the initial game setup to avoid recalculation
@@ -362,16 +337,13 @@ export default function AiChessboardPanel({
       setFen(newFen);
       setMoveHistory(newHistory);
       setCurrentMoveIndex(newHistory.length - 1);
-      setOpeningData(null);
     },
-    [fen, moveHistory, currentMoveIndex, setGame, setFen, setOpeningData]
+    [fen, moveHistory, currentMoveIndex, setGame, setFen, setOpeningData],
   );
-
 
   const clearAnalysis = useCallback(() => {
     setStockfishAnalysisResult(null);
-    setOpeningData(null);
-  }, [ setStockfishAnalysisResult, setOpeningData]);
+  }, [setStockfishAnalysisResult, setOpeningData]);
 
   // Check if player can move in play mode
   const canPlayerMove = useCallback(() => {
@@ -432,7 +404,7 @@ export default function AiChessboardPanel({
         clearAnalysis();
       }
     },
-    [moveHistory, setGame, setFen, clearAnalysis]
+    [moveHistory, setGame, setFen, clearAnalysis],
   );
 
   const handlePlayerMove = useCallback(
@@ -493,7 +465,7 @@ export default function AiChessboardPanel({
       setMoveSquares,
       safeGameMutate,
       clearAnalysis,
-    ]
+    ],
   );
 
   const handleSquareClick = useCallback(
@@ -561,7 +533,7 @@ export default function AiChessboardPanel({
       safeGameMutate,
       clearAnalysis,
       handlePlayerMove,
-    ]
+    ],
   );
 
   const customArrows = useMemo<Arrow[]>(() => {
@@ -613,7 +585,7 @@ export default function AiChessboardPanel({
 
     const addPolicyArrow = (
       policy?: Record<string, number>,
-      color?: string
+      color?: string,
     ) => {
       if (!policy) return;
 
@@ -744,7 +716,7 @@ export default function AiChessboardPanel({
     (_: Event, newValue: number | number[]) => {
       setAnimationDuration(newValue as number);
     },
-    []
+    [],
   );
 
   // Navigation button disabled states
@@ -1095,7 +1067,7 @@ export default function AiChessboardPanel({
                               • {desc} at{" "}
                               {boardAnalysis.HangingPieceCoordinates[index]}
                             </Typography>
-                          )
+                          ),
                         )}
                       </Box>
                     )}
@@ -1131,7 +1103,7 @@ export default function AiChessboardPanel({
                                 ]
                               }
                             </Typography>
-                          )
+                          ),
                         )}
                       </Box>
                     )}

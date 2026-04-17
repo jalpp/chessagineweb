@@ -60,7 +60,7 @@ export default function PositionPage() {
     scores,
     themeScoreLoading,
     themeScoreError,
-  } = useAgine(fen);
+  } = useAgine(fen, "position");
 
   const {
     evaluations,
