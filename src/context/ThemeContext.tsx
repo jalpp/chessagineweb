@@ -62,28 +62,44 @@ const themeMap = {
   christmas: christmasThemeConfig
 };
 
+
+function readThemeFromStorage(): ThemeType | null {
+  try {
+    const raw = localStorage.getItem('app-theme');
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as ThemeType;
+      if (themeMap[parsed]) return parsed;
+    } catch {
+      // Legacy raw value — not JSON-encoded
+      if (themeMap[raw as ThemeType]) return raw as ThemeType;
+    }
+  } catch {}
+  return null;
+}
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>('dark');
   const [mounted, setMounted] = useState(false);
   const { isSignedIn } = useAuth();
 
+  // Read from localStorage on mount (handles both JSON and legacy raw values)
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem('app-theme') as ThemeType;
-    if (savedTheme && themeMap[savedTheme]) {
-      setCurrentTheme(savedTheme);
-    }
+    const saved = readThemeFromStorage();
+    if (saved) setCurrentTheme(saved);
   }, []);
 
-  
+  // Sync from DB once on sign-in
   useEffect(() => {
     if (!isSignedIn) return;
     fetch('/api/settings')
       .then((r) => r.json())
       .then((d: { app_theme?: string } | null) => {
         if (d?.app_theme && themeMap[d.app_theme as ThemeType]) {
-          setCurrentTheme(d.app_theme as ThemeType);
-          localStorage.setItem('app-theme', d.app_theme);
+          const theme = d.app_theme as ThemeType;
+          setCurrentTheme(theme);
+          localStorage.setItem('app-theme', JSON.stringify(theme));
         }
       })
       .catch(() => {});
@@ -91,7 +107,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const setTheme = (theme: ThemeType) => {
     setCurrentTheme(theme);
-    localStorage.setItem('app-theme', theme);
+
+    localStorage.setItem('app-theme', JSON.stringify(theme));
+   
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'app-theme',
+        newValue: JSON.stringify(theme),
+        storageArea: localStorage,
+      })
+    );
+
     if (isSignedIn) {
       fetch('/api/settings', {
         method: 'POST',
@@ -101,11 +127,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
-  const theme = themeMap[currentTheme];
+  const theme = themeMap[currentTheme] ?? themeMap['dark'];
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
   return (
     <ThemeContext.Provider value={{ currentTheme, setTheme }}>
