@@ -9,7 +9,7 @@ import {
 } from "@mastra/core/processors";
 
 import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
-import { displayChessboardTool, loadGameTool } from "./tools";
+import { displayChessboardTool, loadGameTool, loadPuzzleTool } from "./tools";
 import {
   BYO_ANTHROPIC_MODELS,
   BYO_GEMINI_MODELS,
@@ -82,6 +82,7 @@ const LICHESS_AUTH_TOOL_IDS = new Set([
 
 const IGNORE_TOOL_IDS = new Set([
   "get-lichess-username",
+  "fetch_chess_puzzle"
 ]);
 
 const PINNED_MCP_TOOL_IDS = new Set([
@@ -178,6 +179,7 @@ async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
     ...wrappedTools,
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
+    load_chess_puzzle: loadPuzzleTool,
   };
 }
 

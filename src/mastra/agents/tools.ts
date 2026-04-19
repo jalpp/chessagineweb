@@ -128,3 +128,59 @@ Prefer this over describing a game in text whenever a visual board makes sense.
     };
   },
 });
+
+export const loadPuzzleTool = createTool({
+  id: "load_chess_puzzle",
+  description: `
+Load and display an interactive chess puzzle directly in the chat window.
+ 
+Use this tool whenever the user:
+- Asks for a chess puzzle or tactics problem
+- Wants to practice a specific theme (fork, pin, back rank mate, etc.)
+- Asks "give me a puzzle", "show me a tactic", "I want to practice X"
+- Specifies a difficulty or rating range
+ 
+The tool renders a fully interactive puzzle board where the user can attempt
+to find the solution, with move validation, hints, and solution reveal.
+`.trim(),
+ 
+  inputSchema: z.object({
+    themes: z
+      .array(z.string())
+      .optional()
+      .default([])
+      .describe(
+        "Puzzle themes to filter by (e.g. ['fork', 'pin', 'mateIn2']). " +
+          "Leave empty for a random puzzle.",
+      ),
+    ratingFrom: z
+      .number()
+      .optional()
+      .describe("Minimum puzzle rating (e.g. 1200). Defaults to 1400."),
+    ratingTo: z
+      .number()
+      .optional()
+      .describe("Maximum puzzle rating (e.g. 1800). Defaults to 1900."),
+    caption: z
+      .string()
+      .optional()
+      .describe("Optional label shown above the puzzle, e.g. 'Fork Practice'"),
+  }),
+ 
+  outputSchema: z.object({
+    themes: z.array(z.string()),
+    ratingFrom: z.number(),
+    ratingTo: z.number(),
+    caption: z.string().optional(),
+  }),
+ 
+  execute: async ({ themes = [], ratingFrom, ratingTo, caption }) => {
+    return {
+      themes,
+      ratingFrom: ratingFrom ?? 1400,
+      ratingTo: ratingTo ?? 1900,
+      caption,
+    };
+  },
+});
+ 
