@@ -9,7 +9,7 @@ import {
 } from "@mastra/core/processors";
 
 import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
-import { displayChessboardTool, loadGameTool, loadPuzzleTool } from "./tools";
+import { displayChessboardTool, fetchChessPuzzle, loadGameTool } from "./tools";
 import {
   BYO_ANTHROPIC_MODELS,
   BYO_GEMINI_MODELS,
@@ -179,7 +179,7 @@ async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
     ...wrappedTools,
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
-    fetch_chess_puzzle: loadPuzzleTool,
+    fetch_chess_puzzle: fetchChessPuzzle,
   };
 }
 
@@ -210,7 +210,7 @@ async function buildPinnedTools() {
   return {
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
-    fetch_chess_puzzle: loadPuzzleTool
+    fetch_chess_puzzle: fetchChessPuzzle
   };
 }
 

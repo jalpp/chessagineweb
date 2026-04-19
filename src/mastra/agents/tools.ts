@@ -129,8 +129,8 @@ Prefer this over describing a game in text whenever a visual board makes sense.
   },
 });
 
-export const loadPuzzleTool = createTool({
-  id: "load_chess_puzzle",
+export const fetchChessPuzzle = createTool({
+  id: "fetch_chess_puzzle",
   description: `
 Load and display an interactive chess puzzle directly in the chat window.
  
