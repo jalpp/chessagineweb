@@ -9,8 +9,8 @@ import {
   Skeleton,
   Chip,
 } from "@mui/material";
-import { EmojiEvents as TrophyIcon } from "@mui/icons-material";
 import dynamic from "next/dynamic";
+import { PuzzleIcon } from "lucide-react";
 
 const EmbeddedPuzzle = dynamic(() => import("./EmbeddedPuzzle"), {
   loading: () => (
@@ -40,7 +40,7 @@ type PuzzleResult = {
 };
 
 export const LoadPuzzleToolUI = makeAssistantToolUI<PuzzleArgs, PuzzleResult>({
-  toolName: "load_chess_puzzle",
+  toolName: "fetch_chess_puzzle",
 
   render: ({ args, result, status }) => {
     if (status.type === "running" || !result) {
@@ -55,7 +55,7 @@ export const LoadPuzzleToolUI = makeAssistantToolUI<PuzzleArgs, PuzzleResult>({
     return (
       <Box sx={{ my: 1 }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-          <TrophyIcon fontSize="small" sx={{ color: "warning.main" }} />
+          <PuzzleIcon size={16} color="green" />
           <Typography variant="caption" fontWeight={700} color="text.secondary">
             Chess Puzzle
           </Typography>
