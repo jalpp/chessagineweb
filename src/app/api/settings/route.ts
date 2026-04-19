@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/connector";
 import { NextRequest } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });

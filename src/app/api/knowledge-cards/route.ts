@@ -4,11 +4,13 @@ import { NextRequest } from "next/server";
 import { gzip, gunzip } from "zlib";
 import { promisify } from "util";
 
+export const dynamic = "force-dynamic";
+
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
 const COLLECTION = "knowledge_cards";
-const MAX_CONTENT_BYTES = 8 * 1024;
+const MAX_CONTENT_BYTES = 30 * 1024;
 const MAX_CARDS = 20;
 
 async function compress(text: string): Promise<string> {
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
   const contentBytes = Buffer.byteLength(content, "utf-8");
   if (contentBytes > MAX_CONTENT_BYTES) {
     return Response.json(
-      { error: `Content exceeds 8 KB limit (${(contentBytes / 1024).toFixed(1)} KB)` },
+      { error: `Content exceeds 30 KB limit (${(contentBytes / 1024).toFixed(1)} KB)` },
       { status: 400 }
     );
   }
@@ -119,7 +121,7 @@ export async function PATCH(req: NextRequest) {
     contentBytes = Buffer.byteLength(newContent, "utf-8");
     if (contentBytes > MAX_CONTENT_BYTES) {
       return Response.json(
-        { error: `Content exceeds 8 KB limit (${(contentBytes / 1024).toFixed(1)} KB)` },
+        { error: `Content exceeds 30 KB limit (${(contentBytes / 1024).toFixed(1)} KB)` },
         { status: 400 }
       );
     }

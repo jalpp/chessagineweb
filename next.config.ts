@@ -6,7 +6,12 @@ const nextConfig = {
     return [
 
       {
-        source: "/(position|play|puzzle|game)/:path*",
+        source: "/(position|play|puzzle|game|humaneval)",
+        headers: ENGINE_HEADERS,
+      },
+
+      {
+        source: "/(position|play|puzzle|game|humaneval)/:path*",
         headers: ENGINE_HEADERS,
       },
   
@@ -24,7 +29,7 @@ const nextConfig = {
       },
 
       {
-        source: "/((?!position|play|puzzle|game|static|_next\\/static).*)",
+        source: "/((?!position|play|puzzle|game|humaneval|static|_next\\/static).*)",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",

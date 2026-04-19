@@ -132,7 +132,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       const contentBytes = byteLengthOf(data.content);
       if (contentBytes > MAX_CONTENT_BYTES) {
         return {
-          error: `Content exceeds the 8 KB limit (${(contentBytes / 1024).toFixed(1)} KB).`,
+          error: `Content exceeds the 30 KB limit (${(contentBytes / 1024).toFixed(1)} KB).`,
         };
       }
       if (!data.title.trim()) return { error: "Title is required." };
@@ -177,7 +177,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       const contentBytes = byteLengthOf(newContent);
       if (contentBytes > MAX_CONTENT_BYTES) {
         return {
-          error: `Content exceeds the 8 KB limit (${(contentBytes / 1024).toFixed(1)} KB).`,
+          error: `Content exceeds the 30 KB limit (${(contentBytes / 1024).toFixed(1)} KB).`,
         };
       }
 

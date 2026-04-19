@@ -90,7 +90,7 @@ function ContentSizeBar({ content }: { content: string }) {
         sx={{ borderRadius: 1, height: 4 }}
       />
       <Typography variant="caption" color={over ? "error" : "text.secondary"}>
-        {(bytes / 1024).toFixed(1)} KB / 8 KB
+        {(bytes / 1024).toFixed(1)} KB / 30 KB
       </Typography>
     </Box>
   );
@@ -156,7 +156,7 @@ function BulkFolderImport({ onDone }: { onDone: () => void }) {
           newResults.push({
             filename: file.name,
             status: "skipped",
-            reason: `File too large (${(bytes / 1024).toFixed(1)} KB > 8 KB limit).`,
+            reason: `File too large (${(bytes / 1024).toFixed(1)} KB > 30 KB limit).`,
           });
           continue;
         }
@@ -213,7 +213,7 @@ function BulkFolderImport({ onDone }: { onDone: () => void }) {
 
       <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
         Select a folder — all <strong>.txt</strong> and <strong>.md</strong> files inside will be
-        imported as individual knowledge cards. Files over 8 KB are skipped.
+        imported as individual knowledge cards. Files over 30 KB are skipped.
       </Typography>
 
       {/* Hidden folder picker */}
