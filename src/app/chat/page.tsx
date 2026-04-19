@@ -40,6 +40,7 @@ import KnowledgePanel from "@/componets/tabs/KnowledgePanel";
 import { KnowledgeProvider, useKnowledge } from "@/context/KnowledgeContext";
 import { useTokenLimit } from "@/hooks/useTokenLimit";
 import { useLocalStorage } from "usehooks-ts";
+import { LoadPuzzleToolUI } from "@/componets/uitools/LoadPuzzleUi";
 
 
 function ChatPageInner() {
@@ -124,6 +125,7 @@ function ChatPageInner() {
     <AssistantRuntimeProvider runtime={runtime}>
       <DisplayChessboardToolUI />
       <LoadGameToolUI />
+      <LoadPuzzleToolUI/>
 
       <TooltipProvider>
         <div style={vars} className="h-screen flex flex-col">

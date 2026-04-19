@@ -9,12 +9,13 @@ import {
 } from "@mastra/core/processors";
 
 import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
-import { displayChessboardTool, loadGameTool } from "./tools";
+import { displayChessboardTool, loadGameTool, loadPuzzleTool } from "./tools";
 import {
   BYO_ANTHROPIC_MODELS,
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
 } from "@/libs/agine/modelConstants";
+import { basicSystemPrompt } from "./types";
 
 function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
@@ -65,7 +66,7 @@ function createAgineCloudModel(requestContext: RequestContext) {
 
 function buildInstructions(requestContext: RequestContext): string {
   const lang = (requestContext.get("lang") as string) || "English";
-  return "You are ChessAgine, a chess buddy. Use search_tools to discover available chess analysis tools and load_tools to load them on demand based on what the user needs."
+  return basicSystemPrompt
     .replace("[LANG]", lang);
 }
 
@@ -81,6 +82,7 @@ const LICHESS_AUTH_TOOL_IDS = new Set([
 
 const IGNORE_TOOL_IDS = new Set([
   "get-lichess-username",
+  "fetch_chess_puzzle"
 ]);
 
 const PINNED_MCP_TOOL_IDS = new Set([
@@ -177,6 +179,7 @@ async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
     ...wrappedTools,
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
+    load_chess_puzzle: loadPuzzleTool,
   };
 }
 
