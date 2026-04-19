@@ -22,6 +22,8 @@ import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import { useNets } from "@/hooks/useNets";
 import { useSessionStorage } from "usehooks-ts";
 
+export const dynamic = "force-dynamic";
+
 export default function PositionPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));

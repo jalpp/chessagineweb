@@ -7,10 +7,10 @@ import {
   Divider,
 } from "@mui/material";
 import ModelSetting from "@/componets/tabs/ModelSetting";
-import IntegrationSettings from "@/componets/tabs/IntegrationSetting";
 import ThemeSelector from "@/componets/ThemeSelector";
 import { useAuth } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
+export const dynamic = "force-dynamic";
 
 const SettingsPage = () => {
   const { isSignedIn} = useAuth();

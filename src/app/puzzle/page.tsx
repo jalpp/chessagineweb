@@ -68,6 +68,8 @@ import GuessTheme from "@/componets/puzzle/GuessPtag";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 
+export const dynamic = "force-dynamic";
+
 export default function PuzzlePage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));

@@ -43,6 +43,8 @@ import { ParsedPGN } from "@/libs/game/pgn";
 import { useNets } from "@/hooks/useNets";
 import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 
+export const dynamic = "force-dynamic";
+
 export default function PGNUploaderPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));

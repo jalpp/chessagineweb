@@ -2,6 +2,7 @@
 import { Box, Container, Typography, Divider } from "@mui/material";
 import { PricingTable } from "@clerk/nextjs";
 
+export const dynamic = "force-dynamic";
 const PricingPage = () => {
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>

@@ -19,6 +19,8 @@ import MCPdocs from "@/componets/docs/RenderMCPDocs";
 
 const TABS = ["Features", "FAQ", "Pricing", "ChessAgine MCP"];
 
+export const dynamic = "force-dynamic";
+
 const ChessAgineDocumentation = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
