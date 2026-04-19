@@ -347,7 +347,7 @@ function BulkFolderImport({ onDone }: { onDone: () => void }) {
 // ── Single card add form ──────────────────────────────────────────────────────
 
 function AddCardForm({ onDone }: { onDone: () => void }) {
-  const { addCard } = useKnowledge();
+  const { addCard, isPersisted } = useKnowledge();
   const [form, setForm] = useState<CardFormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -401,8 +401,10 @@ function AddCardForm({ onDone }: { onDone: () => void }) {
         New Knowledge Card
       </Typography>
 
-      <Alert severity="warning" sx={{ mb: 1.5 }}>
-        Knowledge cards are stored locally in your browser's storage.
+      <Alert severity={isPersisted ? "success" : "warning"} sx={{ mb: 1.5 }}>
+        {isPersisted
+          ? "Knowledge cards are synced to your account and available across devices."
+          : "Knowledge cards are stored locally in your browser's storage."}
       </Alert>
 
       {error && (
@@ -628,12 +630,12 @@ function KnowledgeCardRow({
   );
 }
 
-// ── Panel ─────────────────────────────────────────────────────────────────────
+
 
 type AddMode = "none" | "single" | "bulk";
 
 export default function KnowledgePanel({ open, onClose }: KnowledgePanelProps) {
-  const { cards, selectedIds, isLoading, selectAll, deselectAll } = useKnowledge();
+  const { cards, selectedIds, isLoading, isPersisted, selectAll, deselectAll } = useKnowledge();
   const [addMode, setAddMode] = useState<AddMode>("none");
 
   const canAdd = cards.length < MAX_CARDS;
@@ -649,7 +651,10 @@ export default function KnowledgePanel({ open, onClose }: KnowledgePanelProps) {
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {cards.length}/{MAX_CARDS} cards ·{" "}
-            <span style={{ fontWeight: 600 }}>{selectedCount} active</span> in context
+            <span style={{ fontWeight: 600 }}>{selectedCount} active</span> in context ·{" "}
+            <span style={{ fontWeight: 600, color: isPersisted ? "green" : "inherit" }}>
+              {isPersisted ? "☁ synced" : "⚠ local only"}
+            </span>
           </Typography>
         </Box>
         <IconButton onClick={onClose} size="small">

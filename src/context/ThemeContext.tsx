@@ -99,7 +99,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         if (d?.app_theme && themeMap[d.app_theme as ThemeType]) {
           const theme = d.app_theme as ThemeType;
           setCurrentTheme(theme);
-          localStorage.setItem('app-theme', JSON.stringify(theme));
         }
       })
       .catch(() => {});

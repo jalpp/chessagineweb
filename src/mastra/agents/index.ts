@@ -15,6 +15,7 @@ import {
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
 } from "@/libs/agine/modelConstants";
+import { basicSystemPrompt } from "./types";
 
 function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
@@ -65,7 +66,7 @@ function createAgineCloudModel(requestContext: RequestContext) {
 
 function buildInstructions(requestContext: RequestContext): string {
   const lang = (requestContext.get("lang") as string) || "English";
-  return "You are ChessAgine, a chess buddy. Use search_tools to discover available chess analysis tools and load_tools to load them on demand based on what the user needs."
+  return basicSystemPrompt
     .replace("[LANG]", lang);
 }
 
