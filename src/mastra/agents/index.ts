@@ -179,7 +179,7 @@ async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
     ...wrappedTools,
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
-    load_chess_puzzle: loadPuzzleTool,
+    fetch_chess_puzzle: loadPuzzleTool,
   };
 }
 
@@ -210,6 +210,7 @@ async function buildPinnedTools() {
   return {
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
+    fetch_chess_puzzle: loadPuzzleTool
   };
 }
 
