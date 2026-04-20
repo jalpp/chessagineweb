@@ -6,6 +6,8 @@ import {
   DAILY_BUDGET_USD,
 } from "@/lib/usage";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const { userId, has } = await auth();
 

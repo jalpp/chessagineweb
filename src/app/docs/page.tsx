@@ -19,6 +19,8 @@ import MCPdocs from "@/componets/docs/RenderMCPDocs";
 
 const TABS = ["Features", "FAQ", "Pricing", "ChessAgine MCP"];
 
+
+
 const ChessAgineDocumentation = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 

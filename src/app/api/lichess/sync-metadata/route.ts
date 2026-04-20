@@ -1,14 +1,8 @@
-/**
- * POST /api/lichess/sync-metadata
- *
- * Called from the client after a successful Lichess OAuth flow.
- * Saves the Lichess username to Clerk user.publicMetadata so it is
- * available server-side without needing to re-read localStorage.
- *
- * Body: { lichessUsername: string }
- */
+
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const { userId } = await auth();

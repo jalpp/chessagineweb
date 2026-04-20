@@ -14,8 +14,8 @@ export interface KnowledgeCard {
   contentSize: number;
 }
 
-/** Max content size per card: 8 KB */
-export const MAX_CONTENT_BYTES = 8 * 1024;
+/** Max content size per card: 30 KB */
+export const MAX_CONTENT_BYTES = 30 * 1024;
 /** Max number of cards */
 export const MAX_CARDS = 20;
 

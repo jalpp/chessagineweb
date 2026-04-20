@@ -45,7 +45,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   const { saveSettings, engineDepth, engineLines, enginePicked: enginePickedRaw } = useSettings();
   const setEngineDepth = (v: number) => saveSettings({ engine_depth: v });
   const setEngineLines = (v: number) => saveSettings({ engine_lines: v });
-  const enginePicked = enginePickedRaw as EngineName;
+  const enginePicked = enginePickedRaw as EngineName ;
 
   const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle" });
 

@@ -3,6 +3,8 @@ import { getDb } from "@/lib/connector";
 import { NextRequest } from "next/server";
 import { decodePGN } from "pgnpack";
 
+export const dynamic = "force-dynamic";
+
 interface GameReview {
   _id: string;
   userId: string;

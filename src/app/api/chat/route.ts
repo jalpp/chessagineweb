@@ -23,6 +23,8 @@ export const maxDuration = 200;
 const MAX_AGENT_STEPS = 15;
 const MAX_KNOWLEDGE_BYTES = 160 * 1024;
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   const { userId, has } = await auth();
   const isAuthenticated = !!userId;

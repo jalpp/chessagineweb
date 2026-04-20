@@ -2,6 +2,7 @@
 import { Box, Container, Typography, Divider } from "@mui/material";
 import { PricingTable } from "@clerk/nextjs";
 
+
 const PricingPage = () => {
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>

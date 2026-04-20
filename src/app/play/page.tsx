@@ -57,6 +57,8 @@ import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
 import { useGameTheme } from "@/hooks/useGameTheme";
 
+
+
 export default function PlayVsBotsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));

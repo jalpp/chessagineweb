@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { EngineName } from '../engine/engine';
+import { EngineName, parseEngineName } from '../engine/engine';
 import { Stockfish11 } from '../engine/Stockfish11';
 import { Stockfish16 } from '../engine/Stockfish16';
 import { Stockfish17 } from '../engine/Stockfish17';
@@ -9,11 +9,12 @@ import { Stockfish18 } from '../engine/Stockfish18';
 
 export const useEngine = (enabled: boolean, engineName: EngineName | undefined) => {
     const [engine, setEngine] = useState<UciEngine>();
+    const normalizedEngine = parseEngineName(engineName);
 
     useEffect(() => {
-        if (!enabled || !engineName) return;
+        if (!enabled || !normalizedEngine) return;
 
-        const engine = pickEngine(engineName);
+        const engine = pickEngine(normalizedEngine);
         console.log('Initializing engine');
         void engine.init().then(() => {
             console.log('Engine initialized');

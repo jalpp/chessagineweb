@@ -7,6 +7,14 @@ export enum EngineName {
     Stockfish11 = 'stockfish_11',
 }
 
+export function parseEngineName(value: string | undefined): EngineName {
+    if (value && Object.values(EngineName).includes(value as EngineName)) {
+        return value as EngineName;
+    }
+    return EngineName.Stockfish18;
+
+}    
+
 export interface EngineInfo {
     /** The internal name of the engine. */
     name: EngineName;

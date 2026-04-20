@@ -30,6 +30,7 @@ import { SubjectiveHumanEval } from "@/componets/humanevalbar/SubjectiveHumanEva
 import { HumanEvalBar } from "@/componets/humanevalbar/HumanEvalBar";
 import { MAIA3_MODELS, MAIA3_RATING_VALUES } from "@/libs/nets/types";
 
+
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const DEFAULT_MAIA3_IDX = 20; // 2600 Elo
 
