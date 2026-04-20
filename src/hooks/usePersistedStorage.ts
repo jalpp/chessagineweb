@@ -74,7 +74,7 @@ export function usePersistedSettings() {
   const [boardShowSemiProtected, setBoardShowSemiProtected] = useSafeLocalStorage("board_ui_show_semiprotected", false);
   const [engineDepth,            setEngineDepth]            = useSafeLocalStorage("engineDepth", 20);
   const [engineLines,            setEngineLines]            = useSafeLocalStorage("engineLines", 3);
-  const [enginePicked,           setEnginePicked]           = useSafeLocalStorage("stockfish-engine-picked", "Stockfish18");
+  const [enginePicked,           setEnginePicked]           = useSafeLocalStorage("stockfish-engine-picked-v1", "stockfish_18");
   const [appTheme,               setAppTheme]               = useSafeLocalStorage("app-theme", "dark");
   const [pgnViewMode,            setPgnViewMode]            = useSafeLocalStorage("pgn_view_mode", "pgn");
   const [chessdbShowScores,      setChessdbShowScores]      = useSafeLocalStorage("chessdb_ui_show_scores", true);
