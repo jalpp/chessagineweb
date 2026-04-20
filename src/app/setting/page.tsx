@@ -10,7 +10,7 @@ import ModelSetting from "@/componets/tabs/ModelSetting";
 import ThemeSelector from "@/componets/ThemeSelector";
 import { useAuth } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
-export const dynamic = "force-dynamic";
+
 
 const SettingsPage = () => {
   const { isSignedIn} = useAuth();

@@ -57,7 +57,7 @@ import { TimerDisplay } from "@/componets/game/TimerDisplay";
 import { FenSelector } from "@/componets/game/FenSelector";
 import { useGameTheme } from "@/hooks/useGameTheme";
 
-export const dynamic = "force-dynamic";
+
 
 export default function PlayVsBotsPage() {
   const theme = useTheme();

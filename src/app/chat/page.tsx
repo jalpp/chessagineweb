@@ -42,7 +42,6 @@ import { useTokenLimit } from "@/hooks/useTokenLimit";
 import { useLocalStorage } from "usehooks-ts";
 import { LoadPuzzleToolUI } from "@/componets/uitools/LoadPuzzleUi";
 
-export const dynamic = "force-dynamic";
 
 function ChatPageInner() {
   const { isSignedIn, has } = useAuth();
