@@ -1,6 +1,4 @@
-// components/tabs/EmbedGameReview.tsx
-"use client";
-
+"use client"
 import { useState, useEffect, useCallback, useRef, Dispatch, SetStateAction } from "react";
 import {
   Box,
@@ -421,6 +419,8 @@ export default function EmbeddedGameReview({
   const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
   const [activeAnalysisTab, setActiveAnalysisTab] = useState(0);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  // Stable id for this embed game — generated once on mount
+  const [embedSaveId] = useState(() => Date.now().toString());
 
   // ── Expand dialog state ──
   const [expandOpen, setExpandOpen] = useState(false);
@@ -885,6 +885,8 @@ export default function EmbeddedGameReview({
         isBotGame={false}
         gameReviewTheme={gameReviewTheme!}
         gameReview={gameReview}
+        gameReviewLoading={gameReviewLoading}
+        gameId={embedSaveId}
         moves={moves}
         pgnText={pgnText}
         loadFromHistory={() => {}}

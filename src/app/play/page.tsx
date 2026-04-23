@@ -77,6 +77,8 @@ export default function PlayVsBotsPage() {
   const [controlDrawerOpen, setControlDrawerOpen] = useState(false);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  // Stable id for this bot game — generated once, used for all re-saves
+  const [botGameSaveId] = useState(() => Date.now().toString());
   const [startingFen, setStartingFen] = useState<string>(new Chess().fen());
 
   const [timeControl, setTimeControl] = useState<TimeControl>("10+0");
@@ -875,8 +877,10 @@ export default function PlayVsBotsPage() {
                 setSaveDialogOpen={setSaveDialogOpen}
                 gameInfo={buildPlayGameInfo()}
                 gameReview={gameReview}
+                gameReviewLoading={gameReviewLoading}
                 gameReviewTheme={gameReviewTheme}
                 isBotGame={true}
+                gameId={botGameSaveId}
                 moves={game.history()}
                 pgnText={getPgn()}
               />

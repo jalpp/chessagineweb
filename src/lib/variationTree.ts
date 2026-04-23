@@ -457,3 +457,97 @@ function tokenizePGN(text: string): string[] {
   }
   return tokens;
 }
+
+
+export interface SerializedNode {
+  id: string;
+  ply: number;
+  san: string;
+  uci: string;
+  fen: string;
+  /** Omitted when empty string */
+  comment?: string;
+  /** Omitted when empty string */
+  nag?: NAG;
+  /** id of main-line child, null when leaf */
+  nextId: string | null;
+  /** ids of variation children (alternative first moves) */
+  variationIds: string[];
+}
+
+export interface SerializedTree {
+  /** Flat array — root is always first */
+  nodes: SerializedNode[];
+  /** id of the currently selected node (cursor) */
+  cursor: string;
+}
+
+/** Serialize a VariationTree into a compact flat structure for DB storage. */
+export function serializeTree(tree: VariationTree): SerializedTree {
+  const nodes: SerializedNode[] = [];
+
+  function visit(node: MoveNode): void {
+    const sn: SerializedNode = {
+      id: node.id,
+      ply: node.ply,
+      san: node.san,
+      uci: node.uci,
+      fen: node.fen,
+      nextId: node.next ? node.next.id : null,
+      variationIds: node.variations.map((v) => v.id),
+    };
+    if (node.comment) sn.comment = node.comment;
+    if (node.nag) sn.nag = node.nag;
+    nodes.push(sn);
+
+    // Depth-first: main line first, then variations
+    if (node.next) visit(node.next);
+    node.variations.forEach((v) => visit(v));
+  }
+
+  visit(tree.root);
+  return { nodes, cursor: tree.cursor };
+}
+
+/** Rebuild a VariationTree from a serialized flat structure. */
+export function deserializeTree(data: SerializedTree): VariationTree {
+  if (!data?.nodes?.length) return makeTree();
+
+  // Phase 1: create all MoveNode shells (without links)
+  const map = new Map<string, MoveNode>();
+  for (const sn of data.nodes) {
+    map.set(sn.id, {
+      id: sn.id,
+      ply: sn.ply,
+      san: sn.san,
+      uci: sn.uci,
+      fen: sn.fen,
+      comment: sn.comment ?? "",
+      nag: (sn.nag ?? "") as NAG,
+      next: null,
+      variations: [],
+      parent: null,
+    });
+  }
+
+  // Phase 2: wire up links
+  for (const sn of data.nodes) {
+    const node = map.get(sn.id)!;
+    if (sn.nextId) {
+      const next = map.get(sn.nextId);
+      if (next) { node.next = next; next.parent = node; }
+    }
+    for (const vid of sn.variationIds) {
+      const v = map.get(vid);
+      if (v) { node.variations.push(v); v.parent = node; }
+    }
+  }
+
+  const root = map.get("root");
+  if (!root) return makeTree();
+
+  // Ensure cursor exists in tree, else fall back to root
+  const cursorId = map.has(data.cursor) ? data.cursor : "root";
+
+  return { root, cursor: cursorId };
+}

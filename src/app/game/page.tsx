@@ -42,6 +42,7 @@ import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 import {
   VariationTree, makeTree, movesToTree, addMove, findNode,
   treeToPGN, parseAnnotatedPGN,
+  serializeTree, deserializeTree,
 } from "@/lib/variationTree";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -96,6 +97,10 @@ export default function GamePage() {
   const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>("agine_game_info", {});
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
   const [currentGameHash, setCurrentGameHash] = useState("");
+  // Stable id for the currently loaded game — generated once on load.
+  // Persisted in sessionStorage so page refreshes don't lose the id.
+  // Re-saving the same game uses this id to update the existing DB document.
+  const [currentSaveId, setCurrentSaveId] = useSessionStorage("agine_current_save_id", "");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
@@ -256,6 +261,9 @@ export default function GamePage() {
     const parsed = extractMovesWithComments(pgn);
     const info = extractGameInfo(pgn);
     const ml = moveList || [];
+    // Generate a fresh stable id for this game session.
+    // All subsequent saves use this id, so re-saves update rather than duplicate.
+    setCurrentSaveId(Date.now().toString());
     setMoves(ml);
     setParsedMovesWithComments(parsed);
     setGameInfo(info);
@@ -299,6 +307,8 @@ export default function GamePage() {
     try {
       const cleaned = cleanPGN(saved.pgn);
       const startFen = extractStartingFen(cleaned);
+      // Restore the original save id so re-saving updates the same document
+      setCurrentSaveId(saved.id);
       setPgnText(cleaned);
       setMoves(saved.moves);
       setGameInfo(saved.gameInfo);
@@ -310,7 +320,9 @@ export default function GamePage() {
       setFen(resetGame.fen());
       setCustomPlayFen(startFen || resetGame.fen());
       setComment("");
-      const restoredTree = saved.annotatedPgn
+      const restoredTree = saved.treeData
+        ? deserializeTree(saved.treeData)
+        : saved.annotatedPgn
         ? parseAnnotatedPGN(saved.annotatedPgn, startFen)
         : movesToTree(saved.moves, startFen);
       setTree(restoredTree);
@@ -343,7 +355,7 @@ export default function GamePage() {
 
   const resetAll = () => {
     setMoves([]); setPgnText(""); setGameInfo({}); setComment("");
-    setMultiGameList([]); setGameReview([]); setCurrentGameHash("");
+    setMultiGameList([]); setGameReview([]); setCurrentGameHash(""); setCurrentSaveId("");
     setTree(makeTree());
     const reset = new Chess();
     setGame(reset); setFen(reset.fen()); setPrevFen(reset.fen());
@@ -351,6 +363,7 @@ export default function GamePage() {
   };
 
   const annotatedPgn = useMemo(() => treeToPGN(tree, gameInfo), [tree, gameInfo]);
+  const treeData = useMemo(() => serializeTree(tree), [tree]);
 
   // ── Load panel sidebar ────────────────────────────────────────────────────
   const loadMenuItems: { id: LoadSection; icon: React.ReactNode; label: string; count?: number }[] = [
@@ -515,6 +528,8 @@ export default function GamePage() {
   );
 
   // ── Save panel (desktop left column) ─────────────────────────────────────
+  const reviewReady = !gameReviewLoading && gameReview.length > 0;
+
   const savePanel = (
     <Box sx={{ p: 1.5 }}>
       {moves.length > 0 ? (
@@ -522,19 +537,34 @@ export default function GamePage() {
           <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
             SAVE GAME REVIEW
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
-            Save your annotated game with engine analysis and review notes.
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={() => setSaveDialogOpen(true)}
-            fullWidth
-            size="small"
-            sx={{ textTransform: "none" }}
-          >
-            Save Game Review
-          </Button>
+          {gameReviewLoading ? (
+            <Typography variant="body2" color="warning.main" sx={{ fontSize: 12 }}>
+              ⏳ Game review is generating… wait before saving.
+            </Typography>
+          ) : reviewReady ? (
+            <Typography variant="body2" color="success.main" sx={{ fontSize: 12 }}>
+              ✓ Review ready — {gameReview.length} moves analysed.
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+              Load a game and wait for the review to complete before saving.
+            </Typography>
+          )}
+          <Tooltip title={!reviewReady ? (gameReviewLoading ? "Wait for review to finish" : "Game review must be generated first") : ""}>
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={() => setSaveDialogOpen(true)}
+                fullWidth
+                size="small"
+                disabled={!reviewReady}
+                sx={{ textTransform: "none" }}
+              >
+                Save Game Review
+              </Button>
+            </span>
+          </Tooltip>
           <Divider />
           <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
             START OVER
@@ -855,9 +885,10 @@ export default function GamePage() {
         saveDialogOpen={saveDialogOpen} setSaveDialogOpen={setSaveDialogOpen}
         historyDialogOpen={historyDialogOpen} setHistoryDialogOpen={setHistoryDialogOpen}
         gameInfo={gameInfo} isBotGame={false}
+        gameId={currentSaveId || Date.now().toString()}
         gameReviewTheme={gameReviewTheme!}
-        gameReview={gameReview} moves={moves}
-        pgnText={pgnText} annotatedPgn={annotatedPgn}
+        gameReview={gameReview} gameReviewLoading={gameReviewLoading} moves={moves}
+        pgnText={pgnText} annotatedPgn={annotatedPgn} treeData={treeData}
         loadFromHistory={loadFromHistory}
       />
     </Box>
