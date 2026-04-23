@@ -107,7 +107,7 @@ function Section({
         backgroundColor: "transparent",
         "&:before": { display: "none" },
         border: "1px solid",
-        borderColor: expanded ? "rgba(124,58,237,0.4)" : "rgba(255,255,255,0.07)",
+        borderColor: expanded ? "primary.main" : "divider",
         borderRadius: "8px !important",
         overflow: "hidden",
         transition: "border-color 0.2s",
@@ -115,29 +115,29 @@ function Section({
       }}
     >
       <AccordionSummary
-        expandIcon={<ExpandMoreIcon sx={{ fontSize: 15, color: "#555" }} />}
+        expandIcon={<ExpandMoreIcon sx={{ fontSize: 15, color: "text.secondary" }} />}
         sx={{
           minHeight: 34, px: 1.25, py: 0,
-          backgroundColor: expanded ? "rgba(124,58,237,0.1)" : "rgba(255,255,255,0.025)",
-          "&:hover": { backgroundColor: "rgba(124,58,237,0.07)" },
+          bgcolor: expanded ? "action.selected" : "transparent",
+          "&:hover": { bgcolor: "action.hover" },
           "& .MuiAccordionSummary-content": { my: "5px", alignItems: "center", gap: 0.75 },
         }}
       >
-        <Box sx={{ color: expanded ? "#a78bfa" : "#555", display: "flex", alignItems: "center" }}>
+        <Box sx={{ color: expanded ? "primary.main" : "text.disabled", display: "flex", alignItems: "center" }}>
           {icon}
         </Box>
-        <Typography sx={{ fontSize: "11px", fontWeight: 600, color: expanded ? "#d4bbff" : "#888", letterSpacing: "0.05em", flex: 1 }}>
+        <Typography sx={{ fontSize: "11px", fontWeight: 600, color: expanded ? "text.primary" : "text.secondary", letterSpacing: "0.05em", flex: 1 }}>
           {title.toUpperCase()}
         </Typography>
         {badge && (
           <Chip label={badge} size="small" sx={{
             height: 15, fontSize: "9px", maxWidth: 80,
-            backgroundColor: "rgba(124,58,237,0.25)", color: "#c4b5fd",
+            bgcolor: "primary.dark", color: "primary.contrastText",
             "& .MuiChip-label": { px: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
           }} />
         )}
       </AccordionSummary>
-      <AccordionDetails sx={{ p: 1.25, pt: 1, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <AccordionDetails sx={{ p: 1.25, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
         {children}
       </AccordionDetails>
     </Accordion>
@@ -204,7 +204,7 @@ function AgineAnalysisView({
             <PositionRadarAnalysis moveAnalysis={gameReview} stockfishAnalysisResult={stockfishAnalysisResult}
               currentMoveIndex={currentMoveIndex} gameReview={gameReviewTheme} />
           ) : (
-            <Typography sx={{ color: "#555", fontSize: "11px" }}>
+            <Typography sx={{ color: "text.disabled", fontSize: "11px" }}>
               Generate a review to see theme analysis.
             </Typography>
           )
@@ -222,7 +222,7 @@ function AgineAnalysisView({
           chessDbMoves={chessdbdata} maiaerror={Maiaerror} />
         {gameReview && gameReview.length > 0 && (
           <>
-            <Divider sx={{ my: 1.5, borderColor: "rgba(255,255,255,0.06)" }} />
+            <Divider sx={{ my: 1.5, borderColor: "divider" }} />
             <NetProbabilityChart moves={gameReview} />
           </>
         )}

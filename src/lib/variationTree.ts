@@ -1,5 +1,3 @@
-
-
 import { Chess } from "chess.js";
 
 export type NAG = "" | "!" | "!!" | "?" | "??" | "?!" | "!?";
@@ -345,4 +343,117 @@ export function movesToTree(moves: string[], startFen?: string): VariationTree {
 
   tree.cursor = cursor.id;
   return tree;
+}
+// ─────────────────────────────────────────────
+// Full PGN → VariationTree (with comments, NAGs, variations)
+// ─────────────────────────────────────────────
+
+function numToNag(n: number): NAG {
+  const map: Record<number, NAG> = { 1: "!", 2: "?", 3: "!!", 4: "??", 5: "!?", 6: "?!" };
+  return map[n] ?? "";
+}
+
+/**
+ * Parse a full annotated PGN string (with { comments }, $NAG, and (variations))
+ * into a VariationTree. Handles arbitrary nesting depth.
+ */
+export function parseAnnotatedPGN(pgn: string, startFen?: string): VariationTree {
+  const tree = makeTree(startFen);
+
+  // Strip headers
+  const moveText = pgn.replace(/\[.*?\]\s*/g, "").trim();
+  if (!moveText) return tree;
+
+  // Tokenise: move numbers, moves, comments, NAGs, ( ), result tokens
+  const tokens = tokenizePGN(moveText);
+
+  let cursor: MoveNode = tree.root;
+  const stack: MoveNode[] = []; // variation return stack
+
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+
+    if (tok === "(") {
+      // Start variation — go back one move from cursor
+      stack.push(cursor);
+      cursor = cursor.parent ?? cursor;
+      continue;
+    }
+
+    if (tok === ")") {
+      // End variation — restore to saved cursor
+      if (stack.length > 0) cursor = stack.pop()!;
+      continue;
+    }
+
+    if (tok.startsWith("{") && tok.endsWith("}")) {
+      // Comment on the current node
+      cursor.comment = tok.slice(1, -1).trim();
+      continue;
+    }
+
+    if (tok.startsWith("$")) {
+      // NAG
+      const n = parseInt(tok.slice(1), 10);
+      cursor.nag = numToNag(n);
+      continue;
+    }
+
+    // Skip move numbers (e.g. "1." "1...") and result tokens
+    if (/^\d+\.+$/.test(tok) || /^(1-0|0-1|1\/2-1\/2|\*)$/.test(tok)) continue;
+
+    // It should be a SAN move
+    const chess = new Chess(cursor.fen);
+    try {
+      const move = chess.move(tok);
+      if (!move) continue;
+      const uci = move.from + move.to + (move.promotion ?? "");
+      const { newTree, newCursorId } = addMove(tree, cursor.id, move.san, uci, chess.fen());
+      // addMove clones — we need to update cursor to point into the new tree
+      // Re-find cursor in updated tree
+      const updatedCursor = findNode(newTree.root, newCursorId);
+      if (updatedCursor) {
+        // Sync the tree reference
+        Object.assign(tree, newTree);
+        cursor = findNode(tree.root, newCursorId)!;
+      }
+    } catch {
+      // Skip invalid moves silently
+    }
+  }
+
+  tree.cursor = tree.root.id;
+  return tree;
+}
+
+function tokenizePGN(text: string): string[] {
+  const tokens: string[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === "{") {
+      // Gather comment
+      let j = i + 1;
+      while (j < text.length && text[j] !== "}") j++;
+      tokens.push("{" + text.slice(i + 1, j) + "}");
+      i = j + 1;
+    } else if (ch === "(" || ch === ")") {
+      tokens.push(ch);
+      i++;
+    } else if (ch === "$") {
+      let j = i + 1;
+      while (j < text.length && /\d/.test(text[j])) j++;
+      tokens.push(text.slice(i, j));
+      i = j;
+    } else if (/\s/.test(ch)) {
+      i++;
+    } else {
+      // Word token (move, move number, result)
+      let j = i;
+      while (j < text.length && !/[\s{}()$]/.test(text[j])) j++;
+      if (j > i) tokens.push(text.slice(i, j));
+      i = j;
+    }
+  }
+  return tokens;
 }

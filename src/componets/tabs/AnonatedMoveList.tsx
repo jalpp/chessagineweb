@@ -40,12 +40,10 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Paper,
-  CircularProgress,
 } from "@mui/material";
 import {
   Comment as CommentIcon,
   Download as DownloadIcon,
-  AutoAwesome as AutoAnnotateIcon,
   ArrowUpward as PromoteIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -95,8 +93,6 @@ interface AnnotatedMoveListProps {
   onNavigate: (fen: string, nodeId: string) => void;
   /** PGN headers for export */
   headers?: Record<string, string>;
-  /** Called when user requests AI annotation for a specific node */
-  onRequestAIAnnotation?: (node: MoveNode) => Promise<string>;
   gameResult?: string;
 }
 
@@ -114,7 +110,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
   onTreeChange,
   onNavigate,
   headers,
-  onRequestAIAnnotation,
   gameResult,
 }) => {
   const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null);
@@ -127,7 +122,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
     open: boolean;
     node: MoveNode | null;
   }>({ open: false, node: null });
-  const [aiLoading, setAiLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"inline" | "list">("list");
 
   const activeMoveRef = useRef<HTMLButtonElement | null>(null);
@@ -195,18 +189,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
     closeCtxMenu();
   };
 
-  // AI annotation
-  const handleAIAnnotate = async (node: MoveNode) => {
-    if (!onRequestAIAnnotation) return;
-    closeCtxMenu();
-    setAiLoading(true);
-    try {
-      const text = await onRequestAIAnnotation(node);
-      onTreeChange(setComment(tree, node.id, text));
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   // PGN download
   const handleDownload = useCallback(() => {
@@ -241,7 +223,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
             sx={{
               fontFamily: "monospace",
               fontSize: "12px",
-              color: "#888",
+              color: "text.secondary",
               mr: 0.3,
               userSelect: "none",
             }}
@@ -268,9 +250,9 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
             fontSize: "12px",
             fontWeight: isActive ? 700 : 400,
             color: isActive ? undefined : "#ccc",
-            backgroundColor: isActive ? "#7c3aed" : "transparent",
+            backgroundColor: isActive ? "primary.main" : "transparent",
             "&:hover": {
-              backgroundColor: isActive ? "#6d28d9" : "rgba(255,255,255,0.08)",
+              backgroundColor: isActive ? "primary.dark" : "action.hover",
             },
           }}
         >
@@ -318,7 +300,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
             sx={{
               display: "inline",
               fontSize: "11px",
-              color: "#aaa",
+              color: "text.secondary",
               fontStyle: "italic",
               mx: 1,
             }}
@@ -337,22 +319,22 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
               mx: "3px",
               px: "4px",
               py: "1px",
-              borderLeft: `2px solid ${depth === 0 ? "#7c3aed55" : "#4FC3F755"}`,
+              borderLeft: `2px solid ${depth === 0 ? "rgba(124,58,237,0.4)" : "rgba(79,195,247,0.4)"}`,
               borderRadius: "0 3px 3px 0",
-              backgroundColor: "rgba(255,255,255,0.03)",
+              backgroundColor: "action.hover",
               verticalAlign: "top",
             }}
           >
             <Typography
               component="span"
-              sx={{ fontSize: "10px", color: "#666", mr: "2px", fontFamily: "monospace" }}
+              sx={{ fontSize: "10px", color: "text.disabled", mr: "2px", fontFamily: "monospace" }}
             >
               (
             </Typography>
             {renderSubVariation(varNode, depth + 1)}
             <Typography
               component="span"
-              sx={{ fontSize: "10px", color: "#666", ml: "2px", fontFamily: "monospace" }}
+              sx={{ fontSize: "10px", color: "text.disabled", ml: "2px", fontFamily: "monospace" }}
             >
               )
             </Typography>
@@ -394,7 +376,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
               alignItems: "center",
               minHeight: "26px",
               pl: depth * 2,
-              borderBottom: "1px solid #2a2a2a",
+              borderBottom: "1px solid", borderColor: "divider",
               "&:last-child": { borderBottom: "none" },
             }}
           >
@@ -403,7 +385,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
               sx={{
                 fontFamily: "monospace",
                 fontSize: "11px",
-                color: "#555",
+                color: "text.disabled",
                 width: "28px",
                 textAlign: "right",
                 mr: 1,
@@ -425,7 +407,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
 
             {/* Comment */}
             {node.comment && (
-              <Typography sx={{ fontSize: "10px", color: "#888", fontStyle: "italic", ml: 1 }}>
+              <Typography sx={{ fontSize: "10px", color: "text.secondary", fontStyle: "italic", ml: 1 }}>
                 {node.comment}
               </Typography>
             )}
@@ -449,16 +431,16 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
                   alignItems: "center",
                   minHeight: "26px",
                   pl: (depth + 1) * 2,
-                  borderBottom: "1px solid #2a2a2a",
+                  borderBottom: "1px solid",
                 }}
               >
                 <Box sx={{ width: "28px", mr: 1 }} />
-                <Typography sx={{ fontFamily: "monospace", fontSize: "11px", color: "#555", mr: 0.5 }}>
+                <Typography sx={{ fontFamily: "monospace", fontSize: "11px", color: "text.disabled", mr: 0.5 }}>
                   {moveNum}...
                 </Typography>
                 {renderMoveBtn(blackSibling, false)}
                 {blackSibling.comment && (
-                  <Typography sx={{ fontSize: "10px", color: "#888", fontStyle: "italic", ml: 1 }}>
+                  <Typography sx={{ fontSize: "10px", color: "text.secondary", fontStyle: "italic", ml: 1 }}>
                     {blackSibling.comment}
                   </Typography>
                 )}
@@ -481,16 +463,16 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
               alignItems: "center",
               minHeight: "26px",
               pl: depth * 2,
-              borderBottom: "1px solid #2a2a2a",
+              borderBottom: "1px solid", borderColor: "divider",
             }}
           >
             <Box sx={{ width: "28px", mr: 1 }} />
-            <Typography sx={{ fontFamily: "monospace", fontSize: "11px", color: "#555", mr: 0.5 }}>
+            <Typography sx={{ fontFamily: "monospace", fontSize: "11px", color: "text.disabled", mr: 0.5 }}>
               {moveNum}...
             </Typography>
             {renderMoveBtn(node, false)}
             {node.comment && (
-              <Typography sx={{ fontSize: "10px", color: "#888", fontStyle: "italic", ml: 1 }}>
+              <Typography sx={{ fontSize: "10px", color: "text.secondary", fontStyle: "italic", ml: 1 }}>
                 {node.comment}
               </Typography>
             )}
@@ -509,8 +491,8 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
 
     if (gameResult) {
       rows.push(
-        <Box key="result" sx={{ display: "flex", justifyContent: "center", py: 1, borderTop: "1px solid #333" }}>
-          <Typography sx={{ fontFamily: "monospace", fontSize: "13px", color: "#FFD700", fontWeight: 700 }}>
+        <Box key="result" sx={{ display: "flex", justifyContent: "center", py: 1, borderTop: "1px solid" }}>
+          <Typography sx={{ fontFamily: "monospace", fontSize: "13px", color: "warning.main", fontWeight: 700 }}>
             {gameResult}
           </Typography>
         </Box>
@@ -532,15 +514,14 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
           justifyContent: "space-between",
           px: 1,
           py: 0.5,
-          borderBottom: "1px solid #333",
+          borderBottom: "1px solid",
           flexShrink: 0,
         }}
       >
         <Stack direction="row" spacing={0.5} alignItems="center">
-          <Typography variant="caption" sx={{ color: "#888", fontSize: "11px", fontWeight: 600 }}>
+          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "11px", fontWeight: 600 }}>
             MOVES
           </Typography>
-          {aiLoading && <CircularProgress size={12} sx={{ ml: 1 }} />}
         </Stack>
 
         <Stack direction="row" spacing={0.5} alignItems="center">
@@ -578,11 +559,11 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
           overflowX: "hidden",
           p: 1,
           "&::-webkit-scrollbar": { width: "5px" },
-          "&::-webkit-scrollbar-thumb": { backgroundColor: "#444", borderRadius: "3px" },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "action.selected", borderRadius: "3px" },
         }}
       >
         {!tree.root.next ? (
-          <Typography variant="caption" sx={{ color: "#555", fontSize: "11px" }}>
+          <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "11px" }}>
             No moves yet. Play a move on the board to begin.
           </Typography>
         ) : viewMode === "inline" ? (
@@ -591,7 +572,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
             {gameResult && (
               <Typography
                 component="span"
-                sx={{ fontFamily: "monospace", fontSize: "12px", color: "#FFD700", fontWeight: 700, ml: 1 }}
+                sx={{ fontFamily: "monospace", fontSize: "12px", color: "warning.main", fontWeight: 700, ml: 1 }}
               >
                 {gameResult}
               </Typography>
@@ -603,8 +584,8 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
       </Box>
 
       {/* Keyboard hint */}
-      <Box sx={{ px: 1, py: 0.5, borderTop: "1px solid #222", flexShrink: 0 }}>
-        <Typography variant="caption" sx={{ color: "#444", fontSize: "10px" }}>
+      <Box sx={{ px: 1, py: 0.5, borderTop: 1, borderColor: "divider", flexShrink: 0 }}>
+        <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "10px" }}>
           Right-click a move to annotate · Variations shown in brackets
         </Typography>
       </Box>
@@ -614,7 +595,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
         open={!!ctxMenu}
         anchorEl={ctxMenu?.anchorEl}
         onClose={closeCtxMenu}
-        PaperProps={{ sx: { minWidth: 180, backgroundColor: "#1e1e1e", border: "1px solid #333" } }}
+        PaperProps={{ sx: { minWidth: 180, bgcolor: "background.paper", border: "1px solid" } }}
       >
         <MenuItem
           dense
@@ -632,16 +613,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
           <EditIcon sx={{ fontSize: 16, mr: 1, color: "#ffb74d" }} />
           Set Annotation Symbol
         </MenuItem>
-        {onRequestAIAnnotation && (
-          <MenuItem
-            dense
-            onClick={() => ctxMenu && handleAIAnnotate(ctxMenu.node)}
-            sx={{ fontSize: "13px" }}
-          >
-            <AutoAnnotateIcon sx={{ fontSize: 16, mr: 1, color: "#a78bfa" }} />
-            AI Auto-Annotate
-          </MenuItem>
-        )}
         <Divider sx={{ borderColor: "#333" }} />
         {ctxMenu?.node.parent?.variations.includes(ctxMenu.node) && (
           <MenuItem
@@ -669,7 +640,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
         onClose={() => setCommentDialog({ open: false, node: null, text: "" })}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { backgroundColor: "#1a1a1a" } }}
+        PaperProps={{ sx: { bgcolor: "background.paper" } }}
       >
         <DialogTitle sx={{ fontSize: "14px" }}>
           Comment on{" "}
@@ -690,14 +661,14 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
             sx={{
               mt: 1,
               "& .MuiOutlinedInput-root": { color: "#ccc", "& fieldset": { borderColor: "#444" } },
-              "& .MuiInputLabel-root": { color: "#888" },
+              "& .MuiInputLabel-root": { color: "text.secondary" },
             }}
           />
         </DialogContent>
         <DialogActions>
           <Button
             onClick={() => setCommentDialog({ open: false, node: null, text: "" })}
-            sx={{ color: "#666" }}
+            sx={{ color: "text.disabled" }}
           >
             Cancel
           </Button>
@@ -711,7 +682,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
       <Dialog
         open={nagDialog.open}
         onClose={() => setNagDialog({ open: false, node: null })}
-        PaperProps={{ sx: { backgroundColor: "#1a1a1a", minWidth: 280 } }}
+        PaperProps={{ sx: { bgcolor: "background.paper", minWidth: 280 } }}
       >
         <DialogTitle sx={{ fontSize: "14px" }}>Annotation Symbol</DialogTitle>
         <DialogContent>
@@ -738,7 +709,7 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
           </Box>
           <Box sx={{ mt: 2 }}>
             {Object.entries(NAG_SYMBOLS).map(([key, sym]) => (
-              <Typography key={key} variant="caption" sx={{ display: "block", color: "#666", fontSize: "10px" }}>
+              <Typography key={key} variant="caption" sx={{ display: "block", color: "text.disabled", fontSize: "10px" }}>
                 {sym} = {key}
               </Typography>
             ))}

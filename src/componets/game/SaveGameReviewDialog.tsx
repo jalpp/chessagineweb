@@ -30,6 +30,8 @@ export interface SavedGameReview {
   id: string;
   gameInfo: Record<string, string>;
   pgn: string;
+  /** Full annotated PGN including { comments }, $NAGs, (variations) — used to restore VariationTree */
+  annotatedPgn?: string;
   gameReview: MoveAnalysis[];
   gameReviewTheme: GameReviewTheme | null;
   moves: string[];
@@ -45,6 +47,7 @@ interface SaveGameReviewProp {
   setSaveDialogOpen: (save: boolean) => void;
   gameInfo: Record<string, string>;
   pgnText: string;
+  annotatedPgn?: string;
   isBotGame: boolean;
   gameReview: MoveAnalysis[];
   gameReviewTheme: GameReviewTheme | null;
@@ -63,6 +66,7 @@ function SaveGameReviewDialog({
   isBotGame,
   gameReviewTheme,
   pgnText,
+  annotatedPgn,
 }: SaveGameReviewProp) {
   const { games: gameReviewHistory, saveGame, deleteGame } = useGameStorage();
 
@@ -98,6 +102,7 @@ function SaveGameReviewDialog({
       id: gameId,
       gameInfo,
       pgn: pgnText,
+      annotatedPgn: annotatedPgn || pgnText,
       gameReview,
       moves,
       gameReviewTheme,

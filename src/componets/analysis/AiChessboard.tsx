@@ -25,7 +25,7 @@ import {
 } from "@mui/icons-material";
 import { Chessboard, PieceRenderObject, Arrow } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../../libs/openingdatabase/helper";
@@ -381,14 +381,31 @@ export default function AiChessboardPanel({
   const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({ gameInfo, boardOrientation: getBoardOrientation() });
   const modeInfo = getModeInfo();
 
+  // ── Responsive board size: fill center column height ──────────────────────
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [boardPx, setBoardPx] = useState(boardSize);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => {
+      // Overhead: header 28px + player bar x2 ~50px + nav bar 36px + padding 16px
+      const overhead = gameInfo ? 140 : 80;
+      const available = Math.min(entry.contentRect.width, entry.contentRect.height - overhead);
+      setBoardPx(Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize)));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [boardSize, gameInfo]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <Box ref={containerRef} sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", height: "100%" }}>
       {/* Compact header */}
-      <Stack direction="row" alignItems="center" sx={{ width: "100%", maxWidth: boardSize + 40, mb: 0.75, px: 0.5 }}>
+      <Stack direction="row" alignItems="center" sx={{ width: "100%", maxWidth: boardPx + 40, mb: 0.75, px: 0.5 }}>
         <Chip label={modeInfo.label} size="small" sx={{ fontSize: "0.6rem", fontWeight: 600, height: 20 }} />
         {(puzzleMode || playMode) && (
-          <Typography variant="caption" sx={{ ml: 1, fontSize: "10px", color: "#888" }}>
+          <Typography variant="caption" sx={{ ml: 1, fontSize: "10px", color: "text.secondary" }}>
             {getBoardOrientation()} to play
           </Typography>
         )}
@@ -398,12 +415,12 @@ export default function AiChessboardPanel({
         </IconButton>
       </Stack>
 
-      {gameInfo && <Box sx={{ width: "100%", maxWidth: boardSize + 40 }}><TopPlayerBar /></Box>}
+      {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><TopPlayerBar /></Box>}
 
       {/* Board + eval bar */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + (showEvalBar && !puzzleMode && !playMode ? 20 : 0) }}>
         {showEvalBar && !puzzleMode && !playMode && (
-          <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardSize} />
+          <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardPx} />
         )}
         <Chessboard
           options={{
@@ -419,35 +436,35 @@ export default function AiChessboardPanel({
             arrows: customArrows,
             boardOrientation: getBoardOrientation(),
             pieces: getCustomPieces(pieceType),
-            boardStyle: get3DBoardStyle(pieceType),
+            boardStyle: { width: boardPx, height: boardPx, ...get3DBoardStyle(pieceType) },
             id: "ai-chessboard",
           }}
         />
       </Box>
 
-      {gameInfo && <Box sx={{ width: "100%", maxWidth: boardSize + 40 }}><BottomPlayerBar /></Box>}
+      {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><BottomPlayerBar /></Box>}
 
       {/* Navigation bar */}
       {!playMode && !puzzleMode && (
         <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}
-          sx={{ mt: 0.75, width: "100%", maxWidth: boardSize + 40 }}>
+          sx={{ mt: 0.75, width: "100%", maxWidth: boardPx + 40 }}>
           <IconButton size="small" onClick={handleStart} disabled={isPrevDisabled}
-            sx={{ p: 0.5, color: isPrevDisabled ? "#2a2a2a" : "#666", "&:hover": { color: "#ccc" } }}>
+            sx={{ p: 0.5, color: isPrevDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
             <SkipPrevious sx={{ fontSize: 19 }} />
           </IconButton>
           <IconButton size="small" onClick={handlePrev} disabled={isPrevDisabled}
-            sx={{ p: 0.5, color: isPrevDisabled ? "#2a2a2a" : "#666", "&:hover": { color: "#ccc" } }}>
+            sx={{ p: 0.5, color: isPrevDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
             <NavigateBefore sx={{ fontSize: 19 }} />
           </IconButton>
-          <Typography sx={{ fontSize: "10px", color: "#444", fontFamily: "monospace", mx: 0.75, minWidth: 44, textAlign: "center" }}>
+          <Typography sx={{ fontSize: "10px", color: "text.disabled", fontFamily: "monospace", mx: 0.75, minWidth: 44, textAlign: "center" }}>
             {moveCounter}
           </Typography>
           <IconButton size="small" onClick={handleNext} disabled={isNextDisabled}
-            sx={{ p: 0.5, color: isNextDisabled ? "#2a2a2a" : "#666", "&:hover": { color: "#ccc" } }}>
+            sx={{ p: 0.5, color: isNextDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
             <NavigateNext sx={{ fontSize: 19 }} />
           </IconButton>
           <IconButton size="small" onClick={handleEnd} disabled={isNextDisabled}
-            sx={{ p: 0.5, color: isNextDisabled ? "#2a2a2a" : "#666", "&:hover": { color: "#ccc" } }}>
+            sx={{ p: 0.5, color: isNextDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
             <SkipNext sx={{ fontSize: 19 }} />
           </IconButton>
         </Stack>
@@ -455,14 +472,14 @@ export default function AiChessboardPanel({
 
       {/* FEN display */}
       {showFen && !puzzleMode && !playMode && (
-        <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardSize + 40 }}>
-          <Typography sx={{ fontFamily: "monospace", fontSize: "9px", wordBreak: "break-all", color: "#555" }}>{fen}</Typography>
+        <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardPx + 40 }}>
+          <Typography sx={{ fontFamily: "monospace", fontSize: "9px", wordBreak: "break-all", color: "text.disabled" }}>{fen}</Typography>
         </Paper>
       )}
 
       {/* Piece analysis overlay */}
       {boardAnalysis && (showHangingPieces || showSemiProtectedPieces) && !puzzleMode && !playMode && (
-        <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardSize + 40 }}>
+        <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardPx + 40 }}>
           {showHangingPieces && boardAnalysis.HangingPieceDescriptions.length > 0 && (
             <Box sx={{ mb: 0.5 }}>
               <Typography sx={{ fontSize: "10px", color: "#f44336", fontWeight: 600 }}>Hanging:</Typography>

@@ -1,39 +1,12 @@
 "use client";
 
-/**
- * Game Analysis Page — Three-panel layout (mirroring position page).
- *
- *  ┌──────────────────┬──────────────────┬──────────────────┐
- *  │  AI Analysis     │   Chessboard     │  Move List       │
- *  │  (left panel)    │   (center)       │  (right panel)   │
- *  │                  │                  │  – variation     │
- *  │  Stockfish       │  react-chess-    │    tree support  │
- *  │  Game review     │  board           │  – annotations   │
- *  │  Opening exp.    │                  │  – NAG symbols   │
- *  └──────────────────┴──────────────────┴──────────────────┘
- *
- * Key change: The old flat PGNView is replaced by AnnotatedMoveList,
- * which supports full branching variations and inline comments/NAGs.
- * When a PGN is loaded, its main-line moves are hydrated into the
- * VariationTree so existing annotations are preserved.
- * The board still drives move navigation — clicking a node in the
- * move list navigates the board.
- */
-
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Box,
-  Button,
-  Stack,
-  Typography,
-  Divider,
-  Card,
-  CardContent,
-  Drawer,
-  Fab,
-  useMediaQuery,
-  useTheme,
-  Paper,
+  Box, Button, Stack, Typography, Divider,
+  Card, CardContent, Drawer, Fab,
+  useMediaQuery, useTheme,
+  List, ListItemButton, ListItemText, ListItemIcon,
+  IconButton, Tooltip, Chip,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -41,6 +14,11 @@ import {
   Analytics as AnalyticsIcon,
   Close as CloseIcon,
   FormatListBulleted as MoveListIcon,
+  History as HistoryIcon,
+  Link as LinkIcon,
+  UploadFile as UploadFileIcon,
+  Bookmark as BookmarkIcon,
+  ArrowRight as ArrowRightIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/hooks/useAgine";
@@ -51,61 +29,61 @@ import AnnotatedMoveList from "@/componets/tabs/AnonatedMoveList";
 import ResizableChapterSelector from "@/componets/tabs/ChaptersTab";
 import { extractMovesWithComments, extractGameInfo } from "@/libs/game/helper";
 import { useGameTheme } from "@/hooks/useGameTheme";
-import SaveGameReviewDialog, {
-  SavedGameReview,
-} from "@/componets/game/SaveGameReviewDialog";
-import GamereviewHistory from "@/componets/game/GameReviewHistory";
+import SaveGameReviewDialog, { SavedGameReview } from "@/componets/game/SaveGameReviewDialog";
 import LoadStudy, { Chapter } from "@/componets/game/LoadStudy";
-import LoadLichessGameUrl, {
-  ParsedComment,
-} from "@/componets/game/LoadLichessGameUrl";
+import LoadLichessGameUrl, { ParsedComment } from "@/componets/game/LoadLichessGameUrl";
 import LoadPGNGame from "@/componets/game/LoadPGNGame";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import MultiGameNavigator from "@/componets/game/MultiGameNavigator";
 import { ParsedPGN } from "@/libs/game/pgn";
 import { useNets } from "@/hooks/useNets";
+import { useGameStorage } from "@/hooks/useGameStorage";
 import { useLocalStorage, useSessionStorage } from "usehooks-ts";
 import {
-  VariationTree,
-  makeTree,
-  movesToTree,
-  addMove,
-  MoveNode,
-  findNode,
+  VariationTree, makeTree, movesToTree, addMove, findNode,
+  treeToPGN, parseAnnotatedPGN,
 } from "@/lib/variationTree";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getSAN(
-  prevFen: string,
-  nextFen: string
-): { san: string; uci: string } | null {
+function getSAN(prevFen: string, nextFen: string): { san: string; uci: string } | null {
   try {
     const chess = new Chess(prevFen);
     for (const m of chess.moves({ verbose: true })) {
       const test = new Chess(prevFen);
       test.move(m);
-      if (test.fen() === nextFen) {
+      if (test.fen() === nextFen)
         return { san: m.san, uci: m.from + m.to + (m.promotion ?? "") };
-      }
     }
     return null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function extractStartingFen(pgn: string): string | undefined {
+  return pgn.match(/\[FEN "([^"]+)"\]/)?.[1];
+}
+
+// ── Left panel tab types ──────────────────────────────────────────────────────
+type LeftTab = "load" | "analysis";
+
+// ── Load section types ────────────────────────────────────────────────────────
+type LoadSection = "history" | "pgn" | "lichess" | "mygames" | "studies" | null;
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function GamePage() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const muiTheme = useTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
-  // ── Drawer state (mobile) ──────────────────────────────────────────────────
+  // Drawers (mobile)
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
   const [moveListDrawerOpen, setMoveListDrawerOpen] = useState(false);
 
-  // ── Game state ─────────────────────────────────────────────────────────────
+  // Left panel state
+  const [leftTab, setLeftTab] = useState<LeftTab>("load");
+  const [loadSection, setLoadSection] = useState<LoadSection>("history");
+
+  // Game state
   const [pgnText, setPgnText] = useSessionStorage("agine_game_page_pgn", "");
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
@@ -113,117 +91,71 @@ export default function GamePage() {
   const [moves, setMoves] = useSessionStorage<string[]>("agine_game_moves", []);
   const [parsedMovesWithComments, setParsedMovesWithComments] =
     useSessionStorage<ParsedComment[]>("agine_parsed_comments", []);
-  const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage(
-    "agine_game_current_move",
-    0
-  );
-  const [inputsVisible, setInputsVisible] = useSessionStorage(
-    "agine_show_game",
-    true
-  );
-  const [chapters, setChapters] = useSessionStorage<Chapter[]>(
-    "agine_chapters",
-    []
-  );
+  const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage("agine_game_current_move", 0);
+  const [chapters, setChapters] = useSessionStorage<Chapter[]>("agine_chapters", []);
   const [comment, setComment] = useSessionStorage("agine_comment", "");
-  const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>(
-    "agine_game_info",
-    {}
-  );
+  const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>("agine_game_info", {});
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
-  const [currentGameHash, setCurrentGameHash] = useState<string>("");
+  const [currentGameHash, setCurrentGameHash] = useState("");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
-  const [gameReviewHistory] = useLocalStorage<SavedGameReview[]>(
-    "chess-game-review-history",
-    []
-  );
+  // Game storage hook (replaces useLocalStorage directly)
+  const { games: savedGames } = useGameStorage();
 
-  // ── Variation tree ─────────────────────────────────────────────────────────
+  // Variation tree
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
-  const [prevFen, setPrevFen] = useState<string>(new Chess().fen());
+  const [prevFen, setPrevFen] = useState(new Chess().fen());
 
-  // ── Engine / AI hooks ──────────────────────────────────────────────────────
+  // Engine / AI hooks
   const {
-    stockfishAnalysisResult,
-    setStockfishAnalysisResult,
-    openingData,
-    setOpeningData,
-    llmLoading,
-    stockfishLoading,
-    lichessOpeningData,
-    lichessOpeningLoading,
-    openingLoading,
-    moveSquares,
-    engineDepth,
-    setEngineDepth,
-    engineLines,
-    setEngineLines,
-    engine,
-    gameReview,
-    gameReviewProgress,
-    setGameReview,
-    generateGameReview,
-    gameReviewLoading,
-    fetchOpeningData,
-    setMoveSquares,
-    analyzeWithStockfish,
-    formatEvaluation,
-    formatPrincipalVariation,
-    chessdbdata,
-    loading,
-    queueing,
-    error,
-    refetch,
-    requestAnalysis,
-    setRootCurrentMove,
-    scores,
-    themeScoreError,
-    themeScoreLoading,
+    stockfishAnalysisResult, setStockfishAnalysisResult,
+    openingData, setOpeningData, llmLoading, stockfishLoading,
+    lichessOpeningData, lichessOpeningLoading, openingLoading,
+    moveSquares, engineDepth, setEngineDepth, engineLines, setEngineLines,
+    engine, gameReview, gameReviewProgress, setGameReview,
+    generateGameReview, gameReviewLoading, fetchOpeningData, setMoveSquares,
+    analyzeWithStockfish, formatEvaluation, formatPrincipalVariation,
+    chessdbdata, loading, queueing, error, refetch, requestAnalysis,
+    setRootCurrentMove, scores, themeScoreError, themeScoreLoading,
   } = useAgine(fen, "game");
 
   const {
-    evaluations,
-    sanEvaluations,
-    isLoading: maiaIsLoading,
-    Maiaerror: maiaError,
-    lichessData,
-    isInBook,
+    evaluations, sanEvaluations, isLoading: maiaIsLoading,
+    Maiaerror: maiaError, lichessData, isInBook,
   } = useNets({ fen });
 
-  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage(
-    "agine_game_act_tab",
-    0
-  );
+  const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
 
-  // ── Sync tree when moves are loaded externally (LoadLichessGameUrl etc) ───
-  // We detect this when moves changes but the tree is still at root (empty).
+  // When a game is loaded, switch left panel to analysis
   useEffect(() => {
-    if (moves.length > 0 && !tree.root.next) {
-      const startingFen = extractStartingFen(pgnText) ?? undefined;
-      const newTree = movesToTree(moves, startingFen);
-      setTree(newTree);
-      const startFen = new Chess(startingFen).fen();
-      setPrevFen(startFen);
-    }
+    if (moves.length > 0) setLeftTab("analysis");
   }, [moves]);
 
-
-  // ── Load history on mount ──────────────────────────────────────────────────
+  // Tree sync when moves loaded externally (LoadLichessGameUrl etc.)
   useEffect(() => {
-    const loadGameId = sessionStorage.getItem("loadGameId");
-    if (loadGameId) {
+    if (moves.length > 0 && !tree.root.next) {
+      const startFen = extractStartingFen(pgnText);
+      const newTree = movesToTree(moves, startFen);
+      setTree(newTree);
+      setPrevFen(new Chess(startFen).fen());
+    }
+  }, [moves]); // eslint-disable-line
+
+  // Load from saved game on mount (bot game redirect)
+  useEffect(() => {
+    const id = sessionStorage.getItem("loadGameId");
+    if (id) {
       sessionStorage.removeItem("loadGameId");
       setTimeout(() => {
-        const savedGame = gameReviewHistory.find((g) => g.id === loadGameId);
-        if (savedGame) loadFromHistory(savedGame);
+        const saved = savedGames.find(g => g.id === id);
+        if (saved) loadFromHistory(saved);
       }, 100);
     }
-  }, []);
+  }, []); // eslint-disable-line
 
-  // ── Intercept board moves → variation tree ─────────────────────────────────
+  // Board move → tree
   useEffect(() => {
     if (fen === prevFen) return;
     const result = getSAN(prevFen, fen);
@@ -232,221 +164,23 @@ export default function GamePage() {
     const { newTree, newCursorId } = addMove(tree, tree.cursor, san, uci, fen);
     setTree({ ...newTree, cursor: newCursorId });
     setPrevFen(fen);
-  }, [fen]);
+  }, [fen]); // eslint-disable-line
 
-  // ── Navigate board to a tree node ─────────────────────────────────────────
-  const handleNavigate = useCallback(
-    (nodeFen: string, nodeId: string) => {
-      // Find index in main-line moves for review sync
-      const node = findNode(tree.root, nodeId);
-      const idx = node ? node.ply : 0;
-
-      const newGame = new Chess(nodeFen);
-      setGame(newGame);
-      setFen(nodeFen);
-      setTree((prev) => ({ ...prev, cursor: nodeId }));
-      setPrevFen(nodeFen);
-      setCurrentMoveIndex(idx);
-      setRootCurrentMove(idx);
-      setComment(parsedMovesWithComments[idx - 1]?.comment || "");
-      setStockfishAnalysisResult(null);
-    },
-    [tree, parsedMovesWithComments, setRootCurrentMove, setStockfishAnalysisResult]
-  );
-
-  // ── AI annotation helper ───────────────────────────────────────────────────
-  const handleAIAnnotation = useCallback(
-    async (node: MoveNode): Promise<string> => {
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fen: node.fen,
-            move: node.san,
-            prompt: `Briefly annotate the chess move ${node.san} from position ${node.fen}. One sentence max.`,
-          }),
-        });
-        return res.ok ? (await res.text()).trim() : "";
-      } catch { return ""; }
-    },
-    []
-  );
-
-  // ── PGN helpers (unchanged from original) ─────────────────────────────────
-  const cleanPGN = (pgnText: string): string => {
-    const lines = pgnText.split("\n");
-    const headers: string[] = [];
-    const moveLines: string[] = [];
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (trimmedLine.startsWith("[") && trimmedLine.endsWith("]")) {
-        headers.push(trimmedLine);
-      } else if (trimmedLine !== "" && !trimmedLine.startsWith("[")) {
-        moveLines.push(trimmedLine);
-      }
-    }
-    let movesText = moveLines.join(" ");
-    movesText = movesText.replace(/\{[^}]*\}/g, "");
-    movesText = movesText.replace(/\([^)]*\)/g, "");
-    movesText = movesText.replace(/\s+/g, " ").trim();
-    return headers.length > 0
-      ? headers.join("\n") + "\n\n" + movesText
-      : movesText;
-  };
-
-  const extractStartingFen = (pgnText: string): string | undefined => {
-    const fenMatch = pgnText.match(/\[FEN "([^"]+)"\]/);
-    return fenMatch ? fenMatch[1] : undefined;
-  };
-
-  const parsePGNMoves = (
-    pgnText: string,
-    startingFen?: string
-  ): { game: Chess; moveList: string[] } => {
-    const cleanedPGN = cleanPGN(pgnText);
-    const tempGame = new Chess(startingFen);
-    const pgnWithoutHeaders = cleanedPGN
-      .split("\n")
-      .filter((line) => !line.trim().startsWith("["))
-      .join(" ")
-      .trim();
-
-    if (startingFen && pgnWithoutHeaders) {
-      const moveText = pgnWithoutHeaders
-        .replace(/\d+\./g, "")
-        .replace(/\{[^}]*\}/g, "")
-        .replace(/\([^)]*\)/g, "")
-        .replace(/1-0|0-1|1\/2-1\/2|\*/g, "")
-        .replace(/White resigned.*?!/g, "")
-        .replace(/Black resigned.*?!/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-      for (const move of moveText.split(/\s+/).filter((m) => m.length > 0)) {
-        try { tempGame.move(move); } catch (e) {
-          throw new Error(`Invalid move: ${move}`);
-        }
-      }
-    } else if (!startingFen && pgnWithoutHeaders) {
-      tempGame.loadPgn(pgnWithoutHeaders);
-    }
-    return { game: tempGame, moveList: tempGame.history() };
-  };
-
-  // ── Initialize game state and variation tree ───────────────────────────────
-  const initializeGameState = (
-    pgn: string,
-    startingFen?: string,
-    moveList?: string[]
-  ) => {
-    const parsed = extractMovesWithComments(pgn);
-    const info = extractGameInfo(pgn);
-    const ml = moveList || [];
-
-    setMoves(ml);
-    setParsedMovesWithComments(parsed);
-    setGameInfo(info);
-    setCurrentMoveIndex(0);
-
-    const resetGame = new Chess(startingFen);
-    setGame(resetGame);
-    setFen(resetGame.fen());
-    setComment("");
-    setGameReview([]);
-
-    // Build variation tree from main-line moves
-    const newTree = movesToTree(ml, startingFen);
-    // Cursor at last move so review starts at end
-    setTree(newTree);
-    setPrevFen(resetGame.fen());
-  };
-
-  const loadPGN = () => {
-    try {
-      const cleanedPGN = cleanPGN(pgnText);
-      const startingFen = extractStartingFen(cleanedPGN);
-      const { moveList } = parsePGNMoves(pgnText, startingFen);
-      initializeGameState(pgnText, startingFen, moveList);
-      generateGameReview(moveList, startingFen);
-      analyzeGameTheme(moveList, startingFen);
-    } catch (err) {
-      alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
-      setInputsVisible(false);
-    }
-  };
-
-  const loadUserPGN = (pgn: string, gameHash?: string) => {
-    try {
-      setPgnText(pgn);
-      const cleanPgn = cleanPGN(pgn);
-      const startingFen = extractStartingFen(cleanPgn);
-      const { moveList } = parsePGNMoves(pgn, startingFen);
-      initializeGameState(pgn, startingFen, moveList);
-      if (gameHash) setCurrentGameHash(gameHash);
-      generateGameReview(moveList, startingFen);
-      analyzeGameTheme(moveList, startingFen);
-      setInputsVisible(false);
-    } catch (err) {
-      alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
-      setInputsVisible(false);
-    }
-  };
-
-  const loadFromHistory = (savedGame: SavedGameReview) => {
-    try {
-      const cleanPgn = cleanPGN(savedGame.pgn);
-      const startingFen = extractStartingFen(cleanPgn);
-      setPgnText(cleanPgn);
-      setMoves(savedGame.moves);
-      setGameInfo(savedGame.gameInfo);
-      setGameReview(savedGame.gameReview);
-      const parsed = extractMovesWithComments(savedGame.pgn);
-      setParsedMovesWithComments(parsed);
-      setCurrentMoveIndex(0);
-      const resetGame = new Chess(startingFen);
-      setGame(resetGame);
-      setFen(resetGame.fen());
-      setCustomPlayFen(startingFen || resetGame.fen());
-      setComment("");
-      // Rebuild tree from saved moves
-      const newTree = movesToTree(savedGame.moves, startingFen);
-      setTree(newTree);
-      setPrevFen(resetGame.fen());
-      setHistoryDialogOpen(false);
-      setInputsVisible(false);
-    } catch (err) {
-      alert("Error loading saved game");
-    }
-  };
-
-  // This still drives currentMoveIndex for the legacy game review
-  const goToMove = (index: number) => {
-    const startingFen = extractStartingFen(pgnText);
-    const tempGame = new Chess(startingFen);
-    for (let i = 0; i < index; i++) tempGame.move(moves[i]);
-    setGame(tempGame);
-    setFen(tempGame.fen());
-    setCurrentMoveIndex(index);
-    setRootCurrentMove(index);
-    setComment(parsedMovesWithComments[index - 1]?.comment || "");
+  // Navigate to tree node
+  const handleNavigate = useCallback((nodeFen: string, nodeId: string) => {
+    const node = findNode(tree.root, nodeId);
+    const idx = node?.ply ?? 0;
+    setGame(new Chess(nodeFen));
+    setFen(nodeFen);
+    setTree(prev => ({ ...prev, cursor: nodeId }));
+    setPrevFen(nodeFen);
+    setCurrentMoveIndex(idx);
+    setRootCurrentMove(idx);
+    setComment(parsedMovesWithComments[idx - 1]?.comment || "");
     setStockfishAnalysisResult(null);
-    setPrevFen(tempGame.fen());
+  }, [tree, parsedMovesWithComments, setRootCurrentMove, setStockfishAnalysisResult]);
 
-    // Sync tree cursor to the matching main-line node
-    // Walk tree to find the node at this ply on the main line
-    let node = tree.root;
-    for (let i = 0; i < index; i++) {
-      if (node.next) node = node.next;
-      else break;
-    }
-    setTree((prev) => ({ ...prev, cursor: node.id }));
-  };
-
-  const handleMultiGameSelect = (g: ParsedPGN) => {
-    loadUserPGN(g.pgn, g.hash);
-  };
-
-  // ── Tree navigation callbacks (used by board nav buttons + arrow keys) ─────
+  // Tree nav callbacks
   const handleTreePrevious = useCallback(() => {
     const cur = findNode(tree.root, tree.cursor);
     if (!cur?.parent) return;
@@ -469,395 +203,597 @@ export default function GamePage() {
     handleNavigate(node.fen, node.id);
   }, [tree, handleNavigate]);
 
-  const treePly = useMemo(() => {
-    const cur = findNode(tree.root, tree.cursor);
-    return cur?.ply ?? 0;
-  }, [tree]);
-
+  const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
   const treeMaxPly = useMemo(() => {
     let n = tree.root; let d = 0;
     while (n.next) { n = n.next; d++; }
     return d;
   }, [tree]);
 
-  const saveGameReview = () => {
-    if (!gameReview.length) {
-      alert("No game review to save. Please generate a review first.");
-      return;
-    }
-    setSaveDialogOpen(true);
-  };
-
-  const resetAll = () => {
-    setInputsVisible(true);
-    setMoves([]);
-    setPgnText("");
-    setGameInfo({});
-    setComment("");
-    setMultiGameList([]);
-    setGameReview([]);
-    setCurrentGameHash("");
-    setTree(makeTree());
-    const reset = new Chess();
-    setGame(reset);
-    setFen(reset.fen());
-    setPrevFen(reset.fen());
-  };
-
-    // ── Arrow key navigation (uses tree nav for variation-awareness) ──────────
+  // Arrow keys
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const fn = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") handleTreePrevious();
       if (e.key === "ArrowRight") handleTreeNext();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
   }, [handleTreePrevious, handleTreeNext]);
 
+  // PGN helpers
+  const cleanPGN = (raw: string): string => {
+    const lines = raw.split("\n");
+    const headers: string[] = [];
+    const moveLines: string[] = [];
+    for (const line of lines) {
+      const t = line.trim();
+      if (t.startsWith("[") && t.endsWith("]")) headers.push(t);
+      else if (t && !t.startsWith("[")) moveLines.push(t);
+    }
+    let movesText = moveLines.join(" ")
+      .replace(/\{[^}]*\}/g, "")
+      .replace(/\([^)]*\)/g, "")
+      .replace(/\s+/g, " ").trim();
+    return headers.length ? headers.join("\n") + "\n\n" + movesText : movesText;
+  };
 
-  // ── Panel JSX variables (NOT component functions — avoids remount loop) ───
+  const parsePGNMoves = (raw: string, startFen?: string): string[] => {
+    const cleaned = cleanPGN(raw);
+    const tempGame = new Chess(startFen);
+    const body = cleaned.split("\n").filter(l => !l.trim().startsWith("[")).join(" ").trim();
+    if (startFen && body) {
+      const moveText = body
+        .replace(/\d+\./g, "").replace(/\{[^}]*\}/g, "").replace(/\([^)]*\)/g, "")
+        .replace(/1-0|0-1|1\/2-1\/2|\*/g, "").replace(/\s+/g, " ").trim();
+      for (const mv of moveText.split(/\s+/).filter(m => m.length > 0)) {
+        try { tempGame.move(mv); } catch { throw new Error(`Invalid move: ${mv}`); }
+      }
+    } else if (!startFen && body) {
+      tempGame.loadPgn(body);
+    }
+    return tempGame.history();
+  };
 
-  const analysisPanel = moves.length > 0 ? (
-    <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
-      <AgineAnalysisView
-        activeAnalysisTab={activeAnalysisTab}
-        setActiveAnalysisTab={setActiveAnalysisTab}
-        isGameReviewMode={true}
-        stockfishAnalysisResult={stockfishAnalysisResult}
-        stockfishLoading={stockfishLoading}
-        engineDepth={engineDepth}
-        engineLines={engineLines}
-        engine={engine}
-        Maiaerror={maiaError}
-        isLoading={maiaIsLoading}
-        evaluations={evaluations}
-        analyzeWithStockfish={analyzeWithStockfish}
-        formatEvaluation={formatEvaluation}
-        fen={fen}
-        formatPrincipalVariation={formatPrincipalVariation}
-        setEngineDepth={setEngineDepth}
-        setEngineLines={setEngineLines}
-        openingLoading={openingLoading}
-        openingData={openingData}
-        lichessOpeningData={lichessOpeningData}
-        lichessOpeningLoading={lichessOpeningLoading}
-        chessdbdata={chessdbdata}
-        queueing={queueing}
-        error={error}
-        lichessData={lichessData}
-        loading={loading}
-        refetch={refetch}
-        requestAnalysis={requestAnalysis}
-        moves={moves}
-        currentMoveIndex={currentMoveIndex}
-        goToMove={goToMove}
-        comment={comment}
-        gameInfo={gameInfo}
-        gameReviewTheme={gameReviewTheme}
-        generateGameReview={generateGameReview}
-        gameReviewLoading={gameReviewLoading}
-        gameReviewProgress={gameReviewProgress}
-        gameReview={gameReview}
-        pgnText={pgnText}
-        currentMove={moves[currentMoveIndex]}
-        Customfen={customPlayFen}
-        sanEvaluations={sanEvaluations}
-        isInBook={isInBook}
-        scores={scores}
-        ThemeScoreerror={themeScoreError}
-        ThemeScoreloading={themeScoreLoading}
-      />
-      {chapters.length > 0 && (
-        <ResizableChapterSelector
-          chapters={chapters}
-          onChapterSelect={(pgn) => {
-            setPgnText(pgn);
-            setTimeout(() => loadPGN(), 0);
-          }}
-        />
+  const initializeGameState = (pgn: string, startFen?: string, moveList?: string[]) => {
+    const parsed = extractMovesWithComments(pgn);
+    const info = extractGameInfo(pgn);
+    const ml = moveList || [];
+    setMoves(ml);
+    setParsedMovesWithComments(parsed);
+    setGameInfo(info);
+    setCurrentMoveIndex(0);
+    const resetGame = new Chess(startFen);
+    setGame(resetGame);
+    setFen(resetGame.fen());
+    setComment("");
+    setGameReview([]);
+    setTree(movesToTree(ml, startFen));
+    setPrevFen(resetGame.fen());
+  };
+
+  const loadPGN = () => {
+    try {
+      const startFen = extractStartingFen(cleanPGN(pgnText));
+      const moveList = parsePGNMoves(pgnText, startFen);
+      initializeGameState(pgnText, startFen, moveList);
+      generateGameReview(moveList, startFen);
+      analyzeGameTheme(moveList, startFen);
+    } catch (err) {
+      alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
+    }
+  };
+
+  const loadUserPGN = (pgn: string, gameHash?: string) => {
+    try {
+      setPgnText(pgn);
+      const startFen = extractStartingFen(cleanPGN(pgn));
+      const moveList = parsePGNMoves(pgn, startFen);
+      initializeGameState(pgn, startFen, moveList);
+      if (gameHash) setCurrentGameHash(gameHash);
+      generateGameReview(moveList, startFen);
+      analyzeGameTheme(moveList, startFen);
+    } catch (err) {
+      alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
+    }
+  };
+
+  const loadFromHistory = (saved: SavedGameReview) => {
+    try {
+      const cleaned = cleanPGN(saved.pgn);
+      const startFen = extractStartingFen(cleaned);
+      setPgnText(cleaned);
+      setMoves(saved.moves);
+      setGameInfo(saved.gameInfo);
+      setGameReview(saved.gameReview);
+      setParsedMovesWithComments(extractMovesWithComments(saved.pgn));
+      setCurrentMoveIndex(0);
+      const resetGame = new Chess(startFen);
+      setGame(resetGame);
+      setFen(resetGame.fen());
+      setCustomPlayFen(startFen || resetGame.fen());
+      setComment("");
+      const restoredTree = saved.annotatedPgn
+        ? parseAnnotatedPGN(saved.annotatedPgn, startFen)
+        : movesToTree(saved.moves, startFen);
+      setTree(restoredTree);
+      setPrevFen(resetGame.fen());
+      setHistoryDialogOpen(false);
+    } catch {
+      alert("Error loading saved game");
+    }
+  };
+
+  const goToMove = (index: number) => {
+    const startFen = extractStartingFen(pgnText);
+    const tempGame = new Chess(startFen);
+    for (let i = 0; i < index; i++) tempGame.move(moves[i]);
+    setGame(tempGame);
+    setFen(tempGame.fen());
+    setCurrentMoveIndex(index);
+    setRootCurrentMove(index);
+    setComment(parsedMovesWithComments[index - 1]?.comment || "");
+    setStockfishAnalysisResult(null);
+    setPrevFen(tempGame.fen());
+    let node = tree.root;
+    for (let i = 0; i < index; i++) {
+      if (node.next) node = node.next; else break;
+    }
+    setTree(prev => ({ ...prev, cursor: node.id }));
+  };
+
+  const handleMultiGameSelect = (g: ParsedPGN) => loadUserPGN(g.pgn, g.hash);
+
+  const resetAll = () => {
+    setMoves([]); setPgnText(""); setGameInfo({}); setComment("");
+    setMultiGameList([]); setGameReview([]); setCurrentGameHash("");
+    setTree(makeTree());
+    const reset = new Chess();
+    setGame(reset); setFen(reset.fen()); setPrevFen(reset.fen());
+    setLeftTab("load");
+  };
+
+  const annotatedPgn = useMemo(() => treeToPGN(tree, gameInfo), [tree, gameInfo]);
+
+  // ── Load panel sidebar ────────────────────────────────────────────────────
+  const loadMenuItems: { id: LoadSection; icon: React.ReactNode; label: string; count?: number }[] = [
+    { id: "history", icon: <HistoryIcon sx={{ fontSize: 16 }} />, label: "Saved Games", count: savedGames.length },
+    { id: "pgn",     icon: <UploadFileIcon sx={{ fontSize: 16 }} />, label: "Paste PGN" },
+    { id: "lichess", icon: <LinkIcon sx={{ fontSize: 16 }} />, label: "Lichess URL" },
+    { id: "mygames", icon: <BookmarkIcon sx={{ fontSize: 16 }} />, label: "My Lichess Games" },
+    { id: "studies", icon: <AnalyticsIcon sx={{ fontSize: 16 }} />, label: "Studies" },
+  ];
+
+  const loadPanel = (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+      {/* Nav list */}
+      <List dense disablePadding sx={{ flexShrink: 0 }}>
+        {loadMenuItems.map(item => (
+          <ListItemButton
+            key={item.id}
+            selected={loadSection === item.id}
+            onClick={() => setLoadSection(loadSection === item.id ? null : item.id)}
+            sx={{
+              py: 0.75, px: 1.5, borderRadius: 1, mx: 0.5,
+              "&.Mui-selected": {
+                bgcolor: "action.selected",
+                "&:hover": { bgcolor: "action.hover" },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 28, color: loadSection === item.id ? "primary.main" : "text.secondary" }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText
+              primary={item.label}
+              slotProps={{ primary: { sx: { fontSize: "13px", fontWeight: loadSection === item.id ? 600 : 400 } } }}
+            />
+            {item.count !== undefined && item.count > 0 && (
+              <Chip label={item.count} size="small" sx={{ height: 18, fontSize: "10px", "& .MuiChip-label": { px: 0.75 } }} />
+            )}
+          </ListItemButton>
+        ))}
+      </List>
+
+      <Divider sx={{ my: 0.5 }} />
+
+      {/* Section content */}
+      <Box sx={{
+        flex: 1, overflowY: "auto", px: 1.5, py: 1,
+        "&::-webkit-scrollbar": { width: "4px" },
+        "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+      }}>
+        {loadSection === "history" && (
+          savedGames.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, py: 1 }}>
+              No saved games yet. Save a game review to see it here.
+            </Typography>
+          ) : (
+            <List dense disablePadding>
+              {savedGames.map(saved => (
+                <ListItemButton
+                  key={saved.id}
+                  onClick={() => loadFromHistory(saved)}
+                  sx={{ borderRadius: 1, mb: 0.5, border: "1px solid", borderColor: "divider", px: 1 }}
+                >
+                  <ListItemText
+                    primary={saved.title || `${saved.gameInfo?.White ?? "?"} vs ${saved.gameInfo?.Black ?? "?"}`}
+                    secondary={new Date(saved.savedAt).toLocaleDateString()}
+                    slotProps={{
+                      primary: { sx: { fontSize: "12px", fontWeight: 600, lineHeight: 1.3 } },
+                      secondary: { sx: { fontSize: "10px" } },
+                    }}
+                  />
+                  <ArrowRightIcon sx={{ fontSize: 16, color: "text.disabled" }} />
+                </ListItemButton>
+              ))}
+            </List>
+          )
+        )}
+
+        {loadSection === "pgn" && (
+          <LoadPGNGame
+            pgnText={pgnText}
+            setPgnText={setPgnText}
+            loadPGN={loadPGN}
+            setInputsVisible={() => {}}
+          />
+        )}
+
+        {loadSection === "lichess" && (
+          <LoadLichessGameUrl
+            setComment={setComment}
+            setCurrentMoveIndex={setCurrentMoveIndex}
+            setFen={setFen}
+            setGame={setGame}
+            setGameInfo={setGameInfo}
+            setGameReview={setGameReview}
+            setInputsVisible={() => {}}
+            setMoves={setMoves}
+            setParsedMovesWithComments={setParsedMovesWithComments}
+            setPgnText={setPgnText}
+            generateGameReview={generateGameReview}
+            analyzeGameTheme={analyzeGameTheme}
+          />
+        )}
+
+        {loadSection === "mygames" && (
+          <Stack spacing={1}>
+            <UserGameSelect loadPGN={loadUserPGN} />
+            <UserPGNUploader loadPGN={pgn => loadUserPGN(pgn)} setMultiGameList={setMultiGameList} />
+          </Stack>
+        )}
+
+        {loadSection === "studies" && (
+          <LoadStudy setChapters={setChapters} setInputsVisible={() => {}} />
+        )}
+      </Box>
+    </Box>
+  );
+
+  const analysisPanel = (
+    <Box sx={{ height: "100%", overflowY: "auto", p: 1,
+      "&::-webkit-scrollbar": { width: "4px" },
+      "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+    }}>
+      {moves.length > 0 ? (
+        <Stack spacing={1.5}>
+          <AgineAnalysisView
+            activeAnalysisTab={activeAnalysisTab}
+            setActiveAnalysisTab={setActiveAnalysisTab}
+            isGameReviewMode={true}
+            stockfishAnalysisResult={stockfishAnalysisResult}
+            stockfishLoading={stockfishLoading}
+            engineDepth={engineDepth} engineLines={engineLines} engine={engine}
+            Maiaerror={maiaError} isLoading={maiaIsLoading} evaluations={evaluations}
+            analyzeWithStockfish={analyzeWithStockfish}
+            formatEvaluation={formatEvaluation} fen={fen}
+            formatPrincipalVariation={formatPrincipalVariation}
+            setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
+            openingLoading={openingLoading} openingData={openingData}
+            lichessOpeningData={lichessOpeningData} lichessOpeningLoading={lichessOpeningLoading}
+            chessdbdata={chessdbdata} queueing={queueing} error={error}
+            lichessData={lichessData} loading={loading} refetch={refetch}
+            requestAnalysis={requestAnalysis} moves={moves}
+            currentMoveIndex={currentMoveIndex} goToMove={goToMove}
+            comment={comment} gameInfo={gameInfo}
+            gameReviewTheme={gameReviewTheme} generateGameReview={generateGameReview}
+            gameReviewLoading={gameReviewLoading} gameReviewProgress={gameReviewProgress}
+            gameReview={gameReview} pgnText={pgnText}
+            currentMove={moves[currentMoveIndex]} Customfen={customPlayFen}
+            sanEvaluations={sanEvaluations} isInBook={isInBook}
+            scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
+          />
+          {chapters.length > 0 && (
+            <ResizableChapterSelector
+              chapters={chapters}
+              onChapterSelect={pgn => { setPgnText(pgn); setTimeout(() => loadPGN(), 0); }}
+            />
+          )}
+        </Stack>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+          Load a game to see analysis.
+        </Typography>
       )}
-    </Stack>
-  ) : null;
+    </Box>
+  );
 
+  // ── Move list + right panel ───────────────────────────────────────────────
   const moveListPanel = (
     <Box sx={{
       display: "flex", flexDirection: "column", height: "100%", minHeight: 0,
-      backgroundColor: "#0d0d0d", borderRadius: 2, border: "1px solid #2a2a2a",
       overflow: "hidden",
     }}>
+      {/* Header with save/reset */}
       <Box sx={{
-        px: 1.5, py: 1, borderBottom: "1px solid #1e1e1e",
-        display: "flex", alignItems: "center", gap: 1, flexShrink: 0,
+        px: 1.5, py: 0.75,
+        borderBottom: 1, borderColor: "divider",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexShrink: 0, bgcolor: "background.paper",
       }}>
-        <MoveListIcon sx={{ fontSize: 15, color: "#7c3aed" }} />
-        <Typography sx={{ fontSize: "11px", fontWeight: 700, color: "#999", letterSpacing: "0.08em" }}>
-          MOVES & VARIATIONS
+        <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+          MOVES
         </Typography>
+        {moves.length > 0 && (
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Tooltip title="Save game review">
+              <span>
+                <IconButton size="small" onClick={() => setSaveDialogOpen(true)} disabled={!gameReview.length} sx={{ p: 0.4 }}>
+                  <SaveIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Load new game">
+              <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
+                <RefreshIcon sx={{ fontSize: 15 }} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        )}
       </Box>
+      {/* Move tree */}
       <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <AnnotatedMoveList
           tree={tree}
           onTreeChange={setTree}
           onNavigate={handleNavigate}
-          onRequestAIAnnotation={handleAIAnnotation}
           gameResult={gameInfo.Result}
         />
       </Box>
+      {multiGameList.length > 1 && (
+        <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", p: 0.75 }}>
+          <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />
+        </Box>
+      )}
     </Box>
   );
 
+  // ── Board panel ───────────────────────────────────────────────────────────
   const boardPanel = (
     <AiChessboardPanel
-      game={game}
-      fen={fen}
-      moveSquares={moveSquares}
-      engine={engine}
-      setMoveSquares={setMoveSquares}
-      setFen={setFen}
-      evaluations={evaluations}
-      gameInfo={gameInfo}
-      setGame={setGame}
-      reviewMove={gameReview[currentMoveIndex]}
-      gameReviewMode={true}
+      game={game} fen={fen}
+      moveSquares={moveSquares} setMoveSquares={setMoveSquares}
+      engine={engine} setFen={setFen} setGame={setGame}
+      evaluations={evaluations} gameInfo={gameInfo}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
       stockfishAnalysisResult={stockfishAnalysisResult}
       fetchOpeningData={fetchOpeningData}
       analyzeWithStockfish={analyzeWithStockfish}
-      llmLoading={llmLoading}
-      stockfishLoading={stockfishLoading}
+      llmLoading={llmLoading} stockfishLoading={stockfishLoading}
       openingLoading={openingLoading}
-      onTreePrevious={handleTreePrevious}
-      onTreeNext={handleTreeNext}
-      onTreeStart={handleTreeStart}
-      onTreeEnd={handleTreeEnd}
-      hideBuiltInMoveList
-      treePly={treePly}
-      treeMaxPly={treeMaxPly}
+      reviewMove={gameReview[currentMoveIndex]}
+      gameReviewMode={true}
+      onTreePrevious={handleTreePrevious} onTreeNext={handleTreeNext}
+      onTreeStart={handleTreeStart} onTreeEnd={handleTreeEnd}
+      hideBuiltInMoveList treePly={treePly} treeMaxPly={treeMaxPly}
     />
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
-  return (
-    <Box sx={{ minHeight: "100vh", height: "100%", overflowY: "auto", overflowX: "hidden" }}>
-      {/* ── Load game card ── */}
-      {inputsVisible && (
-        <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
-          <Card sx={{
-            mb: { xs: 2, sm: 3, md: 4 }, borderRadius: { xs: 2, md: 3 },
-            boxShadow: "0 8px 32px rgba(138,43,226,0.15)",
-            maxHeight: { xs: "70vh", sm: "75vh", md: "80vh" }, overflowY: "auto",
-          }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-              <Box sx={{ textAlign: "center", mb: { xs: 2, sm: 3, md: 4 } }}>
-                <Typography variant="h3" gutterBottom sx={{
-                  fontWeight: 700,
-                  fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" },
-                  backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                }}>
-                  Chess Analysis with Agine
-                </Typography>
-                <Typography variant="h6" sx={{
-                  mb: 3, fontSize: { xs: "0.9rem", sm: "1rem", md: "1.25rem" },
-                  maxWidth: 600, mx: "auto", px: { xs: 2, sm: 0 },
-                }}>
-                  Get detailed AI insights on your games! Paste your PGN, Lichess game URL, or study URL to begin analysis.
-                </Typography>
+  // ── Desktop: 3 equal columns ──────────────────────────────────────────────
+  if (!isMobile) {
+    return (
+      <Box sx={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr 1fr",
+        height: "calc(100vh - 56px)",
+        overflow: "hidden",
+      }}>
+        {/* LEFT: load controls + analysis */}
+        <Box sx={{
+          borderRight: 1, borderColor: "divider",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+        }}>
+          <Box sx={{ display: "flex", flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
+            {([
+              { id: "load" as LeftTab, label: "Load Game" },
+              { id: "analysis" as LeftTab, label: "Analysis" },
+            ]).map(tab => (
+              <Box key={tab.id} onClick={() => setLeftTab(tab.id)} sx={{
+                flex: 1, py: 1, textAlign: "center", cursor: "pointer",
+                fontSize: "12px", fontWeight: leftTab === tab.id ? 700 : 400,
+                color: leftTab === tab.id ? "primary.main" : "text.secondary",
+                borderBottom: 2, borderColor: leftTab === tab.id ? "primary.main" : "transparent",
+                "&:hover": { bgcolor: "action.hover" }, userSelect: "none",
+              }}>
+                {tab.label}
               </Box>
-              <Stack spacing={{ xs: 2, sm: 2.5, md: 3 }}>
-                <GamereviewHistory setHistoryDialogOpen={setHistoryDialogOpen} />
-                <LoadStudy setChapters={setChapters} setInputsVisible={setInputsVisible} />
-                <Divider />
-                <LoadLichessGameUrl
-                  setComment={setComment}
-                  setCurrentMoveIndex={setCurrentMoveIndex}
-                  setFen={setFen}
-                  setGame={setGame}
-                  setGameInfo={setGameInfo}
-                  setGameReview={setGameReview}
-                  setInputsVisible={setInputsVisible}
-                  setMoves={setMoves}
-                  setParsedMovesWithComments={setParsedMovesWithComments}
-                  setPgnText={setPgnText}
-                  generateGameReview={generateGameReview}
-                  analyzeGameTheme={analyzeGameTheme}
-                />
-                <Divider />
-                <LoadPGNGame
-                  pgnText={pgnText}
-                  setPgnText={setPgnText}
-                  loadPGN={loadPGN}
-                  setInputsVisible={setInputsVisible}
-                />
-                <Divider />
-                <Box>
-                  <Typography variant="h6" sx={{ mb: 2, fontSize: { xs: "1rem", sm: "1.15rem", md: "1.25rem" } }}>
-                    Your Lichess Games
-                  </Typography>
-                  <UserGameSelect loadPGN={loadUserPGN} />
-                  <Box sx={{ mt: 2 }}>
-                    <UserPGNUploader loadPGN={(pgn) => loadUserPGN(pgn)} setMultiGameList={setMultiGameList} />
-                  </Box>
-                </Box>
+            ))}
+          </Box>
+          <Box sx={{ flex: 1, overflowY: "auto", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" } }}>
+            {leftTab === "load" ? loadPanel : analysisPanel}
+          </Box>
+        </Box>
+
+        {/* CENTER: board */}
+        <Box sx={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden", borderRight: 1, borderColor: "divider",
+        }}>
+          {boardPanel}
+        </Box>
+
+        {/* RIGHT: move list */}
+        <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <Box sx={{
+            px: 2, py: 0.75, flexShrink: 0,
+            borderBottom: 1, borderColor: "divider", bgcolor: "background.paper",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+              MOVES
+            </Typography>
+            {moves.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                <Tooltip title="Save game review">
+                  <span>
+                    <IconButton size="small" onClick={() => setSaveDialogOpen(true)} disabled={!gameReview.length} sx={{ p: 0.4 }}>
+                      <SaveIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Load new game">
+                  <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
+                    <RefreshIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
               </Stack>
+            )}
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} />
+          </Box>
+          {multiGameList.length > 1 && (
+            <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", p: 1 }}>
+              <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />
+            </Box>
+          )}
+        </Box>
+      </Box>
+    );
+  }
+
+  // ── Mobile ────────────────────────────────────────────────────────────────
+  return (
+    <Box sx={{ minHeight: "100vh", pb: 10 }}>
+      {moves.length === 0 ? (
+        <Box sx={{ p: 2 }}>
+          <Card>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="h6" fontWeight={700} sx={{ mb: 2, textAlign: "center" }}>
+                Load a Game
+              </Typography>
+              <List dense disablePadding>
+                {loadMenuItems.map(item => (
+                  <ListItemButton
+                    key={item.id}
+                    selected={loadSection === item.id}
+                    onClick={() => setLoadSection(loadSection === item.id ? null : item.id)}
+                    sx={{ borderRadius: 1, mb: 0.5, border: 1, borderColor: "divider" }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 28 }}>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
+                    {item.count !== undefined && item.count > 0 && (
+                      <Chip label={item.count} size="small" />
+                    )}
+                  </ListItemButton>
+                ))}
+              </List>
+              <Divider sx={{ my: 1.5 }} />
+              <Box>
+                {loadSection === "history" && savedGames.length === 0 && (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>No saved games yet.</Typography>
+                )}
+                {loadSection === "history" && savedGames.length > 0 && (
+                  <List dense disablePadding>
+                    {savedGames.map(saved => (
+                      <ListItemButton key={saved.id} onClick={() => loadFromHistory(saved)} sx={{ borderRadius: 1, mb: 0.5, border: 1, borderColor: "divider" }}>
+                        <ListItemText
+                          primary={saved.title || `${saved.gameInfo?.White ?? "?"} vs ${saved.gameInfo?.Black ?? "?"}`}
+                          secondary={new Date(saved.savedAt).toLocaleDateString()}
+                          slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 600 } }, secondary: { sx: { fontSize: 10 } } }}
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
+                {loadSection === "pgn" && <LoadPGNGame pgnText={pgnText} setPgnText={setPgnText} loadPGN={loadPGN} setInputsVisible={() => {}} />}
+                {loadSection === "lichess" && <LoadLichessGameUrl setComment={setComment} setCurrentMoveIndex={setCurrentMoveIndex} setFen={setFen} setGame={setGame} setGameInfo={setGameInfo} setGameReview={setGameReview} setInputsVisible={() => {}} setMoves={setMoves} setParsedMovesWithComments={setParsedMovesWithComments} setPgnText={setPgnText} generateGameReview={generateGameReview} analyzeGameTheme={analyzeGameTheme} />}
+                {loadSection === "mygames" && <Stack spacing={1}><UserGameSelect loadPGN={loadUserPGN} /><UserPGNUploader loadPGN={pgn => loadUserPGN(pgn)} setMultiGameList={setMultiGameList} /></Stack>}
+                {loadSection === "studies" && <LoadStudy setChapters={setChapters} setInputsVisible={() => {}} />}
+              </Box>
             </CardContent>
           </Card>
         </Box>
-      )}
-
-      {/* ── Three-panel analysis layout (desktop) ── */}
-      {!inputsVisible && !isMobile && (
-        <Box sx={{
-          display: "grid",
-          gridTemplateColumns: "290px 1fr 270px",
-          height: "calc(100vh - 64px)",
-          gap: 1.5, px: 1.5, py: 1.5,
-          overflow: "hidden", boxSizing: "border-box",
-        }}>
-          {/* Left: AI Analysis */}
-          <Paper sx={{
-            backgroundColor: "#0d0d0d", border: "1px solid #2a2a2a",
-            borderRadius: 2, overflow: "hidden", display: "flex", flexDirection: "column",
-          }}>
-            <Box sx={{
-              px: 1.5, py: 1, borderBottom: "1px solid #1e1e1e",
-              display: "flex", alignItems: "center", gap: 1, flexShrink: 0,
-            }}>
-              <AnalyticsIcon sx={{ fontSize: 15, color: "#7c3aed" }} />
-              <Typography sx={{ fontSize: "11px", fontWeight: 700, color: "#999", letterSpacing: "0.08em" }}>
-                AI ANALYSIS
-              </Typography>
-            </Box>
-            <Box sx={{
-              flex: 1, overflowY: "auto", p: 1,
-              "&::-webkit-scrollbar": { width: "4px" },
-              "&::-webkit-scrollbar-thumb": { backgroundColor: "#333", borderRadius: "2px" },
-            }}>
-              {analysisPanel}
-            </Box>
-          </Paper>
-
-          {/* Center: Board + controls */}
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", gap: 1 }}>
-            {boardPanel}
-            {multiGameList.length > 1 && (
-              <MultiGameNavigator
-                games={multiGameList}
-                currentGameHash={currentGameHash}
-                onGameSelect={handleMultiGameSelect}
-              />
-            )}
-            <Stack direction="row" spacing={1} sx={{ width: "100%", maxWidth: 520, px: 1 }}>
-              <Button variant="contained" onClick={saveGameReview}
-                startIcon={<SaveIcon />} disabled={!gameReview.length}
-                fullWidth size="small" sx={{ borderRadius: 2, textTransform: "none", fontSize: "0.8rem" }}>
-                Save Game
-              </Button>
-              <Button variant="outlined" onClick={resetAll}
-                startIcon={<RefreshIcon />}
-                fullWidth size="small" sx={{ borderRadius: 2, textTransform: "none", fontSize: "0.8rem" }}>
-                Load New Game
-              </Button>
-            </Stack>
-          </Box>
-
-          {/* Right: Move list + variations */}
-          {moveListPanel}
-        </Box>
-      )}
-
-      {/* ── Mobile layout ── */}
-      {!inputsVisible && isMobile && (
+      ) : (
         <Box sx={{ p: 1 }}>
-          <Box sx={{ display: "flex", justifyContent: "center" }}>
-            {boardPanel}
-          </Box>
-
+          <Box sx={{ display: "flex", justifyContent: "center" }}>{boardPanel}</Box>
           {multiGameList.length > 1 && (
-            <MultiGameNavigator
-              games={multiGameList}
-              currentGameHash={currentGameHash}
-              onGameSelect={handleMultiGameSelect}
-            />
+            <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />
           )}
-
-          <Stack direction="row" spacing={1} sx={{ mt: 2, px: 1 }}>
-            <Button variant="contained" onClick={saveGameReview}
-              startIcon={<SaveIcon />} disabled={!gameReview.length}
-              fullWidth size="small" sx={{ borderRadius: 2, textTransform: "none" }}>
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+            <Button variant="contained" onClick={() => setSaveDialogOpen(true)} startIcon={<SaveIcon />}
+              disabled={!gameReview.length} fullWidth size="small" sx={{ textTransform: "none" }}>
               Save
             </Button>
-            <Button variant="outlined" onClick={resetAll}
-              startIcon={<RefreshIcon />}
-              fullWidth size="small" sx={{ borderRadius: 2, textTransform: "none" }}>
+            <Button variant="outlined" onClick={resetAll} startIcon={<RefreshIcon />}
+              fullWidth size="small" sx={{ textTransform: "none" }}>
               New Game
             </Button>
           </Stack>
-
-          {/* FAB: Analysis */}
-          <Fab color="primary" aria-label="analysis"
-            onClick={() => setAnalysisDrawerOpen(true)}
-            sx={{ position: "fixed", bottom: 84, right: 24, zIndex: 1000 }}>
-            <AnalyticsIcon />
-          </Fab>
-
-          {/* FAB: Move list */}
-          <Fab aria-label="moves" onClick={() => setMoveListDrawerOpen(true)}
-            sx={{
-              position: "fixed", bottom: 24, right: 24, zIndex: 1000,
-              backgroundColor: "#7c3aed", "&:hover": { backgroundColor: "#6d28d9" },
-            }}>
-            <MoveListIcon />
-          </Fab>
-
-          {/* Analysis drawer */}
-          <Drawer anchor="bottom" open={analysisDrawerOpen}
-            onClose={() => setAnalysisDrawerOpen(false)}
-            sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-            <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-                <Typography variant="h6" fontWeight={600}>Analysis</Typography>
-                <Button onClick={() => setAnalysisDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
-              </Box>
-              <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>{analysisPanel}</Box>
-            </Box>
-          </Drawer>
-
-          {/* Move list drawer */}
-          <Drawer anchor="bottom" open={moveListDrawerOpen}
-            onClose={() => setMoveListDrawerOpen(false)}
-            sx={{ "& .MuiDrawer-paper": { height: "75vh", borderTopLeftRadius: 16, borderTopRightRadius: 16, backgroundColor: "#0d0d0d" } }}>
-            <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-              <Box sx={{ p: 2, borderBottom: "1px solid #222", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-                <Typography variant="h6" fontWeight={600} sx={{ color: "#ccc" }}>Moves & Variations</Typography>
-                <Button onClick={() => setMoveListDrawerOpen(false)} startIcon={<CloseIcon />} size="small" sx={{ color: "#888" }}>Close</Button>
-              </Box>
-              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                <AnnotatedMoveList
-                  tree={tree}
-                  onTreeChange={setTree}
-                  onNavigate={(f, id) => { handleNavigate(f, id); setMoveListDrawerOpen(false); }}
-                  onRequestAIAnnotation={handleAIAnnotation}
-                  gameResult={gameInfo.Result}
-                />
-              </Box>
-            </Box>
-          </Drawer>
         </Box>
       )}
 
+      {moves.length > 0 && (
+        <>
+          <Fab color="primary" onClick={() => setAnalysisDrawerOpen(true)}
+            sx={{ position: "fixed", bottom: 84, right: 20, zIndex: 1000 }}>
+            <AnalyticsIcon />
+          </Fab>
+          <Fab color="secondary" onClick={() => setMoveListDrawerOpen(true)}
+            sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}>
+            <MoveListIcon />
+          </Fab>
+        </>
+      )}
+
+      {/* Analysis drawer */}
+      <Drawer anchor="bottom" open={analysisDrawerOpen} onClose={() => setAnalysisDrawerOpen(false)}
+        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <Typography variant="h6" fontWeight={600}>Analysis</Typography>
+            <Button onClick={() => setAnalysisDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
+          </Box>
+          <Box sx={{ flex: 1, overflowY: "auto" }}>{analysisPanel}</Box>
+        </Box>
+      </Drawer>
+
+      {/* Move list drawer */}
+      <Drawer anchor="bottom" open={moveListDrawerOpen} onClose={() => setMoveListDrawerOpen(false)}
+        sx={{ "& .MuiDrawer-paper": { height: "75vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <Typography variant="h6" fontWeight={600}>Moves</Typography>
+            <Button onClick={() => setMoveListDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <AnnotatedMoveList
+              tree={tree} onTreeChange={setTree}
+              onNavigate={(f, id) => { handleNavigate(f, id); setMoveListDrawerOpen(false); }}
+              gameResult={gameInfo.Result}
+            />
+          </Box>
+        </Box>
+      </Drawer>
+
       <SaveGameReviewDialog
-        saveDialogOpen={saveDialogOpen}
-        setSaveDialogOpen={setSaveDialogOpen}
-        historyDialogOpen={historyDialogOpen}
-        setHistoryDialogOpen={setHistoryDialogOpen}
-        gameInfo={gameInfo}
-        isBotGame={false}
+        saveDialogOpen={saveDialogOpen} setSaveDialogOpen={setSaveDialogOpen}
+        historyDialogOpen={historyDialogOpen} setHistoryDialogOpen={setHistoryDialogOpen}
+        gameInfo={gameInfo} isBotGame={false}
         gameReviewTheme={gameReviewTheme!}
-        gameReview={gameReview}
-        moves={moves}
-        pgnText={pgnText}
+        gameReview={gameReview} moves={moves}
+        pgnText={pgnText} annotatedPgn={annotatedPgn}
         loadFromHistory={loadFromHistory}
       />
     </Box>
