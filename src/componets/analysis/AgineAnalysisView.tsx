@@ -159,7 +159,7 @@ function AgineAnalysisView({
   lichessData: _lichessData, isInBook: _isInBook, // accepted but used by EmbedGameReview directly
 }: AgineAnalysisViewProps) {
 
-  const stockfishBadge = stockfishAnalysisResult
+  const stockfishBadge = stockfishAnalysisResult?.lines?.[0]
     ? formatEvaluation(stockfishAnalysisResult.lines[0])
     : stockfishLoading ? "…" : undefined;
 

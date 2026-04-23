@@ -538,7 +538,7 @@ export default function GamePage() {
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Tooltip title="Save game review">
               <span>
-                <IconButton size="small" onClick={() => setSaveDialogOpen(true)} disabled={!gameReview.length} sx={{ p: 0.4 }}>
+                <IconButton size="small" onClick={() => setSaveDialogOpen(true)} sx={{ p: 0.4 }}>
                   <SaveIcon sx={{ fontSize: 15 }} />
                 </IconButton>
               </span>
@@ -647,7 +647,7 @@ export default function GamePage() {
               <Stack direction="row" spacing={0.5}>
                 <Tooltip title="Save game review">
                   <span>
-                    <IconButton size="small" onClick={() => setSaveDialogOpen(true)} disabled={!gameReview.length} sx={{ p: 0.4 }}>
+                    <IconButton size="small" onClick={() => setSaveDialogOpen(true)} sx={{ p: 0.4 }}>
                       <SaveIcon sx={{ fontSize: 15 }} />
                     </IconButton>
                   </span>
@@ -733,7 +733,7 @@ export default function GamePage() {
           )}
           <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
             <Button variant="contained" onClick={() => setSaveDialogOpen(true)} startIcon={<SaveIcon />}
-              disabled={!gameReview.length} fullWidth size="small" sx={{ textTransform: "none" }}>
+              fullWidth size="small" sx={{ textTransform: "none" }}>
               Save
             </Button>
             <Button variant="outlined" onClick={resetAll} startIcon={<RefreshIcon />}

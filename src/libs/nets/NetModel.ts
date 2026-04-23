@@ -57,6 +57,8 @@ class NetModel {
   }
 
   async downloadModel() {
+    // Reset initPromise so waitUntilReady() works correctly after a manual retry
+    this.initPromise = null
     try {
       if (downloadLocks.has(this.modelUrl)) {
         console.log(`Download already in progress for ${this.modelUrl}, waiting...`)
@@ -96,6 +98,7 @@ class NetModel {
       throw new Error(`Download failed: ${res.status} ${res.statusText}`)
     }
 
+    const contentLength = parseInt(res.headers.get('content-length') ?? '0', 10)
     const reader = res.body.getReader()
     const chunks: Uint8Array[] = []
     let received = 0
@@ -105,10 +108,11 @@ class NetModel {
       if (done) break
       chunks.push(value)
       received += value.length
-      // if (len) {
-      //   const progress = Math.floor((received / len) * 100)
-      //   this.options.setProgress(progress)
-      // }
+      if (contentLength > 0) {
+        const progress = Math.min(99, Math.floor((received / contentLength) * 100))
+        this.options.setProgress(progress)
+      }
+
     }
 
     console.log(`Download complete: ${this.modelUrl} (${received} bytes)`)
