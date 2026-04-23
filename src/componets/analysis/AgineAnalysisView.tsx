@@ -1,41 +1,36 @@
-import { Dispatch, SetStateAction, useContext, useState } from "react";
+import { Dispatch, SetStateAction } from "react";
 import {
   Box,
-  Stack,
-  Tabs,
-  Tab,
-  Card,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Typography,
   Divider,
-  useMediaQuery,
-  useTheme,
+  Chip,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
   Analytics as AnalyticsIcon,
-  Chat as ChatIcon,
-  Cloud as CloudIcon,
+  TravelExplore as OpeningIcon,
+  Storage as DbIcon,
+  Psychology as NetsIcon,
+  BarChart as ThemeIcon,
+  SportsEsports as ReviewIcon,
+  AccountTree as TreeIcon,
 } from "@mui/icons-material";
 
 import StockfishAnalysisTab from "../tabs/StockfishTab";
-import { TabPanel } from "../tabs/tab";
 import GameInfoTab from "../tabs/GameInfoTab";
 import OpeningExplorer from "../tabs/OpeningTab";
 import ChessDBDisplay from "../tabs/Chessdb";
 import { PositionEval, LineEval } from "@/stockfish/engine/engine";
-import { MasterGames, Moves } from "@/libs/openingdatabase/helper";
-import { CandidateMove } from "@/libs/agine/helper";
-import { MoveAnalysis } from "@/libs/agine/helper";
+import { MasterGames } from "@/libs/openingdatabase/helper";
+import { CandidateMove, MoveAnalysis } from "@/libs/agine/helper";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
-
 import { UseMaiaEngineResult } from "@/hooks/useNets";
-import { useSessionStorage } from "usehooks-ts";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
 import ChessTreeView from "../tabs/ChessTreeView";
@@ -64,6 +59,7 @@ interface BaseAnalysisViewProps {
   scores: ThemeScore | null;
   ThemeScoreloading: boolean;
   ThemeScoreerror: string | null;
+
 }
 
 interface GameReviewProps {
@@ -85,513 +81,171 @@ interface GameReviewProps {
 interface MaiaProps extends UseMaiaEngineResult {}
 
 interface AgineAnalysisViewProps
-  extends GameReviewProps, BaseAnalysisViewProps, MaiaProps {
+  extends GameReviewProps,
+    BaseAnalysisViewProps,
+    MaiaProps {
   isGameReviewMode: boolean;
   activeAnalysisTab: number;
   setActiveAnalysisTab: Dispatch<SetStateAction<number>>;
   fen: string;
 }
 
-function AgineAnalysisView({
-  stockfishAnalysisResult,
-  stockfishLoading,
-  sanEvaluations,
-  engineDepth,
-  engineLines,
-  engine,
-  Customfen,
-  analyzeWithStockfish,
-  formatEvaluation,
-  formatPrincipalVariation,
-  setEngineDepth,
-  setEngineLines,
-  openingLoading,
-  openingData,
-  lichessOpeningData,
-  lichessOpeningLoading,
-  chessdbdata,
-  queueing,
-  error,
-  loading,
-  refetch,
-  requestAnalysis,
-  isGameReviewMode = false,
-  moves,
-  currentMoveIndex,
-  goToMove,
-  comment,
-  gameInfo,
-  gameReviewTheme,
-  generateGameReview,
-  gameReviewLoading,
-  gameReviewProgress,
-  gameReview,
-  evaluations,
-  Maiaerror,
-  isLoading,
-  scores,
-  ThemeScoreerror,
-  ThemeScoreloading,
-  activeAnalysisTab,
-  fen,
-  setActiveAnalysisTab,
-}: AgineAnalysisViewProps) {
-  const [analysisTab, setAnalysisTab] = useSessionStorage<number>(
-    "agine_current_tab",
-    0,
-  );
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
+// Compact collapsible section for the left panel
+function Section({
+  id, title, icon, badge, activeTab, setActiveTab, children,
+}: {
+  id: number; title: string; icon: React.ReactNode; badge?: string;
+  activeTab: number; setActiveTab: Dispatch<SetStateAction<number>>; children: React.ReactNode;
+}) {
+  const expanded = activeTab === id;
   return (
-    <Card
+    <Accordion
+      expanded={expanded}
+      onChange={() => setActiveTab(expanded ? -1 : id)}
+      disableGutters elevation={0}
       sx={{
-        borderRadius: { xs: 2, md: 3 },
-        boxShadow: `0 8px 32px rgba(138, 43, 226, 0.15)`,
-        minHeight: isGameReviewMode ? 500 : { xs: "auto", md: 600 },
-        maxHeight: isGameReviewMode ? "none" : { xs: "none", md: "80vh" },
+        backgroundColor: "transparent",
+        "&:before": { display: "none" },
+        border: "1px solid",
+        borderColor: expanded ? "rgba(124,58,237,0.4)" : "rgba(255,255,255,0.07)",
+        borderRadius: "8px !important",
         overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
+        transition: "border-color 0.2s",
+        mb: 0.75,
       }}
     >
-      <Box
+      <AccordionSummary
+        expandIcon={<ExpandMoreIcon sx={{ fontSize: 15, color: "#555" }} />}
         sx={{
-          px: { xs: 1, sm: 2, md: 3 },
-          pt: { xs: 1, md: 2 },
+          minHeight: 34, px: 1.25, py: 0,
+          backgroundColor: expanded ? "rgba(124,58,237,0.1)" : "rgba(255,255,255,0.025)",
+          "&:hover": { backgroundColor: "rgba(124,58,237,0.07)" },
+          "& .MuiAccordionSummary-content": { my: "5px", alignItems: "center", gap: 0.75 },
         }}
       >
-        <Tabs
-          value={analysisTab}
-          onChange={(_, newValue: number) => setAnalysisTab(newValue)}
-          variant={isMobile ? "fullWidth" : "standard"}
-          sx={{
-            minHeight: { xs: 48, md: 56 },
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontSize: { xs: "0.875rem", md: "1rem" },
-              fontWeight: 500,
-              minHeight: { xs: 48, md: 56 },
-              minWidth: { xs: "auto", md: 90 },
-              px: { xs: 1, sm: 2 },
-            },
-            "& .Mui-selected": {
-              fontWeight: 600,
-            },
-            "& .MuiTabs-indicator": {
-              height: 3,
-              borderRadius: 2,
-            },
-          }}
-        >
-          <Tab
-            icon={
-              <AnalyticsIcon
-                sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" } }}
-              />
-            }
-            iconPosition={isSmallMobile ? "top" : "start"}
-            label={isSmallMobile ? "Analysis" : "Analysis"}
+        <Box sx={{ color: expanded ? "#a78bfa" : "#555", display: "flex", alignItems: "center" }}>
+          {icon}
+        </Box>
+        <Typography sx={{ fontSize: "11px", fontWeight: 600, color: expanded ? "#d4bbff" : "#888", letterSpacing: "0.05em", flex: 1 }}>
+          {title.toUpperCase()}
+        </Typography>
+        {badge && (
+          <Chip label={badge} size="small" sx={{
+            height: 15, fontSize: "9px", maxWidth: 80,
+            backgroundColor: "rgba(124,58,237,0.25)", color: "#c4b5fd",
+            "& .MuiChip-label": { px: 0.6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+          }} />
+        )}
+      </AccordionSummary>
+      <AccordionDetails sx={{ p: 1.25, pt: 1, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        {children}
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
+function AgineAnalysisView({
+  stockfishAnalysisResult, stockfishLoading, sanEvaluations,
+  engineDepth, engineLines, engine, Customfen,
+  analyzeWithStockfish, formatEvaluation, formatPrincipalVariation,
+  setEngineDepth, setEngineLines,
+  openingLoading, openingData, lichessOpeningData, lichessOpeningLoading,
+  chessdbdata, queueing, error, loading, refetch, requestAnalysis,
+  isGameReviewMode = false, moves, currentMoveIndex, goToMove, comment,
+  gameInfo, gameReviewTheme, generateGameReview, gameReviewLoading,
+  gameReviewProgress, gameReview, evaluations, Maiaerror, isLoading,
+  scores, ThemeScoreerror, ThemeScoreloading,
+  activeAnalysisTab, fen, setActiveAnalysisTab,
+  lichessData: _lichessData, isInBook: _isInBook, // accepted but used by EmbedGameReview directly
+}: AgineAnalysisViewProps) {
+
+  const stockfishBadge = stockfishAnalysisResult
+    ? formatEvaluation(stockfishAnalysisResult.lines[0])
+    : stockfishLoading ? "…" : undefined;
+
+  const reviewBadge =
+    isGameReviewMode && gameReview && currentMoveIndex !== undefined && gameReview[currentMoveIndex]
+      ? gameReview[currentMoveIndex].quality
+      : undefined;
+
+  const openingName =
+    openingData?.opening?.name ?? lichessOpeningData?.opening?.name;
+
+  return (
+    <Box sx={{ py: 0.5 }}>
+      {isGameReviewMode && (
+        <Section id={0} title="Game Review" icon={<ReviewIcon sx={{ fontSize: 14 }} />}
+          badge={reviewBadge} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+          <GameInfoTab
+            moves={moves!} currentMoveIndex={currentMoveIndex!} goToMove={goToMove!}
+            fen={Customfen} comment={comment!} gameInfo={gameInfo!}
+            gameReviewTheme={gameReviewTheme!} generateGameReview={generateGameReview!}
+            gameReviewLoading={gameReviewLoading!} gameReviewProgress={gameReviewProgress!}
+            gameReview={gameReview!} stockfishAnalysisResult={stockfishAnalysisResult}
           />
-        </Tabs>
-      </Box>
+        </Section>
+      )}
 
-      <Box
-        sx={{
-          p: { xs: 1.5, sm: 2, md: 3 },
-          flex: 1,
-          overflow: "auto",
-          maxHeight: "100%",
-        }}
-      >
-        <TabPanel value={analysisTab} index={0}>
-          <Stack spacing={{ xs: 2, md: 3 }}>
-            {isGameReviewMode && (
-              <Accordion
-                expanded={activeAnalysisTab === 0}
-                onChange={() =>
-                  setActiveAnalysisTab(activeAnalysisTab === 0 ? -1 : 0)
-                }
-                sx={{
-                  "&:before": { display: "none" },
-                  borderRadius: { xs: 1.5, md: 2 },
-                  overflow: "hidden",
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  sx={{
-                    minHeight: { xs: 48, md: 56 },
+      <Section id={2} title="Stockfish" icon={<AnalyticsIcon sx={{ fontSize: 14 }} />}
+        badge={stockfishBadge} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        <StockfishAnalysisTab
+          stockfishAnalysisResult={stockfishAnalysisResult} stockfishLoading={stockfishLoading}
+          engineDepth={engineDepth} engineLines={engineLines} engine={engine}
+          analyzeWithStockfish={analyzeWithStockfish} formatEvaluation={formatEvaluation}
+          formatPrincipalVariation={formatPrincipalVariation}
+          setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
+        />
+      </Section>
 
-                    "& .MuiAccordionSummary-content": {
-                      margin: { xs: "12px 0", md: "16px 0" },
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: { xs: "1rem", md: "1.25rem" },
-                    }}
-                  >
-                    Game Review
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails
-                  sx={{
-                    p: { xs: 1.5, md: 2 },
-                  }}
-                >
-                  <GameInfoTab
-                    moves={moves!}
-                    currentMoveIndex={currentMoveIndex!}
-                    goToMove={goToMove!}
-                    fen={Customfen}
-                    comment={comment!}
-                    gameInfo={gameInfo!}
-                    gameReviewTheme={gameReviewTheme!}
-                    generateGameReview={generateGameReview!}
-                    gameReviewLoading={gameReviewLoading!}
-                    gameReviewProgress={gameReviewProgress!}
-                    gameReview={gameReview!}
-                    stockfishAnalysisResult={stockfishAnalysisResult}
-                  />
+      <Section id={1} title="Theme Analysis" icon={<ThemeIcon sx={{ fontSize: 14 }} />}
+        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        {isGameReviewMode ? (
+          gameReviewTheme !== null && gameReview !== undefined && currentMoveIndex !== undefined ? (
+            <PositionRadarAnalysis moveAnalysis={gameReview} stockfishAnalysisResult={stockfishAnalysisResult}
+              currentMoveIndex={currentMoveIndex} gameReview={gameReviewTheme} />
+          ) : (
+            <Typography sx={{ color: "#555", fontSize: "11px" }}>
+              Generate a review to see theme analysis.
+            </Typography>
+          )
+        ) : (
+          <PositionFenThemeAnalysis stockfishAnalysisResult={stockfishAnalysisResult}
+            scores={scores} loading={ThemeScoreloading} error={ThemeScoreerror} />
+        )}
+      </Section>
 
-                  <Divider />
-                </AccordionDetails>
-              </Accordion>
-            )}
+      <Section id={4} title="Neural Nets" icon={<NetsIcon sx={{ fontSize: 14 }} />}
+        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        <NetResults evaluations={sanEvaluations} ucievaluations={evaluations}
+          isMaiaLoading={isLoading} fen={fen} engine={engine}
+          stockfishAnalysisResult={stockfishAnalysisResult} chessDbLoading={loading}
+          chessDbMoves={chessdbdata} maiaerror={Maiaerror} />
+        {gameReview && gameReview.length > 0 && (
+          <>
+            <Divider sx={{ my: 1.5, borderColor: "rgba(255,255,255,0.06)" }} />
+            <NetProbabilityChart moves={gameReview} />
+          </>
+        )}
+      </Section>
 
-            {isGameReviewMode ? (
-              <Accordion
-                expanded={activeAnalysisTab === 1}
-                onChange={() =>
-                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
-                }
-                sx={{
-                  "&:before": { display: "none" },
-                  borderRadius: { xs: 1.5, md: 2 },
-                  overflow: "hidden",
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  sx={{
-                    minHeight: { xs: 48, md: 56 },
-                    "& .MuiAccordionSummary-content": {
-                      margin: { xs: "12px 0", md: "16px 0" },
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: { xs: "1rem", md: "1.25rem" },
-                    }}
-                  >
-                    Position Theme Analysis
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  {gameReviewTheme !== null &&
-                    gameReview !== undefined &&
-                    currentMoveIndex !== undefined && (
-                      <PositionRadarAnalysis
-                        moveAnalysis={gameReview}
-                        stockfishAnalysisResult={stockfishAnalysisResult}
-                        currentMoveIndex={currentMoveIndex}
-                        gameReview={gameReviewTheme}
-                      />
-                    )}
-                </AccordionDetails>
-              </Accordion>
-            ) : (
-              <Accordion
-                expanded={activeAnalysisTab === 1}
-                onChange={() =>
-                  setActiveAnalysisTab(activeAnalysisTab === 1 ? -1 : 1)
-                }
-                sx={{
-                  "&:before": { display: "none" },
-                  borderRadius: { xs: 1.5, md: 2 },
-                  overflow: "hidden",
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  sx={{
-                    minHeight: { xs: 48, md: 56 },
-                    "& .MuiAccordionSummary-content": {
-                      margin: { xs: "12px 0", md: "16px 0" },
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      fontSize: { xs: "1rem", md: "1.25rem" },
-                    }}
-                  >
-                    Position Theme Analysis
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: { xs: 1.5, md: 2 } }}>
-                  <PositionFenThemeAnalysis
-                    stockfishAnalysisResult={stockfishAnalysisResult}
-                    scores={scores}
-                    loading={ThemeScoreloading}
-                    error={ThemeScoreerror}
-                  />
-                </AccordionDetails>
-              </Accordion>
-            )}
+      <Section id={5} title="Opening Explorer" icon={<OpeningIcon sx={{ fontSize: 14 }} />}
+        badge={openingName ? openingName.split(":")[0].trim().slice(0, 18) : undefined}
+        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        <OpeningExplorer openingLoading={openingLoading} openingData={openingData}
+          lichessOpeningData={lichessOpeningData} lichessOpeningLoading={lichessOpeningLoading} />
+      </Section>
 
-            <Accordion
-              expanded={activeAnalysisTab === 2}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 2 ? -1 : 2)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Stockfish Analysis
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <StockfishAnalysisTab
-                  stockfishAnalysisResult={stockfishAnalysisResult}
-                  stockfishLoading={stockfishLoading}
-                  engineDepth={engineDepth}
-                  engineLines={engineLines}
-                  engine={engine}
-                  analyzeWithStockfish={analyzeWithStockfish}
-                  formatEvaluation={formatEvaluation}
-                  formatPrincipalVariation={formatPrincipalVariation}
-                  setEngineDepth={setEngineDepth}
-                  setEngineLines={setEngineLines}
-                />
-              </AccordionDetails>
-            </Accordion>
+      <Section id={6} title="Chess Database" icon={<DbIcon sx={{ fontSize: 14 }} />}
+        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        <ChessDBDisplay data={chessdbdata} queueing={queueing} error={error}
+          loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis} />
+      </Section>
 
-            <Accordion
-              expanded={activeAnalysisTab === 3}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 3 ? -1 : 3)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Variation Tree
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <ChessTreeView initialFen={fen} />
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              expanded={activeAnalysisTab === 4}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 4 ? -1 : 4)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Neural Nets Analysis
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <NetResults
-                  evaluations={sanEvaluations}
-                  ucievaluations={evaluations}
-                  isMaiaLoading={isLoading}
-                  fen={fen}
-                  engine={engine}
-                  stockfishAnalysisResult={stockfishAnalysisResult}
-                  chessDbLoading={loading}
-                  chessDbMoves={chessdbdata}
-                  maiaerror={Maiaerror}
-                />
-                {gameReview && (
-                  <>
-                    <Divider sx={{ my: 3 }} />
-                    <NetProbabilityChart moves={gameReview!} />
-                  </>
-                )}
-              </AccordionDetails>
-            </Accordion>
-
-            {/* Opening Explorer */}
-            <Accordion
-              expanded={activeAnalysisTab === 5}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 5 ? -1 : 5)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Opening Explorer
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <OpeningExplorer
-                  openingLoading={openingLoading}
-                  openingData={openingData}
-                  lichessOpeningData={lichessOpeningData}
-                  lichessOpeningLoading={lichessOpeningLoading}
-                />
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion
-              expanded={activeAnalysisTab === 6}
-              onChange={() =>
-                setActiveAnalysisTab(activeAnalysisTab === 6 ? -1 : 6)
-              }
-              sx={{
-                "&:before": { display: "none" },
-                borderRadius: { xs: 1.5, md: 2 },
-                overflow: "hidden",
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: { xs: 48, md: 56 },
-
-                  "& .MuiAccordionSummary-content": {
-                    margin: { xs: "12px 0", md: "16px 0" },
-                  },
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: "1rem", md: "1.25rem" },
-                  }}
-                >
-                  Chess Database
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={{
-                  p: { xs: 1.5, md: 2 },
-                }}
-              >
-                <ChessDBDisplay
-                  data={chessdbdata}
-                  queueing={queueing}
-                  error={error}
-                  loading={loading}
-                  onRefresh={refetch}
-                  onRequestAnalysis={requestAnalysis}
-                />
-              </AccordionDetails>
-            </Accordion>
-          </Stack>
-        </TabPanel>
-      </Box>
-    </Card>
+      <Section id={3} title="Variation Tree" icon={<TreeIcon sx={{ fontSize: 14 }} />}
+        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        <ChessTreeView initialFen={fen} />
+      </Section>
+    </Box>
   );
 }
 
