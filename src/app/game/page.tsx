@@ -6,19 +6,20 @@ import {
   Card, CardContent, Drawer, Fab,
   useMediaQuery, useTheme,
   List, ListItemButton, ListItemText, ListItemIcon,
-  IconButton, Tooltip, Chip,
+  IconButton, Tooltip, Chip, TextField, CircularProgress,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
   Save as SaveIcon,
   Analytics as AnalyticsIcon,
   Close as CloseIcon,
-  FormatListBulleted as MoveListIcon,
   History as HistoryIcon,
   Link as LinkIcon,
   UploadFile as UploadFileIcon,
   Bookmark as BookmarkIcon,
   ArrowRight as ArrowRightIcon,
+  CheckCircle as ReadyIcon,
+  HourglassEmpty as PendingIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/hooks/useAgine";
@@ -38,7 +39,7 @@ import MultiGameNavigator from "@/componets/game/MultiGameNavigator";
 import { ParsedPGN } from "@/libs/game/pgn";
 import { useNets } from "@/hooks/useNets";
 import { useGameStorage } from "@/hooks/useGameStorage";
-import { useLocalStorage, useSessionStorage } from "usehooks-ts";
+import { useSessionStorage } from "usehooks-ts";
 import {
   VariationTree, makeTree, movesToTree, addMove, findNode,
   treeToPGN, parseAnnotatedPGN,
@@ -76,12 +77,18 @@ export default function GamePage() {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
-  // Drawers (mobile)
+  // Drawers (mobile only)
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   // Left panel state
   const [leftTab, setLeftTab] = useState<LeftTab>("load");
   const [loadSection, setLoadSection] = useState<LoadSection>("history");
+
+  // Desktop inline-save state (title field + saving indicator)
+  const [saveTitle, setSaveTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savedConfirm, setSavedConfirm] = useState(false);
 
   // Game state
   const [pgnText, setPgnText] = useSessionStorage("agine_game_page_pgn", "");
@@ -97,15 +104,13 @@ export default function GamePage() {
   const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>("agine_game_info", {});
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
   const [currentGameHash, setCurrentGameHash] = useState("");
-  // Stable id for the currently loaded game — generated once on load.
-  // Persisted in sessionStorage so page refreshes don't lose the id.
-  // Re-saving the same game uses this id to update the existing DB document.
-  const [currentSaveId, setCurrentSaveId] = useSessionStorage("agine_current_save_id", "");
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
+  // Stable id — generated once per loaded game, used for all re-saves
+  const [currentSaveId, setCurrentSaveId] = useSessionStorage("agine_current_save_id", "");
+
   // Game storage hook
-  const { games: savedGames } = useGameStorage();
+  const { games: savedGames, saveGame } = useGameStorage();
 
   // Variation tree
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
@@ -131,6 +136,9 @@ export default function GamePage() {
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
+
+  // Derived: save allowed only when review is complete
+  const reviewReady = !gameReviewLoading && gameReview.length > 0;
 
   // When a game is loaded, switch left panel to analysis
   useEffect(() => {
@@ -233,7 +241,7 @@ export default function GamePage() {
       if (t.startsWith("[") && t.endsWith("]")) headers.push(t);
       else if (t && !t.startsWith("[")) moveLines.push(t);
     }
-    let movesText = moveLines.join(" ")
+    const movesText = moveLines.join(" ")
       .replace(/\{[^}]*\}/g, "")
       .replace(/\([^)]*\)/g, "")
       .replace(/\s+/g, " ").trim();
@@ -261,9 +269,9 @@ export default function GamePage() {
     const parsed = extractMovesWithComments(pgn);
     const info = extractGameInfo(pgn);
     const ml = moveList || [];
-    // Generate a fresh stable id for this game session.
-    // All subsequent saves use this id, so re-saves update rather than duplicate.
     setCurrentSaveId(Date.now().toString());
+    setSaveTitle("");
+    setSavedConfirm(false);
     setMoves(ml);
     setParsedMovesWithComments(parsed);
     setGameInfo(info);
@@ -307,8 +315,9 @@ export default function GamePage() {
     try {
       const cleaned = cleanPGN(saved.pgn);
       const startFen = extractStartingFen(cleaned);
-      // Restore the original save id so re-saving updates the same document
       setCurrentSaveId(saved.id);
+      setSaveTitle(saved.title || "");
+      setSavedConfirm(false);
       setPgnText(cleaned);
       setMoves(saved.moves);
       setGameInfo(saved.gameInfo);
@@ -356,6 +365,7 @@ export default function GamePage() {
   const resetAll = () => {
     setMoves([]); setPgnText(""); setGameInfo({}); setComment("");
     setMultiGameList([]); setGameReview([]); setCurrentGameHash(""); setCurrentSaveId("");
+    setSaveTitle(""); setSavedConfirm(false);
     setTree(makeTree());
     const reset = new Chess();
     setGame(reset); setFen(reset.fen()); setPrevFen(reset.fen());
@@ -365,7 +375,42 @@ export default function GamePage() {
   const annotatedPgn = useMemo(() => treeToPGN(tree, gameInfo), [tree, gameInfo]);
   const treeData = useMemo(() => serializeTree(tree), [tree]);
 
-  // ── Load panel sidebar ────────────────────────────────────────────────────
+  // ── Shared save logic — used by both desktop inline and mobile dialog ──────
+  const generateGameTitle = () => {
+    const white = gameInfo.White || "Unknown";
+    const black = gameInfo.Black || "Unknown";
+    const date = gameInfo.Date || new Date().toLocaleDateString();
+    return `${white} vs ${black} - ${date}`;
+  };
+
+  const handleSave = async (titleOverride?: string) => {
+    if (!reviewReady) return;
+    setSaving(true);
+    const gameTitle = (titleOverride ?? saveTitle).trim() || generateGameTitle();
+    const savedGame: SavedGameReview = {
+      id: currentSaveId || Date.now().toString(),
+      gameInfo,
+      pgn: pgnText,
+      treeData,
+      annotatedPgn,
+      gameReview,
+      moves,
+      gameReviewTheme,
+      savedAt: new Date().toISOString(),
+      title: gameTitle,
+    };
+    try {
+      await saveGame(savedGame);
+      setSavedConfirm(true);
+      setTimeout(() => setSavedConfirm(false), 3000);
+    } catch (err) {
+      alert(`Save failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Load panel ────────────────────────────────────────────────────────────
   const loadMenuItems: { id: LoadSection; icon: React.ReactNode; label: string; count?: number }[] = [
     { id: "history", icon: <HistoryIcon sx={{ fontSize: 16 }} />, label: "Saved Games", count: savedGames.length },
     { id: "pgn",     icon: <UploadFileIcon sx={{ fontSize: 16 }} />, label: "Paste PGN" },
@@ -384,10 +429,7 @@ export default function GamePage() {
             onClick={() => setLoadSection(loadSection === item.id ? null : item.id)}
             sx={{
               py: 0.75, px: 1.5, borderRadius: 1, mx: 0.5,
-              "&.Mui-selected": {
-                bgcolor: "action.selected",
-                "&:hover": { bgcolor: "action.hover" },
-              },
+              "&.Mui-selected": { bgcolor: "action.selected", "&:hover": { bgcolor: "action.hover" } },
             }}
           >
             <ListItemIcon sx={{ minWidth: 28, color: loadSection === item.id ? "primary.main" : "text.secondary" }}>
@@ -438,43 +480,24 @@ export default function GamePage() {
             </List>
           )
         )}
-
-        {loadSection === "pgn" && (
-          <LoadPGNGame
-            pgnText={pgnText}
-            setPgnText={setPgnText}
-            loadPGN={loadPGN}
-            setInputsVisible={() => {}}
-          />
-        )}
-
+        {loadSection === "pgn" && <LoadPGNGame pgnText={pgnText} setPgnText={setPgnText} loadPGN={loadPGN} setInputsVisible={() => {}} />}
         {loadSection === "lichess" && (
           <LoadLichessGameUrl
-            setComment={setComment}
-            setCurrentMoveIndex={setCurrentMoveIndex}
-            setFen={setFen}
-            setGame={setGame}
-            setGameInfo={setGameInfo}
-            setGameReview={setGameReview}
-            setInputsVisible={() => {}}
-            setMoves={setMoves}
-            setParsedMovesWithComments={setParsedMovesWithComments}
-            setPgnText={setPgnText}
-            generateGameReview={generateGameReview}
+            setComment={setComment} setCurrentMoveIndex={setCurrentMoveIndex}
+            setFen={setFen} setGame={setGame} setGameInfo={setGameInfo}
+            setGameReview={setGameReview} setInputsVisible={() => {}}
+            setMoves={setMoves} setParsedMovesWithComments={setParsedMovesWithComments}
+            setPgnText={setPgnText} generateGameReview={generateGameReview}
             analyzeGameTheme={analyzeGameTheme}
           />
         )}
-
         {loadSection === "mygames" && (
           <Stack spacing={1}>
             <UserGameSelect loadPGN={loadUserPGN} />
             <UserPGNUploader loadPGN={pgn => loadUserPGN(pgn)} setMultiGameList={setMultiGameList} />
           </Stack>
         )}
-
-        {loadSection === "studies" && (
-          <LoadStudy setChapters={setChapters} setInputsVisible={() => {}} />
-        )}
+        {loadSection === "studies" && <LoadStudy setChapters={setChapters} setInputsVisible={() => {}} />}
       </Box>
     </Box>
   );
@@ -487,14 +510,11 @@ export default function GamePage() {
       {moves.length > 0 ? (
         <Stack spacing={1.5}>
           <AgineAnalysisView
-            activeAnalysisTab={activeAnalysisTab}
-            setActiveAnalysisTab={setActiveAnalysisTab}
-            isGameReviewMode={true}
-            stockfishAnalysisResult={stockfishAnalysisResult}
-            stockfishLoading={stockfishLoading}
-            engineDepth={engineDepth} engineLines={engineLines} engine={engine}
-            Maiaerror={maiaError} isLoading={maiaIsLoading} evaluations={evaluations}
-            analyzeWithStockfish={analyzeWithStockfish}
+            activeAnalysisTab={activeAnalysisTab} setActiveAnalysisTab={setActiveAnalysisTab}
+            isGameReviewMode={true} stockfishAnalysisResult={stockfishAnalysisResult}
+            stockfishLoading={stockfishLoading} engineDepth={engineDepth} engineLines={engineLines}
+            engine={engine} Maiaerror={maiaError} isLoading={maiaIsLoading}
+            evaluations={evaluations} analyzeWithStockfish={analyzeWithStockfish}
             formatEvaluation={formatEvaluation} fen={fen}
             formatPrincipalVariation={formatPrincipalVariation}
             setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
@@ -527,45 +547,74 @@ export default function GamePage() {
     </Box>
   );
 
-  // ── Save panel (desktop left column) ─────────────────────────────────────
-  const reviewReady = !gameReviewLoading && gameReview.length > 0;
-
+  // ── Desktop save panel — inline, no modal ────────────────────────────────
   const savePanel = (
     <Box sx={{ p: 1.5 }}>
-      {moves.length > 0 ? (
+      {moves.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+          Load a game first to save it.
+        </Typography>
+      ) : (
         <Stack spacing={1.5}>
           <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
             SAVE GAME REVIEW
           </Typography>
-          {gameReviewLoading ? (
-            <Typography variant="body2" color="warning.main" sx={{ fontSize: 12 }}>
-              ⏳ Game review is generating… wait before saving.
-            </Typography>
-          ) : reviewReady ? (
-            <Typography variant="body2" color="success.main" sx={{ fontSize: 12 }}>
-              ✓ Review ready — {gameReview.length} moves analysed.
-            </Typography>
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
-              Load a game and wait for the review to complete before saving.
-            </Typography>
-          )}
-          <Tooltip title={!reviewReady ? (gameReviewLoading ? "Wait for review to finish" : "Game review must be generated first") : ""}>
+
+          {/* Review-ready status */}
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            {gameReviewLoading ? (
+              <>
+                <PendingIcon sx={{ fontSize: 14, color: "warning.main" }} />
+                <Typography variant="body2" color="warning.main" sx={{ fontSize: 12 }}>
+                  Review generating… wait before saving.
+                </Typography>
+              </>
+            ) : reviewReady ? (
+              <>
+                <ReadyIcon sx={{ fontSize: 14, color: "success.main" }} />
+                <Typography variant="body2" color="success.main" sx={{ fontSize: 12 }}>
+                  Ready — {gameReview.length} moves analysed.
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                Load a game to generate a review, then save.
+              </Typography>
+            )}
+          </Stack>
+
+          {/* Title field */}
+          <TextField
+            label="Title"
+            size="small"
+            fullWidth
+            value={saveTitle}
+            onChange={e => { setSaveTitle(e.target.value); setSavedConfirm(false); }}
+            placeholder={generateGameTitle()}
+            disabled={!reviewReady || saving}
+            slotProps={{ input: { sx: { fontSize: 13 } } }}
+          />
+
+          {/* Save button */}
+          <Tooltip title={!reviewReady ? (gameReviewLoading ? "Wait for review to finish" : "Review not ready") : ""}>
             <span>
               <Button
                 variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={() => setSaveDialogOpen(true)}
+                startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <SaveIcon />}
+                onClick={() => handleSave()}
                 fullWidth
                 size="small"
-                disabled={!reviewReady}
+                disabled={!reviewReady || saving}
+                color={savedConfirm ? "success" : "primary"}
                 sx={{ textTransform: "none" }}
               >
-                Save Game Review
+                {savedConfirm ? "Saved ✓" : saving ? "Saving…" : "Save Game Review"}
               </Button>
             </span>
           </Tooltip>
+
           <Divider />
+
           <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
             START OVER
           </Typography>
@@ -581,51 +630,6 @@ export default function GamePage() {
             Load New Game
           </Button>
         </Stack>
-      ) : (
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
-          Load a game first to save it.
-        </Typography>
-      )}
-    </Box>
-  );
-
-  // ── Move list panel ───────────────────────────────────────────────────────
-  const moveListPanel = (
-    <Box sx={{
-      display: "flex", flexDirection: "column", height: "100%", minHeight: 0,
-      overflow: "hidden",
-    }}>
-      <Box sx={{
-        px: 1.5, py: 0.75,
-        borderBottom: 1, borderColor: "divider",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexShrink: 0, bgcolor: "background.paper",
-      }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
-          MOVES
-        </Typography>
-        {moves.length > 0 && (
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip title="Load new game">
-              <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
-                <RefreshIcon sx={{ fontSize: 15 }} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        )}
-      </Box>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        <AnnotatedMoveList
-          tree={tree}
-          onTreeChange={setTree}
-          onNavigate={handleNavigate}
-          gameResult={gameInfo.Result}
-        />
-      </Box>
-      {multiGameList.length > 1 && (
-        <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", p: 0.75 }}>
-          <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />
-        </Box>
       )}
     </Box>
   );
@@ -661,12 +665,8 @@ export default function GamePage() {
         height: "calc(100vh - 56px)",
         overflow: "hidden",
       }}>
-        {/* LEFT: load controls + analysis + save */}
-        <Box sx={{
-          borderRight: 1, borderColor: "divider",
-          display: "flex", flexDirection: "column", overflow: "hidden",
-        }}>
-          {/* Tab bar: Load Game | Analysis | Save */}
+        {/* LEFT: Load | Analysis | Save tabs */}
+        <Box sx={{ borderRight: 1, borderColor: "divider", display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <Box sx={{ display: "flex", flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
             {([
               { id: "load" as LeftTab, label: "Load Game" },
@@ -684,11 +684,7 @@ export default function GamePage() {
               </Box>
             ))}
           </Box>
-          <Box sx={{
-            flex: 1, overflowY: "auto",
-            "&::-webkit-scrollbar": { width: "4px" },
-            "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
-          }}>
+          <Box sx={{ flex: 1, overflowY: "auto", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" } }}>
             {leftTab === "load" && loadPanel}
             {leftTab === "analysis" && analysisPanel}
             {leftTab === "save" && savePanel}
@@ -696,14 +692,11 @@ export default function GamePage() {
         </Box>
 
         {/* CENTER: board */}
-        <Box sx={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          overflow: "hidden", borderRight: 1, borderColor: "divider",
-        }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
           {boardPanel}
         </Box>
 
-        {/* RIGHT: move list */}
+        {/* RIGHT: move list — no save icon on desktop */}
         <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <Box sx={{
             px: 2, py: 0.75, flexShrink: 0,
@@ -714,20 +707,11 @@ export default function GamePage() {
               MOVES
             </Typography>
             {moves.length > 0 && (
-              <Stack direction="row" spacing={0.5}>
-                <Tooltip title="Save game review">
-                  <span>
-                    <IconButton size="small" onClick={() => setSaveDialogOpen(true)} sx={{ p: 0.4 }}>
-                      <SaveIcon sx={{ fontSize: 15 }} />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Tooltip title="Load new game">
-                  <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
-                    <RefreshIcon sx={{ fontSize: 15 }} />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
+              <Tooltip title="Load new game">
+                <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
+                  <RefreshIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </Tooltip>
             )}
           </Box>
           <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
@@ -747,7 +731,6 @@ export default function GamePage() {
   return (
     <Box sx={{ minHeight: "100vh", pb: moves.length > 0 ? 10 : 2 }}>
       {moves.length === 0 ? (
-        /* ── No game loaded: show load UI ── */
         <Box sx={{ p: 2 }}>
           <Card>
             <CardContent sx={{ p: 2 }}>
@@ -764,9 +747,7 @@ export default function GamePage() {
                   >
                     <ListItemIcon sx={{ minWidth: 28 }}>{item.icon}</ListItemIcon>
                     <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontSize: 13 } } }} />
-                    {item.count !== undefined && item.count > 0 && (
-                      <Chip label={item.count} size="small" />
-                    )}
+                    {item.count !== undefined && item.count > 0 && <Chip label={item.count} size="small" />}
                   </ListItemButton>
                 ))}
               </List>
@@ -797,28 +778,20 @@ export default function GamePage() {
           </Card>
         </Box>
       ) : (
-        /* ── Game loaded: board + move list inline ── */
         <Box sx={{ p: 1 }}>
-          {/* Board */}
-          <Box sx={{ display: "flex", justifyContent: "center" }}>
-            {boardPanel}
-          </Box>
+          <Box sx={{ display: "flex", justifyContent: "center" }}>{boardPanel}</Box>
 
           {multiGameList.length > 1 && (
             <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />
           )}
 
-          {/* Move list inline below board */}
+          {/* Move list inline below board — save icon opens modal on mobile */}
           <Box sx={{
-            mt: 1.5,
-            border: 1, borderColor: "divider", borderRadius: 1,
-            overflow: "hidden",
-            maxHeight: 280,
-            display: "flex", flexDirection: "column",
+            mt: 1.5, border: 1, borderColor: "divider", borderRadius: 1,
+            overflow: "hidden", maxHeight: 280, display: "flex", flexDirection: "column",
           }}>
             <Box sx={{
-              px: 1.5, py: 0.75,
-              borderBottom: 1, borderColor: "divider",
+              px: 1.5, py: 0.75, borderBottom: 1, borderColor: "divider",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               flexShrink: 0, bgcolor: "background.paper",
             }}>
@@ -826,10 +799,17 @@ export default function GamePage() {
                 MOVES
               </Typography>
               <Stack direction="row" spacing={0.5}>
-                <Tooltip title="Save game review">
-                  <IconButton size="small" onClick={() => setSaveDialogOpen(true)} sx={{ p: 0.4 }}>
-                    <SaveIcon sx={{ fontSize: 15 }} />
-                  </IconButton>
+                <Tooltip title={!reviewReady ? (gameReviewLoading ? "Review generating…" : "Review not ready") : "Save game review"}>
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={() => setSaveDialogOpen(true)}
+                      disabled={!reviewReady}
+                      sx={{ p: 0.4 }}
+                    >
+                      <SaveIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </span>
                 </Tooltip>
                 <Tooltip title="Load new game">
                   <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
@@ -839,41 +819,25 @@ export default function GamePage() {
               </Stack>
             </Box>
             <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <AnnotatedMoveList
-                tree={tree}
-                onTreeChange={setTree}
-                onNavigate={handleNavigate}
-                gameResult={gameInfo.Result}
-              />
+              <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} />
             </Box>
           </Box>
         </Box>
       )}
 
-      {/* Single FAB: Analysis only */}
+      {/* FAB: Analysis only (mobile) */}
       {moves.length > 0 && (
-        <Fab
-          color="primary"
-          onClick={() => setAnalysisDrawerOpen(true)}
-          sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}
-        >
+        <Fab color="primary" onClick={() => setAnalysisDrawerOpen(true)}
+          sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}>
           <AnalyticsIcon />
         </Fab>
       )}
 
-      {/* Analysis drawer */}
-      <Drawer
-        anchor="bottom"
-        open={analysisDrawerOpen}
-        onClose={() => setAnalysisDrawerOpen(false)}
-        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
-      >
+      {/* Analysis drawer (mobile) */}
+      <Drawer anchor="bottom" open={analysisDrawerOpen} onClose={() => setAnalysisDrawerOpen(false)}
+        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box sx={{
-            p: 2, borderBottom: 1, borderColor: "divider",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            flexShrink: 0,
-          }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
             <Typography variant="h6" fontWeight={600}>Analysis</Typography>
             <Button onClick={() => setAnalysisDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
           </Box>
@@ -881,14 +845,22 @@ export default function GamePage() {
         </Box>
       </Drawer>
 
+      {/* Save dialog — mobile only, triggered by save icon in move list header */}
       <SaveGameReviewDialog
-        saveDialogOpen={saveDialogOpen} setSaveDialogOpen={setSaveDialogOpen}
-        historyDialogOpen={historyDialogOpen} setHistoryDialogOpen={setHistoryDialogOpen}
-        gameInfo={gameInfo} isBotGame={false}
+        saveDialogOpen={saveDialogOpen}
+        setSaveDialogOpen={setSaveDialogOpen}
+        historyDialogOpen={historyDialogOpen}
+        setHistoryDialogOpen={setHistoryDialogOpen}
+        gameInfo={gameInfo}
+        isBotGame={false}
         gameId={currentSaveId || Date.now().toString()}
         gameReviewTheme={gameReviewTheme!}
-        gameReview={gameReview} gameReviewLoading={gameReviewLoading} moves={moves}
-        pgnText={pgnText} annotatedPgn={annotatedPgn} treeData={treeData}
+        gameReview={gameReview}
+        gameReviewLoading={gameReviewLoading}
+        moves={moves}
+        pgnText={pgnText}
+        annotatedPgn={annotatedPgn}
+        treeData={treeData}
         loadFromHistory={loadFromHistory}
       />
     </Box>
