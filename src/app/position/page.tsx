@@ -193,7 +193,6 @@ export default function AnalysisPage() {
           tree={tree}
           onTreeChange={setTree}
           onNavigate={handleNavigate}
-          onRequestAIAnnotation={handleAIAnnotation}
         />
       </Box>
     </Box>
@@ -215,6 +214,7 @@ export default function AnalysisPage() {
       analyzeWithStockfish={analyzeWithStockfish}
       llmLoading={llmLoading}
       stockfishLoading={stockfishLoading}
+      maiaLoading={maiaIsLoading}
       stockfishAnalysisResult={stockfishAnalysisResult}
       openingLoading={openingLoading}
       onTreePrevious={handleTreePrevious}
@@ -316,7 +316,6 @@ export default function AnalysisPage() {
               tree={tree}
               onTreeChange={setTree}
               onNavigate={(f, id) => { handleNavigate(f, id); setMoveListDrawerOpen(false); }}
-              onRequestAIAnnotation={handleAIAnnotation}
             />
           </Box>
         </Box>

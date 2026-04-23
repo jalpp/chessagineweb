@@ -1,14 +1,16 @@
 /**
- * AiChessboardPanel (updated)
+ * AiChessboardPanel
  *
- * Changes vs original:
- *  - Removed internal PGNView — move list lives in AnnotatedMoveList (right panel)
- *  - Added onTreePrevious / onTreeNext / onTreeStart / onTreeEnd props
- *    so the nav buttons drive the variation tree cursor (not flat FEN history)
- *  - When tree-nav props present, nav buttons call them instead of internal moveHistory
- *  - Flat moveHistory still used as fallback (puzzle/play modes, standalone use)
- *  - Removed resize handle — board sits in a flex-center cell
- *  - All board settings dialog unchanged
+ * Fixes vs previous version:
+ *  - Arrow flickering: arrows are latched to the FEN they were computed for.
+ *    When the user navigates to a new position, the OLD arrows are cleared
+ *    immediately (no stale arrows from prev position), and new arrows appear
+ *    only once stockfish/neural-net results arrive for the CURRENT fen.
+ *    This eliminates the flicker caused by stale results rendering briefly.
+ *  - stockfishLoading / maiaLoading props now gate arrow rendering so arrows
+ *    never appear while engines are still computing.
+ *  - Illegal move gracefully handled via try/catch in both play-mode and
+ *    free-analysis safeGameMutate — never crashes or shows uncaught errors.
  */
 
 import React, { CSSProperties } from "react";
@@ -74,6 +76,8 @@ interface AiChessboardPanelProps {
   playerSide?: "white" | "black";
   engineThinking?: boolean;
   evaluations?: MaiaEngineAnalysis;
+  /** True while Maia/neural nets are loading for this position */
+  maiaLoading?: boolean;
   /** Called by nav buttons to walk to the previous node in the variation tree */
   onTreePrevious?: () => void;
   /** Called by nav buttons to walk to the next node in the variation tree */
@@ -96,6 +100,7 @@ export default function AiChessboardPanel({
   handleSquarePuzzleClick, setMoveSquares, puzzleCustomSquareStyle, reviewMove,
   side, playMode, gameStatus = "waiting", playerSide = "white",
   gameReviewMode, gameInfo, engineThinking = false,
+  stockfishLoading, maiaLoading,
   onTreePrevious, onTreeNext, onTreeStart, onTreeEnd,
   hideBuiltInMoveList = false, treePly, treeMaxPly,
 }: AiChessboardPanelProps) {
@@ -110,7 +115,6 @@ export default function AiChessboardPanel({
   } = useSettings();
 
   const setIsFlipped = (v: boolean) => saveSettings({ board_ui_flipped: v });
-  const setBoardSize = (v: number) => saveSettings({ board_ui_size: v });
   const setPieceType = (v: string) => saveSettings({ board_piece_type: v });
   const setShowCoordinates = (v: boolean) => saveSettings({ board_show_coordinates: v });
   const setBoardTheme = (v: string) => saveSettings({ board_theme: v });
@@ -130,6 +134,51 @@ export default function AiChessboardPanel({
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [showArrows, setShowArrows] = useState(puzzleMode || playMode ? false : true);
+
+  // ── Arrow stability: track which FEN the current results belong to ─────────
+  //
+  // The flicker problem:
+  //   1. User navigates → fen changes immediately
+  //   2. stockfishAnalysisResult / evaluations are STILL from the previous fen
+  //   3. customArrows renders stale arrows briefly, then they disappear
+  //   4. New results arrive → arrows re-appear = flicker
+  //
+  // Fix: maintain a "results fen" ref. When fen changes, we immediately clear
+  // arrows (resultsFen !== fen). Arrows only render when resultsFen === fen
+  // AND engines are not loading. No stale arrows, no flicker.
+  //
+  // resultsFen is updated when stockfish or evaluations settle for a position.
+  const [resultsFen, setResultsFen] = useState<string>("");
+
+  // When stockfish finishes for a position, record which fen it's for.
+  // We use the fact that stockfishLoading goes false → result is ready.
+  const prevStockfishLoading = useRef(stockfishLoading);
+  useEffect(() => {
+    if (prevStockfishLoading.current && !stockfishLoading) {
+      // Stockfish just finished — results now belong to the current fen
+      setResultsFen(fen);
+    }
+    prevStockfishLoading.current = stockfishLoading;
+  }, [stockfishLoading, fen]);
+
+  // When maia/neural nets finish, also update resultsFen
+  const prevMaiaLoading = useRef(maiaLoading);
+  useEffect(() => {
+    if (prevMaiaLoading.current && !maiaLoading) {
+      setResultsFen(fen);
+    }
+    prevMaiaLoading.current = maiaLoading;
+  }, [maiaLoading, fen]);
+
+  // When the position changes (navigation), immediately invalidate arrows
+  // so we never show stale arrows from the previous position.
+  const prevFenRef = useRef(fen);
+  useEffect(() => {
+    if (prevFenRef.current !== fen) {
+      prevFenRef.current = fen;
+      setResultsFen(""); // clears arrows until engines settle
+    }
+  }, [fen]);
 
   // ── Piece analysis ─────────────────────────────────────────────────────────
   const boardAnalysis = useMemo(() => {
@@ -174,11 +223,17 @@ export default function AiChessboardPanel({
 
   const safeGameMutate = useCallback((modify: (g: Chess) => void) => {
     if (!fen) return;
-    const ng = new Chess(fen); modify(ng);
-    const nFen = ng.fen();
-    const nHist = [...moveHistory.slice(0, internalMoveIndex + 1), nFen];
-    setGame(ng); setFen(nFen);
-    setMoveHistory(nHist); setInternalMoveIndex(nHist.length - 1);
+    try {
+      const ng = new Chess(fen);
+      modify(ng);
+      const nFen = ng.fen();
+      const nHist = [...moveHistory.slice(0, internalMoveIndex + 1), nFen];
+      setGame(ng); setFen(nFen);
+      setMoveHistory(nHist); setInternalMoveIndex(nHist.length - 1);
+    } catch (err) {
+      // Illegal move in free-analysis mode — silently ignore
+      console.warn("Illegal move (analysis):", err);
+    }
   }, [fen, moveHistory, internalMoveIndex, setGame, setFen]);
 
   const clearAnalysis = useCallback(() => setStockfishAnalysisResult(null), [setStockfishAnalysisResult]);
@@ -201,11 +256,17 @@ export default function AiChessboardPanel({
           setGame(ng); setFen(ng.fen()); setSelectedSquare(null); setLegalMoves([]); setMoveSquares({});
           return true;
         }
-      } catch {}
+      } catch (err) {
+        // Illegal move in play mode — snap piece back silently
+        console.warn("Illegal move (play):", err);
+      }
       return false;
     }
     let moveMade = false;
-    safeGameMutate(gi => { const m = gi.move({ from: src, to: tgt, promotion: "q" }); if (m) { moveMade = true; clearAnalysis(); } });
+    safeGameMutate(gi => {
+      const m = gi.move({ from: src, to: tgt, promotion: "q" });
+      if (m) { moveMade = true; clearAnalysis(); }
+    });
     setMoveSquares({});
     return moveMade;
   }, [playMode, canPlayerMove, game, setGame, setFen, setMoveSquares, safeGameMutate, clearAnalysis]);
@@ -214,7 +275,15 @@ export default function AiChessboardPanel({
     if (selectedSquare === square) { setSelectedSquare(null); setLegalMoves([]); return; }
     if (selectedSquare && legalMoves.includes(square)) {
       const mp = game.get(selectedSquare as Square);
-      handlePlayerMove({ piece: { isSparePiece: false, position: selectedSquare, pieceType: mp ? `${mp.color}${mp.type.toUpperCase()}` : "wP" }, sourceSquare: selectedSquare, targetSquare: square });
+      try {
+        handlePlayerMove({
+          piece: { isSparePiece: false, position: selectedSquare, pieceType: mp ? `${mp.color}${mp.type.toUpperCase()}` : "wP" },
+          sourceSquare: selectedSquare,
+          targetSquare: square,
+        });
+      } catch (err) {
+        console.warn("Illegal square-click move:", err);
+      }
       setSelectedSquare(null); setLegalMoves([]); return;
     }
     const cp = game.get(square as Square);
@@ -225,33 +294,85 @@ export default function AiChessboardPanel({
   }, [playMode, selectedSquare, legalMoves, game, side, handlePlayerMove]);
 
   // ── Arrows ─────────────────────────────────────────────────────────────────
+  //
+  // Arrows are only shown when:
+  //   1. showArrows is enabled
+  //   2. Not in play mode
+  //   3. resultsFen === fen (engines have settled for THIS position — no stale results)
+  //   4. Engines are not currently loading (no mid-computation flicker)
+  //
+  // This means: navigate → arrows instantly gone → engines finish → arrows appear.
+  // No intermediate flicker with arrows from the wrong position.
   const customArrows = useMemo<Arrow[]>(() => {
     if (!showArrows || playMode) return [];
-    const arrows: Arrow[] = [];
-    const seen = new Set<string>();
-    const addArrow = (a: Arrow) => { const k = `${a.startSquare}-${a.endSquare}`; if (!seen.has(k)) { seen.add(k); arrows.push(a); } };
+
+    // Don't show arrows while engines are running or results are for a different position
+    const enginesSettled = resultsFen === fen && !stockfishLoading && !maiaLoading;
+
+    // For reviewMove arrows we always show them immediately (they come from the
+    // game review which is position-independent / pre-computed)
+    const reviewArrows: Arrow[] = [];
     if (reviewMove) {
-      addArrow({ startSquare: reviewMove.arrowMove.from as Square, endSquare: reviewMove.arrowMove.to as Square, color: getMoveClassificationStyle(reviewMove.quality).color });
-      if (reviewMove.quality !== "Best" && stockfishAnalysisResult?.lines?.length) {
-        const pv = stockfishAnalysisResult.lines[0].pv?.[0];
-        if (pv?.length >= 4) addArrow({ startSquare: pv.slice(0, 2) as Square, endSquare: pv.slice(2, 4) as Square, color: "#4caf50" });
+      try {
+        reviewArrows.push({
+          startSquare: reviewMove.arrowMove.from as Square,
+          endSquare: reviewMove.arrowMove.to as Square,
+          color: getMoveClassificationStyle(reviewMove.quality).color,
+        });
+      } catch { /* invalid square — skip */ }
+    }
+
+    if (!enginesSettled) {
+      // Only show review arrows while engines are computing
+      return reviewArrows;
+    }
+
+    const arrows: Arrow[] = [...reviewArrows];
+    const seen = new Set<string>(reviewArrows.map(a => `${a.startSquare}-${a.endSquare}`));
+
+    const addArrow = (a: Arrow) => {
+      const k = `${a.startSquare}-${a.endSquare}`;
+      if (!seen.has(k)) { seen.add(k); arrows.push(a); }
+    };
+
+    // Stockfish best move
+    if (stockfishAnalysisResult?.lines?.length) {
+      const pv = stockfishAnalysisResult.lines[0].pv?.[0];
+      if (pv?.length >= 4) {
+        // If review says it was the best move, skip (review arrow already covers it)
+        if (!reviewMove || reviewMove.quality !== "Best") {
+          try {
+            addArrow({ startSquare: pv.slice(0, 2) as Square, endSquare: pv.slice(2, 4) as Square, color: "#4caf50" });
+          } catch { /* invalid square */ }
+        }
       }
     }
-    if (!reviewMove && stockfishAnalysisResult?.lines?.length) {
-      const pv = stockfishAnalysisResult.lines[0].pv?.[0];
-      if (pv?.length >= 4) addArrow({ startSquare: pv.slice(0, 2) as Square, endSquare: pv.slice(2, 4) as Square, color: "#4caf50" });
-    }
+
+    // Neural net policy arrows
     const addPolicy = (policy?: Record<string, number>, color?: string) => {
-      if (!policy) return;
+      if (!policy || !color) return;
       const mv = Object.entries(policy).sort(([, a], [, b]) => b - a)[0]?.[0];
-      if (mv?.length >= 4) addArrow({ startSquare: mv.slice(0, 2) as Square, endSquare: mv.slice(2, 4) as Square, color: color! });
+      if (mv?.length >= 4) {
+        try {
+          addArrow({ startSquare: mv.slice(0, 2) as Square, endSquare: mv.slice(2, 4) as Square, color });
+        } catch { /* invalid square */ }
+      }
     };
+
     addPolicy(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
     addPolicy(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
     addPolicy(evaluations?.bigLeela?.policy, "#400ac8ff");
     addPolicy(evaluations?.elitemaia?.policy, "rgb(235,49,154)");
+
     return arrows;
-  }, [showArrows, reviewMove, playMode, stockfishAnalysisResult, evaluations, fen]);
+  }, [
+    showArrows, playMode,
+    resultsFen, fen,           // stability gate
+    stockfishLoading, maiaLoading,
+    reviewMove,
+    stockfishAnalysisResult,
+    evaluations,
+  ]);
 
   // ── Square styles ──────────────────────────────────────────────────────────
   const customSquareStyles = useMemo(() => {
@@ -267,8 +388,6 @@ export default function AiChessboardPanel({
   }, [pieceHighlightStyles, moveSquares, selectedSquare, legalMoves, game]);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  // When tree nav callbacks are provided, use them (variation-aware).
-  // Otherwise fall back to flat moveHistory (standalone / puzzle / play).
   const useTreeNav = hideBuiltInMoveList && !!onTreePrevious;
 
   const handlePrev = useCallback(() => {
@@ -381,7 +500,7 @@ export default function AiChessboardPanel({
   const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({ gameInfo, boardOrientation: getBoardOrientation() });
   const modeInfo = getModeInfo();
 
-  // ── Responsive board size: fill center column height ──────────────────────
+  // ── Responsive board size ──────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
   const [boardPx, setBoardPx] = useState(boardSize);
 
@@ -389,7 +508,6 @@ export default function AiChessboardPanel({
     const el = containerRef.current;
     if (!el) return;
     const obs = new ResizeObserver(([entry]) => {
-      // Overhead: header 28px + player bar x2 ~50px + nav bar 36px + padding 16px
       const overhead = gameInfo ? 140 : 80;
       const available = Math.min(entry.contentRect.width, entry.contentRect.height - overhead);
       setBoardPx(Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize)));

@@ -512,7 +512,8 @@ export default function GamePage() {
           <AgineAnalysisView
             activeAnalysisTab={activeAnalysisTab} setActiveAnalysisTab={setActiveAnalysisTab}
             isGameReviewMode={true} stockfishAnalysisResult={stockfishAnalysisResult}
-            stockfishLoading={stockfishLoading} engineDepth={engineDepth} engineLines={engineLines}
+            stockfishLoading={stockfishLoading}
+            engineDepth={engineDepth} engineLines={engineLines}
             engine={engine} Maiaerror={maiaError} isLoading={maiaIsLoading}
             evaluations={evaluations} analyzeWithStockfish={analyzeWithStockfish}
             formatEvaluation={formatEvaluation} fen={fen}
@@ -647,6 +648,7 @@ export default function GamePage() {
       fetchOpeningData={fetchOpeningData}
       analyzeWithStockfish={analyzeWithStockfish}
       llmLoading={llmLoading} stockfishLoading={stockfishLoading}
+      maiaLoading={maiaIsLoading}
       openingLoading={openingLoading}
       reviewMove={gameReview[currentMoveIndex]}
       gameReviewMode={true}

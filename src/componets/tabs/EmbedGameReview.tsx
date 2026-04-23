@@ -277,6 +277,7 @@ function FullReviewContent({
           analyzeWithStockfish={analyzeWithStockfish}
           llmLoading={llmLoading}
           stockfishLoading={stockfishLoading}
+          maiaLoading={maiaIsLoading}
           openingLoading={openingLoading}
         />
 
@@ -663,6 +664,7 @@ export default function EmbeddedGameReview({
                 analyzeWithStockfish={analyzeWithStockfish}
                 llmLoading={llmLoading}
                 stockfishLoading={stockfishLoading}
+                maiaLoading={nets.isLoading}
                 openingLoading={openingLoading}
               />
 
