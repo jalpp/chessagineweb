@@ -64,7 +64,7 @@ function extractStartingFen(pgn: string): string | undefined {
 }
 
 // ── Left panel tab types ──────────────────────────────────────────────────────
-type LeftTab = "load" | "analysis";
+type LeftTab = "load" | "analysis" | "save";
 
 // ── Load section types ────────────────────────────────────────────────────────
 type LoadSection = "history" | "pgn" | "lichess" | "mygames" | "studies" | null;
@@ -77,7 +77,6 @@ export default function GamePage() {
 
   // Drawers (mobile)
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
-  const [moveListDrawerOpen, setMoveListDrawerOpen] = useState(false);
 
   // Left panel state
   const [leftTab, setLeftTab] = useState<LeftTab>("load");
@@ -100,7 +99,7 @@ export default function GamePage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
-  // Game storage hook (replaces useLocalStorage directly)
+  // Game storage hook
   const { games: savedGames } = useGameStorage();
 
   // Variation tree
@@ -133,7 +132,7 @@ export default function GamePage() {
     if (moves.length > 0) setLeftTab("analysis");
   }, [moves]);
 
-  // Tree sync when moves loaded externally (LoadLichessGameUrl etc.)
+  // Tree sync when moves loaded externally
   useEffect(() => {
     if (moves.length > 0 && !tree.root.next) {
       const startFen = extractStartingFen(pgnText);
@@ -180,7 +179,6 @@ export default function GamePage() {
     setStockfishAnalysisResult(null);
   }, [tree, parsedMovesWithComments, setRootCurrentMove, setStockfishAnalysisResult]);
 
-  // Tree nav callbacks
   const handleTreePrevious = useCallback(() => {
     const cur = findNode(tree.root, tree.cursor);
     if (!cur?.parent) return;
@@ -365,7 +363,6 @@ export default function GamePage() {
 
   const loadPanel = (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      {/* Nav list */}
       <List dense disablePadding sx={{ flexShrink: 0 }}>
         {loadMenuItems.map(item => (
           <ListItemButton
@@ -396,7 +393,6 @@ export default function GamePage() {
 
       <Divider sx={{ my: 0.5 }} />
 
-      {/* Section content */}
       <Box sx={{
         flex: 1, overflowY: "auto", px: 1.5, py: 1,
         "&::-webkit-scrollbar": { width: "4px" },
@@ -518,13 +514,57 @@ export default function GamePage() {
     </Box>
   );
 
-  // ── Move list + right panel ───────────────────────────────────────────────
+  // ── Save panel (desktop left column) ─────────────────────────────────────
+  const savePanel = (
+    <Box sx={{ p: 1.5 }}>
+      {moves.length > 0 ? (
+        <Stack spacing={1.5}>
+          <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+            SAVE GAME REVIEW
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+            Save your annotated game with engine analysis and review notes.
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<SaveIcon />}
+            onClick={() => setSaveDialogOpen(true)}
+            fullWidth
+            size="small"
+            sx={{ textTransform: "none" }}
+          >
+            Save Game Review
+          </Button>
+          <Divider />
+          <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+            START OVER
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={resetAll}
+            fullWidth
+            size="small"
+            color="error"
+            sx={{ textTransform: "none" }}
+          >
+            Load New Game
+          </Button>
+        </Stack>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+          Load a game first to save it.
+        </Typography>
+      )}
+    </Box>
+  );
+
+  // ── Move list panel ───────────────────────────────────────────────────────
   const moveListPanel = (
     <Box sx={{
       display: "flex", flexDirection: "column", height: "100%", minHeight: 0,
       overflow: "hidden",
     }}>
-      {/* Header with save/reset */}
       <Box sx={{
         px: 1.5, py: 0.75,
         borderBottom: 1, borderColor: "divider",
@@ -536,13 +576,6 @@ export default function GamePage() {
         </Typography>
         {moves.length > 0 && (
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip title="Save game review">
-              <span>
-                <IconButton size="small" onClick={() => setSaveDialogOpen(true)} sx={{ p: 0.4 }}>
-                  <SaveIcon sx={{ fontSize: 15 }} />
-                </IconButton>
-              </span>
-            </Tooltip>
             <Tooltip title="Load new game">
               <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
                 <RefreshIcon sx={{ fontSize: 15 }} />
@@ -551,7 +584,6 @@ export default function GamePage() {
           </Stack>
         )}
       </Box>
-      {/* Move tree */}
       <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <AnnotatedMoveList
           tree={tree}
@@ -599,15 +631,17 @@ export default function GamePage() {
         height: "calc(100vh - 56px)",
         overflow: "hidden",
       }}>
-        {/* LEFT: load controls + analysis */}
+        {/* LEFT: load controls + analysis + save */}
         <Box sx={{
           borderRight: 1, borderColor: "divider",
           display: "flex", flexDirection: "column", overflow: "hidden",
         }}>
+          {/* Tab bar: Load Game | Analysis | Save */}
           <Box sx={{ display: "flex", flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
             {([
               { id: "load" as LeftTab, label: "Load Game" },
               { id: "analysis" as LeftTab, label: "Analysis" },
+              { id: "save" as LeftTab, label: "Save" },
             ]).map(tab => (
               <Box key={tab.id} onClick={() => setLeftTab(tab.id)} sx={{
                 flex: 1, py: 1, textAlign: "center", cursor: "pointer",
@@ -620,8 +654,14 @@ export default function GamePage() {
               </Box>
             ))}
           </Box>
-          <Box sx={{ flex: 1, overflowY: "auto", "&::-webkit-scrollbar": { width: "4px" }, "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" } }}>
-            {leftTab === "load" ? loadPanel : analysisPanel}
+          <Box sx={{
+            flex: 1, overflowY: "auto",
+            "&::-webkit-scrollbar": { width: "4px" },
+            "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+          }}>
+            {leftTab === "load" && loadPanel}
+            {leftTab === "analysis" && analysisPanel}
+            {leftTab === "save" && savePanel}
           </Box>
         </Box>
 
@@ -675,8 +715,9 @@ export default function GamePage() {
 
   // ── Mobile ────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ minHeight: "100vh", pb: 10 }}>
+    <Box sx={{ minHeight: "100vh", pb: moves.length > 0 ? 10 : 2 }}>
       {moves.length === 0 ? (
+        /* ── No game loaded: show load UI ── */
         <Box sx={{ p: 2 }}>
           <Card>
             <CardContent sx={{ p: 2 }}>
@@ -726,64 +767,87 @@ export default function GamePage() {
           </Card>
         </Box>
       ) : (
+        /* ── Game loaded: board + move list inline ── */
         <Box sx={{ p: 1 }}>
-          <Box sx={{ display: "flex", justifyContent: "center" }}>{boardPanel}</Box>
+          {/* Board */}
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            {boardPanel}
+          </Box>
+
           {multiGameList.length > 1 && (
             <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />
           )}
-          <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-            <Button variant="contained" onClick={() => setSaveDialogOpen(true)} startIcon={<SaveIcon />}
-              fullWidth size="small" sx={{ textTransform: "none" }}>
-              Save
-            </Button>
-            <Button variant="outlined" onClick={resetAll} startIcon={<RefreshIcon />}
-              fullWidth size="small" sx={{ textTransform: "none" }}>
-              New Game
-            </Button>
-          </Stack>
+
+          {/* Move list inline below board */}
+          <Box sx={{
+            mt: 1.5,
+            border: 1, borderColor: "divider", borderRadius: 1,
+            overflow: "hidden",
+            maxHeight: 280,
+            display: "flex", flexDirection: "column",
+          }}>
+            <Box sx={{
+              px: 1.5, py: 0.75,
+              borderBottom: 1, borderColor: "divider",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              flexShrink: 0, bgcolor: "background.paper",
+            }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+                MOVES
+              </Typography>
+              <Stack direction="row" spacing={0.5}>
+                <Tooltip title="Save game review">
+                  <IconButton size="small" onClick={() => setSaveDialogOpen(true)} sx={{ p: 0.4 }}>
+                    <SaveIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Load new game">
+                  <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
+                    <RefreshIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Box>
+            <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+              <AnnotatedMoveList
+                tree={tree}
+                onTreeChange={setTree}
+                onNavigate={handleNavigate}
+                gameResult={gameInfo.Result}
+              />
+            </Box>
+          </Box>
         </Box>
       )}
 
+      {/* Single FAB: Analysis only */}
       {moves.length > 0 && (
-        <>
-          <Fab color="primary" onClick={() => setAnalysisDrawerOpen(true)}
-            sx={{ position: "fixed", bottom: 84, right: 20, zIndex: 1000 }}>
-            <AnalyticsIcon />
-          </Fab>
-          <Fab color="secondary" onClick={() => setMoveListDrawerOpen(true)}
-            sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}>
-            <MoveListIcon />
-          </Fab>
-        </>
+        <Fab
+          color="primary"
+          onClick={() => setAnalysisDrawerOpen(true)}
+          sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}
+        >
+          <AnalyticsIcon />
+        </Fab>
       )}
 
       {/* Analysis drawer */}
-      <Drawer anchor="bottom" open={analysisDrawerOpen} onClose={() => setAnalysisDrawerOpen(false)}
-        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+      <Drawer
+        anchor="bottom"
+        open={analysisDrawerOpen}
+        onClose={() => setAnalysisDrawerOpen(false)}
+        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+      >
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <Box sx={{
+            p: 2, borderBottom: 1, borderColor: "divider",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexShrink: 0,
+          }}>
             <Typography variant="h6" fontWeight={600}>Analysis</Typography>
             <Button onClick={() => setAnalysisDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
           </Box>
           <Box sx={{ flex: 1, overflowY: "auto" }}>{analysisPanel}</Box>
-        </Box>
-      </Drawer>
-
-      {/* Move list drawer */}
-      <Drawer anchor="bottom" open={moveListDrawerOpen} onClose={() => setMoveListDrawerOpen(false)}
-        sx={{ "& .MuiDrawer-paper": { height: "75vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-            <Typography variant="h6" fontWeight={600}>Moves</Typography>
-            <Button onClick={() => setMoveListDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
-          </Box>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-            <AnnotatedMoveList
-              tree={tree} onTreeChange={setTree}
-              onNavigate={(f, id) => { handleNavigate(f, id); setMoveListDrawerOpen(false); }}
-              gameResult={gameInfo.Result}
-            />
-          </Box>
         </Box>
       </Drawer>
 
