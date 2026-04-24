@@ -102,21 +102,21 @@ export async function POST(req: NextRequest) {
       // On first save: write everything
       $setOnInsert: {
         _id: id,
-        userId:          access.userId,
+        userId:    access.userId,
         pgnPacked,
-        result:          result          ?? "",
-        moveCount:       moveCount       ?? 0,
+        result:    result    ?? "",
+        moveCount: moveCount ?? 0,
+        moves:     moves     ?? [],
+        gameInfo:  gameInfo  ?? {},
+        savedAt:   now,
+      },
+      // On every save (insert or update): refresh tree, theme, review and metadata
+      $set: {
+        treeData:        treeData        ?? null,
+        title:           title           ?? "",
         gameReview:      gameReview      ?? [],
         gameReviewTheme: gameReviewTheme ?? null,
-        moves:           moves           ?? [],
-        gameInfo:        gameInfo        ?? {},
-        savedAt:         now,
-      },
-      // On every save (insert or update): refresh the tree and metadata
-      $set: {
-        treeData:   treeData ?? null,
-        title:      title    ?? "",
-        updatedAt:  now,
+        updatedAt:       now,
       },
     },
     { upsert: true }

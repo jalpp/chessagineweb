@@ -110,7 +110,7 @@ export default function GamePage() {
   const [currentSaveId, setCurrentSaveId] = useSessionStorage("agine_current_save_id", "");
 
   // Game storage hook
-  const { games: savedGames, saveGame } = useGameStorage();
+  const { games: savedGames, loading: savedGamesLoading, saveGame } = useGameStorage();
 
   // Variation tree
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
@@ -135,7 +135,7 @@ export default function GamePage() {
   } = useNets({ fen });
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
-  const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
+  const { gameReviewTheme, setGameReviewTheme, analyzeGameTheme } = useGameTheme();
 
   // Derived: save allowed only when review is complete
   const reviewReady = !gameReviewLoading && gameReview.length > 0;
@@ -322,6 +322,7 @@ export default function GamePage() {
       setMoves(saved.moves);
       setGameInfo(saved.gameInfo);
       setGameReview(saved.gameReview);
+      setGameReviewTheme(saved.gameReviewTheme ?? null);
       setParsedMovesWithComments(extractMovesWithComments(saved.pgn));
       setCurrentMoveIndex(0);
       const resetGame = new Chess(startFen);
@@ -454,7 +455,14 @@ export default function GamePage() {
         "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
       }}>
         {loadSection === "history" && (
-          savedGames.length === 0 ? (
+          savedGamesLoading ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 4, gap: 1.5 }}>
+              <CircularProgress size={28} />
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                Loading saved games…
+              </Typography>
+            </Box>
+          ) : savedGames.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, py: 1 }}>
               No saved games yet. Save a game review to see it here.
             </Typography>
@@ -755,21 +763,29 @@ export default function GamePage() {
               </List>
               <Divider sx={{ my: 1.5 }} />
               <Box>
-                {loadSection === "history" && savedGames.length === 0 && (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>No saved games yet.</Typography>
-                )}
-                {loadSection === "history" && savedGames.length > 0 && (
-                  <List dense disablePadding>
-                    {savedGames.map(saved => (
-                      <ListItemButton key={saved.id} onClick={() => loadFromHistory(saved)} sx={{ borderRadius: 1, mb: 0.5, border: 1, borderColor: "divider" }}>
-                        <ListItemText
-                          primary={saved.title || `${saved.gameInfo?.White ?? "?"} vs ${saved.gameInfo?.Black ?? "?"}`}
-                          secondary={new Date(saved.savedAt).toLocaleDateString()}
-                          slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 600 } }, secondary: { sx: { fontSize: 10 } } }}
-                        />
-                      </ListItemButton>
-                    ))}
-                  </List>
+                {loadSection === "history" && (
+                  savedGamesLoading ? (
+                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 4, gap: 1.5 }}>
+                      <CircularProgress size={28} />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                        Loading saved games…
+                      </Typography>
+                    </Box>
+                  ) : savedGames.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>No saved games yet.</Typography>
+                  ) : (
+                    <List dense disablePadding>
+                      {savedGames.map(saved => (
+                        <ListItemButton key={saved.id} onClick={() => loadFromHistory(saved)} sx={{ borderRadius: 1, mb: 0.5, border: 1, borderColor: "divider" }}>
+                          <ListItemText
+                            primary={saved.title || `${saved.gameInfo?.White ?? "?"} vs ${saved.gameInfo?.Black ?? "?"}`}
+                            secondary={new Date(saved.savedAt).toLocaleDateString()}
+                            slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 600 } }, secondary: { sx: { fontSize: 10 } } }}
+                          />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  )
                 )}
                 {loadSection === "pgn" && <LoadPGNGame pgnText={pgnText} setPgnText={setPgnText} loadPGN={loadPGN} setInputsVisible={() => {}} />}
                 {loadSection === "lichess" && <LoadLichessGameUrl setComment={setComment} setCurrentMoveIndex={setCurrentMoveIndex} setFen={setFen} setGame={setGame} setGameInfo={setGameInfo} setGameReview={setGameReview} setInputsVisible={() => {}} setMoves={setMoves} setParsedMovesWithComments={setParsedMovesWithComments} setPgnText={setPgnText} generateGameReview={generateGameReview} analyzeGameTheme={analyzeGameTheme} />}
