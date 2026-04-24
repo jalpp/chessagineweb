@@ -273,33 +273,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           </Card>
         )}
 
-        {/* Analysis Notes */}
-        <Card>
-          <CardContent sx={{ p: 2 }}>
-          
-            <Button
-              variant="contained"
-              startIcon={
-                loadingStates.gameReport ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <Sparkles size={18} />
-                )
-              }
-              onClick={handleGameReportClick}
-              disabled={!gameReview || gameReview.length === 0}
-              sx={{
-                mt: 2,
-                py: 1,
-              }}
-            >
-              {loadingStates.gameReport
-                ? "Generating Report..."
-                : "Generate Game Report"}
-            </Button>
-          </CardContent>
-        </Card>
-
         {stats && (
           <Card>
             <CardContent sx={{ p: 2 }}>

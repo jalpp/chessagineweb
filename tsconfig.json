@@ -34,12 +34,12 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "next.config.ts",
-    ".next\\dev/types/**/*.ts",
-    ".next\\dev/types/**/*.ts",
+    "src/stockfish/engine/lc0.js",
     ".next/dev/types/**/*.ts"
-, "src/stockfish/engine/lc0.js"  ],
+  ],
   "exclude": [
     "node_modules",
-    "src/stockfish/engine/sf17-79.js"
+    "src/stockfish/engine/sf17-79.js",
+    ".next/dev/types"
   ]
 }
