@@ -3,6 +3,7 @@ import { useNetModels, useNetStatus } from "@/context/NetContext";
 import { convertToSanEvaluation, MAIA_MODELS, MAIA3_MODELS, MAIA3_RATING_VALUES, MaiaEvaluation, ModelType, SanMaiaEvaluation } from "@/libs/nets/types";
 import {
   getMaiaCacheKey,
+  readMemCache,
   readMaiaCache,
   writeMaiaCache,
 } from "@/libs/nets/cache";
@@ -106,6 +107,18 @@ export const useNets = ({
       bookThreshold,
     });
 
+    const memCached = readMemCache(cacheKey);
+    if (memCached) {
+      setEvaluations(memCached.evaluations);
+      setSanEvaluations(memCached.sanEvaluations);
+      setLichessData(memCached.lichessData);
+      setIsInBook(memCached.isInBook);
+      setEvaluationsFen(fenToAnalyze);
+      setIsLoading(false);
+      return memCached.evaluations;
+    }
+
+ 
     const cached = await readMaiaCache(cacheKey);
     if (cached) {
       setEvaluations(cached.evaluations);
@@ -114,7 +127,7 @@ export const useNets = ({
       setIsInBook(cached.isInBook);
       setEvaluationsFen(fenToAnalyze);
       setIsLoading(false);
-      return;
+      return cached.evaluations;
     }
 
     if (modelsToUse.length === 0) {
