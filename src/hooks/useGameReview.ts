@@ -88,7 +88,7 @@ async function parallelLimit<T>(
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
-const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: number) => {
+const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: number = 15) => {
   const [gameReview, setGameReview] = useSessionStorage<MoveAnalysis[]>(
     "agine_current_game_review",
     []

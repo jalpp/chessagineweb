@@ -117,13 +117,19 @@ export const fetchExplorerData = (
   const promise = (async (): Promise<MasterGames | null> => {
     try {
       const response = await fetch(`/api/posira?${cacheKey}`);
-      if (!response.ok) throw new Error(`Posira API error: ${response.status}`);
+      if (!response.ok) {
+        // Posira unavailable — evict cache so next call retries, return null silently
+        explorerCache.set(cacheKey, Promise.resolve(null));
+        return null;
+      }
       const result = await response.json();
-      if (!result.success) throw new Error(result.error ?? "Unknown error");
+      if (!result.success) {
+        explorerCache.set(cacheKey, Promise.resolve(null));
+        return null;
+      }
       return posiraToMasterGames(result.data as PosiraExplorerResponse);
-    } catch (error) {
-      console.error("Error fetching opening stats:", error);
-      // On error, evict the cache entry so the next call retries
+    } catch {
+      // Network error or parse failure — evict so next call retries
       explorerCache.set(cacheKey, Promise.resolve(null));
       return null;
     }

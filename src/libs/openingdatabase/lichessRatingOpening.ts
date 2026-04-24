@@ -108,10 +108,17 @@ export const fetchLichessData = (
         return fetchLichessData(fen, rating, undefined, retryCount + 1, maxRetries);
       }
 
-      if (!response.ok) throw new Error(`Posira API error: ${response.status}`);
+      if (!response.ok) {
+        // Posira unavailable — evict cache so next call retries, return null silently
+        lichessRatingCache.set(cacheKey, Promise.resolve(null));
+        return null;
+      }
 
       const result = await response.json();
-      if (!result.success) throw new Error(result.error ?? "Unknown error");
+      if (!result.success) {
+        lichessRatingCache.set(cacheKey, Promise.resolve(null));
+        return null;
+      }
 
       const data = result.data as PosiraExplorerResponse;
 
