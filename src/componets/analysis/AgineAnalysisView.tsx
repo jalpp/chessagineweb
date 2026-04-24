@@ -67,6 +67,7 @@ interface GameReviewProps {
   currentMoveIndex?: number;
   goToMove?: (index: number) => void;
   comment?: string;
+  clock?: string;
   gameInfo?: Record<string, string>;
   gameReviewTheme: GameReviewTheme | null;
   generateGameReview?: (moves: string[], customFen?: string) => void;
@@ -151,7 +152,7 @@ function AgineAnalysisView({
   setEngineDepth, setEngineLines,
   openingLoading, openingData, lichessOpeningData, lichessOpeningLoading,
   chessdbdata, queueing, error, loading, refetch, requestAnalysis,
-  isGameReviewMode = false, moves, currentMoveIndex, goToMove, comment,
+  isGameReviewMode = false, moves, currentMoveIndex, goToMove, comment, clock,
   gameInfo, gameReviewTheme, generateGameReview, gameReviewLoading,
   gameReviewProgress, gameReview, evaluations, Maiaerror, isLoading,
   scores, ThemeScoreerror, ThemeScoreloading,
@@ -178,7 +179,7 @@ function AgineAnalysisView({
           badge={reviewBadge} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
           <GameInfoTab
             moves={moves!} currentMoveIndex={currentMoveIndex!} goToMove={goToMove!}
-            fen={Customfen} comment={comment!} gameInfo={gameInfo!}
+            fen={Customfen} comment={comment!} clock={clock} gameInfo={gameInfo!}
             gameReviewTheme={gameReviewTheme!} generateGameReview={generateGameReview!}
             gameReviewLoading={gameReviewLoading!} gameReviewProgress={gameReviewProgress!}
             gameReview={gameReview!} stockfishAnalysisResult={stockfishAnalysisResult}

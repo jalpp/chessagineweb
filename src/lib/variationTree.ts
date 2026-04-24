@@ -356,69 +356,120 @@ function numToNag(n: number): NAG {
 /**
  * Parse a full annotated PGN string (with { comments }, $NAG, and (variations))
  * into a VariationTree. Handles arbitrary nesting depth.
+ *
+ * Built mutably for performance — no cloning on every node. The tree is only
+ * exposed after construction so immutability concerns don't apply here.
  */
 export function parseAnnotatedPGN(pgn: string, startFen?: string): VariationTree {
   const tree = makeTree(startFen);
 
-  // Strip headers
-  const moveText = pgn.replace(/\[.*?\]\s*/g, "").trim();
+  // Strip PGN tag headers
+  const moveText = pgn.replace(/\[\w+\s+"[^"]*"\]\s*/g, "").trim();
   if (!moveText) return tree;
 
-  // Tokenise: move numbers, moves, comments, NAGs, ( ), result tokens
   const tokens = tokenizePGN(moveText);
 
   let cursor: MoveNode = tree.root;
-  const stack: MoveNode[] = []; // variation return stack
+  // Stack stores the node we were at when "(" was encountered so we can
+  // restore it — i.e. the last mainline node before the variation started.
+  const stack: MoveNode[] = [];
 
-  for (let i = 0; i < tokens.length; i++) {
-    const tok = tokens[i];
-
+  for (const tok of tokens) {
+    // ── Variation open ───────────────────────────────────────────────────
     if (tok === "(") {
-      // Start variation — go back one move from cursor
+      // Save current cursor; variations branch from cursor.parent
       stack.push(cursor);
       cursor = cursor.parent ?? cursor;
       continue;
     }
 
+    // ── Variation close ──────────────────────────────────────────────────
     if (tok === ")") {
-      // End variation — restore to saved cursor
       if (stack.length > 0) cursor = stack.pop()!;
       continue;
     }
 
-    if (tok.startsWith("{") && tok.endsWith("}")) {
-      // Comment on the current node
-      cursor.comment = tok.slice(1, -1).trim();
+    // ── Brace comment ────────────────────────────────────────────────────
+    if (tok.startsWith("{")) {
+      // Strip all [%tag ...] commands — keep only prose
+      const inner = tok.slice(1, -1);
+      cursor.comment = inner.replace(/\[%[^\]]*\]/g, "").trim();
+      // Also store raw clock if present — attach to comment field prefixed
+      // with a sentinel so handleNavigate can extract it cheaply.
+      const clkMatch = inner.match(/\[%clk\s+([\d:]+(?:\.\d+)?)\s*\]/);
+      if (clkMatch) {
+        // Store clock in comment as " [clk:H:MM:SS]" suffix so navigate can pick it up
+        cursor.comment = (cursor.comment ? cursor.comment + " " : "") + `[clk:${clkMatch[1]}]`;
+      }
       continue;
     }
 
+    // ── NAG ─────────────────────────────────────────────────────────────
     if (tok.startsWith("$")) {
-      // NAG
       const n = parseInt(tok.slice(1), 10);
-      cursor.nag = numToNag(n);
+      const nag = numToNag(n);
+      // Only overwrite if we got a meaningful NAG; also handle inline ! ? etc
+      if (nag) cursor.nag = nag;
       continue;
     }
 
-    // Skip move numbers (e.g. "1." "1...") and result tokens
+    // ── Move number / result — skip ──────────────────────────────────────
     if (/^\d+\.+$/.test(tok) || /^(1-0|0-1|1\/2-1\/2|\*)$/.test(tok)) continue;
 
-    // It should be a SAN move
+    // ── Inline NAG suffix attached to move token (e.g. "Nf3!" "Qd5?!") ──
+    let san = tok;
+    let inlineNag: NAG = "";
+    const suffixMap: Record<string, NAG> = {
+      "!!": "!!", "??": "??", "!?": "!?", "?!": "?!", "!": "!", "?": "?",
+    };
+    for (const [s, nag] of Object.entries(suffixMap)) {
+      if (san.endsWith(s)) { san = san.slice(0, -s.length); inlineNag = nag; break; }
+    }
+
+    // ── SAN move ────────────────────────────────────────────────────────
     const chess = new Chess(cursor.fen);
     try {
-      const move = chess.move(tok);
+      const move = chess.move(san);
       if (!move) continue;
+
       const uci = move.from + move.to + (move.promotion ?? "");
-      const { newTree, newCursorId } = addMove(tree, cursor.id, move.san, uci, chess.fen());
-      // addMove clones — we need to update cursor to point into the new tree
-      // Re-find cursor in updated tree
-      const updatedCursor = findNode(newTree.root, newCursorId);
-      if (updatedCursor) {
-        // Sync the tree reference
-        Object.assign(tree, newTree);
-        cursor = findNode(tree.root, newCursorId)!;
+      const newFen = chess.fen();
+
+      // Check if this exact move already exists as main line
+      if (cursor.next && cursor.next.san === move.san) {
+        cursor = cursor.next;
+      } else {
+        // Check existing variations
+        const existingVar = cursor.variations.find(v => v.san === move.san);
+        if (existingVar) {
+          cursor = existingVar;
+        } else {
+          // Create new node — attach as main line or variation
+          const newNode: MoveNode = {
+            id: newId(),
+            ply: cursor.ply + 1,
+            san: move.san,
+            uci,
+            fen: newFen,
+            comment: "",
+            nag: inlineNag,
+            next: null,
+            variations: [],
+            parent: cursor,
+          };
+          if (!cursor.next) {
+            cursor.next = newNode;
+          } else {
+            cursor.variations.push(newNode);
+          }
+          cursor = newNode;
+        }
       }
+
+      // Apply inline nag if move already existed and had none
+      if (inlineNag && !cursor.nag) cursor.nag = inlineNag;
     } catch {
-      // Skip invalid moves silently
+      // Invalid SAN — skip silently
     }
   }
 

@@ -13,7 +13,11 @@ import { MoveAnalysis } from "@/libs/agine/helper";
 
 export interface ParsedComment {
   move: string;
-  comment?: string | undefined;
+  comment?: string;
+  clock?: string;   // [%clk] remaining time e.g. "1:29:00"
+  emt?: string;     // [%emt] elapsed move time e.g. "3.2"
+  eval?: string;    // [%eval] engine eval e.g. "+0.34"
+  nags?: string[];  // NAG symbols e.g. ["!", "?!"]
 }
 
 interface LoadLichessGameUrlProp {

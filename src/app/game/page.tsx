@@ -101,6 +101,7 @@ export default function GamePage() {
   const [currentMoveIndex, setCurrentMoveIndex] = useSessionStorage("agine_game_current_move", 0);
   const [chapters, setChapters] = useSessionStorage<Chapter[]>("agine_chapters", []);
   const [comment, setComment] = useSessionStorage("agine_comment", "");
+  const [clock, setClock] = useSessionStorage("agine_move_clock", "");
   const [gameInfo, setGameInfo] = useSessionStorage<Record<string, string>>("agine_game_info", {});
   const [multiGameList, setMultiGameList] = useState<ParsedPGN[]>([]);
   const [currentGameHash, setCurrentGameHash] = useState("");
@@ -188,7 +189,17 @@ export default function GamePage() {
     setPrevFen(nodeFen);
     setCurrentMoveIndex(idx);
     setRootCurrentMove(idx);
-    setComment(parsedMovesWithComments[idx - 1]?.comment || "");
+    // Prefer comment/clock embedded in the tree node (populated by
+    // parseAnnotatedPGN from the original PGN annotations). Fall back to
+    // the flat parsedMovesWithComments array for games loaded without a
+    // full annotated PGN (e.g. plain move lists).
+    const nodeComment = node?.comment || "";
+    const nodeClk = nodeComment.match(/\[clk:([\d:]+(?:\.\d+)?)\]/)?.[1] || "";
+    const cleanComment = nodeComment.replace(/\[clk:[^\]]*\]/g, "").trim();
+    const fallbackComment = parsedMovesWithComments[idx - 1]?.comment || "";
+    const fallbackClock   = parsedMovesWithComments[idx - 1]?.clock   || "";
+    setComment(cleanComment || fallbackComment);
+    setClock(nodeClk || fallbackClock);
     setStockfishAnalysisResult(null);
   }, [tree, parsedMovesWithComments, setRootCurrentMove, setStockfishAnalysisResult]);
 
@@ -232,6 +243,24 @@ export default function GamePage() {
   }, [handleTreePrevious, handleTreeNext]);
 
   // PGN helpers
+
+  /**
+   * Strip ALL nested variations from a PGN movetext string.
+   * A simple regex like /\([^)]*\)/g only removes one level of nesting;
+   * this handles arbitrary depth (e.g. nested annotations from Dojo/chess.com).
+   */
+  const stripVariations = (text: string): string => {
+    let result = "";
+    let depth = 0;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === "(") { depth++; continue; }
+      if (ch === ")") { if (depth > 0) depth--; continue; }
+      if (depth === 0) result += ch;
+    }
+    return result;
+  };
+
   const cleanPGN = (raw: string): string => {
     const lines = raw.split("\n");
     const headers: string[] = [];
@@ -241,10 +270,9 @@ export default function GamePage() {
       if (t.startsWith("[") && t.endsWith("]")) headers.push(t);
       else if (t && !t.startsWith("[")) moveLines.push(t);
     }
-    const movesText = moveLines.join(" ")
-      .replace(/\{[^}]*\}/g, "")
-      .replace(/\([^)]*\)/g, "")
-      .replace(/\s+/g, " ").trim();
+    const movesText = stripVariations(
+      moveLines.join(" ").replace(/\{[^}]*\}/g, "")
+    ).replace(/\s+/g, " ").trim();
     return headers.length ? headers.join("\n") + "\n\n" + movesText : movesText;
   };
 
@@ -253,14 +281,19 @@ export default function GamePage() {
     const tempGame = new Chess(startFen);
     const body = cleaned.split("\n").filter(l => !l.trim().startsWith("[")).join(" ").trim();
     if (startFen && body) {
-      const moveText = body
-        .replace(/\d+\./g, "").replace(/\{[^}]*\}/g, "").replace(/\([^)]*\)/g, "")
+      const moveText = stripVariations(
+        body.replace(/\{[^}]*\}/g, "")
+      ).replace(/\d+\.+/g, "").replace(/\$\d+/g, "")
+        .replace(/[!?]+/g, "")
         .replace(/1-0|0-1|1\/2-1\/2|\*/g, "").replace(/\s+/g, " ").trim();
       for (const mv of moveText.split(/\s+/).filter(m => m.length > 0)) {
         try { tempGame.move(mv); } catch { throw new Error(`Invalid move: ${mv}`); }
       }
     } else if (!startFen && body) {
-      tempGame.loadPgn(body);
+      // chess.js loadPgn handles variations and comments natively, but strip
+      // unknown [%tag] annotations inside comments that can trip its parser.
+      const sanitised = body.replace(/\[%[^\]]*\]/g, "");
+      tempGame.loadPgn(sanitised);
     }
     return tempGame.history();
   };
@@ -280,8 +313,18 @@ export default function GamePage() {
     setGame(resetGame);
     setFen(resetGame.fen());
     setComment("");
+    setClock("");
     setGameReview([]);
-    setTree(movesToTree(ml, startFen));
+    // Build the tree from the full annotated PGN so that comments,
+    // NAGs, clock annotations and variations from Lichess/chess.com/Dojo
+    // are all preserved. Fall back to flat movesToTree if parsing fails.
+    let builtTree;
+    try {
+      builtTree = pgn.trim() ? parseAnnotatedPGN(pgn, startFen) : movesToTree(ml, startFen);
+    } catch {
+      builtTree = movesToTree(ml, startFen);
+    }
+    setTree(builtTree);
     setPrevFen(resetGame.fen());
   };
 
@@ -330,6 +373,7 @@ export default function GamePage() {
       setFen(resetGame.fen());
       setCustomPlayFen(startFen || resetGame.fen());
       setComment("");
+      setClock("");
       const restoredTree = saved.treeData
         ? deserializeTree(saved.treeData)
         : saved.annotatedPgn
@@ -352,6 +396,7 @@ export default function GamePage() {
     setCurrentMoveIndex(index);
     setRootCurrentMove(index);
     setComment(parsedMovesWithComments[index - 1]?.comment || "");
+    setClock(parsedMovesWithComments[index - 1]?.clock || "");
     setStockfishAnalysisResult(null);
     setPrevFen(tempGame.fen());
     let node = tree.root;
@@ -364,7 +409,7 @@ export default function GamePage() {
   const handleMultiGameSelect = (g: ParsedPGN) => loadUserPGN(g.pgn, g.hash);
 
   const resetAll = () => {
-    setMoves([]); setPgnText(""); setGameInfo({}); setComment("");
+    setMoves([]); setPgnText(""); setGameInfo({}); setComment(""); setClock("");
     setMultiGameList([]); setGameReview([]); setCurrentGameHash(""); setCurrentSaveId("");
     setSaveTitle(""); setSavedConfirm(false);
     setTree(makeTree());
@@ -533,7 +578,7 @@ export default function GamePage() {
             lichessData={lichessData} loading={loading} refetch={refetch}
             requestAnalysis={requestAnalysis} moves={moves}
             currentMoveIndex={currentMoveIndex} goToMove={goToMove}
-            comment={comment} gameInfo={gameInfo}
+            comment={comment} clock={clock} gameInfo={gameInfo}
             gameReviewTheme={gameReviewTheme} generateGameReview={generateGameReview}
             gameReviewLoading={gameReviewLoading} gameReviewProgress={gameReviewProgress}
             gameReview={gameReview} pgnText={pgnText}
