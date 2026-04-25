@@ -28,6 +28,7 @@ import {
 import {
   Settings as SettingsIcon,
   Close as CloseIcon,
+  Add as AddIcon,
   Star as StarIcon,
   Psychology as BrainIcon,
   Warning as WarningIcon,
@@ -42,12 +43,13 @@ import { KnowledgeProvider, useKnowledge } from "@/context/KnowledgeContext";
 import { useTokenLimit } from "@/hooks/useTokenLimit";
 import { useLocalStorage } from "usehooks-ts";
 import { LoadPuzzleToolUI } from "@/componets/uitools/LoadPuzzleUi";
+import { ThreadSidebar, MobileThreadDrawer } from "@/components/threadSidebar";
 
 
 function ChatPageInner() {
   const { isSignedIn, has } = useAuth();
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
-
+ 
   const { currentTheme } = useTheme();
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
@@ -55,7 +57,7 @@ function ChatPageInner() {
       "selected-model",
       "openrouter/free",
     );
-
+ 
   const [lichessToken] = useLocalStorage<string>("lichess-token", "");
   const [chessboardmagicToken] = useLocalStorage<string>("chessboardmagic-token", "");
   const [openrouterToken] = useLocalStorage<string>("openrouter-token", "");
@@ -64,11 +66,11 @@ function ChatPageInner() {
   const isPersonalTokenSet = !!openrouterToken && openrouterToken.length > 0;
   const isPersonalGeminiTokenSet = !!geminiToken && geminiToken.length > 0;
   const isPersonalClaudeTokenSet = !!anthropicToken && anthropicToken.length > 0;
-
+ 
   const { buildKnowledgeContext, selectedIds } = useKnowledge();
-
+ 
   const dailyUsage = useTokenLimit(isPaidTier);
-
+ 
   const runtime = useChatRuntime({
     transport: new AssistantChatTransport({
       api: "/api/chat",
@@ -76,10 +78,10 @@ function ChatPageInner() {
         const model =
           savedModel ||
           "openrouter/free";
-
+ 
         const knowledgeContext =
           isPaidTier ? buildKnowledgeContext() : null;
-
+ 
         const tokens = {
           ...(lichessToken ? { lichessToken } : {}),
           ...(isPaidTier && chessboardmagicToken ? { chessboardmagicToken } : {}),
@@ -87,7 +89,7 @@ function ChatPageInner() {
           ...(anthropicToken ? { anthropicToken } : {}),
           ...(geminiToken ? { geminiToken } : {}),
         };
-
+ 
         return {
           apiSettings: { model },
           ...(knowledgeContext ? { knowledgeContext } : {}),
@@ -96,9 +98,9 @@ function ChatPageInner() {
       },
     }),
   });
-
+ 
   const vars = chatThemeVars[currentTheme];
-
+ 
   if (!isSignedIn) {
     return (
       <Box
@@ -115,22 +117,22 @@ function ChatPageInner() {
       </Box>
     );
   }
-
-
+ 
+ 
   const usagePct =
     isPaidTier && dailyUsage.budgetUSD
       ? Math.min(100, (dailyUsage.costUSD / dailyUsage.budgetUSD) * 100)
       : 0;
-
+ 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <DisplayChessboardToolUI />
       <LoadGameToolUI />
       <LoadPuzzleToolUI/>
-
+ 
       <TooltipProvider>
-        <div style={vars} className="h-screen flex flex-col">
-
+        <div style={vars} className="h-screen flex flex-col overflow-hidden">
+ 
           {/* ── Top header bar ── */}
           <Box
             display="flex"
@@ -239,7 +241,7 @@ function ChatPageInner() {
                 )}
               </Box>
             )}
-
+ 
             {/* Knowledge Cards button — paid only */}
             {isPaidTier && (
               <Tooltip title="Chess Knowledge Cards">
@@ -259,7 +261,12 @@ function ChatPageInner() {
                 </IconButton>
               </Tooltip>
             )}
-
+ 
+            {/* Thread drawer — shown on mobile where sidebar is hidden */}
+            <Box sx={{ display: { xs: "flex", md: "none" } }}>
+              <MobileThreadDrawer />
+            </Box>
+ 
             <Tooltip title="Model Settings">
               <IconButton
                 onClick={() => setModelDialogOpen(true)}
@@ -270,7 +277,7 @@ function ChatPageInner() {
               </IconButton>
             </Tooltip>
           </Box>
-
+ 
           
           {isPaidTier && dailyUsage.limitHit && (
             <Alert
@@ -311,8 +318,8 @@ function ChatPageInner() {
               )}
             </Alert>
           )}
-
-
+ 
+ 
           {isPaidTier && !dailyUsage.limitHit && dailyUsage.warning && (
             <Alert
               severity="warning"
@@ -327,11 +334,19 @@ function ChatPageInner() {
               </Typography>
             </Alert>
           )}
-
-          <Box flex={1} overflow="hidden">
-            <Thread />
+ 
+          {/* Main area: sidebar left + thread right */}
+          <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "200px 1fr" }, overflow: "hidden", minHeight: 0 }}>
+            {/* Thread sidebar — desktop only */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, flexDirection: "column", overflow: "hidden" }}>
+              <ThreadSidebar />
+            </Box>
+            {/* Chat thread */}
+            <Box sx={{ overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <Thread />
+            </Box>
           </Box>
-
+ 
           <Dialog
             open={modelDialogOpen}
             onClose={() => setModelDialogOpen(false)}
@@ -354,7 +369,7 @@ function ChatPageInner() {
               </IconButton>
             </DialogTitle>
             <DialogContent>
-
+ 
               {isPaidTier && dailyUsage.limitHit && !isPersonalTokenSet && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   Daily limit hit, premium models will fall back to the free
@@ -364,7 +379,7 @@ function ChatPageInner() {
               <ModelSetting />
             </DialogContent>
           </Dialog>
-
+ 
           {isPaidTier && (
             <KnowledgePanel
               open={knowledgeOpen}
@@ -376,7 +391,7 @@ function ChatPageInner() {
     </AssistantRuntimeProvider>
   );
 }
-
+ 
 export default function ChatPage() {
   usePageReady();
   return (
