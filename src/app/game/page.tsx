@@ -20,6 +20,7 @@ import {
   ArrowRight as ArrowRightIcon,
   CheckCircle as ReadyIcon,
   HourglassEmpty as PendingIcon,
+  DeleteOutline as DeleteIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/hooks/useAgine";
@@ -111,7 +112,7 @@ export default function GamePage() {
   const [currentSaveId, setCurrentSaveId] = useSessionStorage("agine_current_save_id", "");
 
   // Game storage hook
-  const { games: savedGames, loading: savedGamesLoading, saveGame } = useGameStorage();
+  const { games: savedGames, loading: savedGamesLoading, saveGame, deleteGame } = useGameStorage();
 
   // Variation tree
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
@@ -527,6 +528,15 @@ export default function GamePage() {
                       secondary: { sx: { fontSize: "10px" } },
                     }}
                   />
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); deleteGame(saved.id); }}
+                      sx={{ ml: 0.5, color: "text.disabled", "&:hover": { color: "error.main" } }}
+                    >
+                      <DeleteIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </Tooltip>
                   <ArrowRightIcon sx={{ fontSize: 16, color: "text.disabled" }} />
                 </ListItemButton>
               ))}
@@ -827,6 +837,15 @@ export default function GamePage() {
                             secondary={new Date(saved.savedAt).toLocaleDateString()}
                             slotProps={{ primary: { sx: { fontSize: 12, fontWeight: 600 } }, secondary: { sx: { fontSize: 10 } } }}
                           />
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              onClick={(e: React.MouseEvent) => { e.stopPropagation(); deleteGame(saved.id); }}
+                              sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 15 }} />
+                            </IconButton>
+                          </Tooltip>
                         </ListItemButton>
                       ))}
                     </List>

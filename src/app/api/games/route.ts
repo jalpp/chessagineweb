@@ -60,8 +60,9 @@ export async function GET() {
         pgn = "";
       }
       // Strip pgnPacked (binary) from response — client gets decoded pgn instead
-      const { pgnPacked, ...rest } = doc as GameReview & { pgnPacked: string };
-      return { ...rest, pgn };
+      // Also map MongoDB _id → id to match the SavedGameReview interface
+      const { pgnPacked, _id, ...rest } = doc as GameReview & { pgnPacked: string; _id: string };
+      return { ...rest, id: _id, pgn };
     })
   );
 
