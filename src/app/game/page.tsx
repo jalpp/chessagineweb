@@ -769,7 +769,6 @@ export default function GamePage() {
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
-              MOVES
             </Typography>
             {moves.length > 0 && (
               <Tooltip title="Load new game">

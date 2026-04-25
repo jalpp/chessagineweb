@@ -2,18 +2,22 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import {
-  Box, Drawer, Fab, useMediaQuery, useTheme,
-  Typography, Button, Paper,
+  Box, Typography, IconButton, Tooltip, Divider,
+  Drawer, Fab, Button, useMediaQuery, useTheme,
+  List, ListItemButton, ListItemIcon, ListItemText,
 } from "@mui/material";
 import {
-  Analytics as AnalyticsIcon, Close as CloseIcon,
-  FormatListBulleted as MoveListIcon,
+  Analytics as AnalyticsIcon,
+  Close as CloseIcon,
+  Refresh as RefreshIcon,
+  GridOn as FenIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import AnnotatedMoveList from "@/componets/tabs/AnonatedMoveList";
+import { FenSelector } from "@/componets/game/FenSelector";
 
 import useAgine from "@/hooks/useAgine";
 import { useNets } from "@/hooks/useNets";
@@ -23,7 +27,7 @@ import {
   VariationTree, makeTree, addMove, findNode, MoveNode,
 } from "@/lib/variationTree";
 
-// ── module-level helpers (never recreated) ─────────────────────────────────
+// ── helpers ────────────────────────────────────────────────────────────────
 
 function getSAN(prevFen: string, nextFen: string): { san: string; uci: string } | null {
   try {
@@ -43,19 +47,22 @@ function mainLineDepth(root: MoveNode): number {
   return d;
 }
 
+type LeftTab = "analysis" | "position";
+
 // ── page ───────────────────────────────────────────────────────────────────
 
-export default function AnalysisPage() {
+export default function PositionPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  const [leftTab, setLeftTab] = useState<LeftTab>("analysis");
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
-  const [moveListDrawerOpen, setMoveListDrawerOpen] = useState(false);
 
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
   const [prevFen, setPrevFen] = useState<string>(new Chess().fen());
+  const [startFen, setStartFen] = useState<string>(new Chess().fen());
 
   const {
     stockfishAnalysisResult, setStockfishAnalysisResult,
@@ -88,7 +95,7 @@ export default function AnalysisPage() {
     setPrevFen(fen);
   }, [fen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── navigation callbacks ──────────────────────────────────────────────────
+  // ── navigation ────────────────────────────────────────────────────────────
   const handleNavigate = useCallback((nodeFen: string, nodeId: string) => {
     setGame(new Chess(nodeFen));
     setFen(nodeFen);
@@ -122,81 +129,64 @@ export default function AnalysisPage() {
   const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
   const treeMaxPly = useMemo(() => mainLineDepth(tree.root), [tree]);
 
-  const handleAIAnnotation = useCallback(async (node: MoveNode): Promise<string> => {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fen: node.fen, move: node.san,
-          prompt: `Briefly annotate the chess move ${node.san} played from position ${node.fen}. One sentence max, focus on idea/purpose.`,
-        }),
-      });
-      return res.ok ? (await res.text()).trim() : "";
-    } catch { return ""; }
-  }, []);
+  
 
-  // ── shared JSX fragments (no inner component functions) ───────────────────
+  const resetPosition = useCallback(() => {
+    const chess = new Chess();
+    setStartFen(chess.fen());
+    setGame(chess);
+    setFen(chess.fen());
+    setPrevFen(chess.fen());
+    setTree(makeTree());
+    setStockfishAnalysisResult(null);
+  }, [setStockfishAnalysisResult]);
 
+  // ── panels ────────────────────────────────────────────────────────────────
   const analysisPanel = (
-    <AgineAnalysisView
-      activeAnalysisTab={activeAnalysisTab}
-      setActiveAnalysisTab={setActiveAnalysisTab}
-      isGameReviewMode={false}
-      fen={fen}
-      stockfishAnalysisResult={stockfishAnalysisResult}
-      stockfishLoading={stockfishLoading}
-      lichessData={lichessData}
-      isInBook={isInBook}
-      sanEvaluations={sanEvaluations}
-      engineLines={engineLines}
-      engine={engine}
-      engineDepth={engineDepth}
-      chessdbdata={chessdbdata}
-      analyzeWithStockfish={analyzeWithStockfish}
-      formatEvaluation={formatEvaluation}
-      formatPrincipalVariation={formatPrincipalVariation}
-      setEngineDepth={setEngineDepth}
-      setEngineLines={setEngineLines}
-      openingLoading={openingLoading}
-      openingData={openingData}
-      lichessOpeningData={lichessOpeningData}
-      lichessOpeningLoading={lichessOpeningLoading}
-      queueing={queueing}
-      error={error}
-      loading={loading}
-      refetch={refetch}
-      requestAnalysis={requestAnalysis}
-      gameReviewTheme={null}
-      evaluations={evaluations}
-      isLoading={maiaIsLoading}
-      Maiaerror={maiaError}
-      scores={scores}
-      ThemeScoreerror={themeScoreError}
-      ThemeScoreloading={themeScoreLoading}
-    />
-  );
-
-  const moveListPanel = (
     <Box sx={{
-      display: "flex", flexDirection: "column", height: "100%", minHeight: 0,
-      backgroundColor: "#0d0d0d", borderRadius: 2, border: "1px solid #2a2a2a", overflow: "hidden",
+      height: "100%", overflowY: "auto", p: 1,
+      "&::-webkit-scrollbar": { width: "4px" },
+      "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
     }}>
-      <Box sx={{ px: 1.5, py: 1, borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
-        <MoveListIcon sx={{ fontSize: 15, color: "#7c3aed" }} />
-        <Typography sx={{ fontSize: "11px", fontWeight: 700, color: "#999", letterSpacing: "0.08em" }}>
-          MOVES & VARIATIONS
-        </Typography>
-      </Box>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-        <AnnotatedMoveList
-          tree={tree}
-          onTreeChange={setTree}
-          onNavigate={handleNavigate}
-        />
-      </Box>
+      <AgineAnalysisView
+        activeAnalysisTab={activeAnalysisTab}
+        setActiveAnalysisTab={setActiveAnalysisTab}
+        isGameReviewMode={false}
+        stockfishAnalysisResult={stockfishAnalysisResult}
+        stockfishLoading={stockfishLoading}
+        engineDepth={engineDepth}
+        engineLines={engineLines}
+        engine={engine}
+        Maiaerror={maiaError}
+        isLoading={maiaIsLoading}
+        evaluations={evaluations}
+        analyzeWithStockfish={analyzeWithStockfish}
+        formatEvaluation={formatEvaluation}
+        fen={fen}
+        formatPrincipalVariation={formatPrincipalVariation}
+        setEngineDepth={setEngineDepth}
+        setEngineLines={setEngineLines}
+        openingLoading={openingLoading}
+        openingData={openingData}
+        lichessOpeningData={lichessOpeningData}
+        lichessOpeningLoading={lichessOpeningLoading}
+        chessdbdata={chessdbdata}
+        queueing={queueing}
+        error={error}
+        lichessData={lichessData}
+        loading={loading}
+        refetch={refetch}
+        requestAnalysis={requestAnalysis}
+        gameReviewTheme={null}
+        sanEvaluations={sanEvaluations}
+        isInBook={isInBook}
+        scores={scores}
+        ThemeScoreerror={themeScoreError}
+        ThemeScoreloading={themeScoreLoading}
+      />
     </Box>
   );
+
 
   const boardPanel = (
     <AiChessboardPanel
@@ -207,15 +197,15 @@ export default function AnalysisPage() {
       engine={engine}
       setFen={setFen}
       setGame={setGame}
-      setOpeningData={setOpeningData}
       evaluations={evaluations}
+      setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
+      stockfishAnalysisResult={stockfishAnalysisResult}
       fetchOpeningData={fetchOpeningData}
       analyzeWithStockfish={analyzeWithStockfish}
       llmLoading={llmLoading}
       stockfishLoading={stockfishLoading}
       maiaLoading={maiaIsLoading}
-      stockfishAnalysisResult={stockfishAnalysisResult}
       openingLoading={openingLoading}
       onTreePrevious={handleTreePrevious}
       onTreeNext={handleTreeNext}
@@ -227,96 +217,156 @@ export default function AnalysisPage() {
     />
   );
 
-  // ── desktop layout ────────────────────────────────────────────────────────
+  const moveListPanel = (
+    <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", height: "100%" }}>
+      <Box sx={{
+        px: 2, py: 0.75, flexShrink: 0,
+        borderBottom: 1, borderColor: "divider", bgcolor: "background.paper",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+          
+        </Typography>
+        <Tooltip title="Reset position">
+          <IconButton size="small" onClick={resetPosition} sx={{ p: 0.4 }}>
+            <RefreshIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <AnnotatedMoveList
+          tree={tree}
+          onTreeChange={setTree}
+          onNavigate={handleNavigate}
+        />
+      </Box>
+    </Box>
+  );
+
+  // ── desktop ───────────────────────────────────────────────────────────────
   if (!isMobile) {
     return (
       <Box sx={{
         display: "grid",
-        gridTemplateColumns: "290px 1fr 270px",
-        height: "calc(100vh - 64px)",
-        gap: 1.5, px: 1.5, py: 1.5,
-        overflow: "hidden", boxSizing: "border-box",
+        gridTemplateColumns: "1fr 1fr 1fr",
+        height: "calc(100vh - 56px)",
+        overflow: "hidden",
       }}>
-        {/* Left: AI Analysis */}
-        <Paper sx={{
-          backgroundColor: "#0d0d0d", border: "1px solid #2a2a2a",
-          borderRadius: 2, overflow: "hidden",
-          display: "flex", flexDirection: "column",
-        }}>
-          <Box sx={{
-            px: 1.5, py: 1, borderBottom: "1px solid #1e1e1e",
-            display: "flex", alignItems: "center", gap: 1, flexShrink: 0,
-          }}>
-            <AnalyticsIcon sx={{ fontSize: 15, color: "#7c3aed" }} />
-            <Typography sx={{ fontSize: "11px", fontWeight: 700, color: "#999", letterSpacing: "0.08em" }}>
-              AI ANALYSIS
-            </Typography>
+        {/* LEFT: Analysis | Position tabs */}
+        <Box sx={{ borderRight: 1, borderColor: "divider", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <Box sx={{ display: "flex", flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
+            {([
+              { id: "analysis" as LeftTab, label: "Analysis", icon: <AnalyticsIcon sx={{ fontSize: 13 }} /> },
+            ]).map(tab => (
+              <Box
+                key={tab.id}
+                onClick={() => setLeftTab(tab.id)}
+                sx={{
+                  flex: 1, py: 1, textAlign: "center", cursor: "pointer",
+                  fontSize: "12px", fontWeight: leftTab === tab.id ? 700 : 400,
+                  color: leftTab === tab.id ? "primary.main" : "text.secondary",
+                  borderBottom: 2, borderColor: leftTab === tab.id ? "primary.main" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5,
+                  "&:hover": { bgcolor: "action.hover" }, userSelect: "none",
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </Box>
+            ))}
           </Box>
           <Box sx={{
-            flex: 1, overflowY: "auto", p: 1,
+            flex: 1, overflowY: "auto",
             "&::-webkit-scrollbar": { width: "4px" },
-            "&::-webkit-scrollbar-thumb": { backgroundColor: "#333", borderRadius: "2px" },
+            "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
           }}>
-            {analysisPanel}
+            {leftTab === "analysis" && analysisPanel}
           </Box>
-        </Paper>
+        </Box>
 
-        {/* Center: Board */}
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        {/* CENTER: board */}
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
           {boardPanel}
         </Box>
 
-        {/* Right: Move list */}
+        {/* RIGHT: move list */}
         {moveListPanel}
       </Box>
     );
   }
 
-  // ── mobile layout ─────────────────────────────────────────────────────────
+  // ── mobile ────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ p: 1, minHeight: "100vh" }}>
+    <Box sx={{ p: 1, minHeight: "100vh", pb: 12 }}>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
         {boardPanel}
       </Box>
 
-      <Fab color="primary" onClick={() => setAnalysisDrawerOpen(true)}
-        sx={{ position: "fixed", bottom: 84, right: 24, zIndex: 1000 }}>
+      {/* Inline move list */}
+      <Box sx={{
+        mt: 1.5, border: 1, borderColor: "divider", borderRadius: 1,
+        overflow: "hidden", maxHeight: 240, display: "flex", flexDirection: "column",
+      }}>
+        <Box sx={{
+          px: 1.5, py: 0.75, borderBottom: 1, borderColor: "divider",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexShrink: 0, bgcolor: "background.paper",
+        }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+            MOVES
+          </Typography>
+          <Tooltip title="Reset position">
+            <IconButton size="small" onClick={resetPosition} sx={{ p: 0.4 }}>
+              <RefreshIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} />
+        </Box>
+      </Box>
+
+      {/* Position (FEN) quick panel */}
+      <Box sx={{ mt: 1.5 }}>
+        <List dense disablePadding>
+          <ListItemButton
+            onClick={() => setLeftTab(leftTab === "position" ? "analysis" : "position")}
+            sx={{ borderRadius: 1, border: 1, borderColor: "divider", mb: 0.5 }}
+          >
+            <ListItemIcon sx={{ minWidth: 28 }}>
+              <FenIcon sx={{ fontSize: 16 }} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Set Position / FEN"
+              slotProps={{ primary: { sx: { fontSize: 13 } } }}
+            />
+          </ListItemButton>
+        </List>
+      </Box>
+
+      {/* FAB: Analysis */}
+      <Fab
+        color="primary"
+        onClick={() => setAnalysisDrawerOpen(true)}
+        sx={{ position: "fixed", bottom: 20, right: 20, zIndex: 1000 }}
+      >
         <AnalyticsIcon />
       </Fab>
-      <Fab onClick={() => setMoveListDrawerOpen(true)}
-        sx={{
-          position: "fixed", bottom: 24, right: 24, zIndex: 1000,
-          backgroundColor: "#7c3aed", "&:hover": { backgroundColor: "#6d28d9" },
-        }}>
-        <MoveListIcon />
-      </Fab>
 
-      <Drawer anchor="bottom" open={analysisDrawerOpen} onClose={() => setAnalysisDrawerOpen(false)}
-        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+      {/* Analysis drawer */}
+      <Drawer
+        anchor="bottom"
+        open={analysisDrawerOpen}
+        onClose={() => setAnalysisDrawerOpen(false)}
+        sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+      >
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
           <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-            <Typography variant="h6" fontWeight={600}>AI Analysis</Typography>
+            <Typography variant="h6" fontWeight={600}>Analysis</Typography>
             <Button onClick={() => setAnalysisDrawerOpen(false)} startIcon={<CloseIcon />} size="small">Close</Button>
           </Box>
-          <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
+          <Box sx={{ flex: 1, overflowY: "auto" }}>
             {analysisPanel}
-          </Box>
-        </Box>
-      </Drawer>
-
-      <Drawer anchor="bottom" open={moveListDrawerOpen} onClose={() => setMoveListDrawerOpen(false)}
-        sx={{ "& .MuiDrawer-paper": { height: "75vh", borderTopLeftRadius: 16, borderTopRightRadius: 16, backgroundColor: "#0d0d0d" } }}>
-        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          <Box sx={{ p: 2, borderBottom: "1px solid #222", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ color: "#ccc" }}>Moves & Variations</Typography>
-            <Button onClick={() => setMoveListDrawerOpen(false)} startIcon={<CloseIcon />} size="small" sx={{ color: "#888" }}>Close</Button>
-          </Box>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-            <AnnotatedMoveList
-              tree={tree}
-              onTreeChange={setTree}
-              onNavigate={(f, id) => { handleNavigate(f, id); setMoveListDrawerOpen(false); }}
-            />
           </Box>
         </Box>
       </Drawer>
