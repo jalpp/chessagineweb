@@ -249,12 +249,18 @@ function AgineAnalysisView({
       </Section>
 
       <Section id={7} title="Human Eval" icon={<HumanEvalIcon sx={{ fontSize: 14 }} />}
-        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
-        <ObjectiveHumanEval
-          evaluations={evaluations}
-          isLoading={isLoading}
-          error={Maiaerror}
-        />
+        badge={!autoAnalysis ? "OFF" : undefined} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        {!autoAnalysis ? (
+          <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
+            Human eval is paused. Enable Auto-Analysis to see human-like move evaluations.
+          </Typography>
+        ) : (
+          <ObjectiveHumanEval
+            evaluations={evaluations}
+            isLoading={isLoading}
+            error={Maiaerror}
+          />
+        )}
       </Section>
 
       <Section id={5} title="Opening Explorer" icon={<OpeningIcon sx={{ fontSize: 14 }} />}
