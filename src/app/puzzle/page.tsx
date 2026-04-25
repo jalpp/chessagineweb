@@ -315,7 +315,6 @@ export default function PuzzlePage() {
   const {
     stockfishAnalysisResult,
     setStockfishAnalysisResult,
-    setOpeningData,
     llmLoading,
     stockfishLoading,
     openingLoading,
@@ -324,12 +323,11 @@ export default function PuzzlePage() {
     analysisTab,
     setAnalysisTab,
     engine,
-    fetchOpeningData,
     analyzeWithStockfish,
     scores,
     themeScoreError,
     themeScoreLoading,
-  } = useAgine(fen, "puzzle");
+  } = useAgine(fen, "puzzle", false);
 
   const handleQuickThemeChange = useCallback(
     (event: SelectChangeEvent<string>) => {

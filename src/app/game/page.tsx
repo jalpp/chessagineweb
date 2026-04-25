@@ -6,7 +6,7 @@ import {
   Card, CardContent, Drawer, Fab,
   useMediaQuery, useTheme,
   List, ListItemButton, ListItemText, ListItemIcon,
-  IconButton, Tooltip, Chip, TextField, CircularProgress,
+  IconButton, Tooltip, Chip, TextField, CircularProgress, Switch, FormControlLabel,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -44,7 +44,7 @@ import { useSessionStorage } from "usehooks-ts";
 import {
   VariationTree, makeTree, movesToTree, addMove, findNode,
   treeToPGN, parseAnnotatedPGN,
-  serializeTree, deserializeTree,
+  serializeTree, deserializeTree, isMainLine,
 } from "@/lib/variationTree";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -108,6 +108,10 @@ export default function GamePage() {
   const [currentGameHash, setCurrentGameHash] = useState("");
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
+  // Auto-analysis mode: when false, engine/neural-net analysis is NOT triggered
+  // automatically on position changes. User must request it manually.
+  const [autoAnalysis, setAutoAnalysis] = useState(false);
+
   // Stable id — generated once per loaded game, used for all re-saves
   const [currentSaveId, setCurrentSaveId] = useSessionStorage("agine_current_save_id", "");
 
@@ -129,12 +133,12 @@ export default function GamePage() {
     analyzeWithStockfish, formatEvaluation, formatPrincipalVariation,
     chessdbdata, loading, queueing, error, refetch, requestAnalysis,
     setRootCurrentMove, scores, themeScoreError, themeScoreLoading,
-  } = useAgine(fen, "game");
+  } = useAgine(fen, "game", autoAnalysis);
 
   const {
     evaluations, sanEvaluations, isLoading: maiaIsLoading,
     Maiaerror: maiaError, lichessData, isInBook,
-  } = useNets({ fen });
+  } = useNets({ fen, gameReviewMode: !autoAnalysis });
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
   const { gameReviewTheme, setGameReviewTheme, analyzeGameTheme } = useGameTheme();
@@ -227,6 +231,9 @@ export default function GamePage() {
   }, [tree, handleNavigate]);
 
   const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
+  // True when the cursor is inside a variation (not on the main line).
+  // Used to suppress game-review arrows which only apply to the main line.
+  const isInVariation = useMemo(() => !isMainLine(tree.root, tree.cursor), [tree]);
   const treeMaxPly = useMemo(() => {
     let n = tree.root; let d = 0;
     while (n.next) { n = n.next; d++; }
@@ -334,8 +341,10 @@ export default function GamePage() {
       const startFen = extractStartingFen(cleanPGN(pgnText));
       const moveList = parsePGNMoves(pgnText, startFen);
       initializeGameState(pgnText, startFen, moveList);
-      generateGameReview(moveList, startFen);
-      analyzeGameTheme(moveList, startFen);
+      if (autoAnalysis) {
+        generateGameReview(moveList, startFen);
+        analyzeGameTheme(moveList, startFen);
+      }
     } catch (err) {
       alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
     }
@@ -348,8 +357,10 @@ export default function GamePage() {
       const moveList = parsePGNMoves(pgn, startFen);
       initializeGameState(pgn, startFen, moveList);
       if (gameHash) setCurrentGameHash(gameHash);
-      generateGameReview(moveList, startFen);
-      analyzeGameTheme(moveList, startFen);
+      if (autoAnalysis) {
+        generateGameReview(moveList, startFen);
+        analyzeGameTheme(moveList, startFen);
+      }
     } catch (err) {
       alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
     }
@@ -551,7 +562,7 @@ export default function GamePage() {
             setGameReview={setGameReview} setInputsVisible={() => {}}
             setMoves={setMoves} setParsedMovesWithComments={setParsedMovesWithComments}
             setPgnText={setPgnText} generateGameReview={generateGameReview}
-            analyzeGameTheme={analyzeGameTheme}
+            analyzeGameTheme={analyzeGameTheme} autoAnalysis={autoAnalysis}
           />
         )}
         {loadSection === "mygames" && (
@@ -572,6 +583,53 @@ export default function GamePage() {
     }}>
       {moves.length > 0 ? (
         <Stack spacing={1.5}>
+          {/* ── Auto-analysis mode toggle ───────────────────────────── */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, p: 1, borderRadius: 1, border: "1px solid", borderColor: "divider" }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={autoAnalysis}
+                  onChange={(e) => setAutoAnalysis(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={
+                <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600 }}>
+                  Auto-Analysis {autoAnalysis ? "ON" : "OFF"}
+                </Typography>
+              }
+              sx={{ m: 0 }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "10px", lineHeight: 1.4 }}>
+              {autoAnalysis
+                ? "Engines & neural nets run automatically on every position."
+                : "Engines are paused. Use the button below to request analysis for the current position."}
+            </Typography>
+            {!autoAnalysis && moves.length > 0 && gameReview.length === 0 && (
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AnalyticsIcon sx={{ fontSize: 14 }} />}
+                  disabled={gameReviewLoading}
+                  onClick={() => {
+                    const startFen = extractStartingFen(pgnText);
+                    generateGameReview(moves, startFen);
+                    analyzeGameTheme(moves, startFen);
+                  }}
+                  sx={{ textTransform: "none", fontSize: "11px", flex: 1 }}
+                >
+                  {gameReviewLoading ? "Analysing…" : "Run Game Review"}
+                </Button>
+              </Stack>
+            )}
+            {!autoAnalysis && gameReview.length > 0 && (
+              <Typography variant="caption" sx={{ fontSize: "10px", color: "success.main" }}>
+                ✓ Game review complete — navigate moves to see arrows.
+              </Typography>
+            )}
+          </Box>
           <AgineAnalysisView
             activeAnalysisTab={activeAnalysisTab} setActiveAnalysisTab={setActiveAnalysisTab}
             isGameReviewMode={true} stockfishAnalysisResult={stockfishAnalysisResult}
@@ -702,18 +760,18 @@ export default function GamePage() {
   const boardPanel = (
     <AiChessboardPanel
       game={game} fen={fen}
-      moveSquares={moveSquares} setMoveSquares={setMoveSquares}
+      moveSquares={autoAnalysis ? moveSquares : {}} setMoveSquares={setMoveSquares}
       engine={engine} setFen={setFen} setGame={setGame}
-      evaluations={evaluations} gameInfo={gameInfo}
+      evaluations={autoAnalysis ? evaluations : {}} gameInfo={gameInfo}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
-      stockfishAnalysisResult={stockfishAnalysisResult}
+      stockfishAnalysisResult={autoAnalysis ? stockfishAnalysisResult : null}
       fetchOpeningData={fetchOpeningData}
       analyzeWithStockfish={analyzeWithStockfish}
-      llmLoading={llmLoading} stockfishLoading={stockfishLoading}
-      maiaLoading={maiaIsLoading}
+      llmLoading={llmLoading} stockfishLoading={autoAnalysis ? stockfishLoading : false}
+      maiaLoading={autoAnalysis ? maiaIsLoading : false}
       openingLoading={openingLoading}
-      reviewMove={gameReview[currentMoveIndex]}
+      reviewMove={isInVariation ? undefined : gameReview[currentMoveIndex]}
       gameReviewMode={true}
       onTreePrevious={handleTreePrevious} onTreeNext={handleTreeNext}
       onTreeStart={handleTreeStart} onTreeEnd={handleTreeEnd}
@@ -851,7 +909,7 @@ export default function GamePage() {
                   )
                 )}
                 {loadSection === "pgn" && <LoadPGNGame pgnText={pgnText} setPgnText={setPgnText} loadPGN={loadPGN} setInputsVisible={() => {}} />}
-                {loadSection === "lichess" && <LoadLichessGameUrl setComment={setComment} setCurrentMoveIndex={setCurrentMoveIndex} setFen={setFen} setGame={setGame} setGameInfo={setGameInfo} setGameReview={setGameReview} setInputsVisible={() => {}} setMoves={setMoves} setParsedMovesWithComments={setParsedMovesWithComments} setPgnText={setPgnText} generateGameReview={generateGameReview} analyzeGameTheme={analyzeGameTheme} />}
+                {loadSection === "lichess" && <LoadLichessGameUrl setComment={setComment} setCurrentMoveIndex={setCurrentMoveIndex} setFen={setFen} setGame={setGame} setGameInfo={setGameInfo} setGameReview={setGameReview} setInputsVisible={() => {}} setMoves={setMoves} setParsedMovesWithComments={setParsedMovesWithComments} setPgnText={setPgnText} generateGameReview={generateGameReview} analyzeGameTheme={analyzeGameTheme} autoAnalysis={autoAnalysis} />}
                 {loadSection === "mygames" && <Stack spacing={1}><UserGameSelect loadPGN={loadUserPGN} /><UserPGNUploader loadPGN={pgn => loadUserPGN(pgn)} setMultiGameList={setMultiGameList} /></Stack>}
                 {loadSection === "studies" && <LoadStudy setChapters={setChapters} setInputsVisible={() => {}} />}
               </Box>
