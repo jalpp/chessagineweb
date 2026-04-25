@@ -384,7 +384,7 @@ const EvaluationDisplay: React.FC<{
   >("evaluation");
   const [improbableThreshold, setImprobableThreshold] = useState(0.05);
   const [Max_pv, setMaxPv] = useState<number>(
-    stockfishAnalysisResult?.lines[0].pv.length || 6,
+    stockfishAnalysisResult?.lines[0]?.pv.length || 6,
   );
 
   const { variations, isLoading } = useEaseMetricVariation(
