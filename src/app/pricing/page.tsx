@@ -1,9 +1,11 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 import { Box, Container, Typography, Divider } from "@mui/material";
 import { PricingTable } from "@clerk/nextjs";
 
 
 const PricingPage = () => {
+  usePageReady();
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
       <Box textAlign="center" mb={2}>

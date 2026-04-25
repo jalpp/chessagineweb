@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState, useCallback } from "react";
 import {
@@ -41,6 +42,7 @@ function isValidFen(fen: string): boolean {
 }
 
 export default function HumanEvalBarPage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 

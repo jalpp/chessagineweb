@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState } from "react";
 import {
@@ -70,6 +71,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 
 
 export default function PuzzlePage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 

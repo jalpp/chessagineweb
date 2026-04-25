@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import {
   useChatRuntime,
@@ -377,6 +378,7 @@ function ChatPageInner() {
 }
 
 export default function ChatPage() {
+  usePageReady();
   return (
     <KnowledgeProvider>
       <ChatPageInner />

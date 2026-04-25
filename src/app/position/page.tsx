@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import {
@@ -52,6 +53,7 @@ type LeftTab = "analysis" | "position";
 // ── page ───────────────────────────────────────────────────────────────────
 
 export default function PositionPage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -277,7 +279,7 @@ export default function PositionPage() {
       <Box sx={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
-        height: "calc(100vh - 56px)",
+        height: "100vh",
         overflow: "hidden",
       }}>
         {/* LEFT: Analysis | Position tabs */}

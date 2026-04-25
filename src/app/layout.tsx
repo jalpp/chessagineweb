@@ -1,8 +1,12 @@
+import { Box } from "@mui/material";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import NavBar from "@/componets/Navbar";
+import SideNav from "@/componets/SideNav";
+import { NavigationProvider } from "@/context/NavigationContext";
+import PageLoader from "@/componets/PageLoader";
+import { SIDEBAR_WIDTH } from "@/componets/SideNav";
 import { ThemeProvider } from "@/context/ThemeContext";
 import BodyWrapper from "@/componets/BodyWrapper";
 import { NetModelContextProvider } from "@/context/NetContext";
@@ -103,12 +107,26 @@ export default function RootLayout({
         >
           <ThemeProvider>
             <BodyWrapper>
-              <NavBar />
+              <NavigationProvider>
+              <SideNav />
+              <PageLoader />
+              {/* On desktop, offset content by sidebar width. On mobile, no offset needed (top AppBar). */}
               <NetModelContextProvider>
-                <SettingsProvider>{children}</SettingsProvider>
+                <SettingsProvider>
+                  <Box
+                    component="main"
+                    sx={{
+                      ml: { xs: 0, md: `${SIDEBAR_WIDTH}px` },
+                      minHeight: "100vh",
+                    }}
+                  >
+                    {children}
+                  </Box>
+                </SettingsProvider>
                 <SpeedInsights />
                 <Analytics />
               </NetModelContextProvider>
+              </NavigationProvider>
             </BodyWrapper>
           </ThemeProvider>
         </body>

@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
@@ -75,6 +76,7 @@ type LoadSection = "history" | "pgn" | "lichess" | "mygames" | "studies" | null;
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function GamePage() {
+  usePageReady();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
@@ -787,7 +789,7 @@ export default function GamePage() {
       <Box sx={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
-        height: "calc(100vh - 56px)",
+        height: "100vh",
         overflow: "hidden",
       }}>
         {/* LEFT: Load | Analysis | Save tabs */}

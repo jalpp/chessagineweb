@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 import {
   Box,
   Container,
@@ -13,6 +14,7 @@ import { SignIn } from "@clerk/nextjs";
 
 
 const SettingsPage = () => {
+  usePageReady();
   const { isSignedIn} = useAuth();
 
   return (
