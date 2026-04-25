@@ -653,6 +653,7 @@ export default function GamePage() {
             currentMove={moves[currentMoveIndex]} Customfen={customPlayFen}
             sanEvaluations={sanEvaluations} isInBook={isInBook}
             scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
+            autoAnalysis={autoAnalysis}
           />
           {chapters.length > 0 && (
             <ResizableChapterSelector
@@ -773,6 +774,7 @@ export default function GamePage() {
       openingLoading={openingLoading}
       reviewMove={isInVariation ? undefined : gameReview[currentMoveIndex]}
       gameReviewMode={true}
+      autoAnalysis={autoAnalysis}
       onTreePrevious={handleTreePrevious} onTreeNext={handleTreeNext}
       onTreeStart={handleTreeStart} onTreeEnd={handleTreeEnd}
       hideBuiltInMoveList treePly={treePly} treeMaxPly={treeMaxPly}

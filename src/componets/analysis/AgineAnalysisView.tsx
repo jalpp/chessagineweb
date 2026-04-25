@@ -91,6 +91,8 @@ interface AgineAnalysisViewProps
   activeAnalysisTab: number;
   setActiveAnalysisTab: Dispatch<SetStateAction<number>>;
   fen: string;
+  /** When false, engine/neural-net sections show a disabled overlay instead of stale/loading data */
+  autoAnalysis?: boolean;
 }
 
 // Compact collapsible section for the left panel
@@ -159,6 +161,7 @@ function AgineAnalysisView({
   gameReviewProgress, gameReview, evaluations, Maiaerror, isLoading,
   scores, ThemeScoreerror, ThemeScoreloading,
   activeAnalysisTab, fen, setActiveAnalysisTab,
+  autoAnalysis = true,
   lichessData: _lichessData, isInBook: _isInBook, // accepted but used by EmbedGameReview directly
 }: AgineAnalysisViewProps) {
 
@@ -190,14 +193,20 @@ function AgineAnalysisView({
       )}
 
       <Section id={2} title="Stockfish" icon={<AnalyticsIcon sx={{ fontSize: 14 }} />}
-        badge={stockfishBadge} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
-        <StockfishAnalysisTab
-          stockfishAnalysisResult={stockfishAnalysisResult} stockfishLoading={stockfishLoading}
-          engineDepth={engineDepth} engineLines={engineLines} engine={engine}
-          analyzeWithStockfish={analyzeWithStockfish} formatEvaluation={formatEvaluation}
-          formatPrincipalVariation={formatPrincipalVariation}
-          setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
-        />
+        badge={autoAnalysis ? stockfishBadge : "OFF"} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        {autoAnalysis ? (
+          <StockfishAnalysisTab
+            stockfishAnalysisResult={stockfishAnalysisResult} stockfishLoading={stockfishLoading}
+            engineDepth={engineDepth} engineLines={engineLines} engine={engine}
+            analyzeWithStockfish={analyzeWithStockfish} formatEvaluation={formatEvaluation}
+            formatPrincipalVariation={formatPrincipalVariation}
+            setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
+          />
+        ) : (
+          <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
+            Engine analysis is paused. Enable Auto-Analysis to activate Stockfish.
+          </Typography>
+        )}
       </Section>
 
       <Section id={1} title="Theme Analysis" icon={<ThemeIcon sx={{ fontSize: 14 }} />}
@@ -218,15 +227,23 @@ function AgineAnalysisView({
       </Section>
 
       <Section id={4} title="Neural Nets" icon={<NetsIcon sx={{ fontSize: 14 }} />}
-        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
-        <NetResults evaluations={sanEvaluations} ucievaluations={evaluations}
-          isMaiaLoading={isLoading} fen={fen} engine={engine}
-          stockfishAnalysisResult={stockfishAnalysisResult} chessDbLoading={loading}
-          chessDbMoves={chessdbdata} maiaerror={Maiaerror} />
-        {gameReview && gameReview.length > 0 && (
+        badge={!autoAnalysis ? "OFF" : undefined} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        {!autoAnalysis ? (
+          <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
+            Neural net analysis is paused. Enable Auto-Analysis to see Maia and Leela evaluations.
+          </Typography>
+        ) : (
           <>
-            <Divider sx={{ my: 1.5, borderColor: "divider" }} />
-            <NetProbabilityChart moves={gameReview} />
+            <NetResults evaluations={sanEvaluations} ucievaluations={evaluations}
+              isMaiaLoading={isLoading} fen={fen} engine={engine}
+              stockfishAnalysisResult={stockfishAnalysisResult} chessDbLoading={loading}
+              chessDbMoves={chessdbdata} maiaerror={Maiaerror} />
+            {gameReview && gameReview.length > 0 && (
+              <>
+                <Divider sx={{ my: 1.5, borderColor: "divider" }} />
+                <NetProbabilityChart moves={gameReview} />
+              </>
+            )}
           </>
         )}
       </Section>
