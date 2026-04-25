@@ -17,6 +17,7 @@ import {
   BarChart as ThemeIcon,
   SportsEsports as ReviewIcon,
   AccountTree as TreeIcon,
+  PersonSearch as HumanEvalIcon,
 } from "@mui/icons-material";
 
 import StockfishAnalysisTab from "../tabs/StockfishTab";
@@ -34,6 +35,7 @@ import { UseMaiaEngineResult } from "@/hooks/useNets";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
 import ChessTreeView from "../tabs/ChessTreeView";
+import { ObjectiveHumanEval } from "../humanevalbar/ObjectiveHumanEval";
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -227,6 +229,15 @@ function AgineAnalysisView({
             <NetProbabilityChart moves={gameReview} />
           </>
         )}
+      </Section>
+
+      <Section id={7} title="Human Eval" icon={<HumanEvalIcon sx={{ fontSize: 14 }} />}
+        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        <ObjectiveHumanEval
+          evaluations={evaluations}
+          isLoading={isLoading}
+          error={Maiaerror}
+        />
       </Section>
 
       <Section id={5} title="Opening Explorer" icon={<OpeningIcon sx={{ fontSize: 14 }} />}
