@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -60,6 +61,7 @@ import { useGameTheme } from "@/hooks/useGameTheme";
 
 
 export default function PlayVsBotsPage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 

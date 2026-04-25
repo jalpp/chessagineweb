@@ -1,10 +1,11 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Box, Typography, IconButton, Tooltip, Divider,
   Drawer, Fab, Button, useMediaQuery, useTheme,
-  List, ListItemButton, ListItemIcon, ListItemText,
+  List, ListItemButton, ListItemIcon, ListItemText, Switch, FormControlLabel,
 } from "@mui/material";
 import {
   Analytics as AnalyticsIcon,
@@ -52,6 +53,7 @@ type LeftTab = "analysis" | "position";
 // ── page ───────────────────────────────────────────────────────────────────
 
 export default function PositionPage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -63,6 +65,8 @@ export default function PositionPage() {
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
   const [prevFen, setPrevFen] = useState<string>(new Chess().fen());
   const [startFen, setStartFen] = useState<string>(new Chess().fen());
+  // Auto-analysis mode: when false, engines/neural nets do not auto-fire on FEN changes
+  const [autoAnalysis, setAutoAnalysis] = useState(false);
 
   const {
     stockfishAnalysisResult, setStockfishAnalysisResult,
@@ -73,12 +77,12 @@ export default function PositionPage() {
     formatEvaluation, formatPrincipalVariation, chessdbdata, loading,
     queueing, error, refetch, requestAnalysis, scores, themeScoreLoading,
     themeScoreError,
-  } = useAgine(fen, "position");
+  } = useAgine(fen, "position", autoAnalysis);
 
   const {
     evaluations, sanEvaluations, isLoading: maiaIsLoading,
     Maiaerror: maiaError, lichessData, isInBook,
-  } = useNets({ fen });
+  } = useNets({ fen, gameReviewMode: !autoAnalysis });
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage(
     "agine_position_act_tab_v2", 0
@@ -148,6 +152,30 @@ export default function PositionPage() {
       "&::-webkit-scrollbar": { width: "4px" },
       "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
     }}>
+      {/* ── Auto-analysis mode toggle ───────────────────────────── */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, p: 1, mb: 1, borderRadius: 1, border: "1px solid", borderColor: "divider" }}>
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={autoAnalysis}
+              onChange={(e) => setAutoAnalysis(e.target.checked)}
+              color="primary"
+            />
+          }
+          label={
+            <Typography variant="caption" sx={{ fontSize: "11px", fontWeight: 600 }}>
+              Auto-Analysis {autoAnalysis ? "ON" : "OFF"}
+            </Typography>
+          }
+          sx={{ m: 0 }}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "10px", lineHeight: 1.4 }}>
+          {autoAnalysis
+            ? "Engines & neural nets run automatically on every position."
+            : "Analysis is paused. Toggle on to activate engines for this position."}
+        </Typography>
+      </Box>
       <AgineAnalysisView
         activeAnalysisTab={activeAnalysisTab}
         setActiveAnalysisTab={setActiveAnalysisTab}
@@ -183,6 +211,7 @@ export default function PositionPage() {
         scores={scores}
         ThemeScoreerror={themeScoreError}
         ThemeScoreloading={themeScoreLoading}
+        autoAnalysis={autoAnalysis}
       />
     </Box>
   );
@@ -192,21 +221,22 @@ export default function PositionPage() {
     <AiChessboardPanel
       game={game}
       fen={fen}
-      moveSquares={moveSquares}
+      moveSquares={autoAnalysis ? moveSquares : {}}
       setMoveSquares={setMoveSquares}
       engine={engine}
       setFen={setFen}
       setGame={setGame}
-      evaluations={evaluations}
+      evaluations={autoAnalysis ? evaluations : {}}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
-      stockfishAnalysisResult={stockfishAnalysisResult}
+      stockfishAnalysisResult={autoAnalysis ? stockfishAnalysisResult : null}
       fetchOpeningData={fetchOpeningData}
       analyzeWithStockfish={analyzeWithStockfish}
       llmLoading={llmLoading}
-      stockfishLoading={stockfishLoading}
-      maiaLoading={maiaIsLoading}
+      stockfishLoading={autoAnalysis ? stockfishLoading : false}
+      maiaLoading={autoAnalysis ? maiaIsLoading : false}
       openingLoading={openingLoading}
+      autoAnalysis={autoAnalysis}
       onTreePrevious={handleTreePrevious}
       onTreeNext={handleTreeNext}
       onTreeStart={handleTreeStart}
@@ -249,7 +279,7 @@ export default function PositionPage() {
       <Box sx={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr 1fr",
-        height: "calc(100vh - 56px)",
+        height: "100vh",
         overflow: "hidden",
       }}>
         {/* LEFT: Analysis | Position tabs */}

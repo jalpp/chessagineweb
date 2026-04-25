@@ -1,18 +1,3 @@
-/**
- * AiChessboardPanel
- *
- * Fixes vs previous version:
- *  - Arrow flickering: arrows are latched to the FEN they were computed for.
- *    When the user navigates to a new position, the OLD arrows are cleared
- *    immediately (no stale arrows from prev position), and new arrows appear
- *    only once stockfish/neural-net results arrive for the CURRENT fen.
- *    This eliminates the flicker caused by stale results rendering briefly.
- *  - stockfishLoading / maiaLoading props now gate arrow rendering so arrows
- *    never appear while engines are still computing.
- *  - Illegal move gracefully handled via try/catch in both play-mode and
- *    free-analysis safeGameMutate — never crashes or shows uncaught errors.
- */
-
 import React, { CSSProperties } from "react";
 import {
   Stack, Button, TextField, Paper, Switch, Slider, Box, Divider,
@@ -62,6 +47,7 @@ interface AiChessboardPanelProps {
   puzzleMode?: boolean;
   playMode?: boolean;
   gameReviewMode?: boolean;
+  autoAnalysis?: boolean;
   onDropPuzzle?: (args: PieceDropHandlerArgs) => boolean;
   handleSquarePuzzleClick?: ({ piece, square }: SquareHandlerArgs) => void;
   reviewMove?: MoveAnalysis;
@@ -99,7 +85,7 @@ export default function AiChessboardPanel({
   game, moves, stockfishAnalysisResult, evaluations, puzzleMode, onDropPuzzle,
   handleSquarePuzzleClick, setMoveSquares, puzzleCustomSquareStyle, reviewMove,
   side, playMode, gameStatus = "waiting", playerSide = "white",
-  gameReviewMode, gameInfo, engineThinking = false,
+  gameReviewMode, gameInfo, engineThinking = false, autoAnalysis = true,
   stockfishLoading, maiaLoading,
   onTreePrevious, onTreeNext, onTreeStart, onTreeEnd,
   hideBuiltInMoveList = false, treePly, treeMaxPly,
@@ -538,7 +524,7 @@ export default function AiChessboardPanel({
       {/* Board + eval bar */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + (showEvalBar && !puzzleMode && !playMode ? 20 : 0) }}>
         {showEvalBar && !puzzleMode && !playMode && (
-          <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardPx} />
+          <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
         )}
         <Chessboard
           options={{

@@ -1,8 +1,12 @@
+import { Box } from "@mui/material";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import NavBar from "@/componets/Navbar";
+import SideNav from "@/componets/SideNav";
+import { NavigationProvider } from "@/context/NavigationContext";
+import PageLoader from "@/componets/PageLoader";
+import { SIDEBAR_WIDTH } from "@/componets/SideNav";
 import { ThemeProvider } from "@/context/ThemeContext";
 import BodyWrapper from "@/componets/BodyWrapper";
 import { NetModelContextProvider } from "@/context/NetContext";
@@ -103,12 +107,36 @@ export default function RootLayout({
         >
           <ThemeProvider>
             <BodyWrapper>
-              <NavBar />
-              <NetModelContextProvider>
-                <SettingsProvider>{children}</SettingsProvider>
-                <SpeedInsights />
-                <Analytics />
-              </NetModelContextProvider>
+              <NavigationProvider>
+                <PageLoader />
+                {/* Desktop: flex row — sidebar + main side by side in document flow.
+                    Mobile: column — top AppBar then content below. */}
+                <Box sx={{
+                  display: { xs: "block", md: "flex" },
+                  flexDirection: "row",
+                  minHeight: "100vh",
+                  width: "100%",
+                }}>
+                  <SideNav />
+                  <NetModelContextProvider>
+                    <SettingsProvider>
+                      <Box
+                        component="main"
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          width: { xs: "100%", md: `calc(100vw - ${SIDEBAR_WIDTH}px)` },
+                          overflowX: "hidden",
+                        }}
+                      >
+                        {children}
+                      </Box>
+                    </SettingsProvider>
+                    <SpeedInsights />
+                    <Analytics />
+                  </NetModelContextProvider>
+                </Box>
+              </NavigationProvider>
             </BodyWrapper>
           </ThemeProvider>
         </body>

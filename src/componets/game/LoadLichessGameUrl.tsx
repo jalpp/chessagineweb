@@ -33,6 +33,7 @@ interface LoadLichessGameUrlProp {
   generateGameReview: (moves: string[]) => void;
   analyzeGameTheme: (moveList: string[]) => void;
   setInputsVisible: (view: boolean) => void;
+  autoAnalysis?: boolean;
 }
 
 function LoadLichessGameUrl({
@@ -48,6 +49,7 @@ function LoadLichessGameUrl({
   setInputsVisible,
   generateGameReview,
   analyzeGameTheme,
+  autoAnalysis = false,
 }: LoadLichessGameUrlProp) {
   const [loadingGame, setLoadingGame] = useState(false);
   const [gameUrl, setGameUrl] = useState("");
@@ -89,8 +91,10 @@ function LoadLichessGameUrl({
         setFen(resetGame.fen());
         setComment("");
         setGameReview([]);
-        generateGameReview(moveList);
-        analyzeGameTheme(moveList);
+        if (autoAnalysis) {
+          generateGameReview(moveList);
+          analyzeGameTheme(moveList);
+        }
         setInputsVisible(false);
 
       } catch (pgnError) {

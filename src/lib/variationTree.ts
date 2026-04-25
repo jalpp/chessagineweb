@@ -78,6 +78,20 @@ export function findNode(
   return null;
 }
 
+/**
+ * Returns true if the node with `targetId` is on the main line
+ * (i.e. reachable exclusively via `node.next` links from root),
+ * false if it is inside a variation branch.
+ */
+export function isMainLine(root: MoveNode, targetId: string): boolean {
+  let node: MoveNode | null = root;
+  while (node) {
+    if (node.id === targetId) return true;
+    node = node.next;
+  }
+  return false;
+}
+
 /** Return the path (list of nodes) from root to target node. */
 export function pathTo(root: MoveNode, targetId: string): MoveNode[] {
   function helper(node: MoveNode, acc: MoveNode[]): MoveNode[] | null {

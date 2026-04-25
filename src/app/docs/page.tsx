@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 import React, { useState } from "react";
 import {
   Box,
@@ -22,6 +23,7 @@ const TABS = ["Features", "FAQ", "Pricing", "ChessAgine MCP"];
 
 
 const ChessAgineDocumentation = () => {
+  usePageReady();
   const [selectedTab, setSelectedTab] = useState(0);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {

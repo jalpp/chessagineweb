@@ -1,14 +1,12 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState } from "react";
 import {
   Box,
   CircularProgress,
-  Paper,
   Stack,
   Typography,
-  Tabs,
-  Tab,
   Button,
   Card,
   CardContent,
@@ -37,7 +35,6 @@ import {
 import { Chess } from "chess.js";
 import { useCallback, useEffect, useMemo } from "react";
 import { Square } from "chess.js";
-import { TabPanel } from "@/componets/tabs/tab";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
@@ -64,12 +61,11 @@ import {
   PUZZLE_THEMES,
   DIFFICULTY_THEMES,
 } from "@/libs/puzzle/helper";
-import GuessTheme from "@/componets/puzzle/GuessPtag";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+
 
 
 export default function PuzzlePage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -125,8 +121,6 @@ export default function PuzzlePage() {
     "agine_user_puzzle_rating",
     1500,
   );
-
-  const [panelVisible, setPanelVisible] = useState(true);
 
   const showSnackbar = (
     message: string,
@@ -315,21 +309,18 @@ export default function PuzzlePage() {
   const {
     stockfishAnalysisResult,
     setStockfishAnalysisResult,
-    setOpeningData,
     llmLoading,
     stockfishLoading,
     openingLoading,
     moveSquares,
     setMoveSquares,
-    analysisTab,
     setAnalysisTab,
     engine,
-    fetchOpeningData,
     analyzeWithStockfish,
     scores,
     themeScoreError,
     themeScoreLoading,
-  } = useAgine(fen, "puzzle");
+  } = useAgine(fen, "puzzle", false);
 
   const handleQuickThemeChange = useCallback(
     (event: SelectChangeEvent<string>) => {
@@ -630,9 +621,13 @@ export default function PuzzlePage() {
         sx={{
           minHeight: "100vh",
           position: "relative",
-          pb: isMobile ? 10 : 4,
-          px: isMobile ? 1 : 4,
-          pt: isMobile ? 2 : 4,
+          // Desktop: no padding — the grid fills 100vh edge-to-edge like game/position pages
+          pb: isMobile ? 10 : 0,
+          px: isMobile ? 1 : 0,
+          pt: isMobile ? 2 : 0,
+          width: "100%",
+          boxSizing: "border-box",
+          overflowX: "hidden",
         }}
       >
         {isMobile ? (
@@ -704,104 +699,28 @@ export default function PuzzlePage() {
             </Box>
           </Stack>
         ) : (
-          /* Desktop Layout with Toggle */
-          <Stack direction="row" spacing={4}>
-            {/* Left Side - Chessboard */}
-            <Box
-              sx={{
-                flex: {
-                  xs: "1 1 auto",
-                  lg: panelVisible ? "0 0 auto" : "1 1 auto",
-                },
-                width: { xs: "100%", lg: panelVisible ? "auto" : "100%" },
-                maxWidth: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: {
-                  xs: "center",
-                  lg: panelVisible ? "flex-start" : "center",
-                },
-                px: { xs: 0, sm: 1 },
-                transition: "all 0.3s ease-in-out",
-              }}
-            >
-              <AiChessboardPanel
-                game={game}
-                fen={fen}
-                moveSquares={moveSquares}
-                setMoveSquares={setMoveSquares}
-                engine={engine}
-                puzzleMode={true}
-                onDropPuzzle={onDrop}
-                handleSquarePuzzleClick={handleSquareClick}
-                setFen={setFen}
-                setGame={setGame}
-                setStockfishAnalysisResult={setStockfishAnalysisResult}
-                analyzeWithStockfish={analyzeWithStockfish}
-                puzzleCustomSquareStyle={customSquareStyles}
-                llmLoading={llmLoading}
-                side={
-                  puzzleData
-                    ? new Chess(puzzleData.FEN).turn() === "w"
-                      ? "white"
-                      : "black"
-                    : "white"
-                }
-                stockfishLoading={stockfishLoading}
-                stockfishAnalysisResult={stockfishAnalysisResult}
-                openingLoading={openingLoading}
-              />
-
-              {/* Toggle Button */}
-              <Box
-                sx={{
-                  mt: 2,
-                  display: "flex",
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-              >
-                <Button
-                  variant="outlined"
-                  onClick={() => setPanelVisible(!panelVisible)}
-                  startIcon={
-                    panelVisible ? <ChevronRightIcon /> : <ChevronLeftIcon />
-                  }
-                  size="medium"
-                  sx={{
-                    borderRadius: 2,
-                    px: 3,
-                  }}
-                >
-                  {panelVisible ? "Hide Panel (Focus Mode)" : "Show Panel"}
-                </Button>
+          /* Desktop Layout — left panel + right board, matching position page */
+          <Box sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 2fr",
+            height: "100vh",
+            overflow: "hidden",
+          }}>
+            {/* LEFT: Puzzle controls panel */}
+            <Box sx={{ borderRight: 1, borderColor: "divider", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              {/* Header */}
+              <Box sx={{ px: 1.5, py: 1, flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+                  PUZZLE INFO
+                </Typography>
               </Box>
-            </Box>
 
-            {/* Right Side - Analysis Panel */}
-            {panelVisible && (
-              <Paper
-                elevation={3}
-                sx={{
-                  flex: 1,
-                  width: { xs: "100%", lg: "auto" },
-                  maxWidth: "100%",
-                  minWidth: 0,
-                  transition: "all 0.3s ease-in-out",
-                }}
-              >
-                <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                  <Tabs
-                    value={analysisTab}
-                    onChange={(_, newValue) => setAnalysisTab(newValue)}
-                  >
-                    <Tab label="Puzzle Info" />
-                    <Tab label="Guess Theme Eval" />
-                  </Tabs>
-                </Box>
-
-                <Box sx={{ flex: 1, overflow: "auto", mt: 2 }}>
-                  <TabPanel value={analysisTab} index={0}>
+              {/* Scrollable panel content */}
+              <Box sx={{ flex: 1, overflowY: "auto", p: 1.5,
+                "&::-webkit-scrollbar": { width: "4px" },
+                "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+              }}>
+                  <Box>
                     {loading ? (
                       <Box
                         sx={{
@@ -925,184 +844,86 @@ export default function PuzzlePage() {
                           </Card>
                         )}
 
-                        {/* Action Buttons */}
-                        <Card>
-                          <CardContent>
-                            {showingSolution ? (
-                              <Stack spacing={2}>
-                                <Typography
-                                  variant="h6"
-                                  sx={{ textAlign: "center" }}
-                                >
-                                  Solution View ({solutionViewIndex}/
-                                  {solutionMoves.length})
-                                </Typography>
-                                <Stack
-                                  direction="row"
-                                  spacing={2}
-                                  justifyContent="center"
-                                  alignItems="center"
-                                >
-                                  <Chip
-                                    label={`Your Rating: ${userPuzzleRating}`}
-                                    color="secondary"
-                                    icon={<User2 />}
-                                    sx={{
-                                      fontSize: "1rem",
-                                      py: 2,
-                                      height: "auto",
-                                    }}
-                                  />
-                                  {puzzleData && (
-                                    <Chip
-                                      label={`Puzzle Rating: ${puzzleData.rating}`}
-                                      color="primary"
-                                      icon={<Star />}
-                                      sx={{
-                                        fontSize: "1rem",
-                                        py: 2,
-                                        height: "auto",
-                                      }}
-                                    />
-                                  )}
-                                </Stack>
-                                <Stack direction="row" spacing={2}>
-                                  <Button
-                                    variant="outlined"
-                                    startIcon={<SkipBackIcon />}
-                                    onClick={() => navigateSolution("prev")}
-                                    disabled={solutionViewIndex === 0}
-                                    fullWidth
-                                    color="info"
-                                  >
-                                    Previous
-                                  </Button>
-                                  <Button
-                                    variant="outlined"
-                                    startIcon={<SkipNextIcon />}
-                                    onClick={() => navigateSolution("next")}
-                                    disabled={
-                                      solutionViewIndex >= solutionMoves.length
-                                    }
-                                    fullWidth
-                                    color="info"
-                                  >
-                                    Next
-                                  </Button>
-                                  <Button
-                                    variant="contained"
-                                    onClick={exitSolutionView}
-                                    fullWidth
-                                    color="warning"
-                                  >
-                                    Exit
-                                  </Button>
-                                </Stack>
-                              </Stack>
-                            ) : (
-                              <Stack spacing={2}>
-                                <Stack direction="row" spacing={2}>
-                                  <Button
-                                    variant="outlined"
-                                    startIcon={<Lightbulb />}
-                                    onClick={showHintMove}
-                                    disabled={puzzleComplete || showHint}
-                                    fullWidth
-                                    color="info"
-                                  >
-                                    Hint
-                                  </Button>
-                                  {puzzleFailed && (
-                                    <Button
-                                      variant="outlined"
-                                      startIcon={<Eye />}
-                                      onClick={showSolution}
-                                      fullWidth
-                                      color="secondary"
-                                    >
-                                      Solution
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outlined"
-                                    startIcon={<Refresh />}
-                                    onClick={resetPuzzle}
-                                    fullWidth
-                                    color="warning"
-                                  >
-                                    Reset
-                                  </Button>
-                                </Stack>
-                                <Button
-                                  variant="contained"
-                                  startIcon={<SkipNext />}
-                                  onClick={() =>
-                                    fetchPuzzle(
-                                      selectedThemes,
-                                      userPuzzleRating,
-                                      userPuzzleRating + 500,
-                                    )
-                                  }
-                                  disabled={loading}
-                                  fullWidth
-                                  size="large"
-                                  color="success"
-                                >
-                                  Next Puzzle
-                                </Button>
-                              </Stack>
-                            )}
-                          </CardContent>
-                        </Card>
+                        {/* Status messages — inline below theme selector */}
+                        {puzzleComplete && (
+                          <Alert severity="success" sx={{ py: 0.5 }}>
+                            🎉 Puzzle Complete! {hintUsed ? "(Hint used)" : "Perfect solve!"}
+                          </Alert>
+                        )}
+                        {puzzleFailed && !showingSolution && (
+                          <Alert severity="error" sx={{ py: 0.5 }}>
+                            ❌ Wrong move! Use Show Solution to see correct moves.
+                          </Alert>
+                        )}
+                        {showHint && (
+                          <Alert severity="info" sx={{ py: 0.5 }}>
+                            💡 Hint: The highlighted squares show the best move!
+                          </Alert>
+                        )}
+                        {error && (
+                          <Alert severity="error" sx={{ py: 0.5 }}>
+                            Puzzle combo not present! Try other themes.
+                          </Alert>
+                        )}
 
-                        {/* Status Messages */}
-                        {(puzzleComplete ||
-                          puzzleFailed ||
-                          showHint ||
-                          error) && (
-                          <Stack spacing={2}>
-                            {puzzleComplete && (
-                              <Alert severity="success">
-                                🎉 Puzzle Complete!{" "}
-                                {hintUsed ? "(Hint used)" : "Perfect solve!"}
-                              </Alert>
-                            )}
-                            {puzzleFailed && !showingSolution && (
-                              <Alert severity="error">
-                                ❌ Wrong move! Use the Show Solution button to
-                                see the correct moves.
-                              </Alert>
-                            )}
-                            {showHint && (
-                              <Alert severity="info">
-                                💡 Hint: The highlighted squares show the best
-                                move!
-                              </Alert>
-                            )}
-                            {error && (
-                              <Alert severity="error">
-                                Puzzle combo not present! Please try other
-                                puzzle themes
-                              </Alert>
-                            )}
+                        {/* Action buttons */}
+                        {showingSolution ? (
+                          <Stack spacing={1.5}>
+                            <Stack direction="row" spacing={1.5}>
+                              <Button variant="outlined" startIcon={<SkipBackIcon />} onClick={() => navigateSolution("prev")} disabled={solutionViewIndex === 0} fullWidth color="info">Previous</Button>
+                              <Button variant="outlined" startIcon={<SkipNextIcon />} onClick={() => navigateSolution("next")} disabled={solutionViewIndex >= solutionMoves.length} fullWidth color="info">Next</Button>
+                              <Button variant="contained" onClick={exitSolutionView} fullWidth color="warning">Exit</Button>
+                            </Stack>
+                          </Stack>
+                        ) : (
+                          <Stack spacing={1.5}>
+                            <Stack direction="row" spacing={1.5}>
+                              <Button variant="outlined" startIcon={<Lightbulb />} onClick={showHintMove} disabled={puzzleComplete || showHint} fullWidth color="info">Hint</Button>
+                              {puzzleFailed && <Button variant="outlined" startIcon={<Eye />} onClick={showSolution} fullWidth color="secondary">Solution</Button>}
+                              <Button variant="outlined" startIcon={<Refresh />} onClick={resetPuzzle} fullWidth color="warning">Reset</Button>
+                            </Stack>
+                            <Button variant="contained" startIcon={<SkipNext />} onClick={() => fetchPuzzle(selectedThemes, userPuzzleRating, userPuzzleRating + 500)} disabled={loading} fullWidth size="large" color="success">
+                              Next Puzzle
+                            </Button>
                           </Stack>
                         )}
                       </Stack>
                     )}
-                  </TabPanel>
+                  </Box>
+              </Box>
+            </Box>
 
-                  <TabPanel value={analysisTab} index={1}>
-                    <GuessTheme
-                      stockfishAnalysisResult={stockfishAnalysisResult}
-                      scores={scores}
-                      loading={themeScoreLoading}
-                      error={themeScoreError}
-                    />
-                  </TabPanel>
-                </Box>
-              </Paper>
-            )}
-          </Stack>
+            {/* CENTER: Chessboard */}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
+              <AiChessboardPanel
+                game={game}
+                fen={fen}
+                moveSquares={moveSquares}
+                setMoveSquares={setMoveSquares}
+                engine={engine}
+                puzzleMode={true}
+                onDropPuzzle={onDrop}
+                handleSquarePuzzleClick={handleSquareClick}
+                setFen={setFen}
+                setGame={setGame}
+                setStockfishAnalysisResult={setStockfishAnalysisResult}
+                analyzeWithStockfish={analyzeWithStockfish}
+                puzzleCustomSquareStyle={customSquareStyles}
+                llmLoading={llmLoading}
+                side={
+                  puzzleData
+                    ? new Chess(puzzleData.FEN).turn() === "w"
+                      ? "white"
+                      : "black"
+                    : "white"
+                }
+                stockfishLoading={stockfishLoading}
+                stockfishAnalysisResult={stockfishAnalysisResult}
+                openingLoading={openingLoading}
+              />
+            </Box>
+
+          </Box>
         )}
 
         {/* Mobile FAB for Menu - Unchanged */}
@@ -1348,56 +1169,20 @@ export default function PuzzlePage() {
                   </CardContent>
                 </Card>
 
-                {/* Tabs for Mobile */}
-                <Card>
-                  <CardContent sx={{ p: 1 }}>
-                    <Tabs
-                      value={analysisTab}
-                      onChange={(_, newValue) => setAnalysisTab(newValue)}
-                      variant="fullWidth"
-                    >
-                      <Tab label="Info" iconPosition="start" />
-                      <Tab label="Guess Theme Eval" />
-                    </Tabs>
-                  </CardContent>
-                </Card>
-
-                {/* Tab Content */}
-                <Box sx={{ maxHeight: "40vh", overflow: "auto" }}>
-                  <TabPanel value={analysisTab} index={0}>
-                    {puzzleData && (
-                      <Stack spacing={2}>
-                        <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
-                          {puzzleData.themes.length > 0 && (
-                            <>
-                              Themes: {puzzleData.themes.slice(0, 3).join(", ")}
-                              {puzzleData.themes.length > 3 &&
-                                ` +${puzzleData.themes.length - 3} more`}
-                            </>
-                          )}
-                        </Alert>
-                        {puzzleComplete && (
-                          <Alert severity="success">
-                            🎉 Solved! {hintUsed ? "(with hint)" : "Perfect!"}
-                          </Alert>
-                        )}
-                        {puzzleFailed && !showingSolution && (
-                          <Alert severity="error">
-                            ❌ Wrong move! Try again or view solution
-                          </Alert>
-                        )}
-                      </Stack>
+                {/* Puzzle status for mobile */}
+                {puzzleData && (
+                  <Stack spacing={1}>
+                    {puzzleData.themes.length > 0 && (
+                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
+                        Themes: {puzzleData.themes.slice(0, 3).join(", ")}
+                        {puzzleData.themes.length > 3 && ` +${puzzleData.themes.length - 3} more`}
+                      </Alert>
                     )}
-                  </TabPanel>
-                  <TabPanel value={analysisTab} index={1}>
-                    <GuessTheme
-                      stockfishAnalysisResult={stockfishAnalysisResult}
-                      scores={scores}
-                      loading={themeScoreLoading}
-                      error={themeScoreError}
-                    />
-                  </TabPanel>
-                </Box>
+                    {puzzleComplete && <Alert severity="success">🎉 Solved! {hintUsed ? "(with hint)" : "Perfect!"}</Alert>}
+                    {puzzleFailed && !showingSolution && <Alert severity="error">❌ Wrong move! Try again or view solution</Alert>}
+                    {showHint && <Alert severity="info">💡 Highlighted squares show the best move!</Alert>}
+                  </Stack>
+                )}
               </Stack>
             </Box>
           </Drawer>

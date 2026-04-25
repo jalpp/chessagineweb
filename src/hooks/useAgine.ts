@@ -28,7 +28,7 @@ import {
 } from "@/stockfish/engine/cache";
 import { useSettings } from "@/context/SettingContext";
 
-export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle") {
+export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true) {
   const [state, setState] = useState<AgineState>({
     stockfishAnalysisResult: null,
     reverseStockfishAnalysisResult: null,
@@ -47,7 +47,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   const setEngineLines = (v: number) => saveSettings({ engine_lines: v });
   const enginePicked = enginePickedRaw as EngineName ;
 
-  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle" });
+  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle", gameReviewMode: !autoAnalysis });
 
   const engine = useEngine(true, enginePicked);
   const [stockfishFen, setStockfishFen] = useState<string | null>(null);
@@ -257,7 +257,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   // ==================== EFFECTS ====================
 
 useEffect(() => {
-  if (!engine || !fen || analysisType === "unsupported" || analysisType === "puzzle") return;
+  if (!autoAnalysis || !engine || !fen || analysisType === "unsupported" || analysisType === "puzzle") return;
   // Don't schedule analysis until engine is ready
   if (!engine.isReady()) return;
   updateState({
@@ -271,7 +271,7 @@ useEffect(() => {
   }, ANALYSIS_DELAY);
   return () => clearTimeout(timeoutId);
 
-}, [fen, engine, engineDepth, engineLines, analysisType]);
+}, [fen, engine, engineDepth, engineLines, analysisType, autoAnalysis]);
 
 
 useEffect(() => {

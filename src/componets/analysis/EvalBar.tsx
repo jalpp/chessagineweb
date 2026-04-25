@@ -6,12 +6,15 @@ interface EvalBarProps {
   lineEval?: LineEval;
   boardOrientation?: BoardOrientation;
   height?: number;
+  /** When true, renders the bar as greyed-out (analysis not available for this position) */
+  disabled?: boolean;
 }
 
 export const EvalBar: React.FC<EvalBarProps> = ({
   lineEval,
   boardOrientation,
   height = 400,
+  disabled = false,
 }) => {
   
   const getEvalPercentage = (): number => {
@@ -57,6 +60,31 @@ export const EvalBar: React.FC<EvalBarProps> = ({
   boardOrientation === "black"
     ? 100 - evalPercentage
     : evalPercentage;
+
+  if (disabled) {
+    return (
+      <Tooltip title="Auto-analysis is off — enable it to see engine evaluation" placement="right">
+        <Box
+          sx={{
+            width: 20,
+            height,
+            position: "relative",
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 1,
+            overflow: "hidden",
+            backgroundColor: "action.disabledBackground",
+            opacity: 0.45,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Box sx={{ width: "100%", height: "50%", backgroundColor: "text.disabled" }} />
+        </Box>
+      </Tooltip>
+    );
+  }
 
   return (
     <Box

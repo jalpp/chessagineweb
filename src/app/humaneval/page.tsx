@@ -1,4 +1,5 @@
 "use client";
+import { usePageReady } from "@/hooks/usePageReady";
 
 import { useState, useCallback } from "react";
 import {
@@ -41,6 +42,7 @@ function isValidFen(fen: string): boolean {
 }
 
 export default function HumanEvalBarPage() {
+  usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -209,7 +211,7 @@ export default function HumanEvalBarPage() {
             </Box>
 
             {/* Interactive board */}
-            <Box sx={{ width: { xs: "calc(100vw - 90px)", sm: 400, lg: 420 }, maxWidth: "100%" }}>
+            <Box sx={{ width: { xs: "calc(100vw - 90px)", sm: 400, lg: 420 }, maxWidth: "100%", boxSizing: "border-box" }}>
               <Box sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 4, border: "1px solid", borderColor: "divider" }}>
                 <Chessboard
                   options={{
