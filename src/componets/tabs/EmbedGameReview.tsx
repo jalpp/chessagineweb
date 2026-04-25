@@ -1,7 +1,5 @@
-// components/tabs/EmbedGameReview.tsx
-"use client";
-
-import { useState, useEffect, useCallback, useRef, Dispatch, SetStateAction } from "react";
+"use client"
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Stack,
@@ -11,34 +9,34 @@ import {
   Alert,
   IconButton,
   Tooltip,
-  Collapse,
   Dialog,
   DialogTitle,
   DialogContent,
   useMediaQuery,
   useTheme,
+  Fab,
+  Drawer,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
   Save as SaveIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
   OpenInNew as OpenInNewIcon,
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
   Analytics as AnalyticsIcon,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
-import { Drawer, Fab } from "@mui/material";
 
 import useAgine from "@/hooks/useAgine";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import PGNView from "@/componets/tabs/PgnView";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
+import AnnotatedMoveList from "@/componets/tabs/AnonatedMoveList";
 import SaveGameReviewDialog from "@/componets/game/SaveGameReviewDialog";
 import { extractMovesWithComments, extractGameInfo } from "@/libs/game/helper";
 import { useGameTheme } from "@/hooks/useGameTheme";
 import { useNets } from "@/hooks/useNets";
+import { makeTree, movesToTree, VariationTree } from "@/lib/variationTree";
 import type { ParsedComment } from "@/componets/game/LoadLichessGameUrl";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -126,275 +124,6 @@ function parsePGNMoves(
   return { game: tempGame, moveList: tempGame.history() };
 }
 
-// ─── Shared analysis props type ───────────────────────────────────────────────
-
-interface AnalysisViewProps {
-  // All the props AgineAnalysisView needs — passed through from the hook results
-  activeAnalysisTab: number;
-  setActiveAnalysisTab: (v: number) => void;
-  moves: string[];
-  currentMoveIndex: number;
-  goToMove: (i: number) => void;
-  comment: string;
-  gameInfo: Record<string, string>;
-  pgnText: string;
-  fen: string;
-  customPlayFen: string;
-  agine: ReturnType<typeof useAgine>;
-  nets: ReturnType<typeof useNets>;
-  gameReviewTheme: ReturnType<typeof useGameTheme>["gameReviewTheme"];
-}
-
-// ─── Full dialog content (board + PGN + analysis) ────────────────────────────
-
-interface FullReviewContentProps {
-  game: Chess;
-  fen: string;
-  moves: string[];
-  currentMoveIndex: number;
-  goToMove: (i: number) => void;
-  pgnText: string;
-  gameInfo: Record<string, string>;
-  comment: string;
-  customPlayFen: string;
-  activeAnalysisTab: number;
-  setActiveAnalysisTab: Dispatch<SetStateAction<number>>;
-  saveDialogOpen: boolean;
-  setSaveDialogOpen: (v: boolean) => void;
-  initFromPGN: (pgn: string, review: boolean) => void;
-  source: EmbeddedGameSource;
-  agine: ReturnType<typeof useAgine>;
-  nets: ReturnType<typeof useNets>;
-  gameReview: any[];
-  gameReviewTheme: any;
-  isMobile: boolean;
-  analysisDrawerOpen: boolean;
-  setAnalysisDrawerOpen: (v: boolean) => void;
-}
-
-function FullReviewContent({
-  game, fen, moves, currentMoveIndex, goToMove,
-  pgnText, gameInfo, comment, customPlayFen,
-  activeAnalysisTab, setActiveAnalysisTab,
-  saveDialogOpen, setSaveDialogOpen,
-  initFromPGN, source, agine, nets, gameReview,
-  gameReviewTheme, isMobile,
-  analysisDrawerOpen, setAnalysisDrawerOpen,
-}: FullReviewContentProps) {
-  const {
-    stockfishAnalysisResult, setStockfishAnalysisResult,
-    openingData, setOpeningData,
-    llmLoading, stockfishLoading,
-    lichessOpeningData, lichessOpeningLoading, openingLoading,
-    moveSquares, engineDepth, setEngineDepth,
-    engineLines, setEngineLines,
-    engine, gameReviewProgress, gameReviewLoading,
-    generateGameReview, fetchOpeningData, setMoveSquares,
-    analyzeWithStockfish, formatEvaluation, formatPrincipalVariation,
-    chessdbdata, loading, queueing, error, refetch, requestAnalysis,
-    scores, themeScoreError, themeScoreLoading,
-  } = agine;
-
-  const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = nets;
-
-  const AnalysisPanel = () => (
-    <AgineAnalysisView
-      activeAnalysisTab={activeAnalysisTab}
-      setActiveAnalysisTab={setActiveAnalysisTab}
-      isGameReviewMode={true}
-      stockfishAnalysisResult={stockfishAnalysisResult}
-      stockfishLoading={stockfishLoading}
-      engineDepth={engineDepth}
-      engineLines={engineLines}
-      engine={engine}
-      Maiaerror={maiaError}
-      isLoading={maiaIsLoading}
-      evaluations={evaluations}
-      analyzeWithStockfish={analyzeWithStockfish}
-      formatEvaluation={formatEvaluation}
-      fen={fen}
-      formatPrincipalVariation={formatPrincipalVariation}
-      setEngineDepth={setEngineDepth}
-      setEngineLines={setEngineLines}
-      openingLoading={openingLoading}
-      openingData={openingData}
-      lichessOpeningData={lichessOpeningData}
-      lichessOpeningLoading={lichessOpeningLoading}
-      chessdbdata={chessdbdata}
-      queueing={queueing}
-      error={error}
-      lichessData={lichessData}
-      loading={loading}
-      refetch={refetch}
-      requestAnalysis={requestAnalysis}
-      moves={moves}
-      currentMoveIndex={currentMoveIndex}
-      goToMove={goToMove}
-      comment={comment}
-      gameInfo={gameInfo}
-      gameReviewTheme={gameReviewTheme}
-      generateGameReview={generateGameReview}
-      gameReviewLoading={gameReviewLoading}
-      gameReviewProgress={gameReviewProgress}
-      gameReview={gameReview}
-      pgnText={pgnText}
-      currentMove={moves[currentMoveIndex]}
-      Customfen={customPlayFen}
-      sanEvaluations={sanEvaluations}
-      isInBook={isInBook}
-      scores={scores}
-      ThemeScoreerror={themeScoreError}
-      ThemeScoreloading={themeScoreLoading}
-    />
-  );
-
-  return (
-    <Stack
-      direction={{ xs: "column", lg: "row" }}
-      spacing={{ xs: 2, sm: 3 }}
-      sx={{ width: "100%", overflow: "visible" }}
-    >
-      {/* Left column: board + PGN + action buttons */}
-      <Stack
-        spacing={2}
-        alignItems="center"
-        sx={{ flexShrink: 0, width: { xs: "100%", lg: "auto" } }}
-      >
-        <AiChessboardPanel
-          game={game}
-          fen={fen}
-          moveSquares={moveSquares}
-          engine={engine}
-          setMoveSquares={setMoveSquares}
-          setFen={() => {}} // fen controlled by goToMove
-          evaluations={evaluations}
-          gameInfo={gameInfo}
-          setGame={() => {}}
-          reviewMove={gameReview[currentMoveIndex]}
-          gameReviewMode={true}
-          setOpeningData={setOpeningData}
-          setStockfishAnalysisResult={setStockfishAnalysisResult}
-          stockfishAnalysisResult={stockfishAnalysisResult}
-          fetchOpeningData={fetchOpeningData}
-          analyzeWithStockfish={analyzeWithStockfish}
-          llmLoading={llmLoading}
-          stockfishLoading={stockfishLoading}
-          openingLoading={openingLoading}
-        />
-
-        <Box sx={{ width: "100%", maxWidth: { xs: "100%", lg: 520 } }}>
-          <PGNView
-            moves={moves}
-            moveAnalysis={gameReview}
-            gamePgn={pgnText}
-            goToMove={goToMove}
-            gameResult={gameInfo.Result}
-            currentMoveIndex={currentMoveIndex}
-          />
-        </Box>
-
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ width: "100%", maxWidth: { xs: "100%", lg: 520 } }}
-        >
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<SaveIcon />}
-            disabled={!gameReview.length}
-            onClick={() => setSaveDialogOpen(true)}
-            fullWidth
-            sx={{ borderRadius: 2, textTransform: "none" }}
-          >
-            Save Review
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<RefreshIcon />}
-            onClick={() => initFromPGN(pgnText, true)}
-            disabled={gameReviewLoading}
-            fullWidth
-            sx={{ borderRadius: 2, textTransform: "none" }}
-          >
-            Re-analyse
-          </Button>
-          {source.type === "lichessId" && (
-            <Tooltip title="Open on Lichess">
-              <IconButton
-                size="small"
-                component="a"
-                href={`https://lichess.org/${source.value}`}
-                target="_blank"
-              >
-                <OpenInNewIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Stack>
-      </Stack>
-
-      {/* Right column: analysis (desktop) or FAB+drawer (mobile) */}
-      {moves.length > 0 && (
-        <>
-          {!isMobile ? (
-            <Box flex={1} minWidth={0} sx={{ overflowY: "auto" }}>
-              <AnalysisPanel />
-            </Box>
-          ) : (
-            <>
-              <Fab
-                color="primary"
-                size="medium"
-                onClick={() => setAnalysisDrawerOpen(true)}
-                sx={{ position: "fixed", bottom: 80, right: 24, zIndex: 1200 }}
-              >
-                <AnalyticsIcon />
-              </Fab>
-              <Drawer
-                anchor="bottom"
-                open={analysisDrawerOpen}
-                onClose={() => setAnalysisDrawerOpen(false)}
-                sx={{
-                  "& .MuiDrawer-paper": {
-                    height: "85vh",
-                    borderTopLeftRadius: 16,
-                    borderTopRightRadius: 16,
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 2,
-                    borderBottom: 1,
-                    borderColor: "divider",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Typography variant="h6" fontWeight={600}>Analysis</Typography>
-                  <Button
-                    size="small"
-                    startIcon={<CloseIcon />}
-                    onClick={() => setAnalysisDrawerOpen(false)}
-                  >
-                    Close
-                  </Button>
-                </Box>
-                <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
-                  <AnalysisPanel />
-                </Box>
-              </Drawer>
-            </>
-          )}
-        </>
-      )}
-    </Stack>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function EmbeddedGameReview({
@@ -405,7 +134,7 @@ export default function EmbeddedGameReview({
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
 
-  // ── Fetch / parse state ──
+  // ── Fetch/parse state ──
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [pgnText, setPgnText] = useState("");
@@ -421,13 +150,16 @@ export default function EmbeddedGameReview({
   const [gameInfo, setGameInfo] = useState<Record<string, string>>({});
   const [activeAnalysisTab, setActiveAnalysisTab] = useState(0);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [embedSaveId] = useState(() => Date.now().toString());
+  const [tree, setTree] = useState<VariationTree>(() => makeTree());
 
-  // ── Expand dialog state ──
+  // ── Dialog / drawer state ──
   const [expandOpen, setExpandOpen] = useState(false);
   const [analysisDrawerOpen, setAnalysisDrawerOpen] = useState(false);
 
-  // ── Compact embed analysis collapse ──
-  const [analysisExpanded, setAnalysisExpanded] = useState(false);
+  // ── Left-panel tab (mirrors game page) ──
+  type LeftTab = "analysis" | "info";
+  const [leftTab, setLeftTab] = useState<LeftTab>("analysis");
 
   const loadedRef = useRef(false);
 
@@ -439,13 +171,17 @@ export default function EmbeddedGameReview({
     setStockfishAnalysisResult, setOpeningData,
     llmLoading, stockfishLoading, openingLoading,
     moveSquares, engine, gameReview, setGameReview,
-    generateGameReview, gameReviewLoading,
+    generateGameReview, gameReviewLoading, gameReviewProgress,
     fetchOpeningData, setMoveSquares,
-    analyzeWithStockfish, evaluations: agineEvaluations,
-    stockfishAnalysisResult,
+    analyzeWithStockfish, stockfishAnalysisResult,
+    engineDepth, setEngineDepth, engineLines, setEngineLines,
+    openingData, lichessOpeningData, lichessOpeningLoading,
+    chessdbdata, loading, queueing, error, refetch, requestAnalysis,
+    scores, themeScoreError, themeScoreLoading, formatEvaluation,
+    formatPrincipalVariation,
   } = agine;
 
-  const { evaluations } = nets;
+  const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = nets;
 
   // ── Init from PGN ──
   const initFromPGN = useCallback(
@@ -464,6 +200,7 @@ export default function EmbeddedGameReview({
         setCurrentMoveIndex(0);
         setComment("");
         setGameReview([]);
+        setTree(movesToTree(moveList, startingFen));
 
         const resetGame = new Chess(startingFen);
         setGame(resetGame);
@@ -475,19 +212,16 @@ export default function EmbeddedGameReview({
           analyzeGameTheme(moveList, startingFen);
         }
       } catch (err) {
-        setFetchError(
-          `Failed to parse PGN: ${err instanceof Error ? err.message : String(err)}`
-        );
+        setFetchError(`Failed to parse PGN: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
     [generateGameReview, analyzeGameTheme, setGameReview]
   );
 
-  // ── Auto-load on mount ──
+  // ── Auto-load ──
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
-
     async function load() {
       setFetchLoading(true);
       setFetchError(null);
@@ -527,19 +261,254 @@ export default function EmbeddedGameReview({
       agine.setRootCurrentMove(index);
       setComment(parsedMovesWithComments[index - 1]?.comment || "");
       setStockfishAnalysisResult(null);
+      // sync tree cursor
+      let node = tree.root;
+      for (let i = 0; i < index; i++) {
+        if (node.next) node = node.next; else break;
+      }
+      setTree(prev => ({ ...prev, cursor: node.id }));
     },
-    [moves, parsedMovesWithComments, pgnText, agine, setStockfishAnalysisResult]
+    [moves, parsedMovesWithComments, pgnText, agine, setStockfishAnalysisResult, tree]
   );
 
-  // ── Shared props for FullReviewContent ──
-  const sharedProps = {
-    game, fen, moves, currentMoveIndex, goToMove,
-    pgnText, gameInfo, comment, customPlayFen,
-    activeAnalysisTab, setActiveAnalysisTab,
-    saveDialogOpen, setSaveDialogOpen,
-    initFromPGN, source, agine, nets,
-    gameReview, gameReviewTheme,
-  };
+  // ── Shared analysis panel (reused in both compact and full-screen) ──
+  const analysisPanel = (
+    <Box sx={{
+      height: "100%", overflowY: "auto", p: 1,
+      "&::-webkit-scrollbar": { width: "4px" },
+      "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+    }}>
+      {moves.length > 0 ? (
+        <AgineAnalysisView
+          activeAnalysisTab={activeAnalysisTab}
+          setActiveAnalysisTab={setActiveAnalysisTab}
+          isGameReviewMode={true}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+          stockfishLoading={stockfishLoading}
+          engineDepth={engineDepth}
+          engineLines={engineLines}
+          engine={engine}
+          Maiaerror={maiaError}
+          isLoading={maiaIsLoading}
+          evaluations={evaluations}
+          analyzeWithStockfish={analyzeWithStockfish}
+          formatEvaluation={formatEvaluation}
+          fen={fen}
+          formatPrincipalVariation={formatPrincipalVariation}
+          setEngineDepth={setEngineDepth}
+          setEngineLines={setEngineLines}
+          openingLoading={openingLoading}
+          openingData={openingData}
+          lichessOpeningData={lichessOpeningData}
+          lichessOpeningLoading={lichessOpeningLoading}
+          chessdbdata={chessdbdata}
+          queueing={queueing}
+          error={error}
+          lichessData={lichessData}
+          loading={loading}
+          refetch={refetch}
+          requestAnalysis={requestAnalysis}
+          moves={moves}
+          currentMoveIndex={currentMoveIndex}
+          goToMove={goToMove}
+          comment={comment}
+          gameInfo={gameInfo}
+          gameReviewTheme={gameReviewTheme}
+          generateGameReview={generateGameReview}
+          gameReviewLoading={gameReviewLoading}
+          gameReviewProgress={gameReviewProgress}
+          gameReview={gameReview}
+          pgnText={pgnText}
+          currentMove={moves[currentMoveIndex]}
+          Customfen={customPlayFen}
+          sanEvaluations={sanEvaluations}
+          isInBook={isInBook}
+          scores={scores}
+          ThemeScoreerror={themeScoreError}
+          ThemeScoreloading={themeScoreLoading}
+        />
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, p: 1 }}>
+          Load a game to see analysis.
+        </Typography>
+      )}
+    </Box>
+  );
+
+  // ── Info panel (game metadata + actions) ──
+  const infoPanel = (
+    <Box sx={{ p: 1.5 }}>
+      <Stack spacing={1.5}>
+        {(gameInfo.White || gameInfo.Black) && (
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+              PLAYERS
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5 }}>
+              ♙ {gameInfo.White ?? "?"} {gameInfo.WhiteElo ? `(${gameInfo.WhiteElo})` : ""}
+            </Typography>
+            <Typography variant="body2">
+              ♟ {gameInfo.Black ?? "?"} {gameInfo.BlackElo ? `(${gameInfo.BlackElo})` : ""}
+            </Typography>
+            {gameInfo.Result && (
+              <Typography variant="caption" color="text.secondary">{gameInfo.Result}</Typography>
+            )}
+          </Box>
+        )}
+        {gameInfo.Event && (
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+              EVENT
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5 }}>{gameInfo.Event}</Typography>
+            {gameInfo.Date && <Typography variant="caption" color="text.secondary">{gameInfo.Date}</Typography>}
+          </Box>
+        )}
+        <Stack spacing={1}>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<SaveIcon />}
+            disabled={!gameReview.length}
+            onClick={() => setSaveDialogOpen(true)}
+            fullWidth
+            sx={{ textTransform: "none" }}
+          >
+            Save Review
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={() => initFromPGN(pgnText, true)}
+            disabled={gameReviewLoading}
+            fullWidth
+            sx={{ textTransform: "none" }}
+          >
+            Re-analyse
+          </Button>
+          {source.type === "lichessId" && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<OpenInNewIcon />}
+              component="a"
+              href={`https://lichess.org/${source.value}`}
+              target="_blank"
+              fullWidth
+              sx={{ textTransform: "none" }}
+            >
+              Open on Lichess
+            </Button>
+          )}
+        </Stack>
+      </Stack>
+    </Box>
+  );
+
+  // ── Board panel ──
+  const boardPanel = (
+    <AiChessboardPanel
+      game={game}
+      fen={fen}
+      moveSquares={moveSquares}
+      engine={engine}
+      setMoveSquares={setMoveSquares}
+      setFen={setFen}
+      evaluations={evaluations}
+      gameInfo={gameInfo}
+      setGame={setGame}
+      reviewMove={gameReview[currentMoveIndex]}
+      gameReviewMode={true}
+      setOpeningData={setOpeningData}
+      setStockfishAnalysisResult={setStockfishAnalysisResult}
+      stockfishAnalysisResult={stockfishAnalysisResult}
+      fetchOpeningData={fetchOpeningData}
+      analyzeWithStockfish={analyzeWithStockfish}
+      llmLoading={llmLoading}
+      stockfishLoading={stockfishLoading}
+      maiaLoading={maiaIsLoading}
+      openingLoading={openingLoading}
+    />
+  );
+
+  // ── 3-column game-page layout (used inside full-screen dialog) ──
+  const threeColumnLayout = (
+    <Box sx={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr 1fr",
+      height: "100%",
+      overflow: "hidden",
+    }}>
+      {/* LEFT: Analysis | Info tabs */}
+      <Box sx={{ borderRight: 1, borderColor: "divider", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Box sx={{ display: "flex", flexShrink: 0, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
+          {([
+            { id: "analysis" as LeftTab, label: "Analysis" },
+            { id: "info"     as LeftTab, label: "Game Info" },
+          ]).map(tab => (
+            <Box key={tab.id} onClick={() => setLeftTab(tab.id)} sx={{
+              flex: 1, py: 1, textAlign: "center", cursor: "pointer",
+              fontSize: "12px", fontWeight: leftTab === tab.id ? 700 : 400,
+              color: leftTab === tab.id ? "primary.main" : "text.secondary",
+              borderBottom: 2, borderColor: leftTab === tab.id ? "primary.main" : "transparent",
+              "&:hover": { bgcolor: "action.hover" }, userSelect: "none",
+            }}>
+              {tab.label}
+            </Box>
+          ))}
+        </Box>
+        <Box sx={{ flex: 1, overflow: "hidden" }}>
+          {leftTab === "analysis" && analysisPanel}
+          {leftTab === "info"     && infoPanel}
+        </Box>
+      </Box>
+
+      {/* CENTER: board */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
+        {boardPanel}
+      </Box>
+
+      {/* RIGHT: move list */}
+      <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <Box sx={{
+          px: 2, py: 0.75, flexShrink: 0,
+          borderBottom: 1, borderColor: "divider", bgcolor: "background.paper",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+            MOVES
+          </Typography>
+          <Tooltip title="Re-analyse">
+            <IconButton size="small" onClick={() => initFromPGN(pgnText, true)} disabled={gameReviewLoading} sx={{ p: 0.4 }}>
+              <RefreshIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <AnnotatedMoveList
+            tree={tree}
+            onTreeChange={setTree}
+            onNavigate={(nodeFen, nodeId) => {
+              // find ply from tree node and sync currentMoveIndex
+              import("@/lib/variationTree").then(({ findNode }) => {
+                const node = findNode(tree.root, nodeId);
+                if (node) {
+                  setGame(new Chess(nodeFen));
+                  setFen(nodeFen);
+                  setCurrentMoveIndex(node.ply);
+                  agine.setRootCurrentMove(node.ply);
+                  setStockfishAnalysisResult(null);
+                  setTree(prev => ({ ...prev, cursor: nodeId }));
+                }
+              });
+            }}
+            gameResult={gameInfo.Result}
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
 
   // ── Loading ──
   if (fetchLoading) {
@@ -561,9 +530,7 @@ export default function EmbeddedGameReview({
   if (fetchError) {
     return (
       <Alert severity="error" sx={{ borderRadius: 2 }}>
-        <Typography variant="body2" fontWeight={600}>
-          Could not load game
-        </Typography>
+        <Typography variant="body2" fontWeight={600}>Could not load game</Typography>
         <Typography variant="caption">{fetchError}</Typography>
       </Alert>
     );
@@ -572,35 +539,25 @@ export default function EmbeddedGameReview({
   // ── Compact embed ──
   return (
     <>
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: 900,
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "hidden",
-          bgcolor: "background.paper",
-        }}
-      >
-        {/* ── Header ── */}
-        <Box
-          sx={{
-            px: 2,
-            py: 1,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            bgcolor: "action.hover",
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
+      <Box sx={{
+        width: "100%",
+        maxWidth: 900,
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        overflow: "hidden",
+        bgcolor: "background.paper",
+      }}>
+        {/* Header */}
+        <Box sx={{
+          px: 2, py: 1,
+          borderBottom: "1px solid", borderColor: "divider",
+          bgcolor: "action.hover",
+          display: "flex", alignItems: "center", gap: 1,
+        }}>
           <Box flex={1} minWidth={0}>
             {caption && (
-              <Typography variant="subtitle2" fontWeight={700} noWrap>
-                {caption}
-              </Typography>
+              <Typography variant="subtitle2" fontWeight={700} noWrap>{caption}</Typography>
             )}
             {(gameInfo.White || gameInfo.Black) && (
               <Typography variant="caption" color="text.secondary" noWrap>
@@ -609,33 +566,21 @@ export default function EmbeddedGameReview({
               </Typography>
             )}
           </Box>
-
-          {/* Expand to full dialog */}
           <Tooltip title="Expand full review">
-            <IconButton
-              size="small"
-              onClick={() => setExpandOpen(true)}
-              color="primary"
-            >
+            <IconButton size="small" onClick={() => setExpandOpen(true)} color="primary">
               <FullscreenIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-
           {source.type === "lichessId" && (
             <Tooltip title="Open on Lichess">
-              <IconButton
-                size="small"
-                component="a"
-                href={`https://lichess.org/${source.value}`}
-                target="_blank"
-              >
+              <IconButton size="small" component="a" href={`https://lichess.org/${source.value}`} target="_blank">
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
         </Box>
 
-        {/* ── Compact body: board + PGN side by side ── */}
+        {/* Compact body: board + PGN side by side */}
         <Box sx={{ p: { xs: 1, sm: 2 }, overflowY: "auto", maxHeight: "80vh" }}>
           <Stack
             direction={{ xs: "column", md: "row" }}
@@ -644,54 +589,29 @@ export default function EmbeddedGameReview({
           >
             {/* Board */}
             <Stack spacing={1.5} alignItems="center" sx={{ flexShrink: 0, width: { xs: "100%", md: "auto" } }}>
-              <AiChessboardPanel
-                game={game}
-                fen={fen}
-                moveSquares={moveSquares}
-                engine={engine}
-                setMoveSquares={setMoveSquares}
-                setFen={setFen}
-                evaluations={evaluations}
-                gameInfo={gameInfo}
-                setGame={setGame}
-                reviewMove={gameReview[currentMoveIndex]}
-                gameReviewMode={true}
-                setOpeningData={setOpeningData}
-                setStockfishAnalysisResult={setStockfishAnalysisResult}
-                stockfishAnalysisResult={stockfishAnalysisResult}
-                fetchOpeningData={fetchOpeningData}
-                analyzeWithStockfish={analyzeWithStockfish}
-                llmLoading={llmLoading}
-                stockfishLoading={stockfishLoading}
-                openingLoading={openingLoading}
-              />
-
+              {boardPanel}
               <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
                 <Button
-                  variant="contained"
-                  size="small"
+                  variant="contained" size="small"
+                  startIcon={<FullscreenIcon />}
+                  onClick={() => setExpandOpen(true)}
+                  fullWidth sx={{ borderRadius: 2, textTransform: "none" }}
+                >
+                  Full Review
+                </Button>
+                <Button
+                  variant="outlined" size="small"
                   startIcon={<SaveIcon />}
                   disabled={!gameReview.length}
                   onClick={() => setSaveDialogOpen(true)}
-                  fullWidth
-                  sx={{ borderRadius: 2, textTransform: "none" }}
+                  fullWidth sx={{ borderRadius: 2, textTransform: "none" }}
                 >
                   Save
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<FullscreenIcon />}
-                  onClick={() => setExpandOpen(true)}
-                  fullWidth
-                  sx={{ borderRadius: 2, textTransform: "none" }}
-                >
-                  Full Review
                 </Button>
               </Stack>
             </Stack>
 
-            {/* PGN move list beside board */}
+            {/* PGN move list */}
             <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
               <PGNView
                 moves={moves}
@@ -701,181 +621,91 @@ export default function EmbeddedGameReview({
                 gameResult={gameInfo.Result}
                 currentMoveIndex={currentMoveIndex}
               />
-
-              {/* Collapsible analysis preview */}
-              {moves.length > 0 && (
-                <Box mt={1}>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    onClick={() => setAnalysisExpanded((v) => !v)}
-                    sx={{
-                      cursor: "pointer",
-                      py: 0.75,
-                      px: 1,
-                      borderRadius: 1,
-                      bgcolor: "action.hover",
-                      userSelect: "none",
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight={700} flex={1}>
-                      Analysis preview
-                    </Typography>
-                    <IconButton size="small" tabIndex={-1}>
-                      {analysisExpanded
-                        ? <ExpandLessIcon fontSize="small" />
-                        : <ExpandMoreIcon fontSize="small" />}
-                    </IconButton>
-                  </Box>
-                  <Collapse in={analysisExpanded}>
-                    <Box mt={1}>
-                      <AgineAnalysisView
-                        activeAnalysisTab={activeAnalysisTab}
-                        setActiveAnalysisTab={setActiveAnalysisTab}
-                        isGameReviewMode={true}
-                        stockfishAnalysisResult={stockfishAnalysisResult}
-                        stockfishLoading={agine.stockfishLoading}
-                        engineDepth={agine.engineDepth}
-                        engineLines={agine.engineLines}
-                        engine={engine}
-                        Maiaerror={nets.Maiaerror}
-                        isLoading={nets.isLoading}
-                        evaluations={evaluations}
-                        analyzeWithStockfish={analyzeWithStockfish}
-                        formatEvaluation={agine.formatEvaluation}
-                        fen={fen}
-                        formatPrincipalVariation={agine.formatPrincipalVariation}
-                        setEngineDepth={agine.setEngineDepth}
-                        setEngineLines={agine.setEngineLines}
-                        openingLoading={openingLoading}
-                        openingData={agine.openingData}
-                        lichessOpeningData={agine.lichessOpeningData}
-                        lichessOpeningLoading={agine.lichessOpeningLoading}
-                        chessdbdata={agine.chessdbdata}
-                        queueing={agine.queueing}
-                        error={agine.error}
-                        lichessData={nets.lichessData}
-                        loading={agine.loading}
-                        refetch={agine.refetch}
-                        requestAnalysis={agine.requestAnalysis}
-                        moves={moves}
-                        currentMoveIndex={currentMoveIndex}
-                        goToMove={goToMove}
-                        comment={comment}
-                        gameInfo={gameInfo}
-                        gameReviewTheme={gameReviewTheme}
-                        generateGameReview={generateGameReview}
-                        gameReviewLoading={agine.gameReviewLoading}
-                        gameReviewProgress={agine.gameReviewProgress}
-                        gameReview={gameReview}
-                        pgnText={pgnText}
-                        currentMove={moves[currentMoveIndex]}
-                        Customfen={customPlayFen}
-                        sanEvaluations={nets.sanEvaluations}
-                        isInBook={nets.isInBook}
-                        scores={agine.scores}
-                        ThemeScoreerror={agine.themeScoreError}
-                        ThemeScoreloading={agine.themeScoreLoading}
-                      />
-                    </Box>
-                  </Collapse>
-                </Box>
-              )}
             </Box>
           </Stack>
         </Box>
       </Box>
 
-      {/* ── Full-screen expand dialog ── */}
+      {/* Full-screen dialog — 3-column game-page layout */}
       <Dialog
         open={expandOpen}
         onClose={() => setExpandOpen(false)}
         fullScreen
-        PaperProps={{ sx: { bgcolor: "background.default" } }}
+        PaperProps={{ sx: { bgcolor: "background.default", display: "flex", flexDirection: "column" } }}
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            py: 1.5,
-            px: 2,
-          }}
-        >
+        <DialogTitle sx={{
+          display: "flex", alignItems: "center", gap: 1,
+          borderBottom: "1px solid", borderColor: "divider",
+          py: 1, px: 2, flexShrink: 0,
+        }}>
           <Box flex={1} minWidth={0}>
             {caption && (
-              <Typography variant="subtitle1" fontWeight={700} noWrap>
-                {caption}
-              </Typography>
+              <Typography variant="subtitle1" fontWeight={700} noWrap>{caption}</Typography>
             )}
             {(gameInfo.White || gameInfo.Black) && (
               <Typography variant="caption" color="text.secondary" noWrap display="block">
                 ♙ {gameInfo.White ?? "?"} vs ♟ {gameInfo.Black ?? "?"}
                 {gameInfo.Result && ` · ${gameInfo.Result}`}
-                {gameInfo.Opening && ` · ${gameInfo.Opening}`}
               </Typography>
             )}
           </Box>
-
-          <Stack direction="row" spacing={1} alignItems="center" flexShrink={0}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<SaveIcon />}
-              disabled={!gameReview.length}
-              onClick={() => setSaveDialogOpen(true)}
-              sx={{ borderRadius: 2, textTransform: "none" }}
-            >
-              Save Review
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={() => initFromPGN(pgnText, true)}
-              disabled={agine.gameReviewLoading}
-              sx={{ borderRadius: 2, textTransform: "none" }}
-            >
-              Re-analyse
-            </Button>
-            {source.type === "lichessId" && (
-              <Tooltip title="Open on Lichess">
-                <IconButton
-                  size="small"
-                  component="a"
-                  href={`https://lichess.org/${source.value}`}
-                  target="_blank"
-                >
-                  <OpenInNewIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title="Close">
-              <IconButton onClick={() => setExpandOpen(false)} size="small">
-                <CloseIcon />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+          <Tooltip title="Close">
+            <IconButton onClick={() => setExpandOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
         </DialogTitle>
 
-        <DialogContent
-          sx={{
-            p: { xs: 1.5, sm: 3 },
-            overflowY: "auto",
-          }}
-        >
-          <FullReviewContent
-            {...sharedProps}
-            isMobile={isMobile}
-            analysisDrawerOpen={analysisDrawerOpen}
-            setAnalysisDrawerOpen={setAnalysisDrawerOpen}
-          />
+        <DialogContent sx={{ p: 0, flex: 1, overflow: "hidden" }}>
+          {!isMobile ? (
+            threeColumnLayout
+          ) : (
+            /* Mobile: board + move list + FAB drawer */
+            <Box sx={{ p: 1, overflowY: "auto", height: "100%" }}>
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
+                {boardPanel}
+              </Box>
+              <Box sx={{
+                border: 1, borderColor: "divider", borderRadius: 1,
+                overflow: "hidden", maxHeight: 260, display: "flex", flexDirection: "column",
+              }}>
+                <Box sx={{ px: 1.5, py: 0.75, borderBottom: 1, borderColor: "divider", flexShrink: 0, bgcolor: "background.paper" }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+                    MOVES
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                  <PGNView
+                    moves={moves} moveAnalysis={gameReview}
+                    gamePgn={pgnText} goToMove={goToMove}
+                    gameResult={gameInfo.Result} currentMoveIndex={currentMoveIndex}
+                  />
+                </Box>
+              </Box>
+              <Fab
+                color="primary" size="medium"
+                onClick={() => setAnalysisDrawerOpen(true)}
+                sx={{ position: "fixed", bottom: 80, right: 24, zIndex: 1300 }}
+              >
+                <AnalyticsIcon />
+              </Fab>
+              <Drawer
+                anchor="bottom" open={analysisDrawerOpen}
+                onClose={() => setAnalysisDrawerOpen(false)}
+                sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+              >
+                <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Typography variant="h6" fontWeight={600}>Analysis</Typography>
+                  <Button size="small" startIcon={<CloseIcon />} onClick={() => setAnalysisDrawerOpen(false)}>Close</Button>
+                </Box>
+                <Box sx={{ flex: 1, overflowY: "auto" }}>{analysisPanel}</Box>
+              </Drawer>
+            </Box>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* ── Save dialog ── */}
+      {/* Save dialog */}
       <SaveGameReviewDialog
         saveDialogOpen={saveDialogOpen}
         setSaveDialogOpen={setSaveDialogOpen}
@@ -885,6 +715,8 @@ export default function EmbeddedGameReview({
         isBotGame={false}
         gameReviewTheme={gameReviewTheme!}
         gameReview={gameReview}
+        gameReviewLoading={gameReviewLoading}
+        gameId={embedSaveId}
         moves={moves}
         pgnText={pgnText}
         loadFromHistory={() => {}}

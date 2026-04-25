@@ -29,6 +29,8 @@ import { ObjectiveHumanEval } from "@/componets/humanevalbar/ObjectiveHumanEval"
 import { SubjectiveHumanEval } from "@/componets/humanevalbar/SubjectiveHumanEval";
 import { HumanEvalBar } from "@/componets/humanevalbar/HumanEvalBar";
 import { MAIA3_MODELS, MAIA3_RATING_VALUES } from "@/libs/nets/types";
+import Link from "next/link";
+import { Alert, AlertTitle } from "@mui/material";
 
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -104,6 +106,20 @@ export default function HumanEvalBarPage() {
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 4 }, minHeight: "100vh", overflowY: "auto" }}>
+      {/* Deprecation warning */}
+      <Alert
+        severity="warning"
+        sx={{ mb: 2.5, borderRadius: 2 }}
+      >
+        <AlertTitle sx={{ fontWeight: 700, fontSize: "13px" }}>This page is no longer the recommended experience</AlertTitle>
+        <Typography variant="body2" sx={{ fontSize: "12px" }}>
+          Human Eval analysis is now available directly inside the{" "}
+          <Link href="/position" style={{ color: "inherit", fontWeight: 700, textDecoration: "underline" }}>
+            Position Analysis page
+          </Link>
+          {" "}— with the full board, variation tree, and all analysis tools in one place.
+        </Typography>
+      </Alert>
       {/* Header */}
       <Box sx={{ mb: 2.5 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.75 }}>

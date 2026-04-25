@@ -18,8 +18,6 @@ export async function getAnalysisDb() {
   });
 }
 
-
-
 export interface MaiaCacheEntry {
   evaluations: MaiaEngineAnalysis;
   sanEvaluations: any;
@@ -46,13 +44,59 @@ export const getMaiaCacheKey = ({
     `th=${bookThreshold}`,
   ].join("|");
 
-export async function readMaiaCache(key: string) {
-  const db = await getAnalysisDb();
-  return db.get(STORES.MAIA, key);
+// ── Tier 1: In-memory cache ────────────────────────────────────────────────
+
+const MAX_MEM_ENTRIES = 1000;
+
+// Stores resolved MaiaCacheEntry values (not Promises — entries are only
+// added after a successful inference so we never cache failed attempts)
+const memCache = new Map<string, MaiaCacheEntry>();
+
+export function readMemCache(key: string): MaiaCacheEntry | undefined {
+  return memCache.get(key);
 }
 
-export async function writeMaiaCache(key: string, value: MaiaCacheEntry) {
-  const db = await getAnalysisDb();
-  await db.put(STORES.MAIA, value, key);
+export function writeMemCache(key: string, value: MaiaCacheEntry): void {
+  if (memCache.size >= MAX_MEM_ENTRIES) {
+    // Evict oldest (Map preserves insertion order)
+    memCache.delete(memCache.keys().next().value!);
+  }
+  memCache.set(key, value);
 }
 
+export function clearMemCache(): void {
+  memCache.clear();
+}
+
+// ── Tier 2: IndexedDB cache ────────────────────────────────────────────────
+
+export async function readMaiaCache(key: string): Promise<MaiaCacheEntry | undefined> {
+  // Check memory first — avoids IndexedDB round-trip entirely
+  const mem = readMemCache(key);
+  if (mem) return mem;
+
+  try {
+    const db = await getAnalysisDb();
+    const entry = await db.get(STORES.MAIA, key);
+    if (entry) {
+      // Warm the memory cache so future reads are synchronous
+      writeMemCache(key, entry);
+    }
+    return entry;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function writeMaiaCache(key: string, value: MaiaCacheEntry): Promise<void> {
+  // Always write memory first (synchronous, never fails)
+  writeMemCache(key, value);
+  // Then persist to IndexedDB in the background
+  try {
+    const db = await getAnalysisDb();
+    await db.put(STORES.MAIA, value, key);
+  } catch (err) {
+    // IndexedDB write failure is non-fatal — memory cache still works
+    console.warn("IndexedDB write failed (non-fatal):", err);
+  }
+}

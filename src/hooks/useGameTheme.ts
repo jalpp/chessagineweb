@@ -4,6 +4,7 @@ import { useSessionStorage } from 'usehooks-ts';
 
 interface UseGameThemeReturn {
   gameReviewTheme: GameReviewTheme | null;
+  setGameReviewTheme: (theme: GameReviewTheme | null) => void;
   isLoading: boolean;
   error: string | null;
   analyzeGameTheme: (moveList: string[], customFen?: string, criticalMomentThreshold?: number) => Promise<void>;
@@ -61,6 +62,7 @@ export function useGameTheme(): UseGameThemeReturn {
 
   return {
     gameReviewTheme,
+    setGameReviewTheme,
     isLoading,
     error,
     analyzeGameTheme,

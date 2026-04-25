@@ -16,6 +16,7 @@ export function useGameStorage() {
   const [dbGames, setDbGames] = useState<SavedGameReview[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch DB games on mount for paid users
   useEffect(() => {
     if (!isPaid) return;
     setLoading(true);
@@ -29,21 +30,43 @@ export function useGameStorage() {
   const games = isPaid ? dbGames : localGames;
 
   const saveGame = useCallback(
-    async (game: SavedGameReview): Promise<{ duplicate: boolean }> => {
+    async (game: SavedGameReview): Promise<void> => {
+
+      // ── Local storage (free users) ──────────────────────────────────────
+      // Update-or-prepend: if a game with this id already exists, replace it
+      // in-place so re-saving preserves the correct order and doesn't duplicate.
       if (!isPaid) {
-        setLocalGames((p) => [game, ...p]);
-        return { duplicate: false };
+        setLocalGames((prev) => {
+          const idx = prev.findIndex((g) => g.id === game.id);
+          if (idx !== -1) {
+            // Replace existing entry (tree/annotations updated)
+            const updated = [...prev];
+            updated[idx] = game;
+            return updated;
+          }
+          // New game — prepend
+          return [game, ...prev];
+        });
+        return;
       }
 
-      // Encode PGN — this is the only form we send/store
+      // ── DB (paid users) ─────────────────────────────────────────────────
+
+      // 1. Encode PGN into compact binary form for storage
       let pgnPacked = "";
       try {
         pgnPacked = await encodePGN(game.pgn, { tags: true, annotations: true });
       } catch {
-        // If encoding fails we cannot proceed for paid users;
-        // pgnPacked remains "" and the API will reject with 400.
+        // Encoding failed — the API will reject with 400; surface to caller
       }
 
+      // 2. treeData is pre-serialized by game/page.tsx via serializeTree().
+      //    We pass it straight through — no re-serialization here.
+      const treeData = game.treeData ?? null;
+
+      // 3. POST to the API.
+      //    The server uses $setOnInsert for immutable fields and $set for
+      //    treeData + title, so re-saving the same id correctly updates the tree.
       const res = await fetch("/api/games", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,7 +74,7 @@ export function useGameStorage() {
           id:              game.id,
           title:           game.title,
           pgnPacked,
-          // pgnRaw intentionally omitted — server never stores it
+          treeData,
           result:          game.gameInfo?.Result  ?? "",
           moveCount:       game.moves?.length     ?? 0,
           gameReview:      game.gameReview,
@@ -61,14 +84,22 @@ export function useGameStorage() {
         }),
       });
 
-      const json = await res.json();
-
-      if (!json.duplicate) {
-        // Optimistically add to local state with the original pgn intact
-        setDbGames((p) => [game, ...p]);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error ?? `Save failed (${res.status})`);
       }
 
-      return { duplicate: !!json.duplicate };
+      // 4. Update optimistic local state — same update-or-prepend logic as
+      //    local storage so the UI reflects the latest tree immediately.
+      setDbGames((prev) => {
+        const idx = prev.findIndex((g) => g.id === game.id);
+        if (idx !== -1) {
+          const updated = [...prev];
+          updated[idx] = game;
+          return updated;
+        }
+        return [game, ...prev];
+      });
     },
     [isPaid, setLocalGames]
   );

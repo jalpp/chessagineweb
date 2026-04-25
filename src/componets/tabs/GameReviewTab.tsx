@@ -49,6 +49,7 @@ interface GameReviewTabProps {
   whitePlayer: string;
   blackPlayer: string;
   comment: string;
+  clock?: string;
 }
 
 export const getMoveClassificationStyle = (classification: MoveQuality) => {
@@ -108,6 +109,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   currentMoveIndex,
   gameReviewTheme,
   comment,
+  clock,
   whiteTitle,
   blackTitle,
   whitePlayer,
@@ -268,37 +270,55 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
 
                 <Stack direction="row" spacing={1}>
                 </Stack>
+
+                {/* PGN annotator comment */}
+                {userThoughts && (
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 1,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary", display: "block", mb: 0.5, fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}
+                    >
+                      Annotator Note
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontSize: "12px", fontStyle: "italic", lineHeight: 1.5 }}>
+                      {userThoughts}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Clock time remaining */}
+                {clock && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Clock
+                    </Typography>
+                    <Chip
+                      label={clock}
+                      size="small"
+                      sx={{
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        height: "20px",
+                        bgcolor: "action.hover",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        "& .MuiChip-label": { px: 1 },
+                      }}
+                    />
+                  </Box>
+                )}
               </Stack>
             </CardContent>
           </Card>
         )}
-
-        {/* Analysis Notes */}
-        <Card>
-          <CardContent sx={{ p: 2 }}>
-          
-            <Button
-              variant="contained"
-              startIcon={
-                loadingStates.gameReport ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <Sparkles size={18} />
-                )
-              }
-              onClick={handleGameReportClick}
-              disabled={!gameReview || gameReview.length === 0}
-              sx={{
-                mt: 2,
-                py: 1,
-              }}
-            >
-              {loadingStates.gameReport
-                ? "Generating Report..."
-                : "Generate Game Report"}
-            </Button>
-          </CardContent>
-        </Card>
 
         {stats && (
           <Card>

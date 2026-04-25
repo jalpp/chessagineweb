@@ -23,6 +23,7 @@ export interface GameInfoTabProp {
   currentMoveIndex: number;
   goToMove: (index: number) => void;
   comment: string;
+  clock?: string;
   gameReviewTheme: GameReviewTheme | null;
   generateGameReview: (moves: string[], customFen?: string) => void;
   fen?: string;
@@ -38,6 +39,7 @@ function GameInfoTab({
   currentMoveIndex,
   goToMove,
   comment,
+  clock,
   gameInfo,
   generateGameReview,
   gameReviewLoading,
@@ -212,6 +214,7 @@ function GameInfoTab({
           gameReviewTheme={gameReviewTheme}
           gameReviewProgress={gameReviewProgress}
           comment={comment}
+          clock={clock}
           fen={fen}
           whiteTitle={gameInfo.WhiteTitle || ''}
           blackTitle={gameInfo.BlackTitle || ''}

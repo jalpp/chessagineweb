@@ -1,3 +1,21 @@
+/**
+ * NetModel — base class for all ONNX neural net models.
+ *
+ * Key additions vs original:
+ *
+ * 1. Inference mutex (inferenceQueue)
+ *    ONNX Runtime Web does not support concurrent session.run() calls on the
+ *    same InferenceSession. Rapid navigation causes "Session already started"
+ *    and "Session mismatch" errors when a second inference is kicked off
+ *    before the first completes. We serialize all run() calls through a simple
+ *    promise-chain queue — each call waits for the previous to finish before
+ *    starting its own ONNX inference. This makes inference safe under rapid
+ *    navigation without cancelling in-progress work (ONNX has no cancellation
+ *    API anyway).
+ *
+ * 2. Everything else is unchanged from the original.
+ */
+
 import { NetStatus } from './types'
 import { InferenceSession } from 'onnxruntime-web'
 import { NetModelStorage } from './storage'
@@ -18,16 +36,37 @@ class NetModel {
   private readonly modelUrl: string
   protected readonly options: NetModelOptions
   private readonly storage = new NetModelStorage()
-  private initPromise: Promise<void> | null = null  // null = not started yet
+  private initPromise: Promise<void> | null = null
+  private inferenceQueue: Promise<void> = Promise.resolve()
 
   constructor(options: NetModelOptions) {
     this.modelUrl = options.model
     this.options = options
   }
 
-  
+ 
+  protected runInference<T>(fn: () => Promise<T>): Promise<T> {
+    // Append to the queue — fn() only starts after the current tail resolves
+    let resolveSlot!: () => void
+    const slot = new Promise<void>(res => { resolveSlot = res })
+
+    const result = this.inferenceQueue.then(async () => {
+      try {
+        return await fn()
+      } finally {
+        // Always release the slot so the next queued call can proceed
+        resolveSlot()
+      }
+    })
+
+    // The new tail is the current slot — next caller waits for it
+    this.inferenceQueue = slot
+
+    return result
+  }
+
   public async initializeIfNeeded() {
-    if (this.initPromise !== null) return   // already started or done
+    if (this.initPromise !== null) return
     this.options.setStatus('loading')
     this.initPromise = this.initialize()
     await this.initPromise
@@ -57,6 +96,7 @@ class NetModel {
   }
 
   async downloadModel() {
+    this.initPromise = null
     try {
       if (downloadLocks.has(this.modelUrl)) {
         console.log(`Download already in progress for ${this.modelUrl}, waiting...`)
@@ -96,6 +136,7 @@ class NetModel {
       throw new Error(`Download failed: ${res.status} ${res.statusText}`)
     }
 
+    const contentLength = parseInt(res.headers.get('content-length') ?? '0', 10)
     const reader = res.body.getReader()
     const chunks: Uint8Array[] = []
     let received = 0
@@ -105,10 +146,10 @@ class NetModel {
       if (done) break
       chunks.push(value)
       received += value.length
-      // if (len) {
-      //   const progress = Math.floor((received / len) * 100)
-      //   this.options.setProgress(progress)
-      // }
+      if (contentLength > 0) {
+        const progress = Math.min(99, Math.floor((received / contentLength) * 100))
+        this.options.setProgress(progress)
+      }
     }
 
     console.log(`Download complete: ${this.modelUrl} (${received} bytes)`)

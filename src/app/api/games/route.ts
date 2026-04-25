@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/connector";
 import { NextRequest } from "next/server";
 import { decodePGN } from "pgnpack";
+import { SerializedTree } from "@/lib/variationTree";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,10 @@ interface GameReview {
   userId: string;
   title: string;
   pgnPacked: string;
-  // pgnRaw intentionally NOT stored — decoded on read
+  /** Compact flat-serialized variation tree — updated on every save */
+  treeData?: SerializedTree;
+  /** Legacy: annotated PGN string – present only on old documents */
+  annotatedPgn?: string;
   result: string;
   moveCount: number;
   gameReview: unknown[];
@@ -18,6 +22,8 @@ interface GameReview {
   moves: unknown[];
   gameInfo: Record<string, unknown>;
   savedAt: Date;
+  /** Last time the user re-saved annotations/tree */
+  updatedAt: Date;
 }
 
 async function getCol() {
@@ -32,6 +38,7 @@ async function checkAccess() {
   return { userId };
 }
 
+// ── GET: list all saved games for the user ─────────────────────────────────
 export async function GET() {
   const access = await checkAccess();
   if ("error" in access) return Response.json({ error: access.error }, { status: access.status });
@@ -43,22 +50,25 @@ export async function GET() {
     .limit(200)
     .toArray();
 
-  
   const decoded = await Promise.all(
     docs.map(async (doc) => {
+      // Decode compressed PGN back to readable string
       let pgn = "";
       try {
         pgn = await decodePGN(doc.pgnPacked);
       } catch {
         pgn = "";
       }
-      const { pgnPacked, ...rest } = doc as GameReview & { pgnPacked: string };
-      return { ...rest, pgn };
+      // Strip pgnPacked (binary) from response — client gets decoded pgn instead
+      // Also map MongoDB _id → id to match the SavedGameReview interface
+      const { pgnPacked, _id, ...rest } = doc as GameReview & { pgnPacked: string; _id: string };
+      return { ...rest, id: _id, pgn };
     })
   );
 
   return Response.json(decoded);
 }
+
 
 export async function POST(req: NextRequest) {
   const access = await checkAccess();
@@ -67,45 +77,56 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
     id, title, pgnPacked,
+    treeData,
     result, moveCount,
     gameReview, gameReviewTheme, moves, gameInfo,
   } = body;
 
-  if (!id || !pgnPacked) return Response.json({ error: "Missing required fields" }, { status: 400 });
-  if (typeof id !== "string") return Response.json({ error: "Invalid id" }, { status: 400 });
-  if (typeof pgnPacked !== "string") return Response.json({ error: "Invalid pgnPacked" }, { status: 400 });
-
-  const col = await getCol();
-
-  const existing = await col.findOne({ userId: access.userId, pgnPacked });
-  if (existing) {
-    return Response.json({ ok: true, duplicate: true, existingId: existing._id });
+  if (!id || typeof id !== "string") {
+    return Response.json({ error: "Missing or invalid id" }, { status: 400 });
+  }
+  if (!pgnPacked || typeof pgnPacked !== "string") {
+    return Response.json({ error: "Missing or invalid pgnPacked" }, { status: 400 });
+  }
+  // Server-side guard: never save without a completed game review
+  if (!Array.isArray(gameReview) || gameReview.length === 0) {
+    return Response.json({ error: "Game review must be complete before saving" }, { status: 400 });
   }
 
+  const col = await getCol();
+  const now = new Date();
+
   await col.updateOne(
-    { _id: id },
+    // Match by _id scoped to the user
+    { _id: id, userId: access.userId },
     {
+      // On first save: write everything
       $setOnInsert: {
         _id: id,
-        userId:          access.userId,
-        title:           title           ?? "",
+        userId:    access.userId,
         pgnPacked,
-        // pgnRaw is intentionally never stored
-        result:          result          ?? "",
-        moveCount:       moveCount       ?? 0,
+        result:    result    ?? "",
+        moveCount: moveCount ?? 0,
+        moves:     moves     ?? [],
+        gameInfo:  gameInfo  ?? {},
+        savedAt:   now,
+      },
+      // On every save (insert or update): refresh tree, theme, review and metadata
+      $set: {
+        treeData:        treeData        ?? null,
+        title:           title           ?? "",
         gameReview:      gameReview      ?? [],
         gameReviewTheme: gameReviewTheme ?? null,
-        moves:           moves           ?? [],
-        gameInfo:        gameInfo        ?? {},
-        savedAt:         new Date(),
+        updatedAt:       now,
       },
     },
     { upsert: true }
   );
 
-  return Response.json({ ok: true, duplicate: false });
+  return Response.json({ ok: true });
 }
 
+// ── DELETE: remove a saved game ────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const access = await checkAccess();
   if ("error" in access) return Response.json({ error: access.error }, { status: access.status });

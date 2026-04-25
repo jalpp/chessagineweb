@@ -134,6 +134,8 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
     try {
       setStatus(prev => ({ ...prev, [modelType]: 'downloading' }));
       await models[modelType].downloadModel();
+      // Belt-and-suspenders: ensure status is 'ready' after successful download
+      setStatus(prev => ({ ...prev, [modelType]: 'ready' }));
     } catch (err) {
       setError(prev => ({
         ...prev,

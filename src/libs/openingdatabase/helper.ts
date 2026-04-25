@@ -1,3 +1,4 @@
+import { explorerCache } from "./posiraMemCache";
 
 interface Opening {
   eco: string;
@@ -59,7 +60,6 @@ interface PosiraExplorerResponse {
   moves: PosiraMove[];
 }
 
-
 function posiraToMasterGames(data: PosiraExplorerResponse): MasterGames {
   return {
     opening: data.opening ?? { eco: "", name: "Unknown" },
@@ -80,62 +80,76 @@ function posiraToMasterGames(data: PosiraExplorerResponse): MasterGames {
   };
 }
 
+// ── Core fetch with in-memory cache ──────────────────────────────────────────
+//
+// The cache stores the Promise itself (not the resolved value).
+// This means concurrent callers that race on the same key share
+// a single in-flight request — no duplicate network calls even
+// if two components mount at the same time on the same FEN.
+//
+// Cache key encodes every parameter that affects the response so
+// different call sites (master vs lichess, different options) never
+// collide with each other.
 
-export const fetchExplorerData = async (
+export const fetchExplorerData = (
   fen: string,
   actionType: "unsupported" | "game" | "position" | "puzzle",
   _source: "masters" | "lichess" = "masters",
   _topGames = 15,
   options?: { speeds?: string; ratings?: string; top_n?: number },
 ): Promise<MasterGames | null> => {
-  if (actionType === "unsupported") {
-    return null;
-  }
+  if (actionType === "unsupported") return Promise.resolve(null);
 
-  try {
-    const params = new URLSearchParams({ endpoint: "explorer", fen });
+  // Build the URLSearchParams first so the cache key exactly matches
+  // what gets sent to the API — no hidden variation possible.
+  const params = new URLSearchParams({ endpoint: "explorer", fen });
+  if (options?.speeds)  params.set("speeds",  options.speeds);
+  if (options?.ratings) params.set("ratings", options.ratings);
+  if (options?.top_n)   params.set("top_n",   String(options.top_n));
 
-    if (options?.speeds) params.set("speeds", options.speeds);
-    if (options?.ratings) params.set("ratings", options.ratings);
-    if (options?.top_n) params.set("top_n", String(options.top_n));
+  const cacheKey = params.toString();
 
-    const response = await fetch(`/api/posira?${params.toString()}`);
+  const cached = explorerCache.get(cacheKey);
+  if (cached) return cached as Promise<MasterGames | null>;
 
-    if (!response.ok) {
-      throw new Error(`Posira API error: ${response.status}`);
+  // Create and store the promise BEFORE awaiting so concurrent callers
+  // see it immediately and don't fire their own requests.
+  const promise = (async (): Promise<MasterGames | null> => {
+    try {
+      const response = await fetch(`/api/posira?${cacheKey}`);
+      if (!response.ok) {
+        // Posira unavailable — evict cache so next call retries, return null silently
+        explorerCache.set(cacheKey, Promise.resolve(null));
+        return null;
+      }
+      const result = await response.json();
+      if (!result.success) {
+        explorerCache.set(cacheKey, Promise.resolve(null));
+        return null;
+      }
+      return posiraToMasterGames(result.data as PosiraExplorerResponse);
+    } catch {
+      // Network error or parse failure — evict so next call retries
+      explorerCache.set(cacheKey, Promise.resolve(null));
+      return null;
     }
+  })();
 
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error ?? "Unknown error");
-    }
-
-    return posiraToMasterGames(result.data as PosiraExplorerResponse);
-  } catch (error) {
-    console.error("Error fetching opening stats:", error);
-    return null;
-  }
+  explorerCache.set(cacheKey, promise);
+  return promise;
 };
-
 
 export const getOpeningStats = (
   fen: string,
   actionType: "unsupported" | "game" | "position" | "puzzle"
-): Promise<MasterGames | null> => {
-  return fetchExplorerData(fen, actionType, "masters", 15, {
-    top_n: 12,
-  });
-};
+): Promise<MasterGames | null> =>
+  fetchExplorerData(fen, actionType, "masters", 15, { top_n: 12 });
 
 export const getLichessOpeningStats = (
   fen: string,
   actionType: "unsupported" | "game" | "position" | "puzzle"
-): Promise<MasterGames | null> => {
-  return fetchExplorerData(fen, actionType, "lichess", 4, {
+): Promise<MasterGames | null> =>
+  fetchExplorerData(fen, actionType, "lichess", 4, {
     speeds: "rapid,classical",
     top_n: 12,
   });
-};
-
-

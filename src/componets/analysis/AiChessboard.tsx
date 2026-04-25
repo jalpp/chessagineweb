@@ -1,53 +1,43 @@
-import React, { CSSProperties, JSX } from "react";
+/**
+ * AiChessboardPanel
+ *
+ * Fixes vs previous version:
+ *  - Arrow flickering: arrows are latched to the FEN they were computed for.
+ *    When the user navigates to a new position, the OLD arrows are cleared
+ *    immediately (no stale arrows from prev position), and new arrows appear
+ *    only once stockfish/neural-net results arrive for the CURRENT fen.
+ *    This eliminates the flicker caused by stale results rendering briefly.
+ *  - stockfishLoading / maiaLoading props now gate arrow rendering so arrows
+ *    never appear while engines are still computing.
+ *  - Illegal move gracefully handled via try/catch in both play-mode and
+ *    free-analysis safeGameMutate — never crashes or shows uncaught errors.
+ */
+
+import React, { CSSProperties } from "react";
 import {
-  Stack,
-  Button,
-  TextField,
-  Paper,
-  Switch,
-  Slider,
-  Box,
-  Divider,
-  Typography,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Stack, Button, TextField, Paper, Switch, Slider, Box, Divider,
+  Typography, IconButton, Dialog, DialogTitle, DialogContent,
+  DialogActions, Chip, FormControl, InputLabel, Select, MenuItem,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
-  NavigateBefore,
-  NavigateNext,
-  RotateLeft,
-  Upload,
+  NavigateBefore, NavigateNext,
+  SkipPrevious, SkipNext,
+  RotateLeft, Upload,
 } from "@mui/icons-material";
-import OpenInFullIcon from "@mui/icons-material/OpenInFull";
-import { Chessboard, PieceRenderObject } from "react-chessboard";
+import { Chessboard, PieceRenderObject, Arrow } from "react-chessboard";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { MasterGames } from "../../libs/openingdatabase/helper";
-import { Arrow } from "react-chessboard";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
-import PGNView from "../tabs/PgnView";
 import { Board } from "../../libs/tacticalboard/board";
-import { useLocalStorage } from "usehooks-ts";
-import { usePersistedSettings } from "@/hooks/usePersistedStorage";
 import {
-  BOARD_THEMES,
-  DEFAULT_BOARD_PANEL_DIMENSIONS,
-  getCurrentThemeColors,
-  is3DSet,
-  PIECE_STYLE_TYPES,
+  BOARD_THEMES, DEFAULT_BOARD_PANEL_DIMENSIONS,
+  getCurrentThemeColors, is3DSet, PIECE_STYLE_TYPES,
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
@@ -75,9 +65,7 @@ interface AiChessboardPanelProps {
   onDropPuzzle?: (args: PieceDropHandlerArgs) => boolean;
   handleSquarePuzzleClick?: ({ piece, square }: SquareHandlerArgs) => void;
   reviewMove?: MoveAnalysis;
-  puzzleCustomSquareStyle?: {
-    [square: string]: CSSProperties;
-  };
+  puzzleCustomSquareStyle?: { [square: string]: CSSProperties };
   game: Chess;
   side?: BoardOrientation;
   moves?: string[];
@@ -88,1386 +76,627 @@ interface AiChessboardPanelProps {
   playerSide?: "white" | "black";
   engineThinking?: boolean;
   evaluations?: MaiaEngineAnalysis;
+  /** True while Maia/neural nets are loading for this position */
+  maiaLoading?: boolean;
+  /** Called by nav buttons to walk to the previous node in the variation tree */
+  onTreePrevious?: () => void;
+  /** Called by nav buttons to walk to the next node in the variation tree */
+  onTreeNext?: () => void;
+  /** Walk to the very first position in the tree */
+  onTreeStart?: () => void;
+  /** Walk to the last position on the current line */
+  onTreeEnd?: () => void;
+  /** When true, nav buttons use onTree* callbacks (variation-aware navigation) */
+  hideBuiltInMoveList?: boolean;
+  /** Current ply depth — used for the move counter display */
+  treePly?: number;
+  /** Total plies in the current line — used for nav disabled states */
+  treeMaxPly?: number;
 }
 
 export default function AiChessboardPanel({
-  fen,
-  moveSquares,
-  setGame,
-  setFen,
-  setStockfishAnalysisResult,
-  setOpeningData,
-  game,
-  moves,
-  stockfishAnalysisResult,
-  evaluations,
-  puzzleMode,
-  onDropPuzzle,
-  handleSquarePuzzleClick,
-  setMoveSquares,
-  puzzleCustomSquareStyle,
-  reviewMove,
-  side,
-  playMode,
-  gameStatus = "waiting",
-  playerSide = "white",
-  gameReviewMode,
-  gameInfo,
-  engineThinking = false,
+  fen, moveSquares, setGame, setFen, setStockfishAnalysisResult, setOpeningData,
+  game, moves, stockfishAnalysisResult, evaluations, puzzleMode, onDropPuzzle,
+  handleSquarePuzzleClick, setMoveSquares, puzzleCustomSquareStyle, reviewMove,
+  side, playMode, gameStatus = "waiting", playerSide = "white",
+  gameReviewMode, gameInfo, engineThinking = false,
+  stockfishLoading, maiaLoading,
+  onTreePrevious, onTreeNext, onTreeStart, onTreeEnd,
+  hideBuiltInMoveList = false, treePly, treeMaxPly,
 }: AiChessboardPanelProps) {
-  const [customFen, setCustomFen] = useState("");
+
   const {
-    saveSettings,
-    boardFlipped: isFlipped,
-    boardSize,
-    boardPieceType: pieceType,
-    boardShowCoords: showCoordinates,
-    boardTheme,
-    boardAnimDuration: animationDuration,
-    boardShowEvalBar: showEvalBar,
-    boardShowFen: showFen,
+    saveSettings, boardFlipped: isFlipped, boardSize,
+    boardPieceType: pieceType, boardShowCoords: showCoordinates,
+    boardTheme, boardAnimDuration: animationDuration,
+    boardShowEvalBar: showEvalBar, boardShowFen: showFen,
     boardShowHanging: showHangingPieces,
     boardShowSemiProtected: showSemiProtectedPieces,
-  } = useSettings()
+  } = useSettings();
 
   const setIsFlipped = (v: boolean) => saveSettings({ board_ui_flipped: v });
-  const setBoardSize = (v: number) => saveSettings({ board_ui_size: v });
   const setPieceType = (v: string) => saveSettings({ board_piece_type: v });
-  const setShowCoordinates = (v: boolean) =>
-    saveSettings({ board_show_coordinates: v });
+  const setShowCoordinates = (v: boolean) => saveSettings({ board_show_coordinates: v });
   const setBoardTheme = (v: string) => saveSettings({ board_theme: v });
-  const setAnimationDuration = (v: number) =>
-    saveSettings({ board_ui_animation_duration: v });
-  const setEvalBar = (v: boolean) =>
-    saveSettings({ board_ui_show_eval_bar: v });
+  const setAnimationDuration = (v: number) => saveSettings({ board_ui_animation_duration: v });
+  const setEvalBar = (v: boolean) => saveSettings({ board_ui_show_eval_bar: v });
   const setShowFen = (v: boolean) => saveSettings({ board_ui_show_fen: v });
-  const setShowHangingPieces = (v: boolean) =>
-    saveSettings({ board_ui_show_hanging_piece: v });
-  const setShowSemiProtectedPieces = (v: boolean) =>
-    saveSettings({ board_ui_show_semiprotected: v });
+  const setShowHangingPieces = (v: boolean) => saveSettings({ board_ui_show_hanging_piece: v });
+  const setShowSemiProtectedPieces = (v: boolean) => saveSettings({ board_ui_show_semiprotected: v });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [customFen, setCustomFen] = useState("");
+
+  // Flat move history — used only when no tree nav is supplied (standalone/puzzle/play)
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
+  const [internalMoveIndex, setInternalMoveIndex] = useState(-1);
+
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [showArrows, setShowArrows] = useState(
-    puzzleMode || playMode ? false : true,
-  );
+  const [showArrows, setShowArrows] = useState(puzzleMode || playMode ? false : true);
 
-  // Resize functionality
+  // ── Arrow stability: track which FEN the current results belong to ─────────
+  //
+  // The flicker problem:
+  //   1. User navigates → fen changes immediately
+  //   2. stockfishAnalysisResult / evaluations are STILL from the previous fen
+  //   3. customArrows renders stale arrows briefly, then they disappear
+  //   4. New results arrive → arrows re-appear = flicker
+  //
+  // Fix: maintain a "results fen" ref. When fen changes, we immediately clear
+  // arrows (resultsFen !== fen). Arrows only render when resultsFen === fen
+  // AND engines are not loading. No stale arrows, no flicker.
+  //
+  // resultsFen is updated when stockfish or evaluations settle for a position.
+  const [resultsFen, setResultsFen] = useState<string>("");
 
-  const [isResizing, setIsResizing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const startPosRef = useRef({ x: 0, y: 0 });
-  const startDimensionsRef = useRef({ width: 0, height: 0 });
-
-  // Replace the fixed dimensions with responsive logic
-  const [panelDimensions, setPanelDimensions] = useLocalStorage<{
-    width: number;
-    height: number;
-  }>("board_ui_show_panel_dimensions", {
-    width:
-      typeof window !== "undefined" && window.innerWidth < 768
-        ? window.innerWidth - 32
-        : DEFAULT_BOARD_PANEL_DIMENSIONS.width,
-    height:
-      typeof window !== "undefined" && window.innerWidth < 768
-        ? window.innerHeight - 100
-        : DEFAULT_BOARD_PANEL_DIMENSIONS.height,
-  });
-
-  // Add window resize listener
+  // When stockfish finishes for a position, record which fen it's for.
+  // We use the fact that stockfishLoading goes false → result is ready.
+  const prevStockfishLoading = useRef(stockfishLoading);
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setPanelDimensions({
-          width: window.innerWidth - 32,
-          height: window.innerHeight - 100,
-        });
-        setBoardSize(Math.min(window.innerWidth - 100, 500));
-      }
-    };
+    if (prevStockfishLoading.current && !stockfishLoading) {
+      // Stockfish just finished — results now belong to the current fen
+      setResultsFen(fen);
+    }
+    prevStockfishLoading.current = stockfishLoading;
+  }, [stockfishLoading, fen]);
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // When maia/neural nets finish, also update resultsFen
+  const prevMaiaLoading = useRef(maiaLoading);
+  useEffect(() => {
+    if (prevMaiaLoading.current && !maiaLoading) {
+      setResultsFen(fen);
+    }
+    prevMaiaLoading.current = maiaLoading;
+  }, [maiaLoading, fen]);
 
-  // Memoized Board analysis
+  // When the position changes (navigation), immediately invalidate arrows
+  // so we never show stale arrows from the previous position.
+  const prevFenRef = useRef(fen);
+  useEffect(() => {
+    if (prevFenRef.current !== fen) {
+      prevFenRef.current = fen;
+      setResultsFen(""); // clears arrows until engines settle
+    }
+  }, [fen]);
+
+  // ── Piece analysis ─────────────────────────────────────────────────────────
   const boardAnalysis = useMemo(() => {
-    if (!fen || (!showHangingPieces && !showSemiProtectedPieces)) {
-      return null;
-    }
-    try {
-      return new Board(fen);
-    } catch (error) {
-      console.error("Error analyzing board:", error);
-      return null;
-    }
+    if (!fen || (!showHangingPieces && !showSemiProtectedPieces)) return null;
+    try { return new Board(fen); } catch { return null; }
   }, [fen, showHangingPieces, showSemiProtectedPieces]);
 
   const pieceHighlightStyles = useMemo(() => {
-    const styles: { [square: string]: React.CSSProperties } = {};
-
+    const styles: { [sq: string]: React.CSSProperties } = {};
     if (!boardAnalysis) return styles;
-
     if (showHangingPieces && !puzzleMode && !playMode) {
-      boardAnalysis.HangingPieceCoordinates.forEach((coord) => {
-        styles[coord] = {
-          backgroundColor: "rgba(244, 67, 54, 0.6)",
-          boxShadow: "inset 0 0 0 3px rgba(244, 67, 54, 0.8)",
-        };
+      boardAnalysis.HangingPieceCoordinates.forEach(coord => {
+        styles[coord] = { backgroundColor: "rgba(244,67,54,0.6)", boxShadow: "inset 0 0 0 3px rgba(244,67,54,0.8)" };
       });
     }
-
     if (showSemiProtectedPieces && !puzzleMode && !playMode) {
-      boardAnalysis.SemiProtectedPieceCoordinates.forEach((coord) => {
-        if (!styles[coord]) {
-          styles[coord] = {
-            backgroundColor: "rgba(255, 235, 59, 0.6)",
-            boxShadow: "inset 0 0 0 3px rgba(255, 235, 59, 0.8)",
-          };
-        }
+      boardAnalysis.SemiProtectedPieceCoordinates.forEach(coord => {
+        if (!styles[coord]) styles[coord] = { backgroundColor: "rgba(255,235,59,0.6)", boxShadow: "inset 0 0 0 3px rgba(255,235,59,0.8)" };
       });
     }
-
     return styles;
-  }, [
-    boardAnalysis,
-    showHangingPieces,
-    showSemiProtectedPieces,
-    puzzleMode,
-    playMode,
-  ]);
+  }, [boardAnalysis, showHangingPieces, showSemiProtectedPieces, puzzleMode, playMode]);
 
-  // Resize handler
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      setIsResizing(true);
-      startPosRef.current = { x: e.clientX, y: e.clientY };
-      startDimensionsRef.current = { ...panelDimensions };
-
-      const handleMouseMove = (e: MouseEvent) => {
-        const deltaX = e.clientX - startPosRef.current.x;
-        const deltaY = e.clientY - startPosRef.current.y;
-
-        // Set min and max limits
-        const minWidth = 400;
-        const maxWidth = 900;
-        const minHeight = 500;
-        const maxHeight = 900;
-
-        const newWidth = Math.min(
-          maxWidth,
-          Math.max(minWidth, startDimensionsRef.current.width + deltaX),
-        );
-        const newHeight = Math.min(
-          maxHeight,
-          Math.max(minHeight, startDimensionsRef.current.height + deltaY),
-        );
-
-        // Auto-adjust board size based on panel width
-        const newBoardSize = Math.min(800, Math.max(300, newWidth - 70));
-        setBoardSize(newBoardSize);
-
-        setPanelDimensions({ width: newWidth, height: newHeight });
-      };
-
-      const handleMouseUp = () => {
-        setIsResizing(false);
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    },
-    [panelDimensions],
-  );
-
-  // Memoize the initial game setup to avoid recalculation
+  // ── Flat history (fallback when no tree nav) ───────────────────────────────
   const gameHistory = useMemo(() => {
-    const baseGame = new Chess();
-    const history: string[] = [baseGame.fen()];
-
+    const base = new Chess();
+    const history: string[] = [base.fen()];
     if (moves && moves.length > 0) {
       for (const move of moves) {
-        try {
-          baseGame.move(move);
-          history.push(baseGame.fen());
-        } catch (err) {
-          console.log(err);
-          console.warn("Invalid move in provided history:", move);
-          break;
-        }
+        try { base.move(move); history.push(base.fen()); } catch { break; }
       }
     }
-
     return history;
   }, [moves]);
 
-  // Effect to update game state when moves change
   useEffect(() => {
-    const startGame = new Chess(gameHistory[0]);
-
-    setGame(startGame);
-    setFen(gameHistory[0]);
+    const start = new Chess(gameHistory[0]);
+    setGame(start); setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
-    setCurrentMoveIndex(gameHistory.length - 1);
+    setInternalMoveIndex(gameHistory.length - 1);
   }, [gameHistory, setGame, setFen]);
 
-  // Fixed function to safely mutate game state with proper branching
-  const safeGameMutate = useCallback(
-    (modify: (game: Chess) => void) => {
-      const currentFen = fen;
-      if (!currentFen) return;
+  const safeGameMutate = useCallback((modify: (g: Chess) => void) => {
+    if (!fen) return;
+    try {
+      const ng = new Chess(fen);
+      modify(ng);
+      const nFen = ng.fen();
+      const nHist = [...moveHistory.slice(0, internalMoveIndex + 1), nFen];
+      setGame(ng); setFen(nFen);
+      setMoveHistory(nHist); setInternalMoveIndex(nHist.length - 1);
+    } catch (err) {
+      // Illegal move in free-analysis mode — silently ignore
+      console.warn("Illegal move (analysis):", err);
+    }
+  }, [fen, moveHistory, internalMoveIndex, setGame, setFen]);
 
-      const newGame = new Chess(currentFen);
-      modify(newGame);
+  const clearAnalysis = useCallback(() => setStockfishAnalysisResult(null), [setStockfishAnalysisResult]);
 
-      const newFen = newGame.fen();
-
-      const newHistory = [
-        ...moveHistory.slice(0, currentMoveIndex + 1),
-        newFen,
-      ];
-
-      setGame(newGame);
-      setFen(newFen);
-      setMoveHistory(newHistory);
-      setCurrentMoveIndex(newHistory.length - 1);
-    },
-    [fen, moveHistory, currentMoveIndex, setGame, setFen, setOpeningData],
-  );
-
-  const clearAnalysis = useCallback(() => {
-    setStockfishAnalysisResult(null);
-  }, [setStockfishAnalysisResult, setOpeningData]);
-
-  // Check if player can move in play mode
   const canPlayerMove = useCallback(() => {
     if (!playMode || gameStatus !== "playing") return true;
+    const turn = game.turn();
+    return ((side === "white" && turn === "w") || (side === "black" && turn === "b")) && !engineThinking;
+  }, [playMode, gameStatus, game, side, engineThinking]);
 
-    const currentTurn = game.turn();
-    return (
-      ((side === "white" && currentTurn === "w") ||
-        (side === "black" && currentTurn === "b")) &&
-      !engineThinking
-    );
-  }, [playMode, gameStatus, game, playerSide, engineThinking]);
-
-  const pgnMoves = useMemo(() => {
-    if (moveHistory.length <= 1) return [];
-
-    const moves: string[] = [];
-    const tempGame = new Chess();
-
-    // Start from the initial position and replay each move
-    for (let i = 1; i < moveHistory.length; i++) {
-      const prevFen = moveHistory[i - 1];
-      const currentFen = moveHistory[i];
-
-      tempGame.load(prevFen);
-      const possibleMoves = tempGame.moves({ verbose: true });
-
-      // Find which move leads to the current FEN
-      for (const move of possibleMoves) {
-        const testGame = new Chess(prevFen);
-        testGame.move(move);
-
-        if (testGame.fen() === currentFen) {
-          moves.push(move.san);
-          break;
+  const handlePlayerMove = useCallback((args: PieceDropHandlerArgs) => {
+    const { sourceSquare: src, targetSquare: tgt } = args;
+    if (!src || !tgt) return false;
+    if (playMode) {
+      if (!canPlayerMove()) return false;
+      try {
+        const move = game.move({ from: src, to: tgt, promotion: "q" });
+        if (move) {
+          const ng = new Chess(game.fen()); ng.loadPgn(game.pgn());
+          setGame(ng); setFen(ng.fen()); setSelectedSquare(null); setLegalMoves([]); setMoveSquares({});
+          return true;
         }
+      } catch (err) {
+        // Illegal move in play mode — snap piece back silently
+        console.warn("Illegal move (play):", err);
       }
+      return false;
     }
+    let moveMade = false;
+    safeGameMutate(gi => {
+      const m = gi.move({ from: src, to: tgt, promotion: "q" });
+      if (m) { moveMade = true; clearAnalysis(); }
+    });
+    setMoveSquares({});
+    return moveMade;
+  }, [playMode, canPlayerMove, game, setGame, setFen, setMoveSquares, safeGameMutate, clearAnalysis]);
 
-    return moves;
-  }, [moveHistory]);
-
-  const goToMoveFromPGN = useCallback(
-    (moveNumber: number) => {
-      // moveNumber is 1-based from PGN component
-      // Convert to moveHistory index (moveHistory[0] is starting position)
-      const historyIndex = moveNumber;
-
-      if (historyIndex >= 0 && historyIndex < moveHistory.length) {
-        const newFen = moveHistory[historyIndex];
-        const newGame = new Chess(newFen);
-
-        setGame(newGame);
-        setFen(newFen);
-        setCurrentMoveIndex(historyIndex);
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        clearAnalysis();
-      }
-    },
-    [moveHistory, setGame, setFen, clearAnalysis],
-  );
-
-  const handlePlayerMove = useCallback(
-    (args: PieceDropHandlerArgs) => {
-      const source = args.sourceSquare;
-      const target = args.targetSquare;
-
-      // In v5, targetSquare can be null if dropped off board
-      if (!source || !target) return false;
-
-      if (playMode) {
-        if (!canPlayerMove()) return false;
-
-        try {
-          const move = game.move({
-            from: source,
-            to: target,
-            promotion: "q",
-          });
-
-          if (move) {
-            const newGame = new Chess(game.fen());
-            newGame.loadPgn(game.pgn());
-            setGame(newGame);
-            setFen(newGame.fen());
-            setSelectedSquare(null);
-            setLegalMoves([]);
-            setMoveSquares({});
-            return true;
-          }
-        } catch (error) {
-          console.log("Invalid move:", error);
-        }
-        return false;
-      } else {
-        let moveMade = false;
-        safeGameMutate((gameInstance) => {
-          const move = gameInstance.move({
-            from: source,
-            to: target,
-            promotion: "q",
-          });
-          if (move) {
-            moveMade = true;
-            clearAnalysis();
-          }
-        });
-        setMoveSquares({});
-        return moveMade;
-      }
-    },
-    [
-      playMode,
-      canPlayerMove,
-      game,
-      setGame,
-      setFen,
-      setMoveSquares,
-      safeGameMutate,
-      clearAnalysis,
-    ],
-  );
-
-  const handleSquareClick = useCallback(
-    ({ piece, square }: SquareHandlerArgs) => {
-      if (selectedSquare === square) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      if (selectedSquare && legalMoves.includes(square)) {
-        // Create PieceDropHandlerArgs for the move
-        const movingPiece = game.get(selectedSquare as Square);
-        const args: PieceDropHandlerArgs = {
-          piece: {
-            isSparePiece: false,
-            position: selectedSquare,
-            pieceType: movingPiece
-              ? `${movingPiece.color}${movingPiece.type.toUpperCase()}`
-              : "wP",
-          },
+  const handleSquareClick = useCallback(({ piece, square }: SquareHandlerArgs) => {
+    if (selectedSquare === square) { setSelectedSquare(null); setLegalMoves([]); return; }
+    if (selectedSquare && legalMoves.includes(square)) {
+      const mp = game.get(selectedSquare as Square);
+      try {
+        handlePlayerMove({
+          piece: { isSparePiece: false, position: selectedSquare, pieceType: mp ? `${mp.color}${mp.type.toUpperCase()}` : "wP" },
           sourceSquare: selectedSquare,
           targetSquare: square,
-        };
-
-        // Use handlePlayerMove to process the move
-        handlePlayerMove(args);
-
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
+        });
+      } catch (err) {
+        console.warn("Illegal square-click move:", err);
       }
+      setSelectedSquare(null); setLegalMoves([]); return;
+    }
+    const cp = game.get(square as Square);
+    if (!cp || cp.color !== game.turn()) { setSelectedSquare(null); setLegalMoves([]); return; }
+    if (playMode && cp.color !== (side === "white" ? "w" : "b")) { setSelectedSquare(null); setLegalMoves([]); return; }
+    setSelectedSquare(square);
+    setLegalMoves(game.moves({ square: square as Square, verbose: true }).map(m => m.to));
+  }, [playMode, selectedSquare, legalMoves, game, side, handlePlayerMove]);
 
-      const chessPiece = game.get(square as Square);
-      if (!chessPiece || chessPiece.color !== game.turn()) {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-        return;
-      }
-
-      if (playMode) {
-        const playerColor = side === "white" ? "w" : "b";
-        if (chessPiece.color !== playerColor) {
-          setSelectedSquare(null);
-          setLegalMoves([]);
-          return;
-        }
-      }
-
-      const moves = game.moves({ square: square as Square, verbose: true });
-      const targetSquares = moves.map((move) => move.to);
-
-      setSelectedSquare(square);
-      setLegalMoves(targetSquares);
-    },
-    [
-      playMode,
-      canPlayerMove,
-      selectedSquare,
-      legalMoves,
-      game,
-      side,
-      setGame,
-      setFen,
-      safeGameMutate,
-      clearAnalysis,
-      handlePlayerMove,
-    ],
-  );
-
+  // ── Arrows ─────────────────────────────────────────────────────────────────
+  //
+  // Arrows are only shown when:
+  //   1. showArrows is enabled
+  //   2. Not in play mode
+  //   3. resultsFen === fen (engines have settled for THIS position — no stale results)
+  //   4. Engines are not currently loading (no mid-computation flicker)
+  //
+  // This means: navigate → arrows instantly gone → engines finish → arrows appear.
+  // No intermediate flicker with arrows from the wrong position.
   const customArrows = useMemo<Arrow[]>(() => {
     if (!showArrows || playMode) return [];
 
-    const arrows: Arrow[] = [];
-    const seen = new Set<string>();
+    // Don't show arrows while engines are running or results are for a different position
+    const enginesSettled = resultsFen === fen && !stockfishLoading && !maiaLoading;
 
-    const addArrow = (arrow: Arrow) => {
-      const key = `${arrow.startSquare}-${arrow.endSquare}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        arrows.push(arrow);
-      }
+    // For reviewMove arrows we always show them immediately (they come from the
+    // game review which is position-independent / pre-computed)
+    const reviewArrows: Arrow[] = [];
+    if (reviewMove) {
+      try {
+        reviewArrows.push({
+          startSquare: reviewMove.arrowMove.from as Square,
+          endSquare: reviewMove.arrowMove.to as Square,
+          color: getMoveClassificationStyle(reviewMove.quality).color,
+        });
+      } catch { /* invalid square — skip */ }
+    }
+
+    if (!enginesSettled) {
+      // Only show review arrows while engines are computing
+      return reviewArrows;
+    }
+
+    const arrows: Arrow[] = [...reviewArrows];
+    const seen = new Set<string>(reviewArrows.map(a => `${a.startSquare}-${a.endSquare}`));
+
+    const addArrow = (a: Arrow) => {
+      const k = `${a.startSquare}-${a.endSquare}`;
+      if (!seen.has(k)) { seen.add(k); arrows.push(a); }
     };
 
-    if (reviewMove) {
-      addArrow({
-        startSquare: reviewMove.arrowMove.from as Square,
-        endSquare: reviewMove.arrowMove.to as Square,
-        color: getMoveClassificationStyle(reviewMove.quality).color,
-      });
-
-      if (
-        reviewMove.quality !== "Best" &&
-        stockfishAnalysisResult?.lines?.length
-      ) {
-        const move = stockfishAnalysisResult.lines[0].pv?.[0];
-        if (move?.length >= 4) {
-          addArrow({
-            startSquare: move.slice(0, 2) as Square,
-            endSquare: move.slice(2, 4) as Square,
-            color: "#4caf50",
-          });
+    // Stockfish best move
+    if (stockfishAnalysisResult?.lines?.length) {
+      const pv = stockfishAnalysisResult.lines[0].pv?.[0];
+      if (pv?.length >= 4) {
+        // If review says it was the best move, skip (review arrow already covers it)
+        if (!reviewMove || reviewMove.quality !== "Best") {
+          try {
+            addArrow({ startSquare: pv.slice(0, 2) as Square, endSquare: pv.slice(2, 4) as Square, color: "#4caf50" });
+          } catch { /* invalid square */ }
         }
       }
     }
 
-    if (!reviewMove && stockfishAnalysisResult?.lines?.length) {
-      const move = stockfishAnalysisResult.lines[0].pv?.[0];
-      if (move?.length >= 4) {
-        addArrow({
-          startSquare: move.slice(0, 2) as Square,
-          endSquare: move.slice(2, 4) as Square,
-          color: "#4caf50",
-        });
-      }
-    }
-
-    const addPolicyArrow = (
-      policy?: Record<string, number>,
-      color?: string,
-    ) => {
-      if (!policy) return;
-
-      const move = Object.entries(policy).sort(([, a], [, b]) => b - a)[0]?.[0];
-
-      if (move?.length >= 4) {
-        addArrow({
-          startSquare: move.slice(0, 2) as Square,
-          endSquare: move.slice(2, 4) as Square,
-          color: color!,
-        });
+    // Neural net policy arrows
+    const addPolicy = (policy?: Record<string, number>, color?: string) => {
+      if (!policy || !color) return;
+      const mv = Object.entries(policy).sort(([, a], [, b]) => b - a)[0]?.[0];
+      if (mv?.length >= 4) {
+        try {
+          addArrow({ startSquare: mv.slice(0, 2) as Square, endSquare: mv.slice(2, 4) as Square, color });
+        } catch { /* invalid square */ }
       }
     };
 
-    addPolicyArrow(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
-    addPolicyArrow(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
-    addPolicyArrow(evaluations?.bigLeela?.policy, "#400ac8ff");
-    addPolicyArrow(evaluations?.elitemaia?.policy, "rgb(235, 49, 154)");
+    addPolicy(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
+    addPolicy(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
+    addPolicy(evaluations?.bigLeela?.policy, "#400ac8ff");
+    addPolicy(evaluations?.elitemaia?.policy, "rgb(235,49,154)");
 
     return arrows;
   }, [
-    showArrows,
+    showArrows, playMode,
+    resultsFen, fen,           // stability gate
+    stockfishLoading, maiaLoading,
     reviewMove,
-    playMode,
     stockfishAnalysisResult,
     evaluations,
-    currentMoveIndex,
-    fen,
   ]);
 
-  // Memoized custom square styles with piece highlighting
+  // ── Square styles ──────────────────────────────────────────────────────────
   const customSquareStyles = useMemo(() => {
-    const styles: { [square: string]: React.CSSProperties } = {};
-
-    // First apply piece highlighting styles
-    Object.entries(pieceHighlightStyles).forEach(([square, style]) => {
-      styles[square] = { ...style };
+    const s: { [sq: string]: React.CSSProperties } = {};
+    Object.entries(pieceHighlightStyles).forEach(([sq, st]) => { s[sq] = { ...st }; });
+    Object.entries(moveSquares).forEach(([sq, color]) => { s[sq] = { ...s[sq], backgroundColor: color }; });
+    if (selectedSquare) s[selectedSquare] = { backgroundColor: "rgba(156,39,176,0.6)", ...s[selectedSquare] };
+    legalMoves.forEach(sq => {
+      const p = game.get(sq as Square);
+      s[sq] = { background: p ? "radial-gradient(circle,rgba(156,39,176,0.8) 85%,transparent 85%)" : "radial-gradient(circle,rgba(156,39,176,0.4) 25%,transparent 25%)", ...s[sq] };
     });
-
-    // Then apply move squares
-    Object.entries(moveSquares).forEach(([square, color]) => {
-      styles[square] = {
-        ...styles[square],
-        backgroundColor: color,
-      };
-    });
-
-    // Selected square highlighting
-    if (selectedSquare) {
-      styles[selectedSquare] = {
-        backgroundColor: "rgba(156, 39, 176, 0.6)",
-        ...styles[selectedSquare],
-      };
-    }
-
-    // Legal moves highlighting
-    legalMoves.forEach((square) => {
-      const piece = game.get(square as Square);
-      const background = piece
-        ? "radial-gradient(circle, rgba(156, 39, 176, 0.8) 85%, transparent 85%)"
-        : "radial-gradient(circle, rgba(156, 39, 176, 0.4) 25%, transparent 25%)";
-
-      styles[square] = {
-        background,
-        ...styles[square],
-      };
-    });
-
-    return styles;
+    return s;
   }, [pieceHighlightStyles, moveSquares, selectedSquare, legalMoves, game]);
 
-  // Navigation callbacks
-  const goToPreviousMove = useCallback(() => {
-    if (currentMoveIndex > 0) {
-      const newIndex = currentMoveIndex - 1;
-      const newFen = moveHistory[newIndex];
-      const newGame = new Chess(newFen);
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  const useTreeNav = hideBuiltInMoveList && !!onTreePrevious;
 
-      setGame(newGame);
-      setFen(newFen);
-      setCurrentMoveIndex(newIndex);
-      setSelectedSquare(null);
-      setLegalMoves([]);
+  const handlePrev = useCallback(() => {
+    if (useTreeNav && onTreePrevious) { onTreePrevious(); return; }
+    if (internalMoveIndex > 0) {
+      const ni = internalMoveIndex - 1;
+      const ng = new Chess(moveHistory[ni]);
+      setGame(ng); setFen(moveHistory[ni]); setInternalMoveIndex(ni); setSelectedSquare(null); setLegalMoves([]);
     }
-  }, [currentMoveIndex, moveHistory, setGame, setFen]);
+  }, [useTreeNav, onTreePrevious, internalMoveIndex, moveHistory, setGame, setFen]);
 
-  const goToNextMove = useCallback(() => {
-    if (currentMoveIndex < moveHistory.length - 1) {
-      const newIndex = currentMoveIndex + 1;
-      const newFen = moveHistory[newIndex];
-      const newGame = new Chess(newFen);
-
-      setGame(newGame);
-      setFen(newFen);
-      setCurrentMoveIndex(newIndex);
-      setSelectedSquare(null);
-      setLegalMoves([]);
+  const handleNext = useCallback(() => {
+    if (useTreeNav && onTreeNext) { onTreeNext(); return; }
+    if (internalMoveIndex < moveHistory.length - 1) {
+      const ni = internalMoveIndex + 1;
+      const ng = new Chess(moveHistory[ni]);
+      setGame(ng); setFen(moveHistory[ni]); setInternalMoveIndex(ni); setSelectedSquare(null); setLegalMoves([]);
     }
-  }, [currentMoveIndex, moveHistory, setGame, setFen]);
+  }, [useTreeNav, onTreeNext, internalMoveIndex, moveHistory, setGame, setFen]);
 
-  // Load custom FEN callback
+  const handleStart = useCallback(() => {
+    if (useTreeNav && onTreeStart) { onTreeStart(); return; }
+    if (moveHistory.length > 0) {
+      const ng = new Chess(moveHistory[0]);
+      setGame(ng); setFen(moveHistory[0]); setInternalMoveIndex(0); setSelectedSquare(null); setLegalMoves([]);
+    }
+  }, [useTreeNav, onTreeStart, moveHistory, setGame, setFen]);
+
+  const handleEnd = useCallback(() => {
+    if (useTreeNav && onTreeEnd) { onTreeEnd(); return; }
+    const last = moveHistory.length - 1;
+    const ng = new Chess(moveHistory[last]);
+    setGame(ng); setFen(moveHistory[last]); setInternalMoveIndex(last); setSelectedSquare(null); setLegalMoves([]);
+  }, [useTreeNav, onTreeEnd, moveHistory, setGame, setFen]);
+
   const loadCustomFen = useCallback(() => {
     try {
-      const newGame = new Chess(customFen);
-      setGame(newGame);
-      setFen(newGame.fen());
-      setMoveHistory([newGame.fen()]);
-      setCurrentMoveIndex(0);
-      clearAnalysis();
-      setCustomFen("");
-    } catch (error) {
-      console.log(error);
-      alert("Invalid FEN string.");
-    }
+      const ng = new Chess(customFen);
+      setGame(ng); setFen(ng.fen()); setMoveHistory([ng.fen()]); setInternalMoveIndex(0); clearAnalysis(); setCustomFen("");
+    } catch { alert("Invalid FEN string."); }
   }, [customFen, setGame, setFen, clearAnalysis]);
 
-  // Flip board callback
-  const flipBoard = useCallback(() => {
-    setIsFlipped(!isFlipped);
-  }, [isFlipped]);
+  const flipBoard = () => setIsFlipped(!isFlipped);
 
-  // Settings handlers
-  const handleSettingsClose = () => {
-    setSettingsOpen(false);
-  };
+  // ── Disabled states for nav buttons ───────────────────────────────────────
+  const isPrevDisabled = useTreeNav
+    ? (treePly !== undefined ? treePly <= 0 : false)
+    : internalMoveIndex <= 0;
+  const isNextDisabled = useTreeNav
+    ? (treeMaxPly !== undefined && treePly !== undefined ? treePly >= treeMaxPly : false)
+    : internalMoveIndex >= moveHistory.length - 1;
 
-  const handleAnimationChange = useCallback(
-    (_: Event, newValue: number | number[]) => {
-      setAnimationDuration(newValue as number);
-    },
-    [],
-  );
+  // ── Move counter display ───────────────────────────────────────────────────
+  const moveCounter = useTreeNav
+    ? `${treePly ?? 0} / ${treeMaxPly ?? 0}`
+    : `${Math.max(0, internalMoveIndex)} / ${Math.max(0, moveHistory.length - 1)}`;
 
-  // Navigation button disabled states
-  const isPreviousDisabled = currentMoveIndex <= 0;
-  const isNextDisabled = currentMoveIndex >= moveHistory.length - 1;
-
-  // Determine board orientation
+  // ── Orientation / mode ─────────────────────────────────────────────────────
   const getBoardOrientation = useCallback(() => {
-    if (puzzleMode) return side;
-    if (playMode) return side;
+    if (puzzleMode || playMode) return side;
     return isFlipped ? "black" : "white";
-  }, [puzzleMode, playMode, side, playerSide, isFlipped]);
+  }, [puzzleMode, playMode, side, isFlipped]);
 
-  // Get mode display info
   const getModeInfo = () => {
-    if (puzzleMode) return { label: "Puzzle Mode", color: "#ff9800" };
-    if (playMode) return { label: "Play Mode", color: "#4caf50" };
-    if (gameReviewMode)
-      return { label: "Game Analysis Mode", color: "#eaeb96ff" };
-    return { label: "Analysis Mode", color: "#bc58ceff" };
+    if (puzzleMode) return { label: "Puzzle Mode" };
+    if (playMode) return { label: "Play Mode" };
+    if (gameReviewMode) return { label: "Game Analysis" };
+    return { label: "Analysis Mode" };
   };
 
-  const modeInfo = getModeInfo();
-
-  // Determine if PGN should be shown
-  const shouldShowPGN = !gameReviewMode && !puzzleMode && !playMode;
-
-  const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({
-    gameInfo,
-    boardOrientation: getBoardOrientation(),
-  });
-
+  // ── Pieces ─────────────────────────────────────────────────────────────────
   const getCustomPieces = (pieceSet: string): PieceRenderObject => {
     const pieces = ["P", "N", "B", "R", "Q", "K"];
     const colors = ["w", "b"];
-    const customPieces: PieceRenderObject = {};
-
+    const cp: PieceRenderObject = {};
     if (is3DSet(pieceSet)) {
-      const pieceHeights: Record<string, number> = {
-        P: 1,
-        N: 1.2,
-        B: 1.2,
-        R: 1.2,
-        Q: 1.5,
-        K: 1.6,
-      };
-
-      colors.forEach((color) => {
-        pieces.forEach((piece) => {
-          const pieceKey = `${color}${piece}`;
-          const pieceHeight = pieceHeights[piece];
-
-          customPieces[pieceKey] = () => {
-            const squareWidth =
-              document
-                .querySelector(`[data-column="a"][data-row="1"]`)
-                ?.getBoundingClientRect()?.width ?? 80;
-
-            return (
-              <div
-                style={{
-                  width: squareWidth,
-                  height: squareWidth,
-                  position: "relative",
-                  pointerEvents: "none",
-                }}
-              >
-                <img
-                  src={`/static/pieces/${pieceSet}/${pieceKey}.png`}
-                  width={squareWidth}
-                  height={pieceHeight * squareWidth}
-                  style={{
-                    position: "absolute",
-                    bottom: `${0.2 * squareWidth}px`,
-                    objectFit: piece === "K" ? "contain" : "cover",
-                  }}
-                  alt={pieceKey}
-                />
-              </div>
-            );
-          };
-        });
-      });
+      const heights: Record<string, number> = { P: 1, N: 1.2, B: 1.2, R: 1.2, Q: 1.5, K: 1.6 };
+      colors.forEach(color => pieces.forEach(piece => {
+        const key = `${color}${piece}`;
+        cp[key] = () => {
+          const w = document.querySelector(`[data-column="a"][data-row="1"]`)?.getBoundingClientRect()?.width ?? 80;
+          return <div style={{ width: w, height: w, position: "relative", pointerEvents: "none" }}>
+            <img src={`/static/pieces/${pieceSet}/${key}.png`} width={w} height={heights[piece] * w}
+              style={{ position: "absolute", bottom: `${0.2 * w}px`, objectFit: piece === "K" ? "contain" : "cover" }} alt={key} />
+          </div>;
+        };
+      }));
     } else {
-      colors.forEach((color) => {
-        pieces.forEach((piece) => {
-          const pieceKey = `${color}${piece}`;
-
-          let src: string;
-          if (pieceSet.toLowerCase() === "cburnett" || !pieceSet) {
-            src = `/static/pieces/Cburnett/${pieceKey}.svg`;
-          } else {
-            src = `/static/pieces/${pieceSet}/${pieceKey}.png`;
-          }
-
-          customPieces[pieceKey] = () => (
-            <img
-              src={src}
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "block",
-              }}
-              alt={pieceKey}
-            />
-          );
-        });
-      });
+      colors.forEach(color => pieces.forEach(piece => {
+        const key = `${color}${piece}`;
+        const src = pieceSet.toLowerCase() === "cburnett" || !pieceSet ? `/static/pieces/Cburnett/${key}.svg` : `/static/pieces/${pieceSet}/${key}.png`;
+        cp[key] = () => <img src={src} style={{ width: "100%", height: "100%", display: "block" }} alt={key} />;
+      }));
     }
-
-    return customPieces;
+    return cp;
   };
 
-  const get3DBoardStyle = (pieceSet: string) => {
-    if (is3DSet(pieceSet)) {
-      return {
-        transform: "rotateX(27.5deg)",
-        transformOrigin: "center",
-        border: "16px solid #2b1e19ff",
-        borderStyle: "outset",
-        borderRightColor: getCurrentThemeColors(boardTheme).darkSquareColor,
-        borderRadius: "4px",
-        boxShadow: "rgba(0, 0, 0, 0.5) 2px 24px 24px 8px",
-        borderRightWidth: "2px",
-        borderLeftWidth: "2px",
-        borderTopWidth: "0px",
-        borderBottomWidth: "18px",
-        borderTopLeftRadius: "8px",
-        borderTopRightRadius: "8px",
-        padding: "8px 8px 12px",
-        background: getCurrentThemeColors(boardTheme).lightSquareColor,
-        backgroundSize: "cover",
-        overflow: "visible",
-      };
-    }
-    return {};
+  const get3DBoardStyle = (ps: string) => !is3DSet(ps) ? {} : {
+    transform: "rotateX(27.5deg)", transformOrigin: "center",
+    border: "16px solid #2b1e19ff", borderStyle: "outset",
+    borderRightColor: getCurrentThemeColors(boardTheme).darkSquareColor,
+    borderRadius: "4px", boxShadow: "rgba(0,0,0,0.5) 2px 24px 24px 8px",
+    borderRightWidth: "2px", borderLeftWidth: "2px", borderTopWidth: "0px", borderBottomWidth: "18px",
+    borderTopLeftRadius: "8px", borderTopRightRadius: "8px",
+    padding: "8px 8px 12px",
+    background: getCurrentThemeColors(boardTheme).lightSquareColor,
+    backgroundSize: "cover", overflow: "visible",
   };
 
+  const { TopPlayerBar, BottomPlayerBar } = PlayerInfoBar({ gameInfo, boardOrientation: getBoardOrientation() });
+  const modeInfo = getModeInfo();
+
+  // ── Responsive board size ──────────────────────────────────────────────────
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [boardPx, setBoardPx] = useState(boardSize);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => {
+      const overhead = gameInfo ? 140 : 80;
+      const available = Math.min(entry.contentRect.width, entry.contentRect.height - overhead);
+      setBoardPx(Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize)));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [boardSize, gameInfo]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <Box
-      ref={containerRef}
-      sx={{
-        width: `${panelDimensions.width}px`,
-        height: `${panelDimensions.height}px`,
-        position: "relative",
-        maxWidth: "100vw",
-        maxHeight: "100vw",
-        border: "1px solid #444",
-        borderRadius: 2,
-
-        overflow: "hidden",
-        userSelect: isResizing ? "none" : "auto",
-      }}
-    >
-      <Box
-        sx={{
-          height: "100%",
-          overflowY: "auto",
-          overflowX: "hidden",
-          p: 2,
-        }}
-      >
-        {/* Header */}
-        <Paper
-          sx={{
-            p: 1.5,
-
-            borderRadius: 2,
-            mb: 2,
-          }}
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={2}
-            sx={{ mb: 1.5 }}
-          >
-            <Chip
-              label={modeInfo.label}
-              size="small"
-              sx={{
-                fontSize: "0.65rem",
-                fontWeight: 600,
-              }}
-            />
-            <Box sx={{ flexGrow: 1 }} />
-            <IconButton
-              onClick={() => setSettingsOpen(true)}
-              sx={{ p: 0.5 }}
-              size="small"
-            >
-              <SettingsIcon fontSize="small" />
-            </IconButton>
-          </Stack>
-
-          {/* Board Info */}
-          <Stack direction="row" alignItems="center" spacing={2}>
-            {(puzzleMode || playMode) && (
-              <Typography variant="caption">
-                {getBoardOrientation()} To Play
-              </Typography>
-            )}
-          </Stack>
-        </Paper>
-
-        {gameInfo && <TopPlayerBar />}
-        {/* Chessboard */}
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2, gap: 1 }}>
-          {showEvalBar && !puzzleMode && !playMode && (
-            <EvalBar
-              lineEval={stockfishAnalysisResult?.lines[0]}
-              boardOrientation={getBoardOrientation()}
-              height={boardSize} // Match the board height
-            />
-          )}
-          <Chessboard
-            options={{
-              position: fen,
-              onPieceDrop: puzzleMode ? onDropPuzzle : handlePlayerMove,
-              onSquareClick: puzzleMode
-                ? handleSquarePuzzleClick
-                : handleSquareClick,
-              allowDragOffBoard: false,
-              animationDurationInMs: animationDuration,
-              showNotation: showCoordinates,
-              squareStyles: puzzleMode
-                ? puzzleCustomSquareStyle
-                : customSquareStyles,
-              darkSquareStyle: {
-                backgroundColor:
-                  getCurrentThemeColors(boardTheme).darkSquareColor,
-              },
-              lightSquareStyle: {
-                backgroundColor:
-                  getCurrentThemeColors(boardTheme).lightSquareColor,
-              },
-              arrows: customArrows,
-              boardOrientation: getBoardOrientation(),
-              pieces: getCustomPieces(pieceType),
-              boardStyle: get3DBoardStyle(pieceType),
-              id: "ai-chessboard",
-            }}
-          />
-        </Box>
-        {gameInfo && <BottomPlayerBar />}
-
-        {/* Navigation Controls */}
-        {!playMode && !gameReviewMode && !puzzleMode && (
-          <Stack spacing={2}>
-            {/* Navigation buttons */}
-            <Stack direction="row" spacing={2}>
-              <Button
-                onClick={goToPreviousMove}
-                variant="contained"
-                disabled={isPreviousDisabled}
-                startIcon={<NavigateBefore fontSize="small" />}
-                fullWidth
-                size="small"
-              >
-                Previous
-              </Button>
-              <Button
-                onClick={goToNextMove}
-                variant="contained"
-                disabled={isNextDisabled}
-                endIcon={<NavigateNext fontSize="small" />}
-                fullWidth
-                size="small"
-              >
-                Next
-              </Button>
-            </Stack>
-          </Stack>
+    <Box ref={containerRef} sx={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", height: "100%" }}>
+      {/* Compact header */}
+      <Stack direction="row" alignItems="center" sx={{ width: "100%", maxWidth: boardPx + 40, mb: 0.75, px: 0.5 }}>
+        <Chip label={modeInfo.label} size="small" sx={{ fontSize: "0.6rem", fontWeight: 600, height: 20 }} />
+        {(puzzleMode || playMode) && (
+          <Typography variant="caption" sx={{ ml: 1, fontSize: "10px", color: "text.secondary" }}>
+            {getBoardOrientation()} to play
+          </Typography>
         )}
+        <Box sx={{ flex: 1 }} />
+        <IconButton onClick={() => setSettingsOpen(true)} size="small" sx={{ p: 0.4 }}>
+          <SettingsIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+      </Stack>
 
-        {!puzzleMode && !playMode && (
-          <Stack spacing={2} sx={{ mt: 2 }}>
-            {/* Current FEN Display - Only show if showFen is true */}
-            {showFen && (
-              <Paper
-                sx={{
-                  p: 1.5,
+      {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><TopPlayerBar /></Box>}
 
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="caption" sx={{ mb: 1 }}>
-                  Current Position (FEN)
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontFamily: "monospace",
-
-                    p: 1,
-                    borderRadius: 1,
-                    wordBreak: "break-all",
-                    fontSize: "0.75rem",
-                    display: "block",
-                  }}
-                >
-                  {fen}
-                </Typography>
-              </Paper>
-            )}
-
-            {/* Piece Analysis Display */}
-            {(showHangingPieces || showSemiProtectedPieces) &&
-              boardAnalysis && (
-                <Paper
-                  sx={{
-                    p: 1.5,
-
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{ mb: 1.5, display: "block" }}
-                  >
-                    Piece Analysis
-                  </Typography>
-
-                  {showHangingPieces &&
-                    boardAnalysis.HangingPieceDescriptions.length > 0 && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#f44336",
-                            fontWeight: 600,
-                            fontSize: "0.7rem",
-                          }}
-                        >
-                          Hanging Pieces (Critical):
-                        </Typography>
-                        {boardAnalysis.HangingPieceDescriptions.map(
-                          (desc, index) => (
-                            <Typography
-                              key={index}
-                              variant="caption"
-                              sx={{
-                                fontSize: "0.65rem",
-                                display: "block",
-                                ml: 1,
-                              }}
-                            >
-                              • {desc} at{" "}
-                              {boardAnalysis.HangingPieceCoordinates[index]}
-                            </Typography>
-                          ),
-                        )}
-                      </Box>
-                    )}
-
-                  {showSemiProtectedPieces &&
-                    boardAnalysis.SemiProtectedPieceDescriptions.length > 0 && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#ffeb3b",
-                            fontWeight: 600,
-                            fontSize: "0.7rem",
-                          }}
-                        >
-                          Semi-Protected Pieces (Contested):
-                        </Typography>
-                        {boardAnalysis.SemiProtectedPieceDescriptions.map(
-                          (desc, index) => (
-                            <Typography
-                              key={index}
-                              variant="caption"
-                              sx={{
-                                fontSize: "0.65rem",
-                                display: "block",
-                                ml: 1,
-                              }}
-                            >
-                              • {desc} at{" "}
-                              {
-                                boardAnalysis.SemiProtectedPieceCoordinates[
-                                  index
-                                ]
-                              }
-                            </Typography>
-                          ),
-                        )}
-                      </Box>
-                    )}
-
-                  {/* Legend */}
-                  <Box
-                    sx={{
-                      mt: 1.5,
-                      pt: 1,
-                      borderTop: "1px solid rgba(255,255,255,0.1)",
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: "0.6rem",
-                        display: "block",
-                      }}
-                    >
-                      Legend:
-                    </Typography>
-                    <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
-                      {showHangingPieces && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              backgroundColor: "#f44336",
-                              borderRadius: 0.5,
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            sx={{ fontSize: "0.6rem" }}
-                          >
-                            Critical
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {showSemiProtectedPieces && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              backgroundColor: "#ffeb3b",
-                              borderRadius: 0.5,
-                            }}
-                          />
-                          <Typography
-                            variant="caption"
-                            sx={{ fontSize: "0.6rem" }}
-                          >
-                            Contested
-                          </Typography>
-                        </Box>
-                      )}
-                    </Stack>
-                  </Box>
-                </Paper>
-              )}
-
-            {/* PGN View */}
-            {shouldShowPGN && pgnMoves.length > 0 && (
-              <PGNView
-                moves={pgnMoves}
-                moveAnalysis={null}
-                goToMove={goToMoveFromPGN}
-                currentMoveIndex={currentMoveIndex}
-              />
-            )}
-          </Stack>
+      {/* Board + eval bar */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + (showEvalBar && !puzzleMode && !playMode ? 20 : 0) }}>
+        {showEvalBar && !puzzleMode && !playMode && (
+          <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardPx} />
         )}
-
-        {(puzzleMode || playMode) && <Divider sx={{ mt: 2 }} />}
-      </Box>
-
-      {/* Resize Handle */}
-      <Box
-        onMouseDown={handleMouseDown}
-        sx={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          width: "16px",
-          height: "16px",
-          cursor: "nw-resize",
-          backgroundColor: "#555",
-          borderTopRightRadius: "3px",
-          opacity: 0.7,
-          display: { xs: "none", md: "flex" },
-          alignItems: "center",
-          justifyContent: "center",
-          "&:hover": {
-            opacity: 1,
-            backgroundColor: "#666",
-          },
-        }}
-      >
-        <OpenInFullIcon
-          sx={{
-            fontSize: "10px",
-
-            transform: "rotate(180deg)",
+        <Chessboard
+          options={{
+            position: fen,
+            onPieceDrop: puzzleMode ? onDropPuzzle : handlePlayerMove,
+            onSquareClick: puzzleMode ? handleSquarePuzzleClick : handleSquareClick,
+            allowDragOffBoard: false,
+            animationDurationInMs: animationDuration,
+            showNotation: showCoordinates,
+            squareStyles: puzzleMode ? puzzleCustomSquareStyle : customSquareStyles,
+            darkSquareStyle: { backgroundColor: getCurrentThemeColors(boardTheme).darkSquareColor },
+            lightSquareStyle: { backgroundColor: getCurrentThemeColors(boardTheme).lightSquareColor },
+            arrows: customArrows,
+            boardOrientation: getBoardOrientation(),
+            pieces: getCustomPieces(pieceType),
+            boardStyle: { width: boardPx, height: boardPx, ...get3DBoardStyle(pieceType) },
+            id: "ai-chessboard",
           }}
         />
       </Box>
 
-      {/* Settings Dialog */}
-      <Dialog
-        open={settingsOpen}
-        onClose={handleSettingsClose}
-        PaperProps={{
-          sx: {
-            minWidth: 450,
-            maxHeight: "90vh",
-          },
-        }}
-      >
-        <DialogTitle>Chessboard Settings</DialogTitle>
+      {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><BottomPlayerBar /></Box>}
+
+      {/* Navigation bar */}
+      {!playMode && !puzzleMode && (
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}
+          sx={{ mt: 0.75, width: "100%", maxWidth: boardPx + 40 }}>
+          <IconButton size="small" onClick={handleStart} disabled={isPrevDisabled}
+            sx={{ p: 0.5, color: isPrevDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
+            <SkipPrevious sx={{ fontSize: 19 }} />
+          </IconButton>
+          <IconButton size="small" onClick={handlePrev} disabled={isPrevDisabled}
+            sx={{ p: 0.5, color: isPrevDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
+            <NavigateBefore sx={{ fontSize: 19 }} />
+          </IconButton>
+          <Typography sx={{ fontSize: "10px", color: "text.disabled", fontFamily: "monospace", mx: 0.75, minWidth: 44, textAlign: "center" }}>
+            {moveCounter}
+          </Typography>
+          <IconButton size="small" onClick={handleNext} disabled={isNextDisabled}
+            sx={{ p: 0.5, color: isNextDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
+            <NavigateNext sx={{ fontSize: 19 }} />
+          </IconButton>
+          <IconButton size="small" onClick={handleEnd} disabled={isNextDisabled}
+            sx={{ p: 0.5, color: isNextDisabled ? "action.disabled" : "text.secondary", "&:hover": { color: "text.primary" } }}>
+            <SkipNext sx={{ fontSize: 19 }} />
+          </IconButton>
+        </Stack>
+      )}
+
+      {/* FEN display */}
+      {showFen && !puzzleMode && !playMode && (
+        <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardPx + 40 }}>
+          <Typography sx={{ fontFamily: "monospace", fontSize: "9px", wordBreak: "break-all", color: "text.disabled" }}>{fen}</Typography>
+        </Paper>
+      )}
+
+      {/* Piece analysis overlay */}
+      {boardAnalysis && (showHangingPieces || showSemiProtectedPieces) && !puzzleMode && !playMode && (
+        <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardPx + 40 }}>
+          {showHangingPieces && boardAnalysis.HangingPieceDescriptions.length > 0 && (
+            <Box sx={{ mb: 0.5 }}>
+              <Typography sx={{ fontSize: "10px", color: "#f44336", fontWeight: 600 }}>Hanging:</Typography>
+              {boardAnalysis.HangingPieceDescriptions.map((d, i) => (
+                <Typography key={i} sx={{ fontSize: "10px", ml: 1 }}>• {d} @ {boardAnalysis.HangingPieceCoordinates[i]}</Typography>
+              ))}
+            </Box>
+          )}
+          {showSemiProtectedPieces && boardAnalysis.SemiProtectedPieceDescriptions.length > 0 && (
+            <Box>
+              <Typography sx={{ fontSize: "10px", color: "#ffeb3b", fontWeight: 600 }}>Contested:</Typography>
+              {boardAnalysis.SemiProtectedPieceDescriptions.map((d, i) => (
+                <Typography key={i} sx={{ fontSize: "10px", ml: 1 }}>• {d} @ {boardAnalysis.SemiProtectedPieceCoordinates[i]}</Typography>
+              ))}
+            </Box>
+          )}
+        </Paper>
+      )}
+
+      {(puzzleMode || playMode) && <Divider sx={{ mt: 1.5, width: "100%" }} />}
+
+      {/* Settings dialog */}
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)}
+        PaperProps={{ sx: { minWidth: 420, maxHeight: "90vh" } }}>
+        <DialogTitle>Board Settings</DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ pt: 1 }}>
-            {/* Board Theme Selection */}
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Board Theme</InputLabel>
+              <Select value={boardTheme} onChange={e => setBoardTheme(e.target.value)} label="Board Theme">
+                {Object.entries(BOARD_THEMES).map(([k, t]) => <MenuItem key={k} value={k}>{t.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Piece Style</InputLabel>
+              <Select value={pieceType} onChange={e => setPieceType(e.target.value)} label="Piece Style">
+                {Object.entries(PIECE_STYLE_TYPES).map(([k, p]) => <MenuItem key={k} value={k}>{p.name}</MenuItem>)}
+              </Select>
+            </FormControl>
             <Box>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                Board Theme
-              </Typography>
-              <FormControl size="small" fullWidth>
-                <InputLabel>theme</InputLabel>
-                <Select
-                  value={boardTheme}
-                  onChange={(e) => setBoardTheme(e.target.value)}
-                  label="Voice"
-                >
-                  {Object.entries(BOARD_THEMES).map(([key, theme]) => (
-                    <MenuItem key={key} value={key}>
-                      {theme.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Typography variant="body2" sx={{ mb: 1 }}>Animation: {animationDuration}ms</Typography>
+              <Slider value={animationDuration} onChange={(_, v) => setAnimationDuration(v as number)} min={0} max={1000} step={50} />
             </Box>
-
             <Box>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                Piece Style
-              </Typography>
-              <FormControl size="small" fullWidth>
-                <InputLabel>piece style</InputLabel>
-                <Select
-                  value={pieceType}
-                  onChange={(e) => setPieceType(e.target.value)}
-                  label="Pieces"
-                >
-                  {Object.entries(PIECE_STYLE_TYPES).map(([key, piece]) => (
-                    <MenuItem key={key} value={key}>
-                      {piece.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-
-            <Box>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                Animation Speed: {animationDuration}ms
-              </Typography>
-              <Slider
-                value={animationDuration}
-                onChange={handleAnimationChange}
-                min={0}
-                max={1000}
-                step={50}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                Display Options
-              </Typography>
-              <Stack spacing={2}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Typography variant="body2">Show Coordinates</Typography>
-                  <Switch
-                    checked={showCoordinates}
-                    onChange={(e) => setShowCoordinates(e.target.checked)}
-                  />
-                </Stack>
-
-                {!puzzleMode && !playMode && (
-                  <>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="body2">Show FEN String</Typography>
-                      <Switch
-                        checked={showFen}
-                        onChange={(e) => setShowFen(e.target.checked)}
-                      />
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="body2">
-                        Show Analysis Arrows
-                      </Typography>
-                      <Switch
-                        checked={showArrows}
-                        onChange={(e) => setShowArrows(e.target.checked)}
-                      />
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Typography variant="body2">Show Eval Bar</Typography>
-                      <Switch
-                        checked={showEvalBar}
-                        onChange={(e) => setEvalBar(e.target.checked)}
-                      />
-                    </Stack>
-                  </>
-                )}
+              <Typography variant="body2" sx={{ mb: 1.5 }}>Display</Typography>
+              <Stack spacing={1.5}>
+                {([
+                  ["Show Coordinates", showCoordinates, setShowCoordinates],
+                  ...(!puzzleMode && !playMode ? [
+                    ["Show FEN", showFen, setShowFen],
+                    ["Show Arrows", showArrows, (v: boolean) => setShowArrows(v)],
+                    ["Show Eval Bar", showEvalBar, setEvalBar],
+                  ] : []),
+                ] as [string, boolean, (v: boolean) => void][]).map(([label, val, setter]) => (
+                  <Stack key={label} direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2">{label}</Typography>
+                    <Switch checked={val} onChange={e => setter(e.target.checked)} size="small" />
+                  </Stack>
+                ))}
               </Stack>
             </Box>
-
             {!puzzleMode && !playMode && (
-              <>
-                <Box>
-                  <Typography variant="body2">Piece Highlighting</Typography>
-                  <Stack spacing={2}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Box>
-                        <Typography variant="body2">Hanging Pieces</Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontSize: "0.7rem" }}
-                        >
-                          Critical threats - undefended pieces
-                        </Typography>
-                      </Box>
-                      <Switch
-                        checked={showHangingPieces}
-                        onChange={(e) => setShowHangingPieces(e.target.checked)}
-                        sx={{
-                          "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "#f44336",
-                          },
-                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "#f44336",
-                            },
-                        }}
-                      />
-                    </Stack>
-
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Box>
-                        <Typography variant="body2">
-                          Semi-Protected Pieces
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontSize: "0.7rem" }}
-                        >
-                          Equal attackers and defenders
-                        </Typography>
-                      </Box>
-                      <Switch
-                        checked={showSemiProtectedPieces}
-                        onChange={(e) =>
-                          setShowSemiProtectedPieces(e.target.checked)
-                        }
-                        sx={{
-                          "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: "#ffeb3b",
-                          },
-                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                            {
-                              backgroundColor: "#ffeb3b",
-                            },
-                        }}
-                      />
-                    </Stack>
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1.5 }}>Piece Highlights</Typography>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="body2">Hanging Pieces</Typography>
+                      <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "#888" }}>Undefended pieces</Typography>
+                    </Box>
+                    <Switch checked={showHangingPieces} onChange={e => setShowHangingPieces(e.target.checked)} size="small"
+                      sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: "#f44336" }, "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#f44336" } }} />
                   </Stack>
-                </Box>
-                <Divider />
-
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    Board Controls
-                  </Typography>
-
-                  <Stack spacing={2}>
-                    {/* Flip Board Button */}
-                    <Button
-                      variant="outlined"
-                      onClick={flipBoard}
-                      startIcon={<RotateLeft />}
-                      fullWidth
-                    >
-                      Flip Board
-                    </Button>
-
-                    {/* FEN Input */}
-                    <TextField
-                      label="Load custom position (FEN)"
-                      variant="outlined"
-                      value={customFen}
-                      onChange={(e) => setCustomFen(e.target.value)}
-                      size="small"
-                      fullWidth
-                      placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                    />
-
-                    <Button
-                      variant="contained"
-                      onClick={loadCustomFen}
-                      startIcon={<Upload />}
-                      disabled={!customFen.trim()}
-                      fullWidth
-                    >
-                      Load FEN
-                    </Button>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="body2">Semi-Protected</Typography>
+                      <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "#888" }}>Equal attackers/defenders</Typography>
+                    </Box>
+                    <Switch checked={showSemiProtectedPieces} onChange={e => setShowSemiProtectedPieces(e.target.checked)} size="small"
+                      sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: "#ffeb3b" }, "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#ffeb3b" } }} />
                   </Stack>
-                </Box>
-              </>
+                </Stack>
+              </Box>
+            )}
+            <Divider />
+            <Button variant="outlined" onClick={flipBoard} startIcon={<RotateLeft />} fullWidth>Flip Board</Button>
+            {!puzzleMode && !playMode && (
+              <Stack spacing={1}>
+                <TextField label="Load FEN" variant="outlined" value={customFen}
+                  onChange={e => setCustomFen(e.target.value)} size="small" fullWidth
+                  placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" />
+                <Button variant="contained" onClick={loadCustomFen} startIcon={<Upload />} disabled={!customFen.trim()} fullWidth>
+                  Load Position
+                </Button>
+              </Stack>
             )}
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSettingsClose}>Done</Button>
-        </DialogActions>
+        <DialogActions><Button onClick={() => setSettingsOpen(false)}>Done</Button></DialogActions>
       </Dialog>
     </Box>
   );

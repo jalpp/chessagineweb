@@ -136,7 +136,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
 
   const analyzeThreatsInBackground = useCallback(
     async (currentFen: string) => {
-      if (!engine) return;
+      if (!engine || !engine.isReady()) return;
       try {
         const chess = new Chess(currentFen);
         const nullMoveFen = currentFen.replace(
@@ -176,7 +176,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   );
 
   const analyzeWithStockfish = useCallback(async () => {
-    if (!engine || !fen) return;
+    if (!engine || !fen || !engine.isReady()) return;
     const currentFen = currentFenRef.current;
     const cacheKey = getStockfishCacheKey(currentFen, engineDepth, engineLines);
     const cached = readStockfishCache(cacheKey);
@@ -258,6 +258,8 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
 
 useEffect(() => {
   if (!engine || !fen || analysisType === "unsupported" || analysisType === "puzzle") return;
+  // Don't schedule analysis until engine is ready
+  if (!engine.isReady()) return;
   updateState({
     stockfishAnalysisResult: null,
     reverseStockfishAnalysisResult: null,
