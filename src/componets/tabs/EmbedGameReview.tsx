@@ -504,6 +504,7 @@ export default function EmbeddedGameReview({
               });
             }}
             gameResult={gameInfo.Result}
+            gameReview={gameReview}
           />
         </Box>
       </Box>

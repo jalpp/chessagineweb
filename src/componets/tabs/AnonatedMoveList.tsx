@@ -64,6 +64,7 @@ import {
   treeToPGN,
   pathTo,
 } from "@/lib/variationTree";
+import { MoveAnalysis, getMoveAnnotation, MoveQuality } from "@/libs/agine/helper";
 
 // ── NAG helpers ──────────────────────────────────────────────────────────────
 
@@ -85,6 +86,25 @@ const NAG_COLORS: Record<string, string> = {
   "!?": "#29b6f6",
 };
 
+// ── Review quality → auto-colour ─────────────────────────────────────────────
+
+const REVIEW_QUALITY_COLORS: Record<MoveQuality, string> = {
+  Best:        "#81C784",   // green
+  "Very Good": "#4FC3F7",   // light blue
+  Good:        "#AED581",   // light green
+  Dubious:     "#FFB74D",   // amber
+  Mistake:     "#FF8A65",   // orange
+  Blunder:     "#E57373",   // red
+  Book:        "#FFD54F",   // yellow
+};
+
+/** Map game-review quality to the NAG that should be auto-applied. */
+function qualityToAutoNag(quality: MoveQuality): NAG {
+  const raw = getMoveAnnotation(quality);
+  // getMoveAnnotation returns "" for Best/VeryGood/Good/Book — keep empty
+  return (raw as NAG) ?? "";
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface AnnotatedMoveListProps {
@@ -94,6 +114,8 @@ interface AnnotatedMoveListProps {
   /** PGN headers for export */
   headers?: Record<string, string>;
   gameResult?: string;
+  /** Game-review data used for auto-colour + auto-NAG */
+  gameReview?: MoveAnalysis[];
 }
 
 // ── Context menu state ───────────────────────────────────────────────────────
@@ -111,7 +133,18 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
   onNavigate,
   headers,
   gameResult,
+  gameReview,
 }) => {
+  // Build a fast fen→MoveAnalysis lookup (currenFen = FEN after the move)
+  const reviewByFen = useMemo(() => {
+    if (!gameReview || gameReview.length === 0) return new Map<string, MoveAnalysis>();
+    const m = new Map<string, MoveAnalysis>();
+    for (const r of gameReview) {
+      m.set(r.currenFen, r);
+    }
+    return m;
+  }, [gameReview]);
+
   const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null);
   const [commentDialog, setCommentDialog] = useState<{
     open: boolean;
@@ -206,11 +239,44 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
 
   /**
    * Render a single move button with optional NAG + comment indicator.
+   * If a game review is available and the node has no user-set NAG, the
+   * review quality is used to (a) colour the move token and (b) show an
+   * auto-NAG symbol.  A user-assigned NAG always takes precedence.
    */
   const renderMoveBtn = (node: MoveNode, showMoveNum: boolean) => {
     const isActive = node.id === tree.cursor;
-    const nagSym = node.nag ? NAG_SYMBOLS[node.nag] ?? node.nag : "";
-    const nagColor = node.nag ? NAG_COLORS[node.nag] ?? "inherit" : "inherit";
+
+    // ── Review lookup for this node ──────────────────────────────────────────
+    const reviewData = reviewByFen.get(node.fen);
+    const reviewQuality = reviewData?.quality as MoveQuality | undefined;
+
+    // User NAG wins; fall back to auto-NAG from review
+    const effectiveNag: NAG = node.nag
+      ? node.nag
+      : reviewQuality
+      ? qualityToAutoNag(reviewQuality)
+      : "";
+
+    const nagSym = effectiveNag ? NAG_SYMBOLS[effectiveNag] ?? effectiveNag : "";
+    // NAG colour: user NAG → NAG_COLORS, auto → review quality colour
+    const nagColor = node.nag
+      ? NAG_COLORS[node.nag] ?? "inherit"
+      : reviewQuality
+      ? REVIEW_QUALITY_COLORS[reviewQuality]
+      : "inherit";
+
+    // Move token colour: active overrides, then review quality, then default
+    const moveColor = isActive
+      ? undefined
+      : reviewQuality
+      ? REVIEW_QUALITY_COLORS[reviewQuality]
+      : "#ccc";
+
+    // Tooltip shows review quality label as reference
+    const reviewLabel = reviewQuality
+      ? `Agine review: ${reviewQuality}${node.nag ? " (NAG overridden by user)" : ""}`
+      : undefined;
+
     const moveNum = Math.ceil(node.ply / 2);
     const isBlack = node.ply % 2 === 0;
 
@@ -232,45 +298,60 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
           </Typography>
         )}
 
-        {/* The move button */}
-        <Button
-          ref={isActive ? (activeMoveRef as React.Ref<HTMLButtonElement>) : undefined}
-          size="small"
-          variant={isActive ? "contained" : "text"}
-          onContextMenu={(e) => handleContextMenu(e, node)}
-          onClick={() => handleMoveClick(node)}
-          sx={{
-            minWidth: "auto",
-            px: "4px",
-            py: "1px",
-            mx: "1px",
-            height: "22px",
-            textTransform: "none",
-            fontFamily: "monospace",
-            fontSize: "12px",
-            fontWeight: isActive ? 700 : 400,
-            color: isActive ? undefined : "#ccc",
-            backgroundColor: isActive ? "primary.main" : "transparent",
-            "&:hover": {
-              backgroundColor: isActive ? "primary.dark" : "action.hover",
-            },
-          }}
+        {/* The move button — wrapped in Tooltip to show Agine review reference */}
+        <Tooltip
+          title={reviewLabel ?? ""}
+          placement="top"
+          arrow
+          disableHoverListener={!reviewLabel}
         >
-          {node.san}
-          {nagSym && (
-            <Typography
-              component="span"
-              sx={{ ml: "2px", fontSize: "11px", color: nagColor, fontWeight: 700 }}
-            >
-              {nagSym}
-            </Typography>
-          )}
-          {node.comment && (
-            <CommentIcon
-              sx={{ ml: "2px", fontSize: "9px", color: "#4FC3F7", mb: "1px" }}
-            />
-          )}
-        </Button>
+          <Button
+            ref={isActive ? (activeMoveRef as React.Ref<HTMLButtonElement>) : undefined}
+            size="small"
+            variant={isActive ? "contained" : "text"}
+            onContextMenu={(e) => handleContextMenu(e, node)}
+            onClick={() => handleMoveClick(node)}
+            sx={{
+              minWidth: "auto",
+              px: "4px",
+              py: "1px",
+              mx: "1px",
+              height: "22px",
+              textTransform: "none",
+              fontFamily: "monospace",
+              fontSize: "12px",
+              fontWeight: isActive ? 700 : 400,
+              color: isActive ? undefined : moveColor,
+              backgroundColor: isActive
+                ? "primary.main"
+                : reviewQuality
+                ? `${REVIEW_QUALITY_COLORS[reviewQuality]}18`
+                : "transparent",
+              border: reviewQuality && !isActive
+                ? `1px solid ${REVIEW_QUALITY_COLORS[reviewQuality]}55`
+                : "1px solid transparent",
+              borderRadius: "3px",
+              "&:hover": {
+                backgroundColor: isActive ? "primary.dark" : "action.hover",
+              },
+            }}
+          >
+            {node.san}
+            {nagSym && (
+              <Typography
+                component="span"
+                sx={{ ml: "2px", fontSize: "11px", color: nagColor, fontWeight: 700 }}
+              >
+                {nagSym}
+              </Typography>
+            )}
+            {node.comment && (
+              <CommentIcon
+                sx={{ ml: "2px", fontSize: "9px", color: "#4FC3F7", mb: "1px" }}
+              />
+            )}
+          </Button>
+        </Tooltip>
       </React.Fragment>
     );
   };
