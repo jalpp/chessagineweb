@@ -841,7 +841,7 @@ export default function GamePage() {
             )}
           </Box>
           <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-            <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} />
+            <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} gameReview={gameReview} />
           </Box>
           {multiGameList.length > 1 && (
             <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", p: 1 }}>
@@ -962,7 +962,7 @@ export default function GamePage() {
               </Stack>
             </Box>
             <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} />
+              <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} gameReview={gameReview} />
             </Box>
           </Box>
         </Box>
