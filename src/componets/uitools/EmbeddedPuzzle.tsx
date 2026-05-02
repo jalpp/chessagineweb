@@ -43,7 +43,6 @@ export default function EmbeddedPuzzle({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Puzzle solve state
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
   const [sanSolutionMoves, setSanSolutionMoves] = useState<string[]>([]);
   const [currentSolutionIndex, setCurrentSolutionIndex] = useState(0);
@@ -53,7 +52,6 @@ export default function EmbeddedPuzzle({
   const [showHint, setShowHint] = useState(false);
   const [showingSolution, setShowingSolution] = useState(false);
 
-  // Board interaction
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [moveSquares, setMoveSquares] = useState<Record<string, { background: string }>>({});
@@ -132,7 +130,6 @@ export default function EmbeddedPuzzle({
       const promotion = expectedMove[4];
 
       if (selectedSquare === from && square === to) {
-        // Correct move
         try {
           const newGame = new Chess(game.fen());
           newGame.move({ from: selectedSquare, to: square, promotion: promotion || "q" });
@@ -147,7 +144,6 @@ export default function EmbeddedPuzzle({
           if (nextIndex >= solutionMoves.length) {
             setPuzzleComplete(true);
           } else {
-            // Play the opponent's response automatically after short delay
             setCurrentSolutionIndex(nextIndex);
             setTimeout(() => {
               const opponentMove = solutionMoves[nextIndex];

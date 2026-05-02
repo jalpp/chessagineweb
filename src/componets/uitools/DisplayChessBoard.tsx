@@ -4,7 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { Box, Typography, CircularProgress, Chip } from "@mui/material";
 import { GridOn as BoardIcon } from "@mui/icons-material";
 
-// ── Types matching what the backend tool returns ───────────────────────────
+
 type DisplayChessboardArgs = {
   fen: string;
   caption?: string;
@@ -17,8 +17,7 @@ type DisplayChessboardResult = {
   orientation?: "white" | "black";
 };
 
-// ── Tool UI ────────────────────────────────────────────────────────────────
-// toolName MUST exactly match the tool name defined in your Mastra agent
+
 export const DisplayChessboardToolUI = makeAssistantToolUI<
   DisplayChessboardArgs,
   DisplayChessboardResult
@@ -26,7 +25,7 @@ export const DisplayChessboardToolUI = makeAssistantToolUI<
   toolName: "display_chessboard_for_fen",
 
   render: function ChessboardUI({ args, result, status }) {
-    // While the tool is being called, show a loading state
+
     if (status.type === "running") {
       return (
         <Box
@@ -49,7 +48,7 @@ export const DisplayChessboardToolUI = makeAssistantToolUI<
       );
     }
 
-    // Prefer result values (what the agent confirmed) then fall back to args
+
     const fen = result?.fen ?? args.fen;
     const caption = result?.caption ?? args.caption;
     const orientation = result?.orientation ?? args.orientation ?? "white";
@@ -67,7 +66,7 @@ export const DisplayChessboardToolUI = makeAssistantToolUI<
           width: "100%",
         }}
       >
-        {/* Header */}
+      
         <Box display="flex" alignItems="center" gap={0.75}>
           <BoardIcon fontSize="small" sx={{ color: "text.secondary" }} />
           <Typography variant="caption" color="text.secondary" fontWeight={600}>
@@ -81,7 +80,6 @@ export const DisplayChessboardToolUI = makeAssistantToolUI<
           />
         </Box>
 
-        {/* Board */}
         <Box
           sx={{
             borderRadius: 1,
@@ -99,7 +97,6 @@ export const DisplayChessboardToolUI = makeAssistantToolUI<
           />
         </Box>
 
-        {/* Optional caption */}
         {caption && (
           <Typography
             variant="caption"
@@ -110,7 +107,6 @@ export const DisplayChessboardToolUI = makeAssistantToolUI<
           </Typography>
         )}
 
-        {/* FEN string for reference */}
         <Typography
           variant="caption"
           color="text.disabled"
