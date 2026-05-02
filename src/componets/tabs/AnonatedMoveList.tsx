@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * AnnotatedMoveList — Lichess/Chess-Dojo style interactive move list.
- *
- * Features:
- *  - Full variation tree (nested branches rendered inline, indented)
- *  - Click any move to jump to that board position
- *  - Right-click / long-press menu: Add comment, Set NAG, Promote variation,
- *    Delete variation, Set as main line
- *  - Inline comment editor (click pencil icon on a node)
- *  - NAG symbols shown inline (!, !!, ?, ??, ?!, !?)
- *  - Download annotated PGN
- *  - AI-auto-annotate current move
- */
-
 import React, {
   useState,
   useCallback,
@@ -34,7 +20,6 @@ import {
   DialogActions,
   TextField,
   Tooltip,
-  Chip,
   Stack,
   Divider,
   ToggleButtonGroup,
@@ -56,17 +41,14 @@ import {
   MoveNode,
   VariationTree,
   NAG,
-  findNode,
   setComment,
   setNag,
   deleteVariation,
   promoteVariation,
   treeToPGN,
-  pathTo,
 } from "@/lib/variationTree";
 import { MoveAnalysis, getMoveAnnotation, MoveQuality } from "@/libs/agine/helper";
 
-// ── NAG helpers ──────────────────────────────────────────────────────────────
 
 const NAG_SYMBOLS: Record<string, string> = {
   "!": "!",
@@ -86,46 +68,39 @@ const NAG_COLORS: Record<string, string> = {
   "!?": "#29b6f6",
 };
 
-// ── Review quality → auto-colour ─────────────────────────────────────────────
 
 const REVIEW_QUALITY_COLORS: Record<MoveQuality, string> = {
-  Best:        "#81C784",   // green
-  "Very Good": "#4FC3F7",   // light blue
-  Good:        "#AED581",   // light green
-  Dubious:     "#FFB74D",   // amber
-  Mistake:     "#FF8A65",   // orange
-  Blunder:     "#E57373",   // red
-  Book:        "#FFD54F",   // yellow
+  Best:        "#81C784",   
+  "Very Good": "#4FC3F7",   
+  Good:        "#AED581",   
+  Dubious:     "#FFB74D",   
+  Mistake:     "#FF8A65",   
+  Blunder:     "#E57373",   
+  Book:        "#FFD54F",   
 };
 
-/** Map game-review quality to the NAG that should be auto-applied. */
 function qualityToAutoNag(quality: MoveQuality): NAG {
   const raw = getMoveAnnotation(quality);
   // getMoveAnnotation returns "" for Best/VeryGood/Good/Book — keep empty
   return (raw as NAG) ?? "";
 }
 
-// ── Types ────────────────────────────────────────────────────────────────────
 
 interface AnnotatedMoveListProps {
   tree: VariationTree;
   onTreeChange: (newTree: VariationTree) => void;
   onNavigate: (fen: string, nodeId: string) => void;
-  /** PGN headers for export */
   headers?: Record<string, string>;
   gameResult?: string;
-  /** Game-review data used for auto-colour + auto-NAG */
   gameReview?: MoveAnalysis[];
 }
 
-// ── Context menu state ───────────────────────────────────────────────────────
 
 interface CtxMenu {
   anchorEl: HTMLElement;
   node: MoveNode;
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
 
 const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
   tree,
@@ -135,7 +110,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
   gameResult,
   gameReview,
 }) => {
-  // Build a fast fen→MoveAnalysis lookup (currenFen = FEN after the move)
   const reviewByFen = useMemo(() => {
     if (!gameReview || gameReview.length === 0) return new Map<string, MoveAnalysis>();
     const m = new Map<string, MoveAnalysis>();
@@ -159,7 +133,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
 
   const activeMoveRef = useRef<HTMLButtonElement | null>(null);
 
-  // Scroll active move into view whenever cursor changes
   useEffect(() => {
     activeMoveRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -167,7 +140,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
     });
   }, [tree.cursor]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleMoveClick = useCallback(
     (node: MoveNode) => {
@@ -235,7 +207,6 @@ const AnnotatedMoveList: React.FC<AnnotatedMoveListProps> = ({
     URL.revokeObjectURL(url);
   }, [tree, headers]);
 
-  // ── Renderers ──────────────────────────────────────────────────────────────
 
   /**
    * Render a single move button with optional NAG + comment indicator.

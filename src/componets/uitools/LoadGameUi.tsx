@@ -17,7 +17,7 @@ import { ErrorOutline as ErrorIcon } from "@mui/icons-material";
 import dynamic from "next/dynamic";
 import type {EmbeddedGameSource} from "../tabs/EmbedGameReview";
 
-// Lazy-load the heavy panel — chess.js + stockfish are browser-only
+
 const EmbeddedGameReview = dynamic(
   () => import("../tabs/EmbedGameReview"),
   {
@@ -34,7 +34,6 @@ const EmbeddedGameReview = dynamic(
   }
 );
 
-// ── Types (mirror Mastra tool schema) ────────────────────────────────────────
 
 type LoadGameArgs = {
   source: "lichess_url" | "lichess_study" | "pgn_text";
@@ -52,7 +51,7 @@ type LoadGameResult = {
   lichessStudyId?: string;
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 function sourceLabel(source: LoadGameArgs["source"]) {
   return (
@@ -70,7 +69,6 @@ function toEmbeddedSource(result: LoadGameResult): EmbeddedGameSource {
   return { type: "pgn", value: result.value };
 }
 
-// ── Skeleton shown while the Mastra tool is still executing ──────────────────
 
 function GameLoadingSkeleton({ caption }: { caption?: string }) {
   return (
@@ -109,18 +107,15 @@ function GameLoadingSkeleton({ caption }: { caption?: string }) {
   );
 }
 
-// ── Tool UI registration ──────────────────────────────────────────────────────
 
 export const LoadGameToolUI = makeAssistantToolUI<LoadGameArgs, LoadGameResult>({
   toolName: "load_chess_game",
 
   render: ({ args, result, status }) => {
-    // ── Tool still executing on the backend ──
     if (status.type === "running" || !result) {
       return <GameLoadingSkeleton caption={args.caption} />;
     }
 
-    // ── Tool execution failed ──
     if (status.type === "incomplete") {
       return (
         <Alert
@@ -140,7 +135,6 @@ export const LoadGameToolUI = makeAssistantToolUI<LoadGameArgs, LoadGameResult>(
       );
     }
 
-    // ── Success — render full interactive review panel inline ──
     return (
       <Box sx={{ width: "100%", my: 1 }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={1}>
@@ -160,12 +154,6 @@ export const LoadGameToolUI = makeAssistantToolUI<LoadGameArgs, LoadGameResult>(
           )}
         </Stack>
 
-        {/*
-         * EmbeddedGameReview owns all game state via useState (never
-         * sessionStorage) so multiple instances in a chat thread never
-         * collide. It fetches PGN from Lichess if needed, runs useAgine +
-         * useNets, and renders board + move list + full analysis panel.
-         */}
         <EmbeddedGameReview
           source={toEmbeddedSource(result)}
           autoReview={result.autoReview}

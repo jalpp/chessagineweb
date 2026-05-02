@@ -39,7 +39,6 @@ import { useNets } from "@/hooks/useNets";
 import { makeTree, movesToTree, VariationTree } from "@/lib/variationTree";
 import type { ParsedComment } from "@/componets/game/LoadLichessGameUrl";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export type EmbeddedGameSource =
   | { type: "pgn"; value: string }
@@ -52,7 +51,6 @@ interface EmbeddedGameReviewProps {
   caption?: string;
 }
 
-// ─── Lichess fetch helpers ────────────────────────────────────────────────────
 
 async function fetchLichessPGN(gameId: string): Promise<string> {
   const res = await fetch(
@@ -71,7 +69,6 @@ async function fetchLichessStudyPGN(studyId: string): Promise<string> {
   return res.text();
 }
 
-// ─── PGN helpers ─────────────────────────────────────────────────────────────
 
 function cleanPGN(pgnText: string): string {
   const lines = pgnText.split("\n");
@@ -123,8 +120,6 @@ function parsePGNMoves(
   }
   return { game: tempGame, moveList: tempGame.history() };
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function EmbeddedGameReview({
   source,
@@ -218,7 +213,7 @@ export default function EmbeddedGameReview({
     [generateGameReview, analyzeGameTheme, setGameReview]
   );
 
-  // ── Auto-load ──
+  
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;

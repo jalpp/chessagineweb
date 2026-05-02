@@ -32,8 +32,8 @@ import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { ChatBubble, GitHub, SmartToy, BarChart } from "@mui/icons-material";
 import { useNavigation } from "@/context/NavigationContext";
 
-// ── width of the sidebar on desktop ────────────────────────────────────────
-export const SIDEBAR_WIDTH = 64; // icon-only collapsed rail
+
+export const SIDEBAR_WIDTH = 64; 
 
 const navLinks = [
   { label: "Analyze Position", href: "/position",                             icon: <FaChessBoard size={18} />, isExternal: false },
@@ -48,7 +48,7 @@ const navLinks = [
   { label: "Discord",          href: "https://discord.gg/bCPwe6XWcH",         icon: <FaDiscord size={18} />,              isExternal: true  },
 ];
 
-// ── shared nav-item renderer ────────────────────────────────────────────────
+
 function NavItem({
   link,
   active,
@@ -102,7 +102,7 @@ function NavItem({
   );
 }
 
-// ── desktop vertical rail ───────────────────────────────────────────────────
+
 function DesktopSideNav({
   pathname,
   onNavigate,
@@ -110,6 +110,9 @@ function DesktopSideNav({
   pathname: string;
   onNavigate: (href: string, isExternal: boolean) => void;
 }) {
+
+  const { openSignIn } = useClerk();
+
   return (
     <Box
       component="nav"
@@ -133,7 +136,7 @@ function DesktopSideNav({
         "&::-webkit-scrollbar": { display: "none" },
       }}
     >
-      {/* Logo */}
+
       <Tooltip title="ChessAgine Home" placement="right" arrow>
         <Box
           onClick={() => onNavigate("/", false)}
@@ -156,7 +159,7 @@ function DesktopSideNav({
 
       <Divider flexItem sx={{ mb: 1, width: "60%" }} />
 
-      {/* Main nav items */}
+
       <Box sx={{ flex: 1, width: "100%", px: 0.75, display: "flex", flexDirection: "column", gap: 0.25 }}>
         {navLinks.map((link) => (
           <NavItem
@@ -169,15 +172,15 @@ function DesktopSideNav({
         ))}
       </Box>
 
-      {/* User profile pinned at bottom */}
       <Divider flexItem sx={{ mt: 1, mb: 1.5, width: "60%" }} />
       <SignedIn>
         <UserButton />
       </SignedIn>
       <SignedOut>
+       
         <Tooltip title="Sign In" placement="right" arrow>
           <Typography
-            onClick={() => {}}
+            onClick={() => openSignIn()}
             sx={{ fontSize: "10px", color: "text.secondary", cursor: "pointer", textAlign: "center", px: 0.5 }}
           >
             Sign In
@@ -188,7 +191,6 @@ function DesktopSideNav({
   );
 }
 
-// ── main export ─────────────────────────────────────────────────────────────
 export default function SideNav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const theme = useTheme();
@@ -209,7 +211,7 @@ export default function SideNav() {
     setDrawerOpen(false);
   };
 
-  // ── mobile: keep existing top AppBar + hamburger drawer ─────────────────
+
   if (isMobile) {
     return (
       <>
@@ -280,7 +282,6 @@ export default function SideNav() {
     );
   }
 
-  // ── desktop: vertical rail ───────────────────────────────────────────────
   return (
     <DesktopSideNav pathname={pathname!!} onNavigate={handleNavigation} />
   );

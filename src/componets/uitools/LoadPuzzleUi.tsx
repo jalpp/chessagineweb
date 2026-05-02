@@ -42,7 +42,7 @@ type PuzzleResult = {
 export const LoadPuzzleToolUI = makeAssistantToolUI<PuzzleArgs, PuzzleResult>({
   toolName: "fetch_chess_puzzle",
 
-  render: ({ args, result, status }) => {
+  render: ({ result, status }) => {
     if (status.type === "running" || !result) {
       return (
         <Box display="flex" alignItems="center" gap={1.5} py={1} color="text.secondary">
