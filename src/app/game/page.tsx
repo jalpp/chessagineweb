@@ -8,6 +8,7 @@ import {
   useMediaQuery, useTheme,
   List, ListItemButton, ListItemText, ListItemIcon,
   IconButton, Tooltip, Chip, TextField, CircularProgress, Switch, FormControlLabel,
+  LinearProgress,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -47,6 +48,41 @@ import {
   treeToPGN, parseAnnotatedPGN,
   serializeTree, deserializeTree, isMainLine,
 } from "@/lib/variationTree";
+import EvalGraph from "@/componets/tabs/EvalGraph";
+import { GameReviewDialog } from "@/componets/tabs/GameReviewDialog";
+import { MoveAnalysis } from "@/libs/agine/helper";
+import { GameReviewTheme } from "@/libs/themes/helper";
+import { PositionEval } from "@/stockfish/engine/engine";
+
+// ── GameReviewRightPanel ──────────────────────────────────────────────────────
+
+function GameReviewRightPanel({
+  gameReview, currentMoveIndex, goToMove, gameInfo, gameReviewTheme, stockfishAnalysisResult,
+}: {
+  gameReview: MoveAnalysis[];
+  currentMoveIndex: number;
+  goToMove: (index: number) => void;
+  gameInfo: Record<string, string>;
+  gameReviewTheme: GameReviewTheme | null;
+  stockfishAnalysisResult: PositionEval | null;
+}) {
+  return (
+    <Stack spacing={1.5} sx={{ pb: 2 }}>
+      {/* Eval graph — clickable */}
+      <EvalGraph moves={gameReview} goToMove={goToMove} currentMoveIndex={currentMoveIndex} key={`rp-graph-${gameReview.length}`} />
+
+      {/* Theme analysis button */}
+      {gameReviewTheme && (
+        <GameReviewDialog
+          gameReview={gameReviewTheme}
+          currentMoveIndex={currentMoveIndex}
+          moveAnalysis={gameReview}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+        />
+      )}
+    </Stack>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -823,14 +859,16 @@ export default function GamePage() {
           {boardPanel}
         </Box>
 
-        {/* RIGHT: move list — no save icon on desktop */}
+        {/* RIGHT: move list + game review graph/stats */}
         <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Header */}
           <Box sx={{
             px: 2, py: 0.75, flexShrink: 0,
             borderBottom: 1, borderColor: "divider", bgcolor: "background.paper",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+              GAME REVIEW
             </Typography>
             {moves.length > 0 && (
               <Tooltip title="Load new game">
@@ -840,9 +878,59 @@ export default function GamePage() {
               </Tooltip>
             )}
           </Box>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+
+          {/* Move list — fixed height portion */}
+          <Box sx={{ flex: "0 0 auto", maxHeight: "35vh", minHeight: 120, overflow: "hidden", borderBottom: 1, borderColor: "divider" }}>
             <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} gameReview={gameReview} />
           </Box>
+
+          {/* Game Review Stats + Graph — scrollable */}
+          <Box sx={{
+            flex: 1, overflowY: "auto", p: 1,
+            "&::-webkit-scrollbar": { width: "4px" },
+            "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+          }}>
+            {moves.length > 0 && gameReview.length > 0 ? (
+              <GameReviewRightPanel
+                gameReview={gameReview}
+                currentMoveIndex={currentMoveIndex}
+                goToMove={goToMove}
+                gameInfo={gameInfo}
+                gameReviewTheme={gameReviewTheme}
+                stockfishAnalysisResult={stockfishAnalysisResult}
+              />
+            ) : moves.length > 0 && !gameReviewLoading ? (
+              <Box sx={{ p: 2, textAlign: "center" }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, mb: 1 }}>
+                  Run a game review to see analysis here.
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AnalyticsIcon sx={{ fontSize: 14 }} />}
+                  onClick={() => {
+                    const startFen = extractStartingFen(pgnText);
+                    generateGameReview(moves, startFen);
+                    analyzeGameTheme(moves, startFen);
+                  }}
+                  sx={{ textTransform: "none", fontSize: "11px" }}
+                >
+                  Run Game Review
+                </Button>
+              </Box>
+            ) : gameReviewLoading ? (
+              <Box sx={{ p: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 11 }}>
+                  Analysing… {Math.round(gameReviewProgress)}%
+                </Typography>
+                <Box sx={{ width: "100%" }}>
+                  <LinearProgress variant="determinate" value={gameReviewProgress} />
+                </Box>
+              </Box>
+            ) : null}
+          </Box>
+
           {multiGameList.length > 1 && (
             <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", p: 1 }}>
               <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />

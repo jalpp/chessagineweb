@@ -6,11 +6,13 @@ import { useNetStatus } from "@/context/NetContext";
 
 interface EvalGraphProps {
   moves: MoveAnalysis[];
+  goToMove?: (index: number) => void;   // ← NEW
+  currentMoveIndex?: number;             // ← NEW
 }
 
 type GraphMode = "eval" | "ease" | "both";
 
-const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
+const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, currentMoveIndex = 0 }) => {
   const theme = useTheme();
   const [graphMode, setGraphMode] = useState<GraphMode>("eval");
   const { status } = useNetStatus();
@@ -68,7 +70,6 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
     }
   }, []);
 
-  // Memoize series configuration
   const seriesConfig = useMemo(() => {
     const evalSeries = {
       data: yData,
@@ -151,7 +152,6 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
     }
   }, [yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, graphMode, allData, theme.palette.text.primary]);
 
-  // Memoize Y-axis configuration
   const yAxisConfig = useMemo(() => {
     if (graphMode === "both") {
       return [
@@ -189,7 +189,6 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
     }
   }, [graphMode, minEval, maxEval, minEase, maxEase, evalPadding, easePadding]);
 
-  // Memoize X-axis configuration
   const xAxisConfig = useMemo(() => [
     {
       data: xData,
@@ -231,22 +230,56 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves }) => {
         </Alert>
       )}
 
-      <Box sx={{ width: "100%", height: 550 }}>
+      {/* ── NEW: hint text when navigation is enabled ── */}
+      {goToMove && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, fontSize: "10px" }}>
+          Click on any point or line to jump to that position
+        </Typography>
+      )}
+
+      {/* ── NEW: pointer cursor + reduced height (550→400) ── */}
+      <Box sx={{ width: "100%", height: 400, cursor: goToMove ? "pointer" : "default" }}>
         <LineChart
           xAxis={xAxisConfig}
           skipAnimation
           yAxis={yAxisConfig}
           series={seriesConfig}
-          height={550}
+          height={400}
           margin={{ left: 70, right: graphMode === "both" ? 70 : 20, top: 20, bottom: 70 }}
           grid={{ vertical: true, horizontal: true }}
+         
+          onMarkClick={goToMove ? (_event, identifier) => {
+            if (identifier.dataIndex !== undefined) {
+              goToMove(identifier.dataIndex + 1);
+            }
+          } : undefined}
+          onLineClick={goToMove ? (_event, identifier) => {
+            if (identifier.dataIndex !== undefined) {
+              goToMove(identifier.dataIndex + 1);
+            }
+          } : undefined}
+        
+          sx={{
+            "& .MuiMarkElement-root": {
+              strokeWidth: 1.5,
+              transition: "r 0.15s ease",
+            },
+            [`& .MuiMarkElement-root[data-index="${currentMoveIndex - 1}"]`]: {
+              r: 6,
+              stroke: "#bb86fc",
+              fill: "#bb86fc",
+              strokeWidth: 2,
+            },
+          }}
         />
       </Box>
     </Box>
   );
+// ── NEW: also re-render when currentMoveIndex changes ──
 }, (prevProps, nextProps) => {
   return prevProps.moves.length === nextProps.moves.length &&
-    prevProps.moves.every((move, idx) => move === nextProps.moves[idx]);
+    prevProps.moves.every((move, idx) => move === nextProps.moves[idx]) &&
+    prevProps.currentMoveIndex === nextProps.currentMoveIndex;
 });
 
 export default EvalGraph;
