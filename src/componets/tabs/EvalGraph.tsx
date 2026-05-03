@@ -35,17 +35,24 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
     });
   }, [moves]);
 
-  const { xData, yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, minEval, maxEval, minEase, maxEase, undefinedEaseCount } = useMemo(() => {
+  const { xData, yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, easeDubiousY, easeMistakeY, easeBlunderY, minEval, maxEval, minEase, maxEase, undefinedEaseCount } = useMemo(() => {
     const xData = allData.map((d) => d.moveNumber);
     const yData = allData.map((d) => d.eval);
     const easeData = allData.map((d) => d.easeMetric ?? null);
 
-    const getCriticalY = (label: string) =>
+    const getCriticalEval = (label: string) =>
       allData.map((d) => (d.quality === label ? d.eval : null));
 
-    const criticalBlunderY = getCriticalY("Blunder");
-    const criticalMistakeY = getCriticalY("Mistake");
-    const criticalDubiousY = getCriticalY("Dubious");
+    const getCriticalEase = (label: string) =>
+      allData.map((d) => (d.quality === label && d.easeMetric != null ? d.easeMetric : null));
+
+    const criticalBlunderY = getCriticalEval("Blunder");
+    const criticalMistakeY = getCriticalEval("Mistake");
+    const criticalDubiousY = getCriticalEval("Dubious");
+
+    const easeBlunderY = getCriticalEase("Blunder");
+    const easeMistakeY = getCriticalEase("Mistake");
+    const easeDubiousY = getCriticalEase("Dubious");
 
     const minEval = Math.min(...yData);
     const maxEval = Math.max(...yData);
@@ -55,7 +62,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
     const minEase = validEaseData.length > 0 ? Math.min(...validEaseData) : 0;
     const maxEase = validEaseData.length > 0 ? Math.max(...validEaseData) : 1;
 
-    return { xData, yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, minEval, maxEval, minEase, maxEase, undefinedEaseCount };
+    return { xData, yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, easeDubiousY, easeMistakeY, easeBlunderY, minEval, maxEval, minEase, maxEase, undefinedEaseCount };
   }, [allData]);
 
   const evalPadding = useMemo(() => (maxEval - minEval) * 0.1 || 1, [maxEval, minEval]);
@@ -72,10 +79,11 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
 
   const seriesConfig = useMemo(() => {
     const evalSeries = {
+      id: "eval-main",
       data: yData,
       label: "Eval per Move",
       color: theme.palette.text.primary,
-      showMark: false,
+      showMark: true,
       connectNulls: true,
       curve: "linear" as const,
       yAxisKey: "eval",
@@ -92,10 +100,11 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
     };
 
     const easeSeries = {
+      id: "ease-main",
       data: easeData,
       label: "Ease Metric",
       color: "#4CAF50",
-      showMark: false,
+      showMark: true,
       connectNulls: true,
       curve: "linear" as const,
       yAxisKey: "eval",
@@ -114,8 +123,10 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
       },
     };
 
-    const criticalSeries = [
+    // Eval-mode overlays: blunder/mistake/dubious dots on the eval line
+    const evalCriticalSeries = [
       {
+        id: "eval-blunder",
         data: criticalBlunderY,
         label: "Blunders",
         color: "#E57373",
@@ -126,6 +137,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         yAxisKey: "eval",
       },
       {
+        id: "eval-mistake",
         data: criticalMistakeY,
         label: "Mistakes",
         color: "#FF8A65",
@@ -136,6 +148,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         yAxisKey: "eval",
       },
       {
+        id: "eval-dubious",
         data: criticalDubiousY,
         label: "Dubious",
         color: "#FFB74D",
@@ -147,12 +160,49 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
       },
     ];
 
+    // Ease-mode overlays: blunder/mistake/dubious dots on the ease line
+    const easeCriticalSeries = [
+      {
+        id: "ease-blunder",
+        data: easeBlunderY,
+        label: "Blunders",
+        color: "#E57373",
+        showMark: true,
+        type: "line" as const,
+        curve: "linear" as const,
+        connectNulls: false,
+        yAxisKey: "eval",
+      },
+      {
+        id: "ease-mistake",
+        data: easeMistakeY,
+        label: "Mistakes",
+        color: "#FF8A65",
+        showMark: true,
+        type: "line" as const,
+        curve: "linear" as const,
+        connectNulls: false,
+        yAxisKey: "eval",
+      },
+      {
+        id: "ease-dubious",
+        data: easeDubiousY,
+        label: "Dubious",
+        color: "#FFB74D",
+        showMark: true,
+        type: "line" as const,
+        curve: "linear" as const,
+        connectNulls: false,
+        yAxisKey: "eval",
+      },
+    ];
+
     if (graphMode === "eval") {
-      return [evalSeries, ...criticalSeries];
+      return [evalSeries, ...evalCriticalSeries];
     } else {
-      return [easeSeries];
+      return [easeSeries, ...easeCriticalSeries];
     }
-  }, [yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, graphMode, allData, theme.palette.text.primary]);
+  }, [yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, easeBlunderY, easeMistakeY, easeDubiousY, graphMode, allData, theme.palette.text.primary]);
 
   const yAxisConfig = useMemo(() => {
     if (graphMode === "ease") {
@@ -169,8 +219,8 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         {
           id: "eval",
           label: "Evaluation (White's Perspective)",
-          min: Math.max(-10, minEval - evalPadding),
-          max: Math.min(10, maxEval + evalPadding),
+          min: minEval - evalPadding,
+          max: maxEval + evalPadding,
         },
       ];
     }
@@ -244,12 +294,25 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
           } : undefined}
         
           sx={{
-            "& .MuiMarkElement-root": {
-              strokeWidth: 1.5,
-              transition: "r 0.15s ease",
+            // Main line marks: tiny, grow on hover
+            '& .MuiMarkElement-root[data-series="eval-main"]': {
+              r: 2, strokeWidth: 0, transition: "r 0.1s ease",
+              "&:hover": { r: 5 },
             },
+            '& .MuiMarkElement-root[data-series="ease-main"]': {
+              r: 2, strokeWidth: 0, transition: "r 0.1s ease",
+              "&:hover": { r: 5 },
+            },
+            // Overlay dots: large, clearly visible
+            '& .MuiMarkElement-root[data-series="eval-blunder"]': { r: 6, strokeWidth: 1.5 },
+            '& .MuiMarkElement-root[data-series="eval-mistake"]': { r: 6, strokeWidth: 1.5 },
+            '& .MuiMarkElement-root[data-series="eval-dubious"]': { r: 6, strokeWidth: 1.5 },
+            '& .MuiMarkElement-root[data-series="ease-blunder"]': { r: 6, strokeWidth: 1.5 },
+            '& .MuiMarkElement-root[data-series="ease-mistake"]': { r: 6, strokeWidth: 1.5 },
+            '& .MuiMarkElement-root[data-series="ease-dubious"]': { r: 6, strokeWidth: 1.5 },
+            // Current move — purple highlight, overrides all
             [`& .MuiMarkElement-root[data-index="${currentMoveIndex - 1}"]`]: {
-              r: 6,
+              r: 7,
               stroke: "#bb86fc",
               fill: "#bb86fc",
               strokeWidth: 2,
