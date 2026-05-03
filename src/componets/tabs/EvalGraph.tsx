@@ -6,11 +6,11 @@ import { useNetStatus } from "@/context/NetContext";
 
 interface EvalGraphProps {
   moves: MoveAnalysis[];
-  goToMove?: (index: number) => void;   // ← NEW
-  currentMoveIndex?: number;             // ← NEW
+  goToMove?: (index: number) => void;   
+  currentMoveIndex?: number;             
 }
 
-type GraphMode = "eval" | "ease" | "both";
+type GraphMode = "eval" | "ease";
 
 const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, currentMoveIndex = 0 }) => {
   const theme = useTheme();
@@ -62,7 +62,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
   const easePadding = useMemo(() => (maxEase - minEase) * 0.1 || 0.1, [maxEase, minEase]);
 
   const shouldShowLeelaWarning = undefinedEaseCount >= 5 || leelaT1Status !== "ready";
-  const showEaseMetricWarning = (graphMode === "ease" || graphMode === "both") && shouldShowLeelaWarning;
+  const showEaseMetricWarning = graphMode === "ease" && shouldShowLeelaWarning;
 
   const handleModeChange = useCallback((_event: React.MouseEvent<HTMLElement>, newMode: GraphMode | null) => {
     if (newMode !== null) {
@@ -98,13 +98,17 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
       showMark: false,
       connectNulls: true,
       curve: "linear" as const,
-      yAxisKey: graphMode === "both" ? "ease" : "eval",
+      yAxisKey: "eval",
       valueFormatter: (value: number | null, context: { dataIndex?: number }) => {
         if (value !== null && context.dataIndex !== undefined) {
           const move = allData[context.dataIndex];
-          return `${move.player === "w" ? "White" : "Black"}: ${
-            move.notation
-          }: Ease ${value.toFixed(3)}`;
+          const difficulty =
+            value >= 0.8 ? "Very Easy" :
+            value >= 0.6 ? "Easy" :
+            value >= 0.4 ? "Moderate" :
+            value >= 0.2 ? "Hard" :
+            "Very Hard";
+          return `${move.player === "w" ? "White" : "Black"}: ${move.notation} — ${difficulty} (${value.toFixed(2)})`;
         }
         return "";
       },
@@ -145,34 +149,17 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
 
     if (graphMode === "eval") {
       return [evalSeries, ...criticalSeries];
-    } else if (graphMode === "ease") {
-      return [easeSeries];
     } else {
-      return [evalSeries, easeSeries, ...criticalSeries];
+      return [easeSeries];
     }
   }, [yData, easeData, criticalBlunderY, criticalMistakeY, criticalDubiousY, graphMode, allData, theme.palette.text.primary]);
 
   const yAxisConfig = useMemo(() => {
-    if (graphMode === "both") {
+    if (graphMode === "ease") {
       return [
         {
           id: "eval",
-          label: "Evaluation (White's Perspective)",
-          min: Math.max(-10, minEval - evalPadding),
-          max: Math.min(10, maxEval + evalPadding),
-        },
-        {
-          id: "ease",
-          label: "Ease Metric",
-          min: Math.max(0, minEase - easePadding),
-          max: Math.min(1, maxEase + easePadding),
-        },
-      ];
-    } else if (graphMode === "ease") {
-      return [
-        {
-          id: "eval",
-          label: "Ease Metric (0 = Difficult, 1 = Easy)",
+          label: "Ease Metric (0 = Hard, 1 = Easy)",
           min: Math.max(0, minEase - easePadding),
           max: Math.min(1, maxEase + easePadding),
         },
@@ -216,9 +203,6 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
           <ToggleButton value="ease" aria-label="ease metric only">
             Ease Metric
           </ToggleButton>
-          <ToggleButton value="both" aria-label="both metrics">
-            Both
-          </ToggleButton>
         </ToggleButtonGroup>
       </Box>
       
@@ -245,7 +229,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
           yAxis={yAxisConfig}
           series={seriesConfig}
           height={400}
-          margin={{ left: 70, right: graphMode === "both" ? 70 : 20, top: 20, bottom: 70 }}
+          margin={{ left: 70, right: 20, top: 20, bottom: 70 }}
           grid={{ vertical: true, horizontal: true }}
          
           onMarkClick={goToMove ? (_event, identifier) => {
@@ -275,7 +259,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
       </Box>
     </Box>
   );
-// ── NEW: also re-render when currentMoveIndex changes ──
+
 }, (prevProps, nextProps) => {
   return prevProps.moves.length === nextProps.moves.length &&
     prevProps.moves.every((move, idx) => move === nextProps.moves[idx]) &&
