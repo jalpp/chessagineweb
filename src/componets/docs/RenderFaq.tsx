@@ -110,28 +110,5 @@ export const renderFAQ = () => (
       );
     })}
 
-    <Card sx={{ mt: 2 }}>
-      <CardContent>
-        <Typography
-          variant="h6"
-          gutterBottom
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <SupportIcon />
-          Still have questions?
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Can't find what you're looking for? Join the Discord
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<InfoIcon />}
-          href="https://discord.gg/7zdFpxzd9b"
-          target="_blank"
-        >
-          Create GitHub Issue
-        </Button>
-      </CardContent>
-    </Card>
   </Box>
 );

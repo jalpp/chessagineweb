@@ -81,14 +81,6 @@ const ChessAgineDocumentation = () => {
             <MCPdocs />
           </TabPanel>
 
-          <Paper sx={{ p: 3, mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              Need Help?
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              If you encounter any issues, please create an issue on GitHub.
-            </Typography>
-          </Paper>
         </Box>
       </Container>
     </>

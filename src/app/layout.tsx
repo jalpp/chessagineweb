@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import SideNav from "@/componets/SideNav";
+import GlobalFooter from "@/componets/Globalfooter";
 import { NavigationProvider } from "@/context/NavigationContext";
 import PageLoader from "@/componets/PageLoader";
 import { SIDEBAR_WIDTH } from "@/componets/SideNav";
@@ -109,8 +110,6 @@ export default function RootLayout({
             <BodyWrapper>
               <NavigationProvider>
                 <PageLoader />
-                {/* Desktop: flex row — sidebar + main side by side in document flow.
-                    Mobile: column — top AppBar then content below. */}
                 <Box sx={{
                   display: { xs: "block", md: "flex" },
                   flexDirection: "row",
@@ -127,9 +126,13 @@ export default function RootLayout({
                           minWidth: 0,
                           width: { xs: "100%", md: `calc(100vw - ${SIDEBAR_WIDTH}px)` },
                           overflowX: "hidden",
+                          display: "flex",
+                          flexDirection: "column",
+                          minHeight: "100vh",
                         }}
                       >
-                        {children}
+                        <Box sx={{ flex: 1 }}>{children}</Box>
+                        <GlobalFooter />
                       </Box>
                     </SettingsProvider>
                     <SpeedInsights />
