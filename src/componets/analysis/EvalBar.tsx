@@ -52,14 +52,12 @@ export const EvalBar: React.FC<EvalBarProps> = ({
     return "0.00";
   };
 
-  const bestMove = lineEval?.pv?.[0] ?? "N/A";
+  const isFlipped = boardOrientation === "black";
   const evalPercentage = getEvalPercentage();
-  const evalText = getEvalText();
+  const whitePercentage = isFlipped ? 100 - evalPercentage : evalPercentage;
 
-  const whitePercentage =
-  boardOrientation === "black"
-    ? 100 - evalPercentage
-    : evalPercentage;
+  const bestMove = lineEval?.pv?.[0] ?? "N/A";
+  const evalText = getEvalText();
 
   if (disabled) {
     return (
@@ -102,10 +100,9 @@ export const EvalBar: React.FC<EvalBarProps> = ({
       <Box
         sx={{
           position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: `${whitePercentage}%`,
+          ...(isFlipped
+            ? { top: 0, left: 0, right: 0, height: `${100 - whitePercentage}%` }
+            : { bottom: 0, left: 0, right: 0, height: `${whitePercentage}%` }),
           backgroundColor: "#fff",
           transition: "height 0.3s ease-in-out",
         }}
@@ -121,8 +118,12 @@ export const EvalBar: React.FC<EvalBarProps> = ({
         <Box
           sx={{
             position: "absolute",
-            top: whitePercentage > 50 ? 8 : "auto",
-            bottom: whitePercentage <= 50 ? 8 : "auto",
+            top: isFlipped
+              ? (whitePercentage < 50 ? 8 : "auto")
+              : (whitePercentage > 50 ? 8 : "auto"),
+            bottom: isFlipped
+              ? (whitePercentage >= 50 ? 8 : "auto")
+              : (whitePercentage <= 50 ? 8 : "auto"),
             left: "50%",
             transform: "translateX(-50%) rotate(-90deg)",
             transformOrigin: "center",

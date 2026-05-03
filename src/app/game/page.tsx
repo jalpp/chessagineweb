@@ -1,13 +1,14 @@
 "use client";
 import { usePageReady } from "@/hooks/usePageReady";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Box, Button, Stack, Typography, Divider,
   Card, CardContent, Drawer, Fab,
   useMediaQuery, useTheme,
   List, ListItemButton, ListItemText, ListItemIcon,
   IconButton, Tooltip, Chip, TextField, CircularProgress, Switch, FormControlLabel,
+  LinearProgress,
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
@@ -47,6 +48,41 @@ import {
   treeToPGN, parseAnnotatedPGN,
   serializeTree, deserializeTree, isMainLine,
 } from "@/lib/variationTree";
+import EvalGraph from "@/componets/tabs/EvalGraph";
+import { GameReviewDialog } from "@/componets/tabs/GameReviewDialog";
+import { MoveAnalysis } from "@/libs/agine/helper";
+import { GameReviewTheme } from "@/libs/themes/helper";
+import { PositionEval } from "@/stockfish/engine/engine";
+
+// ── GameReviewRightPanel ──────────────────────────────────────────────────────
+
+function GameReviewRightPanel({
+  gameReview, currentMoveIndex, goToMove, gameInfo, gameReviewTheme, stockfishAnalysisResult,
+}: {
+  gameReview: MoveAnalysis[];
+  currentMoveIndex: number;
+  goToMove: (index: number) => void;
+  gameInfo: Record<string, string>;
+  gameReviewTheme: GameReviewTheme | null;
+  stockfishAnalysisResult: PositionEval | null;
+}) {
+  return (
+    <Stack spacing={1.5} sx={{ pb: 2 }}>
+      {/* Eval graph — clickable */}
+      <EvalGraph moves={gameReview} goToMove={goToMove} currentMoveIndex={currentMoveIndex} key={`rp-graph-${gameReview.length}`} />
+
+      {/* Theme analysis button */}
+      {gameReviewTheme && (
+        <GameReviewDialog
+          gameReview={gameReviewTheme}
+          currentMoveIndex={currentMoveIndex}
+          moveAnalysis={gameReview}
+          stockfishAnalysisResult={stockfishAnalysisResult}
+        />
+      )}
+    </Stack>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -86,6 +122,7 @@ export default function GamePage() {
 
   // Left panel state
   const [leftTab, setLeftTab] = useState<LeftTab>("load");
+  const [showEvalGraph, setShowEvalGraph] = useState(true);
   const [loadSection, setLoadSection] = useState<LoadSection>("history");
 
   // Desktop inline-save state (title field + saving indicator)
@@ -120,6 +157,9 @@ export default function GamePage() {
   // Game storage hook
   const { games: savedGames, loading: savedGamesLoading, saveGame, deleteGame } = useGameStorage();
 
+  // Ref to suppress the moves-sync useEffect when tree is already set by loadFromHistory
+  const skipMovesSync = useRef(false);
+
   // Variation tree
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
   const [prevFen, setPrevFen] = useState(new Chess().fen());
@@ -153,8 +193,12 @@ export default function GamePage() {
     if (moves.length > 0) setLeftTab("analysis");
   }, [moves]);
 
-  // Tree sync when moves loaded externally
+  // Tree sync when moves loaded externally (e.g. plain PGN paste, not loadFromHistory)
   useEffect(() => {
+    if (skipMovesSync.current) {
+      skipMovesSync.current = false;
+      return;
+    }
     if (moves.length > 0 && !tree.root.next) {
       const startFen = extractStartingFen(pgnText);
       const newTree = movesToTree(moves, startFen);
@@ -376,6 +420,7 @@ export default function GamePage() {
       setSaveTitle(saved.title || "");
       setSavedConfirm(false);
       setPgnText(cleaned);
+      skipMovesSync.current = true;
       setMoves(saved.moves);
       setGameInfo(saved.gameInfo);
       setGameReview(saved.gameReview);
@@ -396,6 +441,8 @@ export default function GamePage() {
       setTree(restoredTree);
       setPrevFen(resetGame.fen());
       setHistoryDialogOpen(false);
+      setLeftTab("analysis");
+      setShowEvalGraph(true);
     } catch {
       alert("Error loading saved game");
     }
@@ -823,26 +870,70 @@ export default function GamePage() {
           {boardPanel}
         </Box>
 
-        {/* RIGHT: move list — no save icon on desktop */}
+        {/* RIGHT: move list + game review graph/stats */}
         <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Header */}
           <Box sx={{
             px: 2, py: 0.75, flexShrink: 0,
             borderBottom: 1, borderColor: "divider", bgcolor: "background.paper",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: "0.06em", color: "text.secondary", fontSize: "11px" }}>
+              GAME REVIEW
             </Typography>
-            {moves.length > 0 && (
-              <Tooltip title="Load new game">
-                <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
-                  <RefreshIcon sx={{ fontSize: 15 }} />
-                </IconButton>
-              </Tooltip>
-            )}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              {/* Toggle eval graph */}
+              {gameReview.length > 0 && (
+                <Tooltip title={showEvalGraph ? "Hide eval graph" : "Show eval graph"}>
+                  <IconButton size="small" onClick={() => setShowEvalGraph(v => !v)} sx={{ p: 0.4 }}>
+                    <Box component="svg" viewBox="0 0 16 16" sx={{ width: 14, height: 14 }}>
+                      <polyline points="1,13 4,8 7,10 10,4 13,7 15,3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                        opacity={showEvalGraph ? 1 : 0.35} />
+                      {!showEvalGraph && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity={0.5} />}
+                    </Box>
+                  </IconButton>
+                </Tooltip>
+              )}
+              {moves.length > 0 && (
+                <Tooltip title="Load new game">
+                  <IconButton size="small" onClick={resetAll} sx={{ p: 0.4 }}>
+                    <RefreshIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
           </Box>
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+
+          {/* Move list — expands when graph is hidden */}
+          <Box sx={{
+            flex: showEvalGraph && gameReview.length > 0 ? "0 0 auto" : "1 1 auto",
+            maxHeight: showEvalGraph && gameReview.length > 0 ? "35vh" : "100%",
+            minHeight: 120,
+            overflow: "hidden",
+            borderBottom: showEvalGraph && gameReview.length > 0 ? 1 : 0,
+            borderColor: "divider",
+          }}>
             <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} gameReview={gameReview} />
           </Box>
+
+          {/* Game Review Graph — only shown when review is ready AND showEvalGraph is true */}
+          {showEvalGraph && gameReview.length > 0 && !gameReviewLoading && (
+            <Box sx={{
+              flex: 1, overflowY: "auto", p: 1,
+              "&::-webkit-scrollbar": { width: "4px" },
+              "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: "2px" },
+            }}>
+              <GameReviewRightPanel
+                gameReview={gameReview}
+                currentMoveIndex={currentMoveIndex}
+                goToMove={goToMove}
+                gameInfo={gameInfo}
+                gameReviewTheme={gameReviewTheme}
+                stockfishAnalysisResult={stockfishAnalysisResult}
+              />
+            </Box>
+          )}
+
           {multiGameList.length > 1 && (
             <Box sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", p: 1 }}>
               <MultiGameNavigator games={multiGameList} currentGameHash={currentGameHash} onGameSelect={handleMultiGameSelect} />

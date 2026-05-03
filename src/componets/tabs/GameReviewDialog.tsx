@@ -250,9 +250,11 @@ export const GameReviewDialog: React.FC<GameReviewDialogProps> = ({
   return (
     <>
       <Button
-        variant="contained"
-        startIcon={<Analytics />}
+        variant="outlined"
+        size="small"
+        startIcon={<Analytics sx={{ fontSize: 14 }} />}
         onClick={handleOpen}
+        sx={{ textTransform: "none", fontSize: "11px", py: 0.5 }}
       >
         Game Theme Analysis
       </Button>
