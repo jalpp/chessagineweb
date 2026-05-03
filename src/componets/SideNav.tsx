@@ -205,8 +205,12 @@ export default function SideNav() {
     if (isExternal) {
       window.open(href, "_blank", "noopener,noreferrer");
     } else {
-      startNavigation();
-      router.push(href);
+      // Don't trigger the loader if already on this page — usePageReady only
+      // fires on mount, so navigating to the current route would spin forever.
+      if (pathname !== href) {
+        startNavigation();
+        router.push(href);
+      }
     }
     setDrawerOpen(false);
   };
