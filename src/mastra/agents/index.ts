@@ -6,6 +6,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   ToolSearchProcessor,
   UnicodeNormalizer,
+  PrefillErrorHandler,
 } from "@mastra/core/processors";
 
 import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
@@ -189,6 +190,10 @@ const unicodeNormalizer = new UnicodeNormalizer({
   trim: true,
 });
 
+
+
+const prefillErrorHandler = new PrefillErrorHandler();
+
 async function buildToolSearchProcessor(tokens?: AgineTokens, isPaidTier?: boolean) {
   const tools = await buildTools(tokens, isPaidTier);
 
@@ -228,6 +233,7 @@ export async function createChessAgineAgent(
     model: ({ requestContext }) => createAgineCloudModel(requestContext),
     tools,
     inputProcessors: [unicodeNormalizer, toolSearchProcessor],
+    errorProcessors: [prefillErrorHandler],
   });
 }
 
@@ -239,4 +245,5 @@ export const chessAgine = new Agent({
   model: ({ requestContext }) => createAgineCloudModel(requestContext),
   tools: await buildPinnedTools(),
   inputProcessors: [unicodeNormalizer, await buildToolSearchProcessor()],
+  errorProcessors: [prefillErrorHandler],
 });

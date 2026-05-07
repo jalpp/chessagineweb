@@ -233,14 +233,34 @@ export async function POST(req: Request) {
       ? [{ role: "system" as const, content: systemParts.join("\n") }, ...messages]
       : messages;
 
- 
+  // Sanitize: ensure the conversation never ends with an assistant message.
+  // Claude 4.x (and some other models via Amazon Bedrock / OpenRouter) reject
+  // requests where the last non-system message has role "assistant" — they
+  // return HTTP 400 "This model does not support assistant message prefill."
+  // Mastra's TrailingAssistantGuard only fires for structured-output calls
+  // (known bug: https://github.com/mastra-ai/mastra/issues/13969), so we
+  // apply the guard ourselves here for all models.
+  const sanitizedMessages = (() => {
+    const msgs = [...augmentedMessages];
+    let lastIdx = msgs.length - 1;
+    // Skip trailing system messages (though uncommon at the end)
+    while (lastIdx >= 0 && msgs[lastIdx].role === "system") lastIdx--;
+    if (lastIdx >= 0 && msgs[lastIdx].role === "assistant") {
+      msgs.push({
+        role: "user" as const,
+        content: "Continue.",
+      });
+    }
+    return msgs;
+  })();
+
   const agent = await createChessAgineAgent(
     { lichessToken, chessboardmagicToken },
     isPaidTier
   );
 
   try {
-    const stream = await agent.stream(augmentedMessages, {
+    const stream = await agent.stream(sanitizedMessages, {
       requestContext,
       maxSteps: MAX_AGENT_STEPS,
     });
