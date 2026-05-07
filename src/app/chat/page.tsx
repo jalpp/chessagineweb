@@ -5,6 +5,8 @@ import {
   useChatRuntime,
   AssistantChatTransport,
 } from "@assistant-ui/react-ai-sdk";
+import { generateId } from "ai";
+import type { AttachmentAdapter } from "@assistant-ui/core";
 import { Thread } from "@/components/thread";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useTheme } from "@/context/ThemeContext";
@@ -45,6 +47,53 @@ import { useLocalStorage } from "usehooks-ts";
 import { LoadPuzzleToolUI } from "@/componets/uitools/LoadPuzzleUi";
 import { ThreadSidebar, MobileThreadDrawer } from "@/components/threadSidebar";
 
+
+
+const MAX_ATTACHMENT_BYTES = 1 * 1024 * 1024; 
+const ALLOWED_MIME_TYPES = new Set(["text/plain", "text/markdown"]);
+const ALLOWED_EXTENSIONS = /\.(md|txt)$/i;
+
+const chessAttachmentAdapter: AttachmentAdapter = {
+  accept: ".md,.txt,text/plain,text/markdown",
+  async add({ file }) {
+    if (!ALLOWED_MIME_TYPES.has(file.type) && !ALLOWED_EXTENSIONS.test(file.name)) {
+      throw new Error(
+        `Only .md and .txt files are supported. "${file.name}" is not allowed.`,
+      );
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      throw new Error(
+        `File "${file.name}" exceeds the 5 MB limit (${(file.size / 1024 / 1024).toFixed(1)} MB).`,
+      );
+    }
+    return {
+      id: generateId(),
+      type: "file" as const,
+      name: file.name,
+      file,
+      contentType: file.type || "text/plain",
+      content: [],
+      status: { type: "requires-action" as const, reason: "composer-send" as const },
+    };
+  },
+  async send(attachment) {
+    const text = await attachment.file.text();
+    return {
+      ...attachment,
+      status: { type: "complete" as const },
+      content: [
+        {
+          type: "file" as const,
+          mimeType: attachment.contentType ?? "text/plain",
+          filename: attachment.name,
+          data: `data:${attachment.contentType ?? "text/plain"};base64,${btoa(unescape(encodeURIComponent(text)))}`,
+        },
+      ],
+    };
+  },
+  async remove() {
+  },
+};
 
 function ChatPageInner() {
   const { isSignedIn, has } = useAuth();
@@ -97,6 +146,9 @@ function ChatPageInner() {
         };
       },
     }),
+    adapters: {
+      attachments: chessAttachmentAdapter,
+    },
   });
  
   const vars = chatThemeVars[currentTheme];
