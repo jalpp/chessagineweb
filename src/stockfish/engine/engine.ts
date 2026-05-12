@@ -166,4 +166,6 @@ export interface EvaluatePositionWithUpdateParams {
     hash?: number;
     /** The callback function that is sent eval updates. */
     setPartialEval?: (positionEval: PositionEval) => void;
+ 
+    moves?: string[] | null;
 }
