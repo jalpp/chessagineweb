@@ -23,7 +23,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
       const evalm = Number((m.evalMove / 100).toFixed(2));
       
       return {
-        moveNumber: Math.floor((m.plyNumber + 1) / 2),
+        moveNumber: Math.floor(m.plyNumber / 2) + 1,
         eval: evalm,
         easeMetric: m.easeMetric,
         player: m.player,
@@ -91,7 +91,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         if (value !== null && context.dataIndex !== undefined) {
           const move = allData[context.dataIndex];
           const prefix = move.eval > 0 ? "+" : "";
-          return `${move.player === "w" ? "White" : "Black"}: ${
+          return `Move ${move.moveNumber} — ${move.player === "w" ? "White" : "Black"}: ${
             move.notation
           } (${move.quality}): ${prefix}${move.eval.toFixed(2)}`;
         }
@@ -117,11 +117,36 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
             value >= 0.4 ? "Moderate" :
             value >= 0.2 ? "Hard" :
             "Very Hard";
-          return `${move.player === "w" ? "White" : "Black"}: ${move.notation} — ${difficulty} (${value.toFixed(2)})`;
+          return `Move ${move.moveNumber} — ${move.player === "w" ? "White" : "Black"}: ${move.notation} — ${difficulty} (${value.toFixed(2)})`;
         }
         return "";
       },
     };
+
+    const makeCriticalValueFormatter = (quality: string) =>
+      (value: number | null, context: { dataIndex?: number }) => {
+        if (value !== null && context.dataIndex !== undefined) {
+          const move = allData[context.dataIndex];
+          const prefix = move.eval > 0 ? "+" : "";
+          return `Move ${move.moveNumber} — ${move.player === "w" ? "White" : "Black"}: ${move.notation} (${quality}): ${prefix}${move.eval.toFixed(2)}`;
+        }
+        return "";
+      };
+
+    const makeEaseCriticalValueFormatter = (quality: string) =>
+      (value: number | null, context: { dataIndex?: number }) => {
+        if (value !== null && context.dataIndex !== undefined) {
+          const move = allData[context.dataIndex];
+          const difficulty =
+            value >= 0.8 ? "Very Easy" :
+            value >= 0.6 ? "Easy" :
+            value >= 0.4 ? "Moderate" :
+            value >= 0.2 ? "Hard" :
+            "Very Hard";
+          return `Move ${move.moveNumber} — ${move.player === "w" ? "White" : "Black"}: ${move.notation} (${quality}): ${difficulty} (${value.toFixed(2)})`;
+        }
+        return "";
+      };
 
     // Eval-mode overlays: blunder/mistake/dubious dots on the eval line
     const evalCriticalSeries = [
@@ -135,6 +160,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         curve: "linear" as const,
         connectNulls: false,
         yAxisKey: "eval",
+        valueFormatter: makeCriticalValueFormatter("Blunder"),
       },
       {
         id: "eval-mistake",
@@ -146,6 +172,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         curve: "linear" as const,
         connectNulls: false,
         yAxisKey: "eval",
+        valueFormatter: makeCriticalValueFormatter("Mistake"),
       },
       {
         id: "eval-dubious",
@@ -157,6 +184,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         curve: "linear" as const,
         connectNulls: false,
         yAxisKey: "eval",
+        valueFormatter: makeCriticalValueFormatter("Dubious"),
       },
     ];
 
@@ -172,6 +200,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         curve: "linear" as const,
         connectNulls: false,
         yAxisKey: "eval",
+        valueFormatter: makeEaseCriticalValueFormatter("Blunder"),
       },
       {
         id: "ease-mistake",
@@ -183,6 +212,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         curve: "linear" as const,
         connectNulls: false,
         yAxisKey: "eval",
+        valueFormatter: makeEaseCriticalValueFormatter("Mistake"),
       },
       {
         id: "ease-dubious",
@@ -194,6 +224,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
         curve: "linear" as const,
         connectNulls: false,
         yAxisKey: "eval",
+        valueFormatter: makeEaseCriticalValueFormatter("Dubious"),
       },
     ];
 
