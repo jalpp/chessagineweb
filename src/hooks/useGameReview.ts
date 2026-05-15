@@ -130,6 +130,13 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           arrowMove: Move;
           uciMove: string;
           openingMatch: boolean;
+          /** UCI moves from the game start up to (not including) this ply.
+           *  Used as "position startpos moves <...>" to warm Stockfish's TT
+           *  with ancestor positions before searching preMovefen.
+           *  Mirrors the Lichess/fishnet reverse-order analysis technique. */
+          movesUpToPre: string[];
+          /** UCI moves from game start through this ply (post-move position). */
+          movesUpToPost: string[];
         }
 
         const gameBoard = new Chess(customFen);
@@ -147,6 +154,9 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           }
           const uciMove =
             moveObject.from + moveObject.to + (moveObject.promotion || "");
+          // Snapshot the move list BEFORE pushing this move — these are the
+          // ancestor moves up to (not including) the current ply.
+          const movesUpToPre = [...moveHistory];
           moveHistory.push(uciMove);
           plyInfos.push({
             plyIndex: ply,
@@ -157,6 +167,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             arrowMove: moveObject,
             uciMove,
             openingMatch: isFenInAllDatabases(gameBoard.fen()),
+            movesUpToPre,
+            movesUpToPost: [...moveHistory],
           });
         }
 
@@ -204,8 +216,25 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             postDB.get(p.plyIndex)!.length === 0
         );
 
+        // ── Reverse-order analysis (Lichess/fishnet technique) ────────────────
+        // Process from the LAST position backwards to the first.  When Stockfish
+        // evaluates a position it loads its entire search tree into the
+        // transposition table (TT).  Positions closer to the end of the game
+        // share many sub-trees with positions a few moves earlier.  By starting
+        // from the end, each earlier evaluation benefits from hash hits left by
+        // the later one — exactly how Lichess fishnet workers analyse games.
+        //
+        // We also pass `moves` so the engine uses:
+        //   "position startpos moves e2e4 d7d5 ..."
+        // instead of a bare FEN.  Stockfish replays the whole move sequence
+        // internally, populating the TT with all ancestor nodes before it even
+        // begins the search.  For custom starting positions (customFen) the move
+        // list is passed as null so we fall back to the bare FEN path.
+        const isStartPos = !customFen; // true  → can use "position startpos moves"
+        const sfReversed = [...sfNeeded].reverse();
+
         let sfDone = 0;
-        for (const p of sfNeeded) {
+        for (const p of sfReversed) {
           const preData = preDB.get(p.plyIndex)!;
           const postData = postDB.get(p.plyIndex)!;
 
@@ -222,6 +251,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               fen: p.preMovefen,
               depth: searchDepth,
               multiPv: 3,
+              moves: isStartPos ? p.movesUpToPre : null,
             });
             sfAnalysis = analysis;
 
@@ -255,6 +285,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               fen: p.postMovefen,
               depth: searchDepth,
               multiPv: 1,
+              moves: isStartPos ? p.movesUpToPost : null,
             });
             const pwwr = evaluationToWinRate(postAnalysis.lines?.[0]);
             postMoveWinRate = p.activePlayer === "w" ? pwwr : 100 - pwwr;

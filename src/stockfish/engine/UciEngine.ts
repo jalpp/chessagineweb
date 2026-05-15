@@ -1,4 +1,3 @@
-
 import { Mutex } from 'async-mutex';
 import { EngineWorker } from './EngineWorker';
 import {
@@ -273,6 +272,7 @@ export abstract class UciEngine {
         threads = ENGINE_THREADS.Default,
         hash = Math.pow(2, ENGINE_HASH.Default),
         setPartialEval,
+        moves,
     }: EvaluatePositionWithUpdateParams): Promise<PositionEval> {
         this.throwErrorIfNotReady();
 
@@ -295,9 +295,16 @@ export abstract class UciEngine {
                 setPartialEval?.(parsedResults);
             };
 
+            const positionCommand =
+                moves && moves.length > 0
+                    ? `position startpos moves ${moves.join(' ')}`
+                    : moves !== null && moves !== undefined && moves.length === 0
+                    ? `position startpos`
+                    : `position fen ${fen}`;
+
             this.debug(`Started evaluating ${fen}`);
             const promise = this.sendCommands(
-                [`position fen ${fen}`, `go depth ${depth}`],
+                [positionCommand, `go depth ${depth}`],
                 'bestmove',
                 onNewMessage,
             );
