@@ -100,6 +100,9 @@ export const useNets = ({
       ? enabledModels.filter((m) => activeModels.includes(m))
       : activeModels;
 
+    // Nothing ready yet — caller should wait for activeModels to change
+    if (modelsToUse.length === 0) return;
+
     const cacheKey = getMaiaCacheKey({
       fen: fenToAnalyze,
       models: modelsToUse,
@@ -118,7 +121,6 @@ export const useNets = ({
       return memCached.evaluations;
     }
 
- 
     const cached = await readMaiaCache(cacheKey);
     if (cached) {
       setEvaluations(cached.evaluations);
@@ -128,11 +130,6 @@ export const useNets = ({
       setEvaluationsFen(fenToAnalyze);
       setIsLoading(false);
       return cached.evaluations;
-    }
-
-    if (modelsToUse.length === 0) {
-      setIsLoading(false);
-      return;
     }
 
     // Create a new abort controller for this analysis
@@ -233,11 +230,9 @@ export const useNets = ({
       ) {
         if (currentAbortController.signal.aborted) return;
 
-       // want to avoid looking at lichess book for good net like big leela
         const uciEval = await bigLeela.evaluate(fenToAnalyze);
         newEvaluations.bigLeela = uciEval;
         newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fenToAnalyze);
-        
       }
 
       // EliteMaia
@@ -248,11 +243,9 @@ export const useNets = ({
       ) {
         if (currentAbortController.signal.aborted) return;
 
-        // want to avoid looking at lichess book for good net like elite maias
         const uciEval = await elitemaia.evaluate(fenToAnalyze);
         newEvaluations.elitemaia = uciEval;
         newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fenToAnalyze);
-        
       }
 
       // Maia 3 — covers 600–2600 Elo with continuous rating conditioning
@@ -263,7 +256,6 @@ export const useNets = ({
       ) {
         if (currentAbortController.signal.aborted) return;
 
-        // Batch all 21 rating levels (600–2600) in a single inference call
         const positions = MAIA3_RATING_VALUES.map((rating) => ({
           fen: fenToAnalyze,
           eloSelf: rating,
@@ -336,54 +328,21 @@ export const useNets = ({
 
   useEffect(() => {
     // Skip automatic analysis in game review mode
-    if (gameReviewMode) {
-      return;
-    }
+    if (gameReviewMode) return;
 
-    abortControllerRef.current = new AbortController();
-    const currentAbortController = abortControllerRef.current;
+    if (activeModels.length === 0) return;
 
-    const waitForModels = async () => {
-      let retries = 0;
-      while (retries < maxRetries) {
-        if (currentAbortController.signal.aborted) return;
+    abortControllerRef.current?.abort();
 
-        const modelsToUse = enabledModels
-          ? enabledModels.filter((m) => activeModels.includes(m))
-          : activeModels;
-
-        if (modelsToUse.length > 0) {
-          await analyzePosition();
-          return;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
-        retries++;
-      }
-
-      if (!currentAbortController.signal.aborted) {
-        setIsLoading(false);
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      if (!currentAbortController.signal.aborted) {
-        waitForModels();
-      }
-    }, 100);
+    analyzePosition();
 
     return () => {
-      clearTimeout(timeoutId);
       abortControllerRef.current?.abort();
     };
   }, [
     fen,
-    gameReviewMode,
+    activeModels,   
     analyzePosition,
-    maxRetries,
-    retryDelayMs,
-    enabledModels,
-    activeModels,
   ]);
 
   return {

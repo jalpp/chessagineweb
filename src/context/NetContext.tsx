@@ -67,20 +67,6 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
     maia3: null,
   });
 
-  const toastIds = useRef<Record<ModelType, string | null>>({
-    maia2: null,
-    bigLeela: null,
-    elitemaia: null,
-    maia3: null,
-  });
-
-  const hasTriggeredDownload = useRef<Record<ModelType, boolean>>({
-    maia2: false,
-    bigLeela: false,
-    elitemaia: false,
-    maia3: false,
-  });
-
   const modelsRef = useRef<{
     maia2: MaiaModel
     bigLeela: LeelaModel
@@ -132,16 +118,12 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
 
   const downloadModel = useCallback(async (modelType: ModelType) => {
     try {
-      setStatus(prev => ({ ...prev, [modelType]: 'downloading' }));
+    
       await models[modelType].downloadModel();
-      // Belt-and-suspenders: ensure status is 'ready' after successful download
-      setStatus(prev => ({ ...prev, [modelType]: 'ready' }));
     } catch (err) {
-      setError(prev => ({
-        ...prev,
-        [modelType]: err instanceof Error ? err.message : 'Failed to download model'
-      }));
-      setStatus(prev => ({ ...prev, [modelType]: 'error' }));
+      // The model's own setStatus/setError callbacks already fired.
+      // We only need to handle anything the context layer cares about.
+      console.error(`downloadModel failed for ${modelType}:`, err);
     }
   }, [models]);
 
@@ -151,12 +133,6 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
     );
   }, [status]);
 
-  // Toast notifications
-  useEffect(() => {
-    return () => {
-      toast.dismiss();
-    };
-  }, []);
 
   // Memoize engine context value
   const engineValue = useMemo(() => ({
