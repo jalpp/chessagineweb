@@ -1,34 +1,30 @@
 /**
  * NetModel — base class for all ONNX neural net models.
  *
- * Fixes applied:
+ * Key fixes in this version:
  *
- * 1. Persistent storage denial is non-fatal
- *    requestPersistentStorage() denial was inside the main try/catch, so it
- *    threw and jumped to the catch block which called clearAllStorage() and
- *    set status to 'error'. IndexedDB still works when persistent storage is
- *    denied — the browser may just evict data under pressure. Fix: wrap the
- *    call in its own try/catch that only warns, never throws.
+ * 1. initPromise is NEVER set to null after initialization starts.
+ *    The original downloadModel() set initPromise = null at the top, which
+ *    meant any concurrent call to initializeIfNeeded() (StrictMode, Fast
+ *    Refresh, re-renders) would start a second initialize() cycle. This
+ *    caused the UI to flicker back to "downloading" / "no-cache" even after
+ *    models were fully ready, and caused the "download again" button flash.
  *
- * 2. clearAllStorage() only on genuine corruption
- *    The catch block unconditionally called clearAllStorage() on any error,
- *    including transient ones. This wiped IndexedDB unnecessarily. Now only
- *    called for corruption signals.
+ * 2. initialize() owns the full lifecycle including download.
+ *    _runDownload() is the single internal method used by both the auto-init
+ *    path and the manual downloadModel() path. downloadModel() now assigns
+ *    initPromise = this._runDownload() so waitUntilReady() always has a live
+ *    promise to await.
  *
- * 3. initPromise lifecycle
- *    downloadModel() used to set initPromise = null before download finished,
- *    so waitUntilReady() returned immediately, isReady() returned false, and
- *    callers threw — leaving isLoading hung. Now downloadModel() assigns
- *    initPromise = this._runDownload() so callers correctly suspend.
+ * 3. Global sessionCreationQueue serializes InferenceSession.create() calls.
+ *    ONNX Runtime Web hangs silently when multiple sessions are created
+ *    concurrently. A module-level queue ensures only one create() runs at a time.
  *
- * 4. Global session creation queue (sessionCreationQueue)
- *    InferenceSession.create() hangs silently when called concurrently across
- *    model instances. A module-level queue serializes all create() calls so
- *    only one session is built at a time.
+ * 4. requestPersistentStorage() failure is non-fatal.
+ *    Denial just means the browser may evict IndexedDB data under pressure.
+ *    We warn and continue — IndexedDB still works.
  *
- * 5. inferenceQueue — tail is the full async span of fn()
- *    Rewritten from slot/resolveSlot pattern to direct chaining so the queue
- *    tail IS the inference, preventing overlap on slow devices.
+ * 5. clearAllStorage() is only called on genuine corruption, not on every error.
  */
 
 import { NetStatus } from './types'
@@ -43,14 +39,13 @@ interface NetModelOptions {
   modelType?: 'maia2' | 'leela' | 'maia3'
 }
 
-// Global download locks to prevent duplicate downloads across all instances
+// Per-URL download lock: prevents duplicate network requests if two callers
+// race to download the same model at the same time.
 const downloadLocks = new Map<string, Promise<ArrayBuffer>>()
 
-/**
- * Global queue that serializes InferenceSession.create() calls across ALL
- * model instances. ONNX Runtime Web hangs silently when multiple sessions
- * are created concurrently — one at a time keeps it stable.
- */
+// Global session creation queue: ONNX Runtime Web silently hangs when
+// InferenceSession.create() is called concurrently across model instances.
+// This queue ensures only one session is being created at any moment.
 let sessionCreationQueue: Promise<unknown> = Promise.resolve()
 
 class NetModel {
@@ -58,9 +53,14 @@ class NetModel {
   private readonly modelUrl: string
   protected readonly options: NetModelOptions
   private readonly storage = new NetModelStorage()
-  // null  = never started
-  // Promise<void> = in-progress or completed (resolved = ready, rejected = error)
+
+  // null  = initializeIfNeeded() has never been called
+  // Promise = initialization is in progress OR has already completed.
+  //           NEVER reset to null after it is set — this is the key invariant.
   private initPromise: Promise<void> | null = null
+
+  // Per-instance inference queue: ONNX does not allow concurrent session.run()
+  // on the same InferenceSession.
   private inferenceQueue: Promise<unknown> = Promise.resolve()
 
   constructor(options: NetModelOptions) {
@@ -68,26 +68,26 @@ class NetModel {
     this.options = options
   }
 
-  /**
-   * Serialize all ONNX run() calls — ONNX Runtime Web does not support
-   * concurrent session.run() on the same InferenceSession.
-   */
+  // ── Inference serialization ───────────────────────────────────────────────
+
   protected runInference<T>(fn: () => Promise<T>): Promise<T> {
     const result = this.inferenceQueue.then(() => fn()) as Promise<T>
+    // Swallow on tail so one failed inference doesn't permanently block the queue
     this.inferenceQueue = result.catch(() => {})
     return result
   }
 
+  // ── Initialization ────────────────────────────────────────────────────────
+
   public async initializeIfNeeded(): Promise<void> {
-    if (this.initPromise !== null) return
+    if (this.initPromise !== null) return   // already started — idempotent
     this.options.setStatus('loading')
-    this.initPromise = this.initialize()
+    this.initPromise = this._initialize()
     await this.initPromise
   }
 
-  private async initialize(): Promise<void> {
-    // Persistent storage is best-effort — denial is non-fatal.
-    // IndexedDB still works; the browser may just evict data under pressure.
+  private async _initialize(): Promise<void> {
+    // Persistent storage denial is non-fatal — IndexedDB still works.
     try {
       await this.storage.requestPersistentStorage()
     } catch (err) {
@@ -96,21 +96,25 @@ class NetModel {
 
     try {
       const cached = await this.storage.getModel(this.modelUrl)
-      if (!cached) {
-        console.log(`No cache for ${this.modelUrl}, downloading...`)
-        this.options.setStatus('no-cache')
-        await this._runDownload()
+
+      if (cached) {
+        console.log(`Cache hit for ${this.modelUrl}, loading ONNX session...`)
+        await this._createSession(cached)
+        this.options.setStatus('ready')
         return
       }
 
-      console.log(`Cache hit for ${this.modelUrl}, loading ONNX session...`)
-      await this.initializeModel(cached)
-      this.options.setStatus('ready')
+      // No cache — download automatically. We do NOT call the public
+      // downloadModel() here because that would overwrite initPromise.
+      // Instead we call _runDownload() directly so initPromise stays as
+      // the promise for this entire _initialize() call.
+      console.log(`No cache for ${this.modelUrl}, downloading...`)
+      this.options.setStatus('no-cache')
+      await this._runDownload()
+
     } catch (err) {
       console.error(`Failed to initialize ${this.modelUrl}:`, err)
-      // Only wipe storage for genuine corruption — not for permission errors
-      // or transient failures. Unconditional clearAllStorage() was causing
-      // models to re-download on every startup when persistent storage was denied.
+      // Only wipe storage on genuine corruption — not transient/permission errors
       if (err instanceof Error && err.message.toLowerCase().includes('corrupt')) {
         await this.storage.clearAllStorage()
       }
@@ -120,25 +124,28 @@ class NetModel {
     }
   }
 
+  // ── Public download (called from UI "Download" button) ────────────────────
+
   /**
-   * Public entry point for manual / on-demand downloads (called from UI).
-   * Assigns initPromise so waitUntilReady() suspends callers until fully done.
+   * Trigger an explicit download. Replaces initPromise so that any concurrent
+   * waitUntilReady() callers suspend until this download fully completes.
+   * Does NOT set initPromise to null at any point.
    */
   async downloadModel(): Promise<void> {
     this.initPromise = this._runDownload()
     await this.initPromise
   }
 
-  /**
-   * Core download + session init logic, shared by initialize() and downloadModel().
-   */
+  // ── Core download logic ───────────────────────────────────────────────────
+
   private async _runDownload(): Promise<void> {
     try {
+      // If another instance is already downloading this URL, piggyback on it
       if (downloadLocks.has(this.modelUrl)) {
         console.log(`Download already in progress for ${this.modelUrl}, waiting...`)
         this.options.setStatus('downloading')
         const buffer = await downloadLocks.get(this.modelUrl)!
-        await this.initializeModel(buffer)
+        await this._createSession(buffer)
         this.options.setStatus('ready')
         return
       }
@@ -148,7 +155,7 @@ class NetModel {
 
       try {
         const buffer = await downloadPromise
-        await this.initializeModel(buffer)
+        await this._createSession(buffer)
         this.options.setStatus('ready')
       } finally {
         downloadLocks.delete(this.modelUrl)
@@ -164,7 +171,6 @@ class NetModel {
   private async _performDownload(): Promise<ArrayBuffer> {
     this.options.setStatus('downloading')
     this.options.setProgress(0)
-
     console.log(`Starting download: ${this.modelUrl}`)
 
     const res = await fetch(this.modelUrl)
@@ -204,23 +210,32 @@ class NetModel {
     return buffer.buffer
   }
 
-  private async initializeModel(buffer: ArrayBuffer): Promise<void> {
-    // Serialize session creation globally — ONNX Runtime Web hangs silently
-    // when InferenceSession.create() is called concurrently across instances.
+  // ── ONNX session creation (serialized globally) ───────────────────────────
+
+  private async _createSession(buffer: ArrayBuffer): Promise<void> {
+    // Chain onto the global queue so only one InferenceSession.create() runs
+    // at a time across all model instances.
     const creation = sessionCreationQueue.then(async () => {
       console.log(`Initializing ONNX model: ${this.modelUrl}`)
       this.model = await InferenceSession.create(buffer)
       console.log(`Model ready: ${this.modelUrl}`)
     })
-    // Swallow on the tail so one failure doesn't block subsequent models
+    // Tail swallows so one failure doesn't block subsequent models
     sessionCreationQueue = creation.catch(() => {})
     await creation
   }
+
+  // ── Public API ────────────────────────────────────────────────────────────
 
   public get getModel(): InferenceSession {
     return this.model
   }
 
+  /**
+   * Suspends until the model is fully ready (downloaded + ONNX session loaded).
+   * Safe to call at any point — if initPromise is null the model hasn't been
+   * initialized yet and we return immediately (callers should check isReady()).
+   */
   public async waitUntilReady(): Promise<void> {
     if (this.initPromise !== null) await this.initPromise
   }

@@ -7,7 +7,6 @@ import { MaiaModel } from '@/libs/nets/MaiaModel';
 import { LeelaModel } from '@/libs/nets/LeelaModel';
 import { Maia3Model } from '@/libs/nets/Maia3Model';
 
-
 export const NetModelContext = React.createContext<{
   maia2: MaiaModel | undefined;
   bigLeela: LeelaModel | undefined;
@@ -24,7 +23,6 @@ export const NetModelContext = React.createContext<{
   },
 });
 
-// Separate context for frequently-changing state
 export const NetModelStatusContext = React.createContext<{
   status: Record<ModelType, NetStatus>;
   progress: Record<ModelType, number>;
@@ -52,14 +50,14 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
     elitemaia: 'loading',
     maia3: 'loading',
   });
-  
+
   const [progress, setProgress] = useState<Record<ModelType, number>>({
     maia2: 0,
     bigLeela: 0,
     elitemaia: 0,
     maia3: 0,
   });
-  
+
   const [error, setError] = useState<Record<ModelType, string | null>>({
     maia2: null,
     bigLeela: null,
@@ -110,6 +108,8 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
   const models = modelsRef.current
 
   useEffect(() => {
+    // initializeIfNeeded() is idempotent — safe to call multiple times.
+    // It sets initPromise on first call and is a no-op on subsequent calls.
     models.maia2.initializeIfNeeded()
     models.bigLeela.initializeIfNeeded()
     models.elitemaia.initializeIfNeeded()
@@ -117,38 +117,39 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
   }, [models])
 
   const downloadModel = useCallback(async (modelType: ModelType) => {
+    // Do NOT set status here manually. The model's own setStatus callbacks
+    // handle every transition: loading → no-cache → downloading → ready.
+    // Setting status here races with the model's internal callbacks and was
+    // causing the UI to show stale states.
     try {
-    
-      await models[modelType].downloadModel();
+      await models[modelType].downloadModel()
     } catch (err) {
-      // The model's own setStatus/setError callbacks already fired.
-      // We only need to handle anything the context layer cares about.
-      console.error(`downloadModel failed for ${modelType}:`, err);
+      // Model's own setStatus/setError callbacks already fired.
+      console.error(`downloadModel failed for ${modelType}:`, err)
     }
-  }, [models]);
+  }, [models])
 
   const activeModels = useMemo(() => {
     return (Object.keys(status) as ModelType[]).filter(
       modelType => status[modelType] === 'ready'
-    );
-  }, [status]);
+    )
+  }, [status])
 
 
-  // Memoize engine context value
+
   const engineValue = useMemo(() => ({
     maia2: models.maia2,
     bigLeela: models.bigLeela,
     elitemaia: models.elitemaia,
     maia3: models.maia3,
     downloadModel,
-  }), [models, downloadModel]);
+  }), [models, downloadModel])
 
-  // Memoize status context value
   const statusValue = useMemo(() => ({
     status,
     progress,
     activeModels,
-  }), [status, progress, activeModels]);
+  }), [status, progress, activeModels])
 
   return (
     <NetModelContext.Provider value={engineValue}>
@@ -156,22 +157,17 @@ export const NetModelContextProvider: React.FC<{ children: ReactNode }> = ({ chi
         {children}
       </NetModelStatusContext.Provider>
     </NetModelContext.Provider>
-  );
-};
+  )
+}
 
-// Custom hooks
 export const useNetModels = () => {
-  const context = React.useContext(NetModelContext);
-  if (!context) {
-    throw new Error('useNetModel must be used within NetModelContextProvider');
-  }
-  return context;
-};
+  const context = React.useContext(NetModelContext)
+  if (!context) throw new Error('useNetModel must be used within NetModelContextProvider')
+  return context
+}
 
 export const useNetStatus = () => {
-  const context = React.useContext(NetModelStatusContext);
-  if (!context) {
-    throw new Error('useNetStatus must be used within NetModelContextProvider');
-  }
-  return context;
-};
+  const context = React.useContext(NetModelStatusContext)
+  if (!context) throw new Error('useNetStatus must be used within NetModelContextProvider')
+  return context
+}
