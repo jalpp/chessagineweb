@@ -8,7 +8,6 @@ import {
   isVeryGoodMove,
   evaluationToWinRate,
   percentToNumber,
-  normalizeChessDBScore,
   getMoveBasicClassification,
 } from "@/libs/game/gamereview";
 import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
@@ -27,6 +26,14 @@ import { validateFen } from "chess.js";
  *
  * @author jalpp, ChessKit devs
  */
+
+// ---------------------------------------------------------------------------
+// Clamp centipawn values to ±1100 to prevent mate scores (e.g. 30000cp)
+// from distorting the y-axis scale on the eval graph.
+// ---------------------------------------------------------------------------
+function clampEvalCp(cp: number): number {
+  return Math.max(-1100, Math.min(1100, cp));
+}
 
 // ---------------------------------------------------------------------------
 // Standalone ChessDB fetch (no hook state, safe to call concurrently)
@@ -205,7 +212,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           postMoveWinRate: number;
           bestMove: string | undefined;
           sanBestMove: string | undefined;
-          evalMove: number;
+          evalMove: number; // centipawns from White's perspective, AFTER the move
           sfAnalysis?: any; // for ease metric
         }
 
@@ -265,14 +272,14 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               : undefined;
 
             bestMove = analysis.bestMove;
-            evalMove = analysis.lines[0].cp || 0;
+            // evalMove is assigned from the POST-move position below
 
             const tmp = new Chess(p.preMovefen);
             const mo = bestMove ? tmp.move(bestMove) : undefined;
             sanBestMove = mo?.san;
           } else {
             preMoveWinRate = percentToNumber(preData[0].winrate);
-            evalMove = normalizeChessDBScore(Number(preData[0].score || 0), p.activePlayer);
+            // Use rawEval (centipawns) from ChessDB, not the pre-divided score string
             secondBestWinRate = preData[1]
               ? percentToNumber(preData[1].winrate)
               : undefined;
@@ -280,6 +287,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             sanBestMove = preData[0].san;
           }
 
+          // ── Evaluate the position AFTER the move (fixes 1-ply lag) ─────────
           if (postData.length === 0) {
             const postAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
               fen: p.postMovefen,
@@ -289,8 +297,16 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             });
             const pwwr = evaluationToWinRate(postAnalysis.lines?.[0]);
             postMoveWinRate = p.activePlayer === "w" ? pwwr : 100 - pwwr;
+            // Post-move cp from White's perspective (Stockfish always returns from side-to-move;
+            // after the move, the side-to-move is the opponent, so negate)
+            const postCp = postAnalysis.lines?.[0]?.cp ?? 0;
+            evalMove = clampEvalCp(-postCp); // negate: opponent's good position is bad for White
           } else {
             postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
+            // ChessDB rawEval is from the side-to-move's perspective at postMovefen;
+            // negate to convert to White's perspective
+            const postRaw = Number(postData[0].rawEval ?? 0);
+            evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
           }
 
           sfCache.set(p.plyIndex, {
@@ -384,16 +400,17 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             } = sf);
           } else {
             preMoveWinRate = percentToNumber(preData[0].winrate);
-            evalMove = normalizeChessDBScore(
-              Number(preData[0].score || 0),
-              p.activePlayer
-            );
             secondBestWinRate = preData[1]
               ? percentToNumber(preData[1].winrate)
               : undefined;
             bestMove = preData[0].uci;
             sanBestMove = preData[0].san;
             postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
+            // Use post-move rawEval (centipawns) for correct graph scale and no 1-ply lag.
+            // ChessDB rawEval is from the side-to-move at postMovefen (the opponent after the move);
+            // negate to convert to White's perspective.
+            const postRaw = Number(postData[0].rawEval ?? 0);
+            evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
           }
 
           // Await net — typically already resolved
