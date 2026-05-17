@@ -16,7 +16,6 @@ import {
   Psychology as NetsIcon,
   BarChart as ThemeIcon,
   SportsEsports as ReviewIcon,
-  AccountTree as TreeIcon,
   PersonSearch as HumanEvalIcon,
 } from "@mui/icons-material";
 
@@ -34,7 +33,6 @@ import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { UseMaiaEngineResult } from "@/hooks/useNets";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
-import ChessTreeView from "../tabs/ChessTreeView";
 import { ObjectiveHumanEval } from "../humanevalbar/ObjectiveHumanEval";
 
 interface BaseAnalysisViewProps {
@@ -272,10 +270,6 @@ function AgineAnalysisView({
           loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis} />
       </Section>
 
-      <Section id={3} title="Variation Tree" icon={<TreeIcon sx={{ fontSize: 14 }} />}
-        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
-        <ChessTreeView initialFen={fen} />
-      </Section>
     </Box>
   );
 }

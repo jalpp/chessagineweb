@@ -1,0 +1,106 @@
+/**
+ * Two-level LRU cache for /api/nn responses.
+ * L1 — in-memory Map  (200 entries, instant, session-scoped)
+ * L2 — IndexedDB      (2000 entries, persistent across sessions)
+ * Dedup: concurrent calls for the same key share one in-flight promise.
+ */
+import { openDB, IDBPDatabase } from "idb";
+
+const MEM_MAX = 200;
+const IDB_MAX = 2000;
+const DB_NAME = "nn-cache-v1";
+const STORE   = "responses";
+
+// ── L1 ────────────────────────────────────────────────────────────────────────
+
+const mem = new Map<string, { value: unknown; ts: number }>();
+
+function memGet(key: string): unknown | undefined {
+  const e = mem.get(key);
+  if (!e) return undefined;
+  e.ts = Date.now();
+  mem.delete(key); mem.set(key, e);
+  return e.value;
+}
+
+function memSet(key: string, value: unknown): void {
+  if (mem.has(key)) mem.delete(key);
+  mem.set(key, { value, ts: Date.now() });
+  if (mem.size > MEM_MAX) mem.delete(mem.keys().next().value!);
+}
+
+// ── L2 ────────────────────────────────────────────────────────────────────────
+
+interface IDBEntry { key: string; value: unknown; ts: number }
+let _db: Promise<IDBPDatabase> | null = null;
+
+function getDB(): Promise<IDBPDatabase> {
+  if (typeof window === "undefined") return Promise.reject("SSR");
+  if (!_db) _db = openDB(DB_NAME, 1, {
+    upgrade(db) {
+      const s = db.createObjectStore(STORE, { keyPath: "key" });
+      s.createIndex("ts", "ts");
+    },
+  }).catch(e => { _db = null; throw e; });
+  return _db;
+}
+
+async function idbGet(key: string): Promise<unknown | undefined> {
+  try {
+    const db = await getDB();
+    const e: IDBEntry | undefined = await db.get(STORE, key);
+    if (!e) return undefined;
+    db.put(STORE, { ...e, ts: Date.now() }).catch(() => {});
+    return e.value;
+  } catch { return undefined; }
+}
+
+async function idbSet(key: string, value: unknown): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.put(STORE, { key, value, ts: Date.now() } satisfies IDBEntry);
+    const count = await db.count(STORE);
+    if (count > IDB_MAX) {
+      const tx = db.transaction(STORE, "readwrite");
+      let cur = await tx.store.index("ts").openCursor();
+      let n = 0;
+      while (cur && n < count - IDB_MAX) { await cur.delete(); cur = await cur.continue(); n++; }
+      await tx.done;
+    }
+  } catch { /* quota / private browsing — degrade silently */ }
+}
+
+// ── Dedup ─────────────────────────────────────────────────────────────────────
+
+const pending = new Map<string, Promise<unknown>>();
+
+// ── Public ────────────────────────────────────────────────────────────────────
+
+export function makeCacheKey(endpoint: string, fen: string): string {
+  return `${endpoint}:${fen}`;
+}
+
+export async function cacheGet(key: string): Promise<unknown | undefined> {
+  const m = memGet(key);
+  if (m !== undefined) return m;
+  const i = await idbGet(key);
+  if (i !== undefined) { memSet(key, i); return i; }
+  return undefined;
+}
+
+export function cachePut(key: string, value: unknown): void {
+  memSet(key, value);
+  idbSet(key, value);
+}
+
+export async function cachedFetch<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+  const hit = await cacheGet(key);
+  if (hit !== undefined) return hit as T;
+  const inf = pending.get(key);
+  if (inf) return inf as Promise<T>;
+  const p = fetcher()
+    .then(r => { cachePut(key, r); pending.delete(key); return r; })
+    .catch(e => { pending.delete(key); throw e; });
+  pending.set(key, p);
+  return p;
+}
