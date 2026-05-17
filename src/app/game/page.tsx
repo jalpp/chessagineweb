@@ -179,7 +179,7 @@ export default function GamePage() {
 
   const {
     evaluations, sanEvaluations, isLoading: maiaIsLoading,
-    Maiaerror: maiaError, lichessData, isInBook,
+    Maiaerror: maiaError,
   } = useNets({ fen, gameReviewMode: !autoAnalysis });
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
@@ -692,7 +692,7 @@ export default function GamePage() {
             openingLoading={openingLoading} openingData={openingData}
             lichessOpeningData={lichessOpeningData} lichessOpeningLoading={lichessOpeningLoading}
             chessdbdata={chessdbdata} queueing={queueing} error={error}
-            lichessData={lichessData} loading={loading} refetch={refetch}
+            loading={loading} refetch={refetch}
             requestAnalysis={requestAnalysis} moves={moves}
             currentMoveIndex={currentMoveIndex} goToMove={goToMove}
             comment={comment} clock={clock} gameInfo={gameInfo}
@@ -700,7 +700,7 @@ export default function GamePage() {
             gameReviewLoading={gameReviewLoading} gameReviewProgress={gameReviewProgress}
             gameReview={gameReview} pgnText={pgnText}
             currentMove={moves[currentMoveIndex]} Customfen={customPlayFen}
-            sanEvaluations={sanEvaluations} isInBook={isInBook}
+            sanEvaluations={sanEvaluations}
             scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
             autoAnalysis={autoAnalysis}
           />

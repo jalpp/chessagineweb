@@ -2,7 +2,6 @@ import React, { useMemo, useState, useCallback } from "react";
 import { Box, Typography, useTheme, ToggleButtonGroup, ToggleButton, Alert, AlertTitle } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { MoveAnalysis } from "@/libs/agine/helper";
-import { useNetStatus } from "@/context/NetContext";
 
 interface EvalGraphProps {
   moves: MoveAnalysis[];
@@ -15,9 +14,6 @@ type GraphMode = "eval" | "ease";
 const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, currentMoveIndex = 0 }) => {
   const theme = useTheme();
   const [graphMode, setGraphMode] = useState<GraphMode>("eval");
-  const { status } = useNetStatus();
-  const leelaT1Status = status['bigLeela'];
-
   const allData = useMemo(() => {
     return moves.map((m, idx) => {
       const evalm = Number((m.evalMove / 100).toFixed(2));
@@ -68,7 +64,7 @@ const EvalGraph: React.FC<EvalGraphProps> = React.memo(({ moves, goToMove, curre
   const evalPadding = useMemo(() => (maxEval - minEval) * 0.1 || 1, [maxEval, minEval]);
   const easePadding = useMemo(() => (maxEase - minEase) * 0.1 || 0.1, [maxEase, minEase]);
 
-  const shouldShowLeelaWarning = undefinedEaseCount >= 5 || leelaT1Status !== "ready";
+  const shouldShowLeelaWarning = undefinedEaseCount >= 5;
   const showEaseMetricWarning = graphMode === "ease" && shouldShowLeelaWarning;
 
   const handleModeChange = useCallback((_event: React.MouseEvent<HTMLElement>, newMode: GraphMode | null) => {

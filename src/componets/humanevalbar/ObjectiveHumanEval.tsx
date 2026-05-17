@@ -1,37 +1,112 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  CircularProgress,
-  Alert,
-  Divider,
-  Button,
-  LinearProgress,
+  Box, Card, CardContent, Typography,
+  Chip, CircularProgress, Alert, Divider,
 } from "@mui/material";
-import { Psychology as BrainIcon, Download, CloudDownload } from "@mui/icons-material";
-import {
-  MaiaEvaluation,
-  MAIA3_MODELS,
-  MAIA3_RATING_VALUES,
-  MODEL_CONFIGS,
-} from "@/libs/nets/types";
-import { useNetStatus, useNetModels } from "@/context/NetContext";
-import { HumanEvalBar, qToCp, winProbToQ } from "./HumanEvalBar";
+import { Psychology as BrainIcon } from "@mui/icons-material";
 
-interface ObjectiveHumanEvalProps {
-  evaluations: {
-    maia2?: { [key: string]: MaiaEvaluation } | null;
-    bigLeela?: MaiaEvaluation | null;
-    elitemaia?: MaiaEvaluation | null;
-    maia3?: { [key: string]: MaiaEvaluation } | null;
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface BatchEntry {
+  rating: number;
+  analysis: {
+    HumanEstimateEval?: string;
+    LeelaZeroEstimateEval?: string;
   };
-  isLoading: boolean;
-  error: Error | null;
 }
+
+interface RatingEval {
+  rating: number;
+  humanEval: string;
+  lc0Eval: string;
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+
+async function fetchBatch(fen: string, signal?: AbortSignal): Promise<RatingEval[]> {
+  const res = await fetch("/api/nn", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint: "batch-maia3", fen }),
+    signal,
+  });
+  if (!res.ok) throw new Error(`batch-maia3 failed: ${res.status}`);
+  const json = await res.json();
+  return (json.results ?? []).map((entry: BatchEntry) => ({
+    rating: entry.rating,
+    humanEval: entry.analysis.HumanEstimateEval ?? "—",
+    lc0Eval: entry.analysis.LeelaZeroEstimateEval ?? "—",
+  }));
+}
+
+// ── Eval bar ──────────────────────────────────────────────────────────────────
+
+/**
+ * Renders a vertical bar directly from a CP eval string like "+0.42" or "-1.30".
+ * No math — just parses the float, maps ±10 pawns → 0–100% bar height.
+ */
+function EvalBar({ evalStr, height = 240 }: { evalStr: string; height?: number }) {
+  const cp = parseFloat(evalStr) * 100; // evalStr is in pawns already e.g. "+0.42"
+  const pawns = isNaN(cp / 100) ? 0 : Math.max(-10, Math.min(10, cp / 100));
+  const whitePercent = 50 + pawns * 5;
+  const isPositive = pawns >= 0;
+
+  return (
+    <Box
+      sx={{
+        width: 24,
+        height,
+        position: "relative",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+        overflow: "hidden",
+        backgroundColor: "#1a1a1a",
+        flexShrink: 0,
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: `${whitePercent}%`,
+          backgroundColor: "#f0ede8",
+          transition: "height 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          top: isPositive ? 6 : "auto",
+          bottom: isPositive ? "auto" : 6,
+          left: "50%",
+          transform: "translateX(-50%) rotate(-90deg)",
+          transformOrigin: "center",
+          minWidth: "52px",
+          textAlign: "center",
+          zIndex: 2,
+          pointerEvents: "none",
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: "9px",
+            fontWeight: 700,
+            color: whitePercent > 70 || whitePercent < 30 ? "#fff" : "#111",
+          }}
+        >
+          {isNaN(parseFloat(evalStr)) ? "—" : evalStr}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+// ── Card header ───────────────────────────────────────────────────────────────
 
 const CARD_HEADER = (
   <>
@@ -41,206 +116,42 @@ const CARD_HEADER = (
   </>
 );
 
-// ── Spinner row used in multiple states ───────────────────────────────────────
-function StatusRow({ text }: { text: string }) {
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
-      <CircularProgress size={20} />
-      <Typography variant="body2" color="text.secondary">{text}</Typography>
-    </Box>
-  );
-}
-
-// ── Download card — only shown when user explicitly needs to download (no auto-init running) ──────────────────────
-const Maia3DownloadCard: React.FC = () => {
-  const { status, progress } = useNetStatus();
-  const { downloadModel } = useNetModels();
-  const [busy, setBusy] = React.useState(false);
-
-  const modelStatus = status.maia3;
-  const modelProgress = progress.maia3 ?? 0;
-  const config = MODEL_CONFIGS.maia3;
-
-  // Derive downloading purely from context — never mix with local busy state
-  // for the progress bar, since the context fires asynchronously.
-  const isDownloading = busy || modelStatus === "downloading";
-
-  const handleDownload = async () => {
-    setBusy(true);
-    try {
-      await downloadModel("maia3");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 2,
-        py: 4,
-        px: 2,
-        border: "1px dashed",
-        borderColor: "divider",
-        borderRadius: 2,
-        textAlign: "center",
-      }}
-    >
-      <CloudDownload sx={{ fontSize: 40, color: "primary.main", opacity: 0.8 }} />
-      <Box>
-        <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-          {config.name} not downloaded
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 340 }}>
-          {config.description}
-        </Typography>
-      </Box>
-
-      {/* Show progress bar as soon as context reports downloading,
-          regardless of local busy state */}
-      {modelStatus === "downloading" && (
-        <Box sx={{ width: "100%", maxWidth: 280 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-            <Typography variant="caption">Downloading…</Typography>
-            <Typography variant="caption" fontWeight={700}>
-              {modelProgress > 0 ? `${Math.round(modelProgress)}%` : "Starting…"}
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant={modelProgress > 0 ? "determinate" : "indeterminate"}
-            value={modelProgress}
-            sx={{ height: 6, borderRadius: 3 }}
-          />
-        </Box>
-      )}
-
-      <Button
-        variant="contained"
-        startIcon={<Download />}
-        onClick={handleDownload}
-        disabled={isDownloading}
-        sx={{ textTransform: "none", fontWeight: 600 }}
-      >
-        {isDownloading ? "Downloading…" : `Download Maia 3 (${config.size})`}
-      </Button>
-    </Box>
-  );
-};
-
-// ── Bar group ─────────────────────────────────────────────────────────────────
-function EvalBarGroup({
-  entries,
-  barHeight,
-}: {
-  entries: { label: string; winProb: number }[];
-  barHeight: number;
-}) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "row",
-        gap: 1.5,
-        alignItems: "flex-end",
-        overflowX: "auto",
-        pb: 1,
-      }}
-    >
-      {entries.map(({ label, winProb }) => {
-        const q = winProbToQ(winProb);
-        const cp = qToCp(q);
-        const evalText =
-          cp / 100 >= 0 ? `+${(cp / 100).toFixed(2)}` : (cp / 100).toFixed(2);
-        return (
-          <Box
-            key={label}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 0.25,
-            }}
-          >
-            <HumanEvalBar winProb={winProb} height={barHeight} />
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "8px",
-                fontWeight: 600,
-                color: "text.secondary",
-                whiteSpace: "nowrap",
-                mt: 0.25,
-              }}
-            >
-              {label}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "8px",
-                color: "text.primary",
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-              }}
-            >
-              Eval {evalText}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: "8px",
-                color: "text.secondary",
-                fontFamily: "monospace",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Q={q.toFixed(3)}
-            </Typography>
-          </Box>
-        );
-      })}
-    </Box>
-  );
-}
-
 // ── Main export ───────────────────────────────────────────────────────────────
-export const ObjectiveHumanEval: React.FC<ObjectiveHumanEvalProps> = ({
-  evaluations,
-  isLoading,
-  error,
-}) => {
-  const { status } = useNetStatus();
-  const maia3Status = status.maia3;
 
-  // ── Loading states that should show a spinner, not the download button ──
-  //
-  //   'loading'     — initializeIfNeeded() called, checking IndexedDB cache
-  //   'downloading' — actively fetching the model file
-  //
-  // .no-cache. is also treated as initializing because initializeIfNeeded() immediately
-  // the download card so the user can explicitly trigger the download.
-  const isModelInitializing =
-    maia3Status === "loading" || maia3Status === "downloading" || maia3Status === "no-cache";
+export const ObjectiveHumanEval: React.FC<{ fen: string }> = ({ fen }) => {
+  const [results, setResults] = useState<RatingEval[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  if (isLoading || isModelInitializing) {
-    const statusText =
-      maia3Status === "downloading"
-        ? "Downloading Maia 3 model…"
-        : maia3Status === "no-cache" ? "Loading Maia 3…" : isLoading
-        ? "Maia 3 is computing evaluations…"
-        : "Initializing Maia 3…";
+  useEffect(() => {
+    if (!fen) return;
+    abortRef.current?.abort();
+    const abort = new AbortController();
+    abortRef.current = abort;
 
+    setIsLoading(true);
+    setError(null);
+    setResults([]);
+
+    fetchBatch(fen, abort.signal)
+      .then((r) => { if (!abort.signal.aborted) setResults(r); })
+      .catch((e) => { if (!abort.signal.aborted) setError(e instanceof Error ? e : new Error("Unknown error")); })
+      .finally(() => { if (!abort.signal.aborted) setIsLoading(false); });
+
+    return () => abort.abort();
+  }, [fen]);
+
+  if (isLoading) {
     return (
       <Card variant="outlined" sx={{ borderRadius: 2 }}>
         <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-            {CARD_HEADER}
-          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>{CARD_HEADER}</Box>
           <Divider sx={{ mb: 2 }} />
-          <StatusRow text={statusText} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}>
+            <CircularProgress size={20} />
+            <Typography variant="body2" color="text.secondary">Maia 3 computing evaluations…</Typography>
+          </Box>
         </CardContent>
       </Card>
     );
@@ -250,46 +161,40 @@ export const ObjectiveHumanEval: React.FC<ObjectiveHumanEvalProps> = ({
     return <Alert severity="error">Neural net error: {error.message}</Alert>;
   }
 
-  const hasMaia3 =
-    maia3Status === "ready" &&
-    !!evaluations.maia3 &&
-    Object.keys(evaluations.maia3).length > 0;
-
-  // Every 2nd index → 600, 800, 1000, … 2600
-  const maia3Entries = hasMaia3
-    ? MAIA3_MODELS.map((model, i) => ({ model, i }))
-        .filter(({ i }) => i % 2 === 0)
-        .map(({ model, i }) => ({
-          label: String(MAIA3_RATING_VALUES[i]),
-          winProb: evaluations.maia3![model]?.value ?? 0.5,
-        }))
-    : [];
+  // Every other level: 600, 800, 1000, … 2600
+  const displayed = results.filter((_, i) => i % 2 === 0);
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 2 }}>
       <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-          {CARD_HEADER}
-        </Box>
-
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>{CARD_HEADER}</Box>
         <Divider sx={{ mb: 1.5 }} />
-
-        {hasMaia3 ? (
+        {displayed.length > 0 ? (
           <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 1 }}
-            >
-              Maia 3 WDL win probabilities → CP eval — 600 to 2600 Elo (every
-              200 pts)
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+              Human Estimate Eval per rating — 600 to 2600 Elo (every 200 pts)
             </Typography>
-            <EvalBarGroup entries={maia3Entries} barHeight={240} />
+            <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5, alignItems: "flex-end", overflowX: "auto", pb: 1 }}>
+              {displayed.map(({ rating, humanEval, lc0Eval }) => (
+                <Box key={rating} sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
+                  <EvalBar evalStr={humanEval} height={240} />
+                  <Typography variant="caption" sx={{ fontSize: "8px", fontWeight: 700, color: "text.secondary", whiteSpace: "nowrap" }}>
+                    {rating}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: "8px", color: "text.primary", fontWeight: 700, whiteSpace: "nowrap" }}>
+                    H: {humanEval}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: "8px", color: "text.secondary", whiteSpace: "nowrap" }}>
+                    L: {lc0Eval}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           </Box>
         ) : (
-          // Only reaches here when status is .ready. with no data (model ready but analysis pending)
-          // or 'error' — never during 'loading', 'no-cache', or 'downloading'
-          <Maia3DownloadCard />
+          <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+            No position selected
+          </Typography>
         )}
       </CardContent>
     </Card>

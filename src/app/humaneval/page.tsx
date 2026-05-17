@@ -25,7 +25,6 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import type { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { useNets } from "@/hooks/useNets";
-import { useNetStatus } from "@/context/NetContext";
 import { ObjectiveHumanEval } from "@/componets/humanevalbar/ObjectiveHumanEval";
 import { SubjectiveHumanEval } from "@/componets/humanevalbar/SubjectiveHumanEval";
 import { HumanEvalBar } from "@/componets/humanevalbar/HumanEvalBar";
@@ -54,11 +53,7 @@ export default function HumanEvalBarPage() {
   const activeFen = game.fen();
   const sideToMove = activeFen.split(" ")[1] === "b" ? "Black" : "White";
 
-  const { evaluations, isLoading, Maiaerror: maiaError, evaluationsFen } = useNets({ fen: activeFen, useLichessBook: false });
-  const { status } = useNetStatus();
-
-  const maia3Ready = status.maia3 === "ready";
-  const isCalculating = maia3Ready && (isLoading || evaluationsFen !== activeFen);
+  const { evaluations, isLoading } = useNets({ fen: activeFen });
 
 
   const sidebarWinProb = evaluations.maia3?.[MAIA3_MODELS[DEFAULT_MAIA3_IDX]]?.value ?? 0.5;
@@ -101,7 +96,7 @@ export default function HumanEvalBarPage() {
 
   const AnalysisPanel = () => (
     <Stack spacing={2.5}>
-      <ObjectiveHumanEval evaluations={evaluations} isLoading={isCalculating} error={maiaError} />
+      <ObjectiveHumanEval fen={activeFen} />
       <SubjectiveHumanEval />
     </Stack>
   );
@@ -176,7 +171,7 @@ export default function HumanEvalBarPage() {
                   showLabels
                 />
                 {/* Loading overlay on the bar while Maia is computing */}
-                {isCalculating && (
+                {isLoading && (
                   <Box
                     sx={{
                       position: "absolute",
@@ -199,14 +194,14 @@ export default function HumanEvalBarPage() {
                 variant="caption"
                 sx={{
                   fontSize: "9px",
-                  color: isCalculating ? "text.disabled" : "text.disabled",
+                  color: isLoading ? "text.disabled" : "text.disabled",
                   textAlign: "center",
                   maxWidth: 52,
                   lineHeight: 1.3,
                   mt: 0.25,
                 }}
               >
-                {isCalculating ? "calculating…" : sidebarLabel}
+                {isLoading ? "calculating…" : sidebarLabel}
               </Typography>
             </Box>
 

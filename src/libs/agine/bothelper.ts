@@ -1,6 +1,4 @@
-export type BotType = "stockfish" | "bigLeela" | "maia2" | "elitemaia";
-export type MaiaRating = 1100 | 1200 | 1300 | 1400 | 1500 | 1600 | 1700 | 1800 | 1900;
-
+export type BotType = "stockfish" | "bigLeela" | "elitemaia";
 
 export interface BotConfig {
   name: string;
@@ -8,7 +6,7 @@ export interface BotConfig {
   strength: string;
   color: string;
   requiresModel?: boolean;
-  modelType?: "maia2" | "bigLeela" | "elitemaia";
+  modelType?: "bigLeela" | "elitemaia";
 }
 
 export const BOT_CONFIGS: Record<BotType, BotConfig> = {
@@ -25,14 +23,6 @@ export const BOT_CONFIGS: Record<BotType, BotConfig> = {
     color: "#9c27b0",
     requiresModel: true,
     modelType: "bigLeela",
-  },
-  maia2: {
-    name: "Maia2",
-    description: "Human-like play at selected rating level",
-    strength: "1100-1900 ELO",
-    color: "#8c11d3ff",
-    requiresModel: true,
-    modelType: "maia2",
   },
   elitemaia: {
     name: "Elite Leela",
@@ -57,11 +47,5 @@ export const TIME_CONTROLS: Record<TimeControl, TimeControlConfig> = {
   "5+0": { minutes: 5, increment: 0, label: "5 min" },
   "10+0": { minutes: 10, increment: 0, label: "10 min" },
   "30+0": { minutes: 30, increment: 0, label: "30 min" },
-  custom: {
-    minutes: 10,
-    increment: 0,
-    label: "Custom",
-    isCustom: true,
-  },
+  custom: { minutes: 10, increment: 0, label: "Custom", isCustom: true },
 };
-

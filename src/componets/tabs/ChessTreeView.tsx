@@ -30,7 +30,6 @@ import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { useChessDB } from "@/hooks/useChessDb";
 import { useNets } from "@/hooks/useNets";
-import { useNetStatus } from "@/context/NetContext";
 import { CandidateMove } from "@/libs/agine/helper";
 import { ChessDBEaseMetricCalculator } from "@/libs/easemetric/chessDbEaseMetric";
 import { ModelType } from "@/libs/nets/types";
@@ -97,7 +96,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 
   const { evaluations, isLoading: netsLoading } = useNets({
     fen: childFen || "",
-    useLichessBook: false,
     enabledModels: showEaseMetric && childFen ? [modelType] : [],
   });
 
@@ -370,14 +368,11 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
   } | null>(null);
 
   const calculator = useMemo(() => new ChessDBEaseMetricCalculator(false), []);
-  const { status } = useNetStatus();
 
   const { data: rootMoves, loading, error, refetch } = useChessDB(fen, false);
 
-  const currentModelStatus = status[modelType];
-  const isModelReady = currentModelStatus === "ready";
-  const isModelDownloading =
-    currentModelStatus === "downloading" || currentModelStatus === "loading";
+  const isModelReady = true;
+  const isModelDownloading = false;
 
   const handleEaseMetricCalculated = useCallback(
     (path: string, easeMetric: number) => {
@@ -553,22 +548,7 @@ export const ChessTreeView: React.FC<ChessTreeViewProps> = ({
 
   const displayFen = selectedNode?.fen || fen;
 
-  const getModelStatusMessage = () => {
-    switch (currentModelStatus) {
-      case "loading":
-        return "Model is initializing...";
-      case "no-cache":
-        return "Model not downloaded. Please download the model to use ease metrics.";
-      case "downloading":
-        return "Model is downloading...";
-      case "error":
-        return "Error loading model. Please try again.";
-      default:
-        return null;
-    }
-  };
-
-  const modelStatusMessage = getModelStatusMessage();
+  const modelStatusMessage: string | null = null;
 
   return (
     <Box>

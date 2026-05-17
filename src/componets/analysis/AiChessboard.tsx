@@ -345,7 +345,6 @@ export default function AiChessboardPanel({
       }
     };
 
-    addPolicy(evaluations?.maia2?.["maia_kdd_1900"]?.policy, "#7c3aed");
     addPolicy(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
     addPolicy(evaluations?.bigLeela?.policy, "#400ac8ff");
     addPolicy(evaluations?.elitemaia?.policy, "rgb(235,49,154)");

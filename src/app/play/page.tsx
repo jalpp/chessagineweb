@@ -47,7 +47,6 @@ import { Menu, SaveIcon } from "lucide-react";
 import {
   BotType,
   BOT_CONFIGS,
-  MaiaRating,
   TIME_CONTROLS,
   TimeControl,
 } from "@/libs/agine/bothelper";
@@ -66,8 +65,7 @@ export default function PlayVsBotsPage() {
 
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [selectedBot, setSelectedBot] = useState<BotType>("maia2");
-  const [maiaRating, setMaiaRating] = useState<MaiaRating>(1500);
+  const [selectedBot, setSelectedBot] = useState<BotType>("bigLeela");
   const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
   const [gameStatus, setGameStatus] = useState<
     "setup" | "playing" | "finished"
@@ -124,7 +122,6 @@ export default function PlayVsBotsPage() {
     stockfishAnalysisResult,
     openingLoading,
     evaluations,
-    sanEvaluations,
     isNetLoading,
     evaluationsFen,
     stockfishDone,
@@ -427,17 +424,8 @@ export default function PlayVsBotsPage() {
       if (selectedBot === "stockfish") {
         const pvMove = stockfishAnalysisResult?.lines?.[0]?.pv?.[0];
         if (pvMove) move = pvMove;
-      } else if (selectedBot === "maia2") {
-        const maiaKey = `maia_kdd_${maiaRating}`;
-        const maiaEval = sanEvaluations.maia2?.[maiaKey];
-        if (maiaEval?.policy) {
-          const sorted = Object.entries(maiaEval.policy).sort(
-            ([, a], [, b]) => b - a,
-          );
-          if (sorted[0]) move = sorted[0][0];
-        }
       } else if (selectedBot === "bigLeela") {
-        const leelaEval = sanEvaluations.bigLeela;
+        const leelaEval = evaluations.bigLeela;
         if (leelaEval?.policy) {
           const sorted = Object.entries(leelaEval.policy).sort(
             ([, a], [, b]) => b - a,
@@ -445,7 +433,7 @@ export default function PlayVsBotsPage() {
           if (sorted[0]) move = sorted[0][0];
         }
       } else if (selectedBot === "elitemaia") {
-        const eliteEval = sanEvaluations.elitemaia;
+        const eliteEval = evaluations.elitemaia;
         if (eliteEval?.policy) {
           const sorted = Object.entries(eliteEval.policy).sort(
             ([, a], [, b]) => b - a,
@@ -665,31 +653,6 @@ export default function PlayVsBotsPage() {
             </Box>
 
             {/* Maia2 Rating Selection */}
-            {selectedBot === "maia2" && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                  Maia Rating Level
-                </Typography>
-                <FormControl fullWidth>
-                  <InputLabel>Rating</InputLabel>
-                  <Select
-                    value={maiaRating}
-                    label="Rating"
-                    onChange={(e) =>
-                      setMaiaRating(e.target.value as MaiaRating)
-                    }
-                  >
-                    {[1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900].map(
-                      (rating) => (
-                        <MenuItem key={rating} value={rating}>
-                          Maia {rating}
-                        </MenuItem>
-                      ),
-                    )}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
 
             {/* Color Selection */}
             <Box>
@@ -851,18 +814,12 @@ export default function PlayVsBotsPage() {
                 {playerColor === "white"
                   ? "You"
                   : BOT_CONFIGS[selectedBot].name}
-                {selectedBot === "maia2" &&
-                  playerColor === "black" &&
-                  ` (${maiaRating})`}
               </Typography>
               <Typography variant="body2">
                 Black:{" "}
                 {playerColor === "black"
                   ? "You"
                   : BOT_CONFIGS[selectedBot].name}
-                {selectedBot === "maia2" &&
-                  playerColor === "white" &&
-                  ` (${maiaRating})`}
               </Typography>
               <Typography variant="body2">
                 Time Control: {timeControl}

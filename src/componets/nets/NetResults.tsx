@@ -8,10 +8,6 @@ import {
   Alert,
   LinearProgress,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Tabs,
   Tab,
   Button,
@@ -27,12 +23,9 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  Download,
-  CloudDownload,
   Calculate,
 } from "@mui/icons-material";
 import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from "@/libs/nets/types";
-import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { CandidateMove } from "@/libs/agine/helper";
 import { QuadrantClassification } from "@/libs/nets/classifyMoves";
 import { QuadrantAnalysisView } from "./QuadrantAnalysisView";
@@ -41,17 +34,15 @@ import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMe
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useEaseMetricVariation } from "@/hooks/useEmVariation";
 import { Chess } from "chess.js";
-import { MAIA_MODELS, MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
+import { MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
 
 export interface MaiaResultsProps {
   evaluations: {
-    maia2?: { [key: string]: MaiaEvaluation } | null;
     bigLeela?: MaiaEvaluation | null;
     elitemaia?: MaiaEvaluation | null;
     maia3?: { [key: string]: MaiaEvaluation } | null;
   };
   ucievaluations: {
-    maia2?: { [key: string]: MaiaEvaluation } | null;
     bigLeela?: MaiaEvaluation | null;
     elitemaia?: MaiaEvaluation | null;
     maia3?: { [key: string]: MaiaEvaluation } | null;
@@ -741,208 +732,6 @@ const EvaluationDisplay: React.FC<{
   );
 };
 
-const ModelDownloadPrompt: React.FC<{
-  modelType: ModelType;
-  downloadModel: (modelType: ModelType) => Promise<void>;
-}> = ({ modelType, downloadModel }) => {
-  const { status, progress } = useNetStatus();
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const modelStatus = status[modelType];
-  const modelProgress = progress[modelType] || 0;
-  const config = MODEL_CONFIGS[modelType];
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await downloadModel(modelType);
-    } catch (error) {
-      console.error("Download failed:", error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const downloading = isDownloading || modelStatus === "downloading";
-
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      gap={2}
-      py={4}
-    >
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        {config.name} Not Available
-      </Typography>
-      <Typography
-        sx={{ mb: 2, textAlign: "center", color: "rgba(255, 255, 255, 0.7)" }}
-      >
-        {config.description}
-      </Typography>
-
-      {downloading && modelProgress > 0 && (
-        <Box sx={{ width: "100%", maxWidth: 300, mb: 2 }}>
-          <Box display="flex" justifyContent="space-between" mb={1}>
-            <Typography variant="body2">Downloading...</Typography>
-            <Typography variant="body2">
-              {Math.round(modelProgress)}%
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={modelProgress}
-            sx={{
-              height: 8,
-              borderRadius: 4,
-            }}
-          />
-        </Box>
-      )}
-
-      <Button
-        variant="contained"
-        startIcon={<Download />}
-        onClick={handleDownload}
-        disabled={downloading}
-        sx={{
-          textTransform: "none",
-          fontWeight: 500,
-        }}
-      >
-        {downloading ? "Downloading..." : `Download ${config.name}`}
-      </Button>
-      <Typography variant="caption">Size: {config.size}</Typography>
-    </Box>
-  );
-};
-
-const DownloadAllModelsPrompt: React.FC<{
-  downloadModel: (modelType: ModelType) => Promise<void>;
-}> = ({ downloadModel }) => {
-  const { status, progress } = useNetStatus();
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-
-  const allModelTypes = Object.keys(MODEL_CONFIGS) as ModelType[];
-
-  const anyDownloading = allModelTypes.some(
-    (modelType) => status[modelType] === "downloading",
-  );
-  const downloading = isDownloadingAll || anyDownloading;
-
-  return (
-    <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-      <CardContent>
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={3}
-          py={4}
-        >
-          <CloudDownload sx={{ fontSize: 48, color: "primary.main" }} />
-          <Typography variant="h5" sx={{ textAlign: "center" }}>
-            Download Neural Nets to Start Analysis
-          </Typography>
-
-         
-          {downloading && (
-            <Box sx={{ width: "100%", maxWidth: 500 }}>
-              {allModelTypes.map((modelType) => {
-                const modelStatus = status[modelType];
-                const modelProgress = progress[modelType] || 0;
-                const config = MODEL_CONFIGS[modelType];
-
-                if (modelStatus !== "downloading" && modelProgress === 0)
-                  return null;
-
-                return (
-                  <Box key={modelType} sx={{ mb: 2 }}>
-                    <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography variant="body2">{config.name}</Typography>
-                      <Typography variant="body2">
-                        {Math.round(modelProgress)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={modelProgress}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                      }}
-                    />
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
-
-          {/* Individual model cards */}
-          <Box sx={{ width: "100%", maxWidth: 600, mt: 2 }}>
-            <Box display="flex" flexDirection="column" gap={2}>
-              {allModelTypes.map((modelType) => {
-                const config = MODEL_CONFIGS[modelType];
-                const modelStatus = status[modelType];
-                const modelProgress = progress[modelType] || 0;
-                const isReady = modelStatus === "ready";
-                const isDownloading = modelStatus === "downloading";
-
-                return (
-                  <Card key={modelType}>
-                    <CardContent>
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <Box flex={1}>
-                          <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: 600 }}
-                          >
-                            {config.name}
-                          </Typography>
-                          <Typography variant="caption">
-                            {config.description}
-                          </Typography>
-                          <Typography variant="caption">
-                            {config.size}
-                          </Typography>
-                        </Box>
-
-                        {isReady ? (
-                          <Chip label="Ready" color="success" size="small" />
-                        ) : (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<Download />}
-                            onClick={() => downloadModel(modelType)}
-                            disabled={isDownloading || downloading}
-                            sx={{
-                              textTransform: "none",
-                              minWidth: 120,
-                            }}
-                          >
-                            {isDownloading
-                              ? `${Math.round(modelProgress)}%`
-                              : "Download"}
-                          </Button>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </Box>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
 
 // ── Maia 3 Display Component ──────────────────────────────────────────────────
 
@@ -1135,16 +924,9 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   engine,
   fen,
 }) => {
-  const { status, activeModels } = useNetStatus();
-  const { downloadModel } = useNetModels();
-  const [selectedMaia2Model, setSelectedMaia2Model] = useState(0);
   const [selectedMaia3Model, setSelectedMaia3Model] = useState(10); // default 1600
   const [selectedTab, setSelectedTab] = useState<ModelType>("maia3");
 
-  
-  const isAnyModelDownloading = Object.values(status).some(
-    (modelStatus) => modelStatus === "downloading",
-  );
 
   
   if (isMaiaLoading) {
@@ -1167,34 +949,6 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   }
 
   
-  if (isAnyModelDownloading) {
-    const downloadingModel = (Object.keys(status) as ModelType[]).find(
-      (key) => status[key] === "downloading",
-    );
-
-    return (
-      <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-        <CardContent>
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            gap={2}
-            py={4}
-          >
-            <Typography>
-              Downloading{" "}
-              {downloadingModel
-                ? MODEL_CONFIGS[downloadingModel].name
-                : "model"}
-              ... Please wait.
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (maiaerror) {
     return (
       <Card>
@@ -1205,15 +959,8 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
     );
   }
 
-  
-  if (activeModels.length === 0) {
-    return <DownloadAllModelsPrompt downloadModel={downloadModel} />;
-  }
-
   const currentTab = selectedTab;
-
-  
-  const isCurrentModelReady = status[currentTab] === "ready";
+  const isCurrentModelReady = true;
 
   return (
     <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
@@ -1240,45 +987,6 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             })}
           </Tabs>
         </Box>
-
-        {!isCurrentModelReady && (
-          <ModelDownloadPrompt
-            modelType={currentTab}
-            downloadModel={downloadModel}
-          />
-        )}
-
-       
-        {isCurrentModelReady && currentTab === "maia2" && evaluations.maia2 && (
-          <>
-            <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>
-              <InputLabel id="maia-model-select-label">Rating Level</InputLabel>
-              <Select
-                labelId="maia-model-select-label"
-                value={selectedMaia2Model}
-                label="Rating Level"
-                onChange={(e) => setSelectedMaia2Model(Number(e.target.value))}
-              >
-                {MAIA_MODELS.map((model, idx) => (
-                  <MenuItem key={model} value={idx}>
-                    {formatModelName(model)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {evaluations.maia2[MAIA_MODELS[selectedMaia2Model]] && (
-              <EvaluationDisplay
-                evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
-                supportsem={false}
-                stockfishAnalysisResult={stockfishAnalysisResult}
-                candidateMoves={chessDbMoves}
-                engine={engine}
-                fen={fen}
-              />
-            )}
-          </>
-        )}
 
         {isCurrentModelReady &&
           currentTab === "bigLeela" &&

@@ -162,7 +162,7 @@ function AgineAnalysisView({
   scores, ThemeScoreerror, ThemeScoreloading,
   activeAnalysisTab, fen, setActiveAnalysisTab,
   autoAnalysis = true,
-  lichessData: _lichessData, isInBook: _isInBook, // accepted but used by EmbedGameReview directly
+
 }: AgineAnalysisViewProps) {
 
   const stockfishBadge = stockfishAnalysisResult?.lines?.[0]
@@ -255,11 +255,7 @@ function AgineAnalysisView({
             Human eval is paused. Enable Auto-Analysis to see human-like move evaluations.
           </Typography>
         ) : (
-          <ObjectiveHumanEval
-            evaluations={evaluations}
-            isLoading={isLoading}
-            error={Maiaerror}
-          />
+          <ObjectiveHumanEval fen={fen} />
         )}
       </Section>
 

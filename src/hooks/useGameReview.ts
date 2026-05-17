@@ -107,8 +107,6 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   const { analyzePositionNet } = useNets({
     fen: "",
     gameReviewMode: true,
-    useLichessBook: false,
-    maxRetries: 1,
     enabledModels: ["bigLeela"],
   });
 
