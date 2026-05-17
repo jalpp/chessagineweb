@@ -119,3 +119,68 @@ export const getEMColor = (value: number) => {
   if (value < -0.1) return "#850e05";
   return "#5e5549";
 };
+
+
+/** Raw move data from neural network API response */
+export interface TopMove {
+  move: string;
+  probability: number;
+}
+
+/** UCI-keyed evaluation data from neural network */
+export interface UciEval {
+  policy: Record<string, number>;
+  value: number;
+}
+
+/** Complete neural network analysis data */
+export interface NNData {
+  topMoves: TopMove[];
+  uciEval?: UciEval;
+}
+
+/** Single batch entry response from Maia3 API */
+export interface BatchEntry {
+  rating: number;
+  analysis: { topMoves: TopMove[]; uciEval?: UciEval };
+}
+
+/** All evaluations from neural networks, keyed by UCI moves */
+export interface MaiaEngineAnalysis {
+  /** UCI-keyed policy — used by ease metric calculators */
+  bigLeela?: MaiaEvaluation | null;
+  elitemaia?: MaiaEvaluation | null;
+  maia3?: { [key: string]: MaiaEvaluation } | null;
+}
+
+/** Hook options for configuring neural network analysis */
+export interface UseMaiaEngineOptions {
+  /** FEN string of the chess position to analyze */
+  fen: string;
+  /** Which neural networks to enable for analysis */
+  enabledModels?: ModelType[];
+  /** If true, skip automatic analysis on fen change */
+  gameReviewMode?: boolean;
+  /** If false, hook returns empty state and doesn't perform analysis */
+  supported?: boolean;
+}
+
+/** Complete result from useNets hook */
+export interface UseMaiaEngineResult {
+  /** All evaluations with UCI-keyed moves (for calculations) */
+  evaluations: MaiaEngineAnalysis;
+  /** All evaluations with SAN-keyed moves (for UI display) */
+  sanEvaluations: {
+    bigLeela?: SanMaiaEvaluation | null;
+    elitemaia?: SanMaiaEvaluation | null;
+    maia3?: { [key: string]: SanMaiaEvaluation } | null;
+  };
+  /** Whether neural network requests are currently in flight */
+  isLoading: boolean;
+  /** Any error that occurred during analysis */
+  Maiaerror: Error | null;
+  /** FEN string of the current evaluations (for cache validation) */
+  evaluationsFen?: string | null;
+  /** Manual analysis trigger for custom positions or game review mode */
+  analyzePositionNet?: (customFen?: string) => Promise<MaiaEngineAnalysis | undefined>;
+}

@@ -95,24 +95,6 @@ const FEATURES: FeatureDetail[] = [
     ],
   },
   {
-    name: "Variation Tree Viewer",
-    icon: <TreeIcon />,
-    description:
-      "Visualize and explore chess variations as an interactive tree structure.",
-    capabilities: [
-      "Configurable tree depth and breadth",
-      "ChessDB integration for move data",
-      "Ease metric calculation per position",
-      "Visual representation of move paths",
-      "Position difficulty assessment",
-      "Branch exploration and navigation",
-    ],
-    highlights: [
-      "Ease Metric: shows how easy or hard each position is to play",
-      "Interactive navigation through variations",
-    ],
-  },
-  {
     name: "Neural Network Analysis",
     icon: <PsychologyIcon />,
     description:

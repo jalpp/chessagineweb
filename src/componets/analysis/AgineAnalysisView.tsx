@@ -30,7 +30,7 @@ import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
-import { UseMaiaEngineResult } from "@/hooks/useNets";
+import { UseMaiaEngineResult } from "@/libs/nets/types";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
 import { ObjectiveHumanEval } from "../humanevalbar/ObjectiveHumanEval";

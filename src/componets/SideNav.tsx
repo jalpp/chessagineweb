@@ -39,7 +39,6 @@ const navLinks = [
   { label: "Analyze Position", href: "/position",                             icon: <FaChessBoard size={18} />, isExternal: false },
   { label: "Analyze Game",     href: "/game",                                 icon: <FaChessPawn  size={18} />, isExternal: false },
   { label: "Play Bot",         href: "/play",                                 icon: <SmartToy sx={{ fontSize: 18 }} />,    isExternal: false },
-  { label: "Human Eval",       href: "/humaneval",                            icon: <BarChart  sx={{ fontSize: 18 }} />,   isExternal: false },
   { label: "Agine Chat",       href: "/chat",                                 icon: <ChatBubble sx={{ fontSize: 18 }} />,  isExternal: false },
   { label: "Puzzles",          href: "/puzzle",                               icon: <FaPuzzlePiece size={18} />,           isExternal: false },
   { label: "Settings",         href: "/setting",                              icon: <FaGear size={18} />,                  isExternal: false },
