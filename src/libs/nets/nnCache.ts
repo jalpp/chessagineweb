@@ -1,9 +1,4 @@
-/**
- * Two-level LRU cache for /api/nn responses.
- * L1 — in-memory Map  (200 entries, instant, session-scoped)
- * L2 — IndexedDB      (2000 entries, persistent across sessions)
- * Dedup: concurrent calls for the same key share one in-flight promise.
- */
+
 import { openDB, IDBPDatabase } from "idb";
 
 const MEM_MAX = 200;
@@ -11,7 +6,6 @@ const IDB_MAX = 2000;
 const DB_NAME = "nn-cache-v1";
 const STORE   = "responses";
 
-// ── L1 ────────────────────────────────────────────────────────────────────────
 
 const mem = new Map<string, { value: unknown; ts: number }>();
 
@@ -29,7 +23,6 @@ function memSet(key: string, value: unknown): void {
   if (mem.size > MEM_MAX) mem.delete(mem.keys().next().value!);
 }
 
-// ── L2 ────────────────────────────────────────────────────────────────────────
 
 interface IDBEntry { key: string; value: unknown; ts: number }
 let _db: Promise<IDBPDatabase> | null = null;
@@ -67,14 +60,12 @@ async function idbSet(key: string, value: unknown): Promise<void> {
       while (cur && n < count - IDB_MAX) { await cur.delete(); cur = await cur.continue(); n++; }
       await tx.done;
     }
-  } catch { /* quota / private browsing — degrade silently */ }
+  } catch {  }
 }
 
-// ── Dedup ─────────────────────────────────────────────────────────────────────
 
 const pending = new Map<string, Promise<unknown>>();
 
-// ── Public ────────────────────────────────────────────────────────────────────
 
 export function makeCacheKey(endpoint: string, fen: string): string {
   return `${endpoint}:${fen}`;

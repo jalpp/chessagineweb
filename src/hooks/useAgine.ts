@@ -22,10 +22,8 @@ import { useThemeScore } from "./useThemeScore";
 import { useNets } from "./useNets";
 import { ModelType } from "@/libs/nets/types";
 import {
-  getReverseStockfishCacheKey,
   getStockfishCacheKey,
-  readStockfishCache,
-  writeStockfishCache,
+  cachedStockfish,
 } from "@/stockfish/engine/cache";
 import { useSettings } from "@/context/SettingContext";
 
@@ -141,31 +139,25 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
     if (!engine || !fen || !engine.isReady()) return;
     const currentFen = currentFenRef.current;
     const cacheKey = getStockfishCacheKey(currentFen, engineDepth, engineLines);
-    const cached = readStockfishCache(cacheKey);
-    if (cached) {
-      updateState({ stockfishAnalysisResult: cached, stockfishLoading: false });
-      setStockfishFen(currentFen);
-      setStockfishDone(true);
-      return;
-    }
     updateState({ stockfishLoading: true });
     setStockfishFen(null);
     setStockfishDone(false);
     try {
-      const result = await engine.evaluatePositionWithUpdate({
-        fen: currentFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: (partialEval) => {
-          if (currentFenRef.current === currentFen) {
-            updateState({ stockfishAnalysisResult: partialEval });
-            setStockfishFen(currentFen);
-            setStockfishDone(false);
-          }
-        },
-      });
+      const result = await cachedStockfish(cacheKey, () =>
+        engine.evaluatePositionWithUpdate({
+          fen: currentFen,
+          depth: engineDepth,
+          multiPv: engineLines,
+          setPartialEval: (partialEval) => {
+            if (currentFenRef.current === currentFen) {
+              updateState({ stockfishAnalysisResult: partialEval });
+              setStockfishFen(currentFen);
+              setStockfishDone(false);
+            }
+          },
+        })
+      );
       if (currentFenRef.current === currentFen) {
-        writeStockfishCache(cacheKey, result);
         updateState({ stockfishAnalysisResult: result, stockfishLoading: false });
         setStockfishFen(currentFen);
         setStockfishDone(true);
