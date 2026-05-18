@@ -26,7 +26,7 @@ import {
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
-import { MaiaEngineAnalysis } from "@/libs/nets/types";
+import { MaiaEngineAnalysis, SanMaiaEvaluation } from "@/libs/nets/types";
 import { useSettings } from "@/context/SettingContext";
 
 export type BoardOrientation = "white" | "black";
@@ -62,6 +62,7 @@ interface AiChessboardPanelProps {
   playerSide?: "white" | "black";
   engineThinking?: boolean;
   evaluations?: MaiaEngineAnalysis;
+  sanEvaluations?: { bigLeela?: SanMaiaEvaluation | null; elitemaia?: SanMaiaEvaluation | null; maia3?: { [key: string]: SanMaiaEvaluation } | null };
   /** True while Maia/neural nets are loading for this position */
   maiaLoading?: boolean;
   /** Called by nav buttons to walk to the previous node in the variation tree */
@@ -82,7 +83,7 @@ interface AiChessboardPanelProps {
 
 export default function AiChessboardPanel({
   fen, moveSquares, setGame, setFen, setStockfishAnalysisResult, setOpeningData,
-  game, moves, stockfishAnalysisResult, evaluations, puzzleMode, onDropPuzzle,
+  game, moves, stockfishAnalysisResult, evaluations, sanEvaluations, puzzleMode, onDropPuzzle,
   handleSquarePuzzleClick, setMoveSquares, puzzleCustomSquareStyle, reviewMove,
   side, playMode, gameStatus = "waiting", playerSide = "white",
   gameReviewMode, gameInfo, engineThinking = false, autoAnalysis = true,
@@ -335,19 +336,28 @@ export default function AiChessboardPanel({
     }
 
     // Neural net policy arrows
+    // UCI regex: [a-h][1-8][a-h][1-8] with optional promotion char
+    // Needed because SAN captures like "dxe4" are also length 4 and would break the slice approach
+    const UCI_RE = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
     const addPolicy = (policy?: Record<string, number>, color?: string) => {
       if (!policy || !color) return;
-      const mv = Object.entries(policy).sort(([, a], [, b]) => b - a)[0]?.[0];
-      if (mv?.length >= 4) {
-        try {
-          addArrow({ startSquare: mv.slice(0, 2) as Square, endSquare: mv.slice(2, 4) as Square, color });
-        } catch { /* invalid square */ }
-      }
+      const top = Object.entries(policy).sort(([, a], [, b]) => b - a)[0]?.[0];
+      if (!top) return;
+      try {
+        if (UCI_RE.test(top)) {
+          // Valid UCI — slice directly (e.g. "d5e4" → from d5, to e4)
+          addArrow({ startSquare: top.slice(0, 2) as Square, endSquare: top.slice(2, 4) as Square, color });
+        } else {
+          // SAN fallback — parse via chess.js to get from/to (e.g. "dxe4", "Nf3", "O-O")
+          const move = new Chess(fen).move(top);
+          if (move) addArrow({ startSquare: move.from as Square, endSquare: move.to as Square, color });
+        }
+      } catch { /* invalid move for this position */ }
     };
 
-    addPolicy(evaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
     addPolicy(evaluations?.bigLeela?.policy, "#400ac8ff");
     addPolicy(evaluations?.elitemaia?.policy, "rgb(235,49,154)");
+    addPolicy(sanEvaluations?.maia3?.["maia_kdd_2600"]?.policy, "#b71c1c");
 
     return arrows;
   }, [
@@ -357,6 +367,7 @@ export default function AiChessboardPanel({
     reviewMove,
     stockfishAnalysisResult,
     evaluations,
+    sanEvaluations,
   ]);
 
   // ── Square styles ──────────────────────────────────────────────────────────

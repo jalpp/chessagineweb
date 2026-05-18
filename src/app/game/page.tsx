@@ -685,7 +685,9 @@ export default function GamePage() {
             stockfishLoading={stockfishLoading}
             engineDepth={engineDepth} engineLines={engineLines}
             engine={engine} Maiaerror={maiaError} isLoading={maiaIsLoading}
-            evaluations={evaluations} analyzeWithStockfish={analyzeWithStockfish}
+            evaluations={evaluations}
+            sanEvaluations={sanEvaluations}
+            analyzeWithStockfish={analyzeWithStockfish}
             formatEvaluation={formatEvaluation} fen={fen}
             formatPrincipalVariation={formatPrincipalVariation}
             setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
@@ -700,7 +702,6 @@ export default function GamePage() {
             gameReviewLoading={gameReviewLoading} gameReviewProgress={gameReviewProgress}
             gameReview={gameReview} pgnText={pgnText}
             currentMove={moves[currentMoveIndex]} Customfen={customPlayFen}
-            sanEvaluations={sanEvaluations}
             scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
             autoAnalysis={autoAnalysis}
           />
@@ -812,7 +813,9 @@ export default function GamePage() {
       game={game} fen={fen}
       moveSquares={autoAnalysis ? moveSquares : {}} setMoveSquares={setMoveSquares}
       engine={engine} setFen={setFen} setGame={setGame}
-      evaluations={autoAnalysis ? evaluations : {}} gameInfo={gameInfo}
+      evaluations={autoAnalysis ? evaluations : {}}
+      sanEvaluations={autoAnalysis ? sanEvaluations : {}}
+      gameInfo={gameInfo}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
       stockfishAnalysisResult={autoAnalysis ? stockfishAnalysisResult : null}

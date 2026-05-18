@@ -188,6 +188,7 @@ export default function PositionPage() {
         Maiaerror={maiaError}
         isLoading={maiaIsLoading}
         evaluations={evaluations}
+        sanEvaluations={sanEvaluations}
         analyzeWithStockfish={analyzeWithStockfish}
         formatEvaluation={formatEvaluation}
         fen={fen}
@@ -205,7 +206,6 @@ export default function PositionPage() {
         refetch={refetch}
         requestAnalysis={requestAnalysis}
         gameReviewTheme={null}
-        sanEvaluations={sanEvaluations}
         scores={scores}
         ThemeScoreerror={themeScoreError}
         ThemeScoreloading={themeScoreLoading}
@@ -225,6 +225,7 @@ export default function PositionPage() {
       setFen={setFen}
       setGame={setGame}
       evaluations={autoAnalysis ? evaluations : {}}
+      sanEvaluations={autoAnalysis ? sanEvaluations : {}}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
       stockfishAnalysisResult={autoAnalysis ? stockfishAnalysisResult : null}

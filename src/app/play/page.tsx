@@ -979,6 +979,7 @@ export default function PlayVsBotsPage() {
             setGame={setGame}
             setOpeningData={setOpeningData}
             evaluations={evaluations}
+            sanEvaluations={sanEvaluations}
             setStockfishAnalysisResult={setStockfishAnalysisResult}
             fetchOpeningData={fetchOpeningData}
             analyzeWithStockfish={analyzeWithStockfish}
