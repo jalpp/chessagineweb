@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const NN_SERVER = process.env.NN_SERVER_URL ?? "http://localhost:8080";
+const NN_SERVER = "https://nn-analyze-service-717993082875.us-central1.run.app";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
