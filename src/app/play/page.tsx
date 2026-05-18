@@ -49,7 +49,9 @@ import {
   BOT_CONFIGS,
   TIME_CONTROLS,
   TimeControl,
+  enabledModelsForBot,
 } from "@/libs/agine/bothelper";
+import { MAIA3_RATING_VALUES } from "@/libs/nets/types";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
@@ -66,6 +68,7 @@ export default function PlayVsBotsPage() {
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
   const [selectedBot, setSelectedBot] = useState<BotType>("bigLeela");
+  const [maia3Rating, setMaia3Rating] = useState<number>(1500);
   const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
   const [gameStatus, setGameStatus] = useState<
     "setup" | "playing" | "finished"
@@ -122,6 +125,7 @@ export default function PlayVsBotsPage() {
     stockfishAnalysisResult,
     openingLoading,
     evaluations,
+    sanEvaluations,
     isNetLoading,
     evaluationsFen,
     stockfishDone,
@@ -130,7 +134,7 @@ export default function PlayVsBotsPage() {
     gameReviewLoading,
     setGameReview,
     generateGameReview,
-  } = useAgine(fen, "game");
+  } = useAgine(fen, "game", true, enabledModelsForBot(selectedBot), "play");
 
   const { gameReviewTheme, analyzeGameTheme, isLoading } = useGameTheme();
 
@@ -433,9 +437,18 @@ export default function PlayVsBotsPage() {
           if (sorted[0]) move = sorted[0][0];
         }
       } else if (selectedBot === "elitemaia") {
-        const eliteEval = evaluations.elitemaia;
+        const eliteEval = sanEvaluations.elitemaia;
         if (eliteEval?.policy) {
           const sorted = Object.entries(eliteEval.policy).sort(
+            ([, a], [, b]) => b - a,
+          );
+          if (sorted[0]) move = sorted[0][0];
+        }
+      } else if (selectedBot === "maia3") {
+        const ratingKey = `maia_kdd_${maia3Rating}`;
+        const maia3Eval = sanEvaluations.maia3?.[ratingKey];
+        if (maia3Eval?.policy) {
+          const sorted = Object.entries(maia3Eval.policy).sort(
             ([, a], [, b]) => b - a,
           );
           if (sorted[0]) move = sorted[0][0];
@@ -652,7 +665,28 @@ export default function PlayVsBotsPage() {
               )}
             </Box>
 
-            {/* Maia2 Rating Selection */}
+            {/* Maia3 Rating Selection */}
+            {selectedBot === "maia3" && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                  Maia 3 Rating Level
+                </Typography>
+                <FormControl fullWidth>
+                  <InputLabel>Rating Level</InputLabel>
+                  <Select
+                    value={maia3Rating}
+                    label="Rating Level"
+                    onChange={(e) => setMaia3Rating(Number(e.target.value))}
+                  >
+                    {MAIA3_RATING_VALUES.map((rating) => (
+                      <MenuItem key={rating} value={rating}>
+                        {rating} ELO
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
 
             {/* Color Selection */}
             <Box>

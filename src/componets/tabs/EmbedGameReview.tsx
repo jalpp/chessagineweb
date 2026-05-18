@@ -158,7 +158,7 @@ export default function EmbeddedGameReview({
 
   const loadedRef = useRef(false);
 
-  const agine = useAgine(fen, "game");
+  const agine = useAgine(fen, "game", true, undefined, "play");
   const nets = useNets({ fen });
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
 

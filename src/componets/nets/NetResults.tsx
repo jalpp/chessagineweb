@@ -32,7 +32,6 @@ import { QuadrantAnalysisView } from "./QuadrantAnalysisView";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useEaseMetricVariation } from "@/hooks/useEmVariation";
 import { Chess } from "chess.js";
 import { MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
 
@@ -147,210 +146,6 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({
   );
 };
 
-const VariationEaseMetricView: React.FC<{
-  variations: PositionEval | null;
-  isCalculating: boolean;
-  Max_pv: number;
-  onMaxPvChange?: (event: Event, newValue: number | number[]) => void;
-}> = ({ variations, isCalculating, Max_pv, onMaxPvChange }) => {
-
-
-  if (isCalculating) {
-    return (
-      <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        gap={2}
-        py={4}
-      >
-        <CircularProgress size={40} />
-        <Typography>Calculating variation ease metrics...</Typography>
-      </Box>
-    );
-  }
-
-  if (!variations || !variations.lines.length) {
-    return (
-      <Typography sx={{ textAlign: "center", py: 2 }}>
-        No variation data available
-      </Typography>
-    );
-  }
-
-  return (
-    <Box>
-      <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-        Variation Difficulty Analysis
-      </Typography>
-
-      <Box
-        sx={{
-          borderRadius: 2,
-          p: 2,
-          mb: 3,
-        }}
-      >
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          mb={2}
-        >
-          <Typography variant="body2">
-            Shows how the position difficulty changes after following each engine
-            line. Positive values mean the position becomes easier, negative
-            values mean it becomes harder.
-          </Typography>
-        </Box>
-
-        <Box mb={2}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            mb={1}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              # Moves in a variation to consider for ease metric
-            </Typography>
-            <Chip
-              label={`${Max_pv} moves`}
-              size="small"
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
-          <Slider
-            value={Max_pv}
-            onChange={onMaxPvChange}
-            min={1}
-            max={20}
-            step={1}
-            marks
-            valueLabelDisplay="auto"
-            sx={{
-              "& .MuiSlider-markLabel": {
-                fontSize: "0.75rem",
-              },
-            }}
-          />
-        </Box>
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Line</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Moves</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Eval</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                EM Change
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {variations.lines.map((line, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Chip
-                    label={`#${index + 1}`}
-                    size="small"
-                    sx={{ fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: "monospace",
-                      maxWidth: 300,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {formatPrincipalVariation(line.pv, line.fen, Max_pv)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {line.mate !== undefined
-                      ? `M${line.mate}`
-                      : line.cp !== undefined
-                        ? `${(line.cp / 100).toFixed(2)}`
-                        : "N/A"}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  {line.endingEM !== undefined ? (
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="flex-end"
-                      gap={1}
-                    >
-                      <Chip
-                        label={
-                          line.endingEM >= 0
-                            ? `+${line.endingEM.toFixed(3)}`
-                            : line.endingEM.toFixed(3)
-                        }
-                        size="small"
-                        sx={{
-                          bgcolor: getEMColor(line.endingEM),
-                          fontWeight: 600,
-                          fontFamily: "monospace",
-                        }}
-                      />
-                      {line.endingEM > 0.1 && (
-                        <TrendingUp sx={{ fontSize: 16, color: "#4caf50" }} />
-                      )}
-                      {line.endingEM < -0.1 && (
-                        <TrendingDown sx={{ fontSize: 16, color: "#f44336" }} />
-                      )}
-                    </Box>
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "rgba(255, 255, 255, 0.4)" }}
-                    >
-                      Calculating...
-                    </Typography>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Box
-        sx={{
-          borderRadius: 2,
-          p: 2,
-          mt: 3,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-          Interpretation Guide
-        </Typography>
-        <Box component="ul" sx={{ pl: 3, m: 0, "& li": { mb: 0.5 } }}>
-          <Typography component="li" variant="body2">
-            🟢 Positive EM: The variation leads to a simpler position
-          </Typography>
-          <Typography component="li" variant="body2">
-            🟠 Near Zero: Similar difficulty to current position
-          </Typography>
-          <Typography component="li" variant="body2">
-            🔴 Negative EM: The variation leads to a more complex position
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
 const EvaluationDisplay: React.FC<{
   evaluation: MaiaEvaluation;
   supportsem: boolean;
@@ -370,22 +165,8 @@ const EvaluationDisplay: React.FC<{
   engine,
   fen,
 }) => {
-  const [viewMode, setViewMode] = useState<
-    "evaluation" | "quadrant" | "ease" | "variations"
-  >("evaluation");
+  const [viewMode, setViewMode] = useState<"evaluation" | "quadrant" | "ease">("evaluation");
   const [improbableThreshold, setImprobableThreshold] = useState(0.05);
-  const [Max_pv, setMaxPv] = useState<number>(
-    stockfishAnalysisResult?.lines[0]?.pv.length || 6,
-  );
-
-  const { variations, isLoading } = useEaseMetricVariation(
-    supportsem,
-    fen,
-    engine || null,
-    ucievaluation || evaluation,
-    stockfishAnalysisResult,
-    Max_pv,
-  );
 
   const quadrantMoves = React.useMemo(() => {
     if (!candidateMoves || candidateMoves.length === 0) return [];
@@ -412,24 +193,15 @@ const EvaluationDisplay: React.FC<{
 
   const hasQuadrantData = quadrantMoves.length > 0;
   const hasEaseData = easeMetric !== null;
-  const hasVariationData =
-    stockfishAnalysisResult && stockfishAnalysisResult.lines.length > 0 || !supportsem;
-
   const handleThresholdChange = (event: Event, newValue: number | number[]) => {
     setImprobableThreshold(newValue as number);
   };
 
-  const handleMaxPvChange = (event: Event, newValue: number | number[]) => {
-    setMaxPv(newValue as number);
-  };
 
-  const handleCalculateVariations = () => {
-    setViewMode("variations");
-  };
 
   return (
     <>
-      {(hasQuadrantData || hasEaseData || hasVariationData) &&
+      {(hasQuadrantData || hasEaseData) &&
         showQuadrantAnalysis && (
           <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
             <Tabs
@@ -441,9 +213,6 @@ const EvaluationDisplay: React.FC<{
                 <Tab label="Candidate Analysis" value="quadrant" />
               )}
               {hasEaseData && supportsem && <Tab label="Ease Metric Analysis" value="ease" />}
-              {hasVariationData && supportsem && (
-                <Tab label="Variation Analysis" value="variations" />
-              )}
             </Tabs>
           </Box>
         )}
@@ -490,20 +259,6 @@ const EvaluationDisplay: React.FC<{
             <MovesList policy={evaluation.policy} />
           </Box>
 
-          {hasVariationData && supportsem && (
-            <Box mt={3}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<Calculate />}
-                onClick={handleCalculateVariations}
-                disabled={isLoading}
-                sx={{ textTransform: "none" }}
-              >
-                {isLoading ? "Calculating..." : "Analyze Variations"}
-              </Button>
-            </Box>
-          )}
         </>
       ) : viewMode === "quadrant" ? (
         <>
@@ -720,14 +475,7 @@ const EvaluationDisplay: React.FC<{
             </Box>
           )}
         </>
-      ) : (
-        <VariationEaseMetricView
-          variations={variations}
-          isCalculating={isLoading}
-          Max_pv={Max_pv}
-          onMaxPvChange={handleMaxPvChange}
-        />
-      )}
+      ) : null}
     </>
   );
 };
