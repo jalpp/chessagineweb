@@ -20,15 +20,14 @@ import {
 } from "@/libs/agine/helper";
 import { useThemeScore } from "./useThemeScore";
 import { useNets } from "./useNets";
+import { ModelType } from "@/libs/nets/types";
 import {
-  getReverseStockfishCacheKey,
   getStockfishCacheKey,
-  readStockfishCache,
-  writeStockfishCache,
+  cachedStockfish,
 } from "@/stockfish/engine/cache";
 import { useSettings } from "@/context/SettingContext";
 
-export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true) {
+export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true, enabledModels?: ModelType[], analysisMode: "full" | "play" = "full") {
   const [state, setState] = useState<AgineState>({
     stockfishAnalysisResult: null,
     reverseStockfishAnalysisResult: null,
@@ -47,7 +46,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   const setEngineLines = (v: number) => saveSettings({ engine_lines: v });
   const enginePicked = enginePickedRaw as EngineName ;
 
-  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle", gameReviewMode: !autoAnalysis });
+  const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle", gameReviewMode: !autoAnalysis, enabledModels });
 
   const engine = useEngine(true, enginePicked);
   const [stockfishFen, setStockfishFen] = useState<string | null>(null);
@@ -59,7 +58,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
       .forEach((k) => sessionStorage.removeItem(k));
   }, [engine]);
 
-  const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(fen);
+  const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(analysisMode === "full" ? fen : "");
   const validGameReviewDepth = engineDepth > 15 || engineDepth < 12 ? 15 : engineDepth;
   const {
     gameReview,
@@ -73,7 +72,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   } = useGameReview(engine, validGameReviewDepth);
 
   const colorside = isValidFEN(fen) ? new Chess(fen).turn() : "w";
-  const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(fen, colorside);
+  const { scores, loading: themeScoreLoading, error: themeScoreError } = useThemeScore(analysisMode === "full" ? fen : "", colorside);
 
   const currentFenRef = useRef(fen);
 
@@ -134,81 +133,34 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
 
   // ==================== STOCKFISH ====================
 
-  const analyzeThreatsInBackground = useCallback(
-    async (currentFen: string) => {
-      if (!engine || !engine.isReady()) return;
-      try {
-        const chess = new Chess(currentFen);
-        const nullMoveFen = currentFen.replace(
-          chess.turn() === "w" ? " w " : " b ",
-          chess.turn() === "w" ? " b " : " w "
-        );
-        const cacheKey = getReverseStockfishCacheKey(nullMoveFen, 12, 4);
-        const cached = readStockfishCache(cacheKey);
-        if (cached) {
-          if (currentFenRef.current === currentFen) {
-            updateState({ reverseStockfishAnalysisResult: cached });
-          }
-          return;
-        }
-        const result = await engine.evaluatePositionWithUpdate({
-          fen: nullMoveFen,
-          depth: 12,
-          multiPv: 4,
-          setPartialEval: (partialEval) => {
-            if (currentFenRef.current === currentFen) {
-              updateState({ reverseStockfishAnalysisResult: partialEval });
-            }
-          },
-        });
-        if (currentFenRef.current === currentFen) {
-          writeStockfishCache(cacheKey, result);
-          updateState({ reverseStockfishAnalysisResult: result });
-        }
-      } catch (err) {
-        console.error("[analyzeThreatsInBackground] failed:", err);
-        if (currentFenRef.current === currentFen) {
-          updateState({ reverseStockfishAnalysisResult: null });
-        }
-      }
-    },
-    [engine, updateState]
-  );
+
 
   const analyzeWithStockfish = useCallback(async () => {
     if (!engine || !fen || !engine.isReady()) return;
     const currentFen = currentFenRef.current;
     const cacheKey = getStockfishCacheKey(currentFen, engineDepth, engineLines);
-    const cached = readStockfishCache(cacheKey);
-    if (cached) {
-      updateState({ stockfishAnalysisResult: cached, stockfishLoading: false });
-      setStockfishFen(currentFen);
-      setStockfishDone(true);
-      await analyzeThreatsInBackground(currentFen);
-      return;
-    }
     updateState({ stockfishLoading: true });
     setStockfishFen(null);
     setStockfishDone(false);
     try {
-      const result = await engine.evaluatePositionWithUpdate({
-        fen: currentFen,
-        depth: engineDepth,
-        multiPv: engineLines,
-        setPartialEval: (partialEval) => {
-          if (currentFenRef.current === currentFen) {
-            updateState({ stockfishAnalysisResult: partialEval });
-            setStockfishFen(currentFen);
-            setStockfishDone(false);
-          }
-        },
-      });
+      const result = await cachedStockfish(cacheKey, () =>
+        engine.evaluatePositionWithUpdate({
+          fen: currentFen,
+          depth: engineDepth,
+          multiPv: engineLines,
+          setPartialEval: (partialEval) => {
+            if (currentFenRef.current === currentFen) {
+              updateState({ stockfishAnalysisResult: partialEval });
+              setStockfishFen(currentFen);
+              setStockfishDone(false);
+            }
+          },
+        })
+      );
       if (currentFenRef.current === currentFen) {
-        writeStockfishCache(cacheKey, result);
         updateState({ stockfishAnalysisResult: result, stockfishLoading: false });
         setStockfishFen(currentFen);
         setStockfishDone(true);
-        await analyzeThreatsInBackground(currentFen);
       }
     } catch (err) {
       console.error("Stockfish analysis failed:", err);
@@ -218,7 +170,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
         setStockfishDone(true);
       }
     }
-  }, [engine, fen, engineDepth, engineLines, updateState, analyzeThreatsInBackground]);
+  }, [engine, fen, engineDepth, engineLines, updateState]);
 
   // ==================== OPENING DATA ====================
 
@@ -257,7 +209,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   // ==================== EFFECTS ====================
 
 useEffect(() => {
-  if (!autoAnalysis || !engine || !fen || analysisType === "unsupported" || analysisType === "puzzle") return;
+  if (!autoAnalysis || !engine || !fen || analysisType === "unsupported" || analysisType === "puzzle" || analysisMode === "play") return;
   // Don't schedule analysis until engine is ready
   if (!engine.isReady()) return;
   updateState({
@@ -275,7 +227,7 @@ useEffect(() => {
 
 
 useEffect(() => {
-  if (!fen || analysisType === "unsupported" || analysisType === "puzzle") return;
+  if (!fen || analysisType === "unsupported" || analysisType === "puzzle" || analysisMode === "play") return;
   updateState({ openingData: null });
   const timeoutId = setTimeout(() => {
     if (currentFenRef.current === fen) {
@@ -284,7 +236,7 @@ useEffect(() => {
     }
   }, ANALYSIS_DELAY);
   return () => clearTimeout(timeoutId);
-}, [fen, analysisType]);
+}, [fen, analysisType, analysisMode]);
 
   return {
     // Stockfish

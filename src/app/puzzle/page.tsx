@@ -317,10 +317,7 @@ export default function PuzzlePage() {
     setAnalysisTab,
     engine,
     analyzeWithStockfish,
-    scores,
-    themeScoreError,
-    themeScoreLoading,
-  } = useAgine(fen, "puzzle", false);
+  } = useAgine(fen, "puzzle", false, undefined, "play");
 
   const handleQuickThemeChange = useCallback(
     (event: SelectChangeEvent<string>) => {

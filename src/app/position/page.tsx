@@ -81,7 +81,7 @@ export default function PositionPage() {
 
   const {
     evaluations, sanEvaluations, isLoading: maiaIsLoading,
-    Maiaerror: maiaError, lichessData, isInBook,
+    Maiaerror: maiaError,
   } = useNets({ fen, gameReviewMode: !autoAnalysis });
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage(
@@ -188,6 +188,7 @@ export default function PositionPage() {
         Maiaerror={maiaError}
         isLoading={maiaIsLoading}
         evaluations={evaluations}
+        sanEvaluations={sanEvaluations}
         analyzeWithStockfish={analyzeWithStockfish}
         formatEvaluation={formatEvaluation}
         fen={fen}
@@ -201,13 +202,10 @@ export default function PositionPage() {
         chessdbdata={chessdbdata}
         queueing={queueing}
         error={error}
-        lichessData={lichessData}
         loading={loading}
         refetch={refetch}
         requestAnalysis={requestAnalysis}
         gameReviewTheme={null}
-        sanEvaluations={sanEvaluations}
-        isInBook={isInBook}
         scores={scores}
         ThemeScoreerror={themeScoreError}
         ThemeScoreloading={themeScoreLoading}
@@ -227,6 +225,7 @@ export default function PositionPage() {
       setFen={setFen}
       setGame={setGame}
       evaluations={autoAnalysis ? evaluations : {}}
+      sanEvaluations={autoAnalysis ? sanEvaluations : {}}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
       stockfishAnalysisResult={autoAnalysis ? stockfishAnalysisResult : null}

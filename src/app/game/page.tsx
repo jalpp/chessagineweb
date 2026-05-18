@@ -179,7 +179,7 @@ export default function GamePage() {
 
   const {
     evaluations, sanEvaluations, isLoading: maiaIsLoading,
-    Maiaerror: maiaError, lichessData, isInBook,
+    Maiaerror: maiaError,
   } = useNets({ fen, gameReviewMode: !autoAnalysis });
 
   const [activeAnalysisTab, setActiveAnalysisTab] = useSessionStorage("agine_game_act_tab", 0);
@@ -685,14 +685,16 @@ export default function GamePage() {
             stockfishLoading={stockfishLoading}
             engineDepth={engineDepth} engineLines={engineLines}
             engine={engine} Maiaerror={maiaError} isLoading={maiaIsLoading}
-            evaluations={evaluations} analyzeWithStockfish={analyzeWithStockfish}
+            evaluations={evaluations}
+            sanEvaluations={sanEvaluations}
+            analyzeWithStockfish={analyzeWithStockfish}
             formatEvaluation={formatEvaluation} fen={fen}
             formatPrincipalVariation={formatPrincipalVariation}
             setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
             openingLoading={openingLoading} openingData={openingData}
             lichessOpeningData={lichessOpeningData} lichessOpeningLoading={lichessOpeningLoading}
             chessdbdata={chessdbdata} queueing={queueing} error={error}
-            lichessData={lichessData} loading={loading} refetch={refetch}
+            loading={loading} refetch={refetch}
             requestAnalysis={requestAnalysis} moves={moves}
             currentMoveIndex={currentMoveIndex} goToMove={goToMove}
             comment={comment} clock={clock} gameInfo={gameInfo}
@@ -700,7 +702,6 @@ export default function GamePage() {
             gameReviewLoading={gameReviewLoading} gameReviewProgress={gameReviewProgress}
             gameReview={gameReview} pgnText={pgnText}
             currentMove={moves[currentMoveIndex]} Customfen={customPlayFen}
-            sanEvaluations={sanEvaluations} isInBook={isInBook}
             scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
             autoAnalysis={autoAnalysis}
           />
@@ -812,7 +813,9 @@ export default function GamePage() {
       game={game} fen={fen}
       moveSquares={autoAnalysis ? moveSquares : {}} setMoveSquares={setMoveSquares}
       engine={engine} setFen={setFen} setGame={setGame}
-      evaluations={autoAnalysis ? evaluations : {}} gameInfo={gameInfo}
+      evaluations={autoAnalysis ? evaluations : {}}
+      sanEvaluations={autoAnalysis ? sanEvaluations : {}}
+      gameInfo={gameInfo}
       setOpeningData={setOpeningData}
       setStockfishAnalysisResult={setStockfishAnalysisResult}
       stockfishAnalysisResult={autoAnalysis ? stockfishAnalysisResult : null}

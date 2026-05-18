@@ -16,7 +16,6 @@ import {
   Psychology as NetsIcon,
   BarChart as ThemeIcon,
   SportsEsports as ReviewIcon,
-  AccountTree as TreeIcon,
   PersonSearch as HumanEvalIcon,
 } from "@mui/icons-material";
 
@@ -31,10 +30,9 @@ import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { GameReviewTheme, ThemeScore } from "@/libs/themes/helper";
 import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
-import { UseMaiaEngineResult } from "@/hooks/useNets";
+import { UseMaiaEngineResult } from "@/libs/nets/types";
 import { NetResults } from "../nets/NetResults";
 import { NetProbabilityChart } from "../nets/NetBarGraph";
-import ChessTreeView from "../tabs/ChessTreeView";
 import { ObjectiveHumanEval } from "../humanevalbar/ObjectiveHumanEval";
 
 interface BaseAnalysisViewProps {
@@ -162,7 +160,7 @@ function AgineAnalysisView({
   scores, ThemeScoreerror, ThemeScoreloading,
   activeAnalysisTab, fen, setActiveAnalysisTab,
   autoAnalysis = true,
-  lichessData: _lichessData, isInBook: _isInBook, // accepted but used by EmbedGameReview directly
+
 }: AgineAnalysisViewProps) {
 
   const stockfishBadge = stockfishAnalysisResult?.lines?.[0]
@@ -255,11 +253,7 @@ function AgineAnalysisView({
             Human eval is paused. Enable Auto-Analysis to see human-like move evaluations.
           </Typography>
         ) : (
-          <ObjectiveHumanEval
-            evaluations={evaluations}
-            isLoading={isLoading}
-            error={Maiaerror}
-          />
+          <ObjectiveHumanEval fen={fen} />
         )}
       </Section>
 
@@ -276,10 +270,6 @@ function AgineAnalysisView({
           loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis} />
       </Section>
 
-      <Section id={3} title="Variation Tree" icon={<TreeIcon sx={{ fontSize: 14 }} />}
-        activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
-        <ChessTreeView initialFen={fen} />
-      </Section>
     </Box>
   );
 }

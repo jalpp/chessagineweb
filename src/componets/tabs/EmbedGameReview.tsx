@@ -158,7 +158,7 @@ export default function EmbeddedGameReview({
 
   const loadedRef = useRef(false);
 
-  const agine = useAgine(fen, "game");
+  const agine = useAgine(fen, "game", true, undefined, "play");
   const nets = useNets({ fen });
   const { gameReviewTheme, analyzeGameTheme } = useGameTheme();
 
@@ -176,7 +176,7 @@ export default function EmbeddedGameReview({
     formatPrincipalVariation,
   } = agine;
 
-  const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError, lichessData, isInBook } = nets;
+  const { evaluations, sanEvaluations, isLoading: maiaIsLoading, Maiaerror: maiaError } = nets;
 
   // ── Init from PGN ──
   const initFromPGN = useCallback(
@@ -299,8 +299,7 @@ export default function EmbeddedGameReview({
           chessdbdata={chessdbdata}
           queueing={queueing}
           error={error}
-          lichessData={lichessData}
-          loading={loading}
+            loading={loading}
           refetch={refetch}
           requestAnalysis={requestAnalysis}
           moves={moves}
@@ -317,7 +316,6 @@ export default function EmbeddedGameReview({
           currentMove={moves[currentMoveIndex]}
           Customfen={customPlayFen}
           sanEvaluations={sanEvaluations}
-          isInBook={isInBook}
           scores={scores}
           ThemeScoreerror={themeScoreError}
           ThemeScoreloading={themeScoreLoading}

@@ -38,7 +38,6 @@ import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import useAgine from "@/hooks/useAgine";
 import { TabPanel } from "@/componets/tabs/tab";
-import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { MODEL_CONFIGS } from "@/libs/nets/types";
 import PGNView from "@/componets/tabs/PgnView";
 import SaveGameReviewDialog, {
@@ -48,10 +47,11 @@ import { Menu, SaveIcon } from "lucide-react";
 import {
   BotType,
   BOT_CONFIGS,
-  MaiaRating,
   TIME_CONTROLS,
   TimeControl,
+  enabledModelsForBot,
 } from "@/libs/agine/bothelper";
+import { MAIA3_RATING_VALUES } from "@/libs/nets/types";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { TimerDisplay } from "@/componets/game/TimerDisplay";
@@ -67,8 +67,8 @@ export default function PlayVsBotsPage() {
 
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
-  const [selectedBot, setSelectedBot] = useState<BotType>("maia2");
-  const [maiaRating, setMaiaRating] = useState<MaiaRating>(1500);
+  const [selectedBot, setSelectedBot] = useState<BotType>("bigLeela");
+  const [maia3Rating, setMaia3Rating] = useState<number>(1500);
   const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
   const [gameStatus, setGameStatus] = useState<
     "setup" | "playing" | "finished"
@@ -91,9 +91,6 @@ export default function PlayVsBotsPage() {
   const [activeTimer, setActiveTimer] = useState<"white" | "black" | null>(
     null,
   );
-
-  const { status, progress } = useNetStatus();
-  const { downloadModel } = useNetModels();
 
   const gameStatusRef = useRef(gameStatus);
   const playerColorRef = useRef(playerColor);
@@ -137,7 +134,7 @@ export default function PlayVsBotsPage() {
     gameReviewLoading,
     setGameReview,
     generateGameReview,
-  } = useAgine(fen, "game");
+  } = useAgine(fen, "game", true, enabledModelsForBot(selectedBot), "play");
 
   const { gameReviewTheme, analyzeGameTheme, isLoading } = useGameTheme();
 
@@ -431,17 +428,8 @@ export default function PlayVsBotsPage() {
       if (selectedBot === "stockfish") {
         const pvMove = stockfishAnalysisResult?.lines?.[0]?.pv?.[0];
         if (pvMove) move = pvMove;
-      } else if (selectedBot === "maia2") {
-        const maiaKey = `maia_kdd_${maiaRating}`;
-        const maiaEval = sanEvaluations.maia2?.[maiaKey];
-        if (maiaEval?.policy) {
-          const sorted = Object.entries(maiaEval.policy).sort(
-            ([, a], [, b]) => b - a,
-          );
-          if (sorted[0]) move = sorted[0][0];
-        }
       } else if (selectedBot === "bigLeela") {
-        const leelaEval = sanEvaluations.bigLeela;
+        const leelaEval = evaluations.bigLeela;
         if (leelaEval?.policy) {
           const sorted = Object.entries(leelaEval.policy).sort(
             ([, a], [, b]) => b - a,
@@ -452,6 +440,15 @@ export default function PlayVsBotsPage() {
         const eliteEval = sanEvaluations.elitemaia;
         if (eliteEval?.policy) {
           const sorted = Object.entries(eliteEval.policy).sort(
+            ([, a], [, b]) => b - a,
+          );
+          if (sorted[0]) move = sorted[0][0];
+        }
+      } else if (selectedBot === "maia3") {
+        const ratingKey = `maia_kdd_${maia3Rating}`;
+        const maia3Eval = sanEvaluations.maia3?.[ratingKey];
+        if (maia3Eval?.policy) {
+          const sorted = Object.entries(maia3Eval.policy).sort(
             ([, a], [, b]) => b - a,
           );
           if (sorted[0]) move = sorted[0][0];
@@ -555,11 +552,6 @@ export default function PlayVsBotsPage() {
     const botConfig = BOT_CONFIGS[selectedBot];
     const requiresModel = botConfig.requiresModel;
     const modelType = botConfig.modelType;
-    const isModelReady = modelType ? status[modelType] === "ready" : true;
-    const isModelDownloading = modelType
-      ? status[modelType] === "downloading"
-      : false;
-    const modelProgress = modelType ? progress[modelType] || 0 : 0;
 
     const showConfigMenus = gameStatus === "setup" || gameStatus === "finished";
 
@@ -576,28 +568,6 @@ export default function PlayVsBotsPage() {
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Analyzing your game...
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Stack>
-      );
-    }
-
-    // Show loading state if model is downloading
-    if (isModelDownloading) {
-      return (
-        <Stack spacing={3} sx={{ pb: 2 }}>
-          <Card>
-            <CardContent>
-              <Stack spacing={3} alignItems="center" py={4}>
-                <Box textAlign="center">
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Downloading {MODEL_CONFIGS[modelType!].name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Please wait while the Neural Net is being downloaded...
                   </Typography>
                 </Box>
               </Stack>
@@ -695,28 +665,24 @@ export default function PlayVsBotsPage() {
               )}
             </Box>
 
-            {/* Maia2 Rating Selection */}
-            {selectedBot === "maia2" && (
+            {/* Maia3 Rating Selection */}
+            {selectedBot === "maia3" && (
               <Box>
                 <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                  Maia Rating Level
+                  Maia 3 Rating Level
                 </Typography>
                 <FormControl fullWidth>
-                  <InputLabel>Rating</InputLabel>
+                  <InputLabel>Rating Level</InputLabel>
                   <Select
-                    value={maiaRating}
-                    label="Rating"
-                    onChange={(e) =>
-                      setMaiaRating(e.target.value as MaiaRating)
-                    }
+                    value={maia3Rating}
+                    label="Rating Level"
+                    onChange={(e) => setMaia3Rating(Number(e.target.value))}
                   >
-                    {[1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900].map(
-                      (rating) => (
-                        <MenuItem key={rating} value={rating}>
-                          Maia {rating}
-                        </MenuItem>
-                      ),
-                    )}
+                    {MAIA3_RATING_VALUES.map((rating) => (
+                      <MenuItem key={rating} value={rating}>
+                        {rating} ELO
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Box>
@@ -754,39 +720,7 @@ export default function PlayVsBotsPage() {
           </>
         )}
 
-        {/* Model Download Section */}
-        {requiresModel && !isModelReady && gameStatus === "setup" && (
-          <Card>
-            <CardContent>
-              <Stack spacing={2} alignItems="center">
-                <CloudDownload sx={{ fontSize: 40 }} />
-                <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  textAlign="center"
-                >
-                  {MODEL_CONFIGS[modelType!].name} Not Downloaded
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  textAlign="center"
-                >
-                  {MODEL_CONFIGS[modelType!].description}
-                </Typography>
-
-                <Button
-                  variant="contained"
-                  startIcon={<DownloadIcon />}
-                  onClick={() => downloadModel(modelType!)}
-                  fullWidth
-                >
-                  Download Model ({MODEL_CONFIGS[modelType!].size})
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        )}
+     
 
         {/* Game Controls */}
         <Box>
@@ -797,11 +731,8 @@ export default function PlayVsBotsPage() {
               size="large"
               onClick={startGame}
               startIcon={<BotIcon />}
-              disabled={requiresModel && !isModelReady}
             >
-              {requiresModel && !isModelReady
-                ? "Download Model First"
-                : "Start Game"}
+              {"Start Game"}
             </Button>
           )}
 
@@ -917,18 +848,12 @@ export default function PlayVsBotsPage() {
                 {playerColor === "white"
                   ? "You"
                   : BOT_CONFIGS[selectedBot].name}
-                {selectedBot === "maia2" &&
-                  playerColor === "black" &&
-                  ` (${maiaRating})`}
               </Typography>
               <Typography variant="body2">
                 Black:{" "}
                 {playerColor === "black"
                   ? "You"
                   : BOT_CONFIGS[selectedBot].name}
-                {selectedBot === "maia2" &&
-                  playerColor === "white" &&
-                  ` (${maiaRating})`}
               </Typography>
               <Typography variant="body2">
                 Time Control: {timeControl}
@@ -1054,6 +979,7 @@ export default function PlayVsBotsPage() {
             setGame={setGame}
             setOpeningData={setOpeningData}
             evaluations={evaluations}
+            sanEvaluations={sanEvaluations}
             setStockfishAnalysisResult={setStockfishAnalysisResult}
             fetchOpeningData={fetchOpeningData}
             analyzeWithStockfish={analyzeWithStockfish}

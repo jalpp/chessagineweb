@@ -10,7 +10,6 @@ import PageLoader from "@/componets/PageLoader";
 import { SIDEBAR_WIDTH } from "@/componets/SideNav";
 import { ThemeProvider } from "@/context/ThemeContext";
 import BodyWrapper from "@/componets/BodyWrapper";
-import { NetModelContextProvider } from "@/context/NetContext";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { SettingsProvider } from "@/context/SettingContext";
@@ -117,7 +116,6 @@ export default function RootLayout({
                   width: "100%",
                 }}>
                   <SideNav />
-                  <NetModelContextProvider>
                     <SettingsProvider>
                       <Box
                         component="main"
@@ -137,7 +135,6 @@ export default function RootLayout({
                     </SettingsProvider>
                     <SpeedInsights />
                     <Analytics />
-                  </NetModelContextProvider>
                 </Box>
               </NavigationProvider>
             </BodyWrapper>

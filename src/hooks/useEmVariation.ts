@@ -29,9 +29,7 @@ export function useEaseMetricVariation(
   );
   const { analyzePositionNet } = useNets({
     fen: Rfen,
-    maxRetries: 1,
     gameReviewMode: true,
-    useLichessBook: false,
   });
   const stockfishVariationCal = new StockfishVEaseMetricCalculator(true);
 

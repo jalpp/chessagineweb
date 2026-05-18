@@ -8,10 +8,6 @@ import {
   Alert,
   LinearProgress,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Tabs,
   Tab,
   Button,
@@ -27,31 +23,25 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  Download,
-  CloudDownload,
   Calculate,
 } from "@mui/icons-material";
 import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from "@/libs/nets/types";
-import { useNetStatus, useNetModels } from "@/context/NetContext";
 import { CandidateMove } from "@/libs/agine/helper";
 import { QuadrantClassification } from "@/libs/nets/classifyMoves";
 import { QuadrantAnalysisView } from "./QuadrantAnalysisView";
 import { PositionEval } from "@/stockfish/engine/engine";
 import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useEaseMetricVariation } from "@/hooks/useEmVariation";
 import { Chess } from "chess.js";
-import { MAIA_MODELS, MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
+import { MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
 
 export interface MaiaResultsProps {
   evaluations: {
-    maia2?: { [key: string]: MaiaEvaluation } | null;
     bigLeela?: MaiaEvaluation | null;
     elitemaia?: MaiaEvaluation | null;
     maia3?: { [key: string]: MaiaEvaluation } | null;
   };
   ucievaluations: {
-    maia2?: { [key: string]: MaiaEvaluation } | null;
     bigLeela?: MaiaEvaluation | null;
     elitemaia?: MaiaEvaluation | null;
     maia3?: { [key: string]: MaiaEvaluation } | null;
@@ -156,210 +146,6 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({
   );
 };
 
-const VariationEaseMetricView: React.FC<{
-  variations: PositionEval | null;
-  isCalculating: boolean;
-  Max_pv: number;
-  onMaxPvChange?: (event: Event, newValue: number | number[]) => void;
-}> = ({ variations, isCalculating, Max_pv, onMaxPvChange }) => {
-
-
-  if (isCalculating) {
-    return (
-      <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        gap={2}
-        py={4}
-      >
-        <CircularProgress size={40} />
-        <Typography>Calculating variation ease metrics...</Typography>
-      </Box>
-    );
-  }
-
-  if (!variations || !variations.lines.length) {
-    return (
-      <Typography sx={{ textAlign: "center", py: 2 }}>
-        No variation data available
-      </Typography>
-    );
-  }
-
-  return (
-    <Box>
-      <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-        Variation Difficulty Analysis
-      </Typography>
-
-      <Box
-        sx={{
-          borderRadius: 2,
-          p: 2,
-          mb: 3,
-        }}
-      >
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          mb={2}
-        >
-          <Typography variant="body2">
-            Shows how the position difficulty changes after following each engine
-            line. Positive values mean the position becomes easier, negative
-            values mean it becomes harder.
-          </Typography>
-        </Box>
-
-        <Box mb={2}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            mb={1}
-          >
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              # Moves in a variation to consider for ease metric
-            </Typography>
-            <Chip
-              label={`${Max_pv} moves`}
-              size="small"
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
-          <Slider
-            value={Max_pv}
-            onChange={onMaxPvChange}
-            min={1}
-            max={20}
-            step={1}
-            marks
-            valueLabelDisplay="auto"
-            sx={{
-              "& .MuiSlider-markLabel": {
-                fontSize: "0.75rem",
-              },
-            }}
-          />
-        </Box>
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Line</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Moves</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Eval</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                EM Change
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {variations.lines.map((line, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Chip
-                    label={`#${index + 1}`}
-                    size="small"
-                    sx={{ fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: "monospace",
-                      maxWidth: 300,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {formatPrincipalVariation(line.pv, line.fen, Max_pv)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {line.mate !== undefined
-                      ? `M${line.mate}`
-                      : line.cp !== undefined
-                        ? `${(line.cp / 100).toFixed(2)}`
-                        : "N/A"}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  {line.endingEM !== undefined ? (
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="flex-end"
-                      gap={1}
-                    >
-                      <Chip
-                        label={
-                          line.endingEM >= 0
-                            ? `+${line.endingEM.toFixed(3)}`
-                            : line.endingEM.toFixed(3)
-                        }
-                        size="small"
-                        sx={{
-                          bgcolor: getEMColor(line.endingEM),
-                          fontWeight: 600,
-                          fontFamily: "monospace",
-                        }}
-                      />
-                      {line.endingEM > 0.1 && (
-                        <TrendingUp sx={{ fontSize: 16, color: "#4caf50" }} />
-                      )}
-                      {line.endingEM < -0.1 && (
-                        <TrendingDown sx={{ fontSize: 16, color: "#f44336" }} />
-                      )}
-                    </Box>
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "rgba(255, 255, 255, 0.4)" }}
-                    >
-                      Calculating...
-                    </Typography>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Box
-        sx={{
-          borderRadius: 2,
-          p: 2,
-          mt: 3,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-          Interpretation Guide
-        </Typography>
-        <Box component="ul" sx={{ pl: 3, m: 0, "& li": { mb: 0.5 } }}>
-          <Typography component="li" variant="body2">
-            🟢 Positive EM: The variation leads to a simpler position
-          </Typography>
-          <Typography component="li" variant="body2">
-            🟠 Near Zero: Similar difficulty to current position
-          </Typography>
-          <Typography component="li" variant="body2">
-            🔴 Negative EM: The variation leads to a more complex position
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  );
-};
-
 const EvaluationDisplay: React.FC<{
   evaluation: MaiaEvaluation;
   supportsem: boolean;
@@ -379,22 +165,8 @@ const EvaluationDisplay: React.FC<{
   engine,
   fen,
 }) => {
-  const [viewMode, setViewMode] = useState<
-    "evaluation" | "quadrant" | "ease" | "variations"
-  >("evaluation");
+  const [viewMode, setViewMode] = useState<"evaluation" | "quadrant" | "ease">("evaluation");
   const [improbableThreshold, setImprobableThreshold] = useState(0.05);
-  const [Max_pv, setMaxPv] = useState<number>(
-    stockfishAnalysisResult?.lines[0]?.pv.length || 6,
-  );
-
-  const { variations, isLoading } = useEaseMetricVariation(
-    supportsem,
-    fen,
-    engine || null,
-    ucievaluation || evaluation,
-    stockfishAnalysisResult,
-    Max_pv,
-  );
 
   const quadrantMoves = React.useMemo(() => {
     if (!candidateMoves || candidateMoves.length === 0) return [];
@@ -421,24 +193,15 @@ const EvaluationDisplay: React.FC<{
 
   const hasQuadrantData = quadrantMoves.length > 0;
   const hasEaseData = easeMetric !== null;
-  const hasVariationData =
-    stockfishAnalysisResult && stockfishAnalysisResult.lines.length > 0 || !supportsem;
-
   const handleThresholdChange = (event: Event, newValue: number | number[]) => {
     setImprobableThreshold(newValue as number);
   };
 
-  const handleMaxPvChange = (event: Event, newValue: number | number[]) => {
-    setMaxPv(newValue as number);
-  };
 
-  const handleCalculateVariations = () => {
-    setViewMode("variations");
-  };
 
   return (
     <>
-      {(hasQuadrantData || hasEaseData || hasVariationData) &&
+      {(hasQuadrantData || hasEaseData) &&
         showQuadrantAnalysis && (
           <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
             <Tabs
@@ -450,9 +213,6 @@ const EvaluationDisplay: React.FC<{
                 <Tab label="Candidate Analysis" value="quadrant" />
               )}
               {hasEaseData && supportsem && <Tab label="Ease Metric Analysis" value="ease" />}
-              {hasVariationData && supportsem && (
-                <Tab label="Variation Analysis" value="variations" />
-              )}
             </Tabs>
           </Box>
         )}
@@ -499,20 +259,6 @@ const EvaluationDisplay: React.FC<{
             <MovesList policy={evaluation.policy} />
           </Box>
 
-          {hasVariationData && supportsem && (
-            <Box mt={3}>
-              <Button
-                variant="outlined"
-                fullWidth
-                startIcon={<Calculate />}
-                onClick={handleCalculateVariations}
-                disabled={isLoading}
-                sx={{ textTransform: "none" }}
-              >
-                {isLoading ? "Calculating..." : "Analyze Variations"}
-              </Button>
-            </Box>
-          )}
         </>
       ) : viewMode === "quadrant" ? (
         <>
@@ -729,220 +475,11 @@ const EvaluationDisplay: React.FC<{
             </Box>
           )}
         </>
-      ) : (
-        <VariationEaseMetricView
-          variations={variations}
-          isCalculating={isLoading}
-          Max_pv={Max_pv}
-          onMaxPvChange={handleMaxPvChange}
-        />
-      )}
+      ) : null}
     </>
   );
 };
 
-const ModelDownloadPrompt: React.FC<{
-  modelType: ModelType;
-  downloadModel: (modelType: ModelType) => Promise<void>;
-}> = ({ modelType, downloadModel }) => {
-  const { status, progress } = useNetStatus();
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const modelStatus = status[modelType];
-  const modelProgress = progress[modelType] || 0;
-  const config = MODEL_CONFIGS[modelType];
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await downloadModel(modelType);
-    } catch (error) {
-      console.error("Download failed:", error);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const downloading = isDownloading || modelStatus === "downloading";
-
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      gap={2}
-      py={4}
-    >
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        {config.name} Not Available
-      </Typography>
-      <Typography
-        sx={{ mb: 2, textAlign: "center", color: "rgba(255, 255, 255, 0.7)" }}
-      >
-        {config.description}
-      </Typography>
-
-      {downloading && modelProgress > 0 && (
-        <Box sx={{ width: "100%", maxWidth: 300, mb: 2 }}>
-          <Box display="flex" justifyContent="space-between" mb={1}>
-            <Typography variant="body2">Downloading...</Typography>
-            <Typography variant="body2">
-              {Math.round(modelProgress)}%
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={modelProgress}
-            sx={{
-              height: 8,
-              borderRadius: 4,
-            }}
-          />
-        </Box>
-      )}
-
-      <Button
-        variant="contained"
-        startIcon={<Download />}
-        onClick={handleDownload}
-        disabled={downloading}
-        sx={{
-          textTransform: "none",
-          fontWeight: 500,
-        }}
-      >
-        {downloading ? "Downloading..." : `Download ${config.name}`}
-      </Button>
-      <Typography variant="caption">Size: {config.size}</Typography>
-    </Box>
-  );
-};
-
-const DownloadAllModelsPrompt: React.FC<{
-  downloadModel: (modelType: ModelType) => Promise<void>;
-}> = ({ downloadModel }) => {
-  const { status, progress } = useNetStatus();
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-
-  const allModelTypes = Object.keys(MODEL_CONFIGS) as ModelType[];
-
-  const anyDownloading = allModelTypes.some(
-    (modelType) => status[modelType] === "downloading",
-  );
-  const downloading = isDownloadingAll || anyDownloading;
-
-  return (
-    <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-      <CardContent>
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={3}
-          py={4}
-        >
-          <CloudDownload sx={{ fontSize: 48, color: "primary.main" }} />
-          <Typography variant="h5" sx={{ textAlign: "center" }}>
-            Download Neural Nets to Start Analysis
-          </Typography>
-
-         
-          {downloading && (
-            <Box sx={{ width: "100%", maxWidth: 500 }}>
-              {allModelTypes.map((modelType) => {
-                const modelStatus = status[modelType];
-                const modelProgress = progress[modelType] || 0;
-                const config = MODEL_CONFIGS[modelType];
-
-                if (modelStatus !== "downloading" && modelProgress === 0)
-                  return null;
-
-                return (
-                  <Box key={modelType} sx={{ mb: 2 }}>
-                    <Box display="flex" justifyContent="space-between" mb={1}>
-                      <Typography variant="body2">{config.name}</Typography>
-                      <Typography variant="body2">
-                        {Math.round(modelProgress)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={modelProgress}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                      }}
-                    />
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
-
-          {/* Individual model cards */}
-          <Box sx={{ width: "100%", maxWidth: 600, mt: 2 }}>
-            <Box display="flex" flexDirection="column" gap={2}>
-              {allModelTypes.map((modelType) => {
-                const config = MODEL_CONFIGS[modelType];
-                const modelStatus = status[modelType];
-                const modelProgress = progress[modelType] || 0;
-                const isReady = modelStatus === "ready";
-                const isDownloading = modelStatus === "downloading";
-
-                return (
-                  <Card key={modelType}>
-                    <CardContent>
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <Box flex={1}>
-                          <Typography
-                            variant="subtitle1"
-                            sx={{ fontWeight: 600 }}
-                          >
-                            {config.name}
-                          </Typography>
-                          <Typography variant="caption">
-                            {config.description}
-                          </Typography>
-                          <Typography variant="caption">
-                            {config.size}
-                          </Typography>
-                        </Box>
-
-                        {isReady ? (
-                          <Chip label="Ready" color="success" size="small" />
-                        ) : (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<Download />}
-                            onClick={() => downloadModel(modelType)}
-                            disabled={isDownloading || downloading}
-                            sx={{
-                              textTransform: "none",
-                              minWidth: 120,
-                            }}
-                          >
-                            {isDownloading
-                              ? `${Math.round(modelProgress)}%`
-                              : "Download"}
-                          </Button>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </Box>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
 
 // ── Maia 3 Display Component ──────────────────────────────────────────────────
 
@@ -1135,16 +672,9 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   engine,
   fen,
 }) => {
-  const { status, activeModels } = useNetStatus();
-  const { downloadModel } = useNetModels();
-  const [selectedMaia2Model, setSelectedMaia2Model] = useState(0);
   const [selectedMaia3Model, setSelectedMaia3Model] = useState(10); // default 1600
   const [selectedTab, setSelectedTab] = useState<ModelType>("maia3");
 
-  
-  const isAnyModelDownloading = Object.values(status).some(
-    (modelStatus) => modelStatus === "downloading",
-  );
 
   
   if (isMaiaLoading) {
@@ -1167,34 +697,6 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   }
 
   
-  if (isAnyModelDownloading) {
-    const downloadingModel = (Object.keys(status) as ModelType[]).find(
-      (key) => status[key] === "downloading",
-    );
-
-    return (
-      <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-        <CardContent>
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            gap={2}
-            py={4}
-          >
-            <Typography>
-              Downloading{" "}
-              {downloadingModel
-                ? MODEL_CONFIGS[downloadingModel].name
-                : "model"}
-              ... Please wait.
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (maiaerror) {
     return (
       <Card>
@@ -1205,15 +707,8 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
     );
   }
 
-  
-  if (activeModels.length === 0) {
-    return <DownloadAllModelsPrompt downloadModel={downloadModel} />;
-  }
-
   const currentTab = selectedTab;
-
-  
-  const isCurrentModelReady = status[currentTab] === "ready";
+  const isCurrentModelReady = true;
 
   return (
     <Card sx={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}>
@@ -1240,45 +735,6 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             })}
           </Tabs>
         </Box>
-
-        {!isCurrentModelReady && (
-          <ModelDownloadPrompt
-            modelType={currentTab}
-            downloadModel={downloadModel}
-          />
-        )}
-
-       
-        {isCurrentModelReady && currentTab === "maia2" && evaluations.maia2 && (
-          <>
-            <FormControl fullWidth variant="standard" sx={{ mb: 3 }}>
-              <InputLabel id="maia-model-select-label">Rating Level</InputLabel>
-              <Select
-                labelId="maia-model-select-label"
-                value={selectedMaia2Model}
-                label="Rating Level"
-                onChange={(e) => setSelectedMaia2Model(Number(e.target.value))}
-              >
-                {MAIA_MODELS.map((model, idx) => (
-                  <MenuItem key={model} value={idx}>
-                    {formatModelName(model)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {evaluations.maia2[MAIA_MODELS[selectedMaia2Model]] && (
-              <EvaluationDisplay
-                evaluation={evaluations.maia2[MAIA_MODELS[selectedMaia2Model]]}
-                supportsem={false}
-                stockfishAnalysisResult={stockfishAnalysisResult}
-                candidateMoves={chessDbMoves}
-                engine={engine}
-                fen={fen}
-              />
-            )}
-          </>
-        )}
 
         {isCurrentModelReady &&
           currentTab === "bigLeela" &&

@@ -3,15 +3,12 @@ import { Chess, Move, Color } from "chess.js";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 import { useSessionStorage } from "usehooks-ts";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
-import { useNets } from "./useNets";
 import {
   isVeryGoodMove,
   evaluationToWinRate,
   percentToNumber,
   getMoveBasicClassification,
 } from "@/libs/game/gamereview";
-import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
-import { ChessDBEaseMetricCalculator } from "@/libs/easemetric/chessDbEaseMetric";
 import { MoveAnalysis, CandidateMove } from "@/libs/agine/helper";
 import { getChessDbCache, setChessDbCache } from "@/stockfish/engine/chessdbCache";
 import { validateFen } from "chess.js";
@@ -103,17 +100,6 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
   const [gameReviewLoading, setGameReviewLoading] = useState(false);
   const [gameReviewProgress, setGameReviewProgress] = useState(0);
   const [rootCurrentMove, setRootCurrentMove] = useState(0);
-
-  const { analyzePositionNet } = useNets({
-    fen: "",
-    gameReviewMode: true,
-    useLichessBook: false,
-    maxRetries: 1,
-    enabledModels: ["bigLeela"],
-  });
-
-  const stockfishEmCalc = new StockfishEaseMetricCalculator(false);
-  const chessDbEmCalc = new ChessDBEaseMetricCalculator(false);
 
   const generateGameReview = useCallback(
     async (gameNotation: string[], customFen?: string): Promise<void> => {
@@ -328,33 +314,6 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
 
         setGameReviewProgress(85);
 
-        // ── Phase 3: fire ALL net evals concurrently (non-blocking) ─────────
-        // These run while classification happens below; by the time we await
-        // each promise the net will usually already be done.
-        const netPromises = new Map<number, Promise<number | undefined>>();
-
-        for (const p of nonBook) {
-          const preData = preDB.get(p.plyIndex)!;
-          const sf = sfCache.get(p.plyIndex);
-
-          netPromises.set(
-            p.plyIndex,
-            (async (): Promise<number | undefined> => {
-              try {
-                const netResult = await analyzePositionNet?.(p.preMovefen);
-                if (!netResult?.bigLeela) return undefined;
-                if (preData.length > 0)
-                  return chessDbEmCalc.calculateEaseMetric(netResult.bigLeela, preData);
-                if (sf?.sfAnalysis)
-                  return stockfishEmCalc.calculateEaseMetric(netResult.bigLeela, sf.sfAnalysis);
-                return undefined;
-              } catch {
-                return undefined;
-              }
-            })()
-          );
-        }
-
         // ── Phase 4: classify ────────────────────────────────────────────────
         const moveEvaluations: MoveAnalysis[] = [];
 
@@ -372,7 +331,6 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               currenFen: p.postMovefen,
               arrowMove: p.arrowMove,
               quality: "Book",
-              easeMetric: 0.9,
               player: p.activePlayer,
             });
             continue;
@@ -413,11 +371,6 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
           }
 
-          // Await net — typically already resolved
-          const easeMetric = await (
-            netPromises.get(p.plyIndex) ?? Promise.resolve(undefined)
-          );
-
           const playedMove = moveHistory[i];
           let quality: MoveAnalysis["quality"];
 
@@ -437,7 +390,6 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             arrowMove: p.arrowMove,
             fen: p.preMovefen,
             evalMove,
-            easeMetric,
             currenFen: p.postMovefen,
             player: p.activePlayer,
           });
@@ -452,7 +404,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         setGameReviewLoading(false);
       }
     },
-    [stockfishEngine, searchDepth, analyzePositionNet]
+    [stockfishEngine, searchDepth]
   );
 
   return {

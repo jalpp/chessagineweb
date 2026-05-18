@@ -1,310 +1,289 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNetModels, useNetStatus } from "@/context/NetContext";
-import { convertToSanEvaluation, MAIA_MODELS, MAIA3_MODELS, MAIA3_RATING_VALUES, MaiaEvaluation, ModelType, SanMaiaEvaluation } from "@/libs/nets/types";
 import {
-  getMaiaCacheKey,
-  readMemCache,
-  readMaiaCache,
-  writeMaiaCache,
-} from "@/libs/nets/cache";
-import { fetchLichessData, LichessData, lichessToEvaluation, lichessToSanEvaluation } from "@/libs/openingdatabase/lichessRatingOpening";
+  convertToSanEvaluation,
+  MAIA3_MODELS,
+  MaiaEvaluation,
+  ModelType,
+  SanMaiaEvaluation,
+  UseMaiaEngineOptions,
+  UseMaiaEngineResult,
+  MaiaEngineAnalysis,
+  NNData,
+  BatchEntry,
+} from "@/libs/nets/types";
+import { cachedFetch, makeCacheKey } from "@/libs/nets/nnCache";
 
-interface UseMaiaEngineOptions {
-  fen: string;
-  maxRetries?: number;
-  retryDelayMs?: number;
-  enabledModels?: ModelType[];
-  useLichessBook?: boolean;
-  bookThreshold?: number;
-  gameReviewMode?: boolean;
-  supported?: boolean;
+const ALL_MODELS: ModelType[] = ["bigLeela", "elitemaia", "maia3"];
+
+const EMPTY_STATE: UseMaiaEngineResult = {
+  evaluations: {},
+  sanEvaluations: {},
+  isLoading: false,
+  Maiaerror: null,
+  evaluationsFen: null,
+  analyzePositionNet: async () => undefined,
+};
+
+
+/**
+ * Fetch Maia3 batch analysis across all rating levels
+ * @param fen - Chess position in FEN format
+ * @returns Dictionary mapping model names (e.g., 'maia_kdd_600') to evaluations
+ * @throws Error if the API request fails
+ */
+async function fetchBatch(fen: string): Promise<Record<string, MaiaEvaluation>> {
+  const res = await fetch("/api/nn", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint: "batch-maia3", fen }),
+  });
+  
+  if (!res.ok) {
+    throw new Error(`batch-maia3 failed: ${res.status}`);
+  }
+  
+  const json = await res.json();
+  const evaluations: Record<string, MaiaEvaluation> = {};
+  
+  for (const entry of (json.results ?? []) as BatchEntry[]) {
+    const { topMoves, uciEval } = entry.analysis;
+    
+    const policy: Record<string, number> = {};
+    for (const { move, probability } of topMoves) {
+      policy[move] = probability;
+    }
+    
+    evaluations[`maia_kdd_${entry.rating}`] = {
+      value: uciEval?.value ?? 0.5,
+      policy,
+    };
+  }
+  
+  return evaluations;
 }
 
-export interface MaiaEngineAnalysis {
-  maia2?: { [key: string]: MaiaEvaluation } | null;
-  bigLeela?: MaiaEvaluation | null;
-  elitemaia?: MaiaEvaluation | null;
-  maia3?: { [key: string]: MaiaEvaluation } | null;
+/**
+ * Fetch single-model neural network analysis (Leela or Elite Leela)
+ * @param fen - Chess position in FEN format
+ * @param engine - Neural network engine ('leela' or 'elite-leela')
+ * @returns Evaluation with UCI-keyed policy
+ * @throws Error if the API request fails
+ */
+async function fetchSingleEngine(
+  fen: string,
+  engine: "leela" | "elite-leela",
+): Promise<MaiaEvaluation> {
+  const res = await fetch("/api/nn", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint: "analyze", fen, engine }),
+  });
+  
+  if (!res.ok) {
+    throw new Error(`${engine} failed: ${res.status}`);
+  }
+  
+  const json = await res.json();
+  const { uciEval, topMoves } = json.data as NNData;
+  
+  // Prefer uciEval if available (already has UCI-keyed policy)
+  if (uciEval) {
+    return { value: uciEval.value, policy: uciEval.policy };
+  }
+  
+  // Fallback: convert top moves to policy dictionary
+  const policy: Record<string, number> = {};
+  for (const { move, probability } of topMoves) {
+    policy[move] = probability;
+  }
+  
+  return { value: 0.5, policy };
 }
 
-export interface UseMaiaEngineResult {
-  evaluations: MaiaEngineAnalysis;
-  sanEvaluations: {
-    maia2?: { [key: string]: SanMaiaEvaluation } | null;
-    bigLeela?: SanMaiaEvaluation | null;
-    elitemaia?: SanMaiaEvaluation | null;
-    maia3?: { [key: string]: SanMaiaEvaluation } | null;
-  };
-  lichessData: {
-    maia2?: { [key: string]: LichessData } | null;
-    bigLeela?: LichessData | null;
-    elitemaia?: LichessData | null;
-    maia3?: { [key: string]: LichessData } | null;
-  };
-  isInBook: boolean;
-  isLoading: boolean;
-  Maiaerror: Error | null;
-  evaluationsFen?: string | null;
-  analyzePositionNet?: (customFen?: string | undefined) => Promise<MaiaEngineAnalysis | undefined>;
+/**
+ * Fetch Maia3 batch with caching
+ * @param fen - Chess position in FEN format
+ * @returns Cached or fresh batch analysis
+ */
+function fetchBatchCached(fen: string) {
+  return cachedFetch(makeCacheKey("batch-maia3", fen), () => fetchBatch(fen));
 }
 
+/**
+ * Fetch Leela analysis with caching
+ * @param fen - Chess position in FEN format
+ * @returns Cached or fresh Leela evaluation
+ */
+function fetchLeelaCached(fen: string) {
+  return cachedFetch(makeCacheKey("leela", fen), () => fetchSingleEngine(fen, "leela"));
+}
+
+/**
+ * Fetch Elite Leela analysis with caching
+ * @param fen - Chess position in FEN format
+ * @returns Cached or fresh Elite Leela evaluation
+ */
+function fetchEliteCached(fen: string) {
+  return cachedFetch(makeCacheKey("elite-leela", fen), () => fetchSingleEngine(fen, "elite-leela"));
+}
+
+
+/**
+ * React hook for analyzing chess positions with neural networks
+ *
+ * Provides evaluations from multiple neural networks (Leela, Elite Leela, Maia3).
+ * All evaluations are cached to prevent duplicate requests. Returns both UCI-keyed
+ * evaluations (for calculations) and SAN-keyed evaluations (for UI display).
+ *
+ * @param options - Configuration options
+ * @returns Hook result with evaluations, loading state, and analysis function
+ *
+ * @example
+ * const { evaluations, sanEvaluations, isLoading, analyzePositionNet } = useNets({
+ *   fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+ *   enabledModels: ["maia3", "bigLeela"],
+ *   supported: true,
+ * });
+ *
+ * // Manual analysis for game review
+ * const results = await analyzePositionNet(customFen);
+ */
 export const useNets = ({
   fen,
   enabledModels,
-  useLichessBook = true,
-  bookThreshold = 21,
-  supported = true,
   gameReviewMode = false,
+  supported = true,
 }: UseMaiaEngineOptions): UseMaiaEngineResult => {
 
-  if (!supported) {
-    return {
-      evaluations: {},
-      sanEvaluations: {},
-      lichessData: {},
-      isInBook: false,
-      isLoading: false,
-      Maiaerror: null,
-      evaluationsFen: null,
-      analyzePositionNet: async () => undefined,
-    };
-  }
-
-  const { maia2, bigLeela, elitemaia, maia3 } = useNetModels();
-  const { status, activeModels } = useNetStatus();
-
-  const [evaluations, setEvaluations] = useState<UseMaiaEngineResult["evaluations"]>({});
+  const [evaluations, setEvaluations] = useState<MaiaEngineAnalysis>({});
   const [sanEvaluations, setSanEvaluations] = useState<UseMaiaEngineResult["sanEvaluations"]>({});
-  const [lichessData, setLichessData] = useState<UseMaiaEngineResult["lichessData"]>({});
-  const [isInBook, setIsInBook] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [evaluationsFen, setEvaluationsFen] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const models = enabledModels ?? ALL_MODELS;
 
-  const analyzePosition = useCallback(async (customFen?: string) => {
-    const fenToAnalyze = customFen || fen;
-    if (!fenToAnalyze) return;
 
-    const modelsToUse = enabledModels
-      ? enabledModels.filter((m) => activeModels.includes(m))
-      : activeModels;
+  /**
+   * Manually analyze a position (for game review or custom positions)
+   *
+   * Fetches evaluations from all enabled networks. No internal abort controller —
+   * safe for concurrent calls. All fetches use L1/L2 cache, so duplicate requests
+   * are free.
+   *
+   * @param customFen - Optional FEN to analyze instead of the hook's fen
+   * @returns UCI-keyed evaluations or undefined on error
+   */
+  const analyzePosition = useCallback(
+    async (customFen?: string): Promise<MaiaEngineAnalysis | undefined> => {
+      if (!supported) return undefined;
+      
+      const targetFen = customFen || fen;
+      if (!targetFen) return undefined;
 
-    // No models ready — the useEffect will re-trigger when activeModels changes
-    if (modelsToUse.length === 0) return;
+      try {
+        const evaluations: MaiaEngineAnalysis = {};
+        const sanEvals: UseMaiaEngineResult["sanEvaluations"] = {};
 
-    const cacheKey = getMaiaCacheKey({
-      fen: fenToAnalyze,
-      models: modelsToUse,
-      useLichessBook,
-      bookThreshold,
-    });
+        // Fetch all models in parallel
+        const [batch, leelaEval, eliteEval] = await Promise.all([
+          models.includes("maia3") ? fetchBatchCached(targetFen) : Promise.resolve(null),
+          models.includes("bigLeela") ? fetchLeelaCached(targetFen) : Promise.resolve(null),
+          models.includes("elitemaia") ? fetchEliteCached(targetFen) : Promise.resolve(null),
+        ]);
 
-    const memCached = readMemCache(cacheKey);
-    if (memCached) {
-      setEvaluations(memCached.evaluations);
-      setSanEvaluations(memCached.sanEvaluations);
-      setLichessData(memCached.lichessData);
-      setIsInBook(memCached.isInBook);
-      setEvaluationsFen(fenToAnalyze);
-      setIsLoading(false);
-      return memCached.evaluations;
-    }
+        // Process Maia3 batch
+        if (batch) {
+          const maia3Evaluations: Record<string, MaiaEvaluation> = {};
+          const maia3SanEvaluations: Record<string, SanMaiaEvaluation> = {};
+          
+          MAIA3_MODELS.forEach((modelName) => {
+            const evaluation = batch[modelName];
+            if (evaluation) {
+              maia3Evaluations[modelName] = evaluation;
+              maia3SanEvaluations[modelName] = evaluation; // Maia3 topMoves already in SAN from server
+            }
+          });
+          
+          evaluations.maia3 = maia3Evaluations;
+          sanEvals.maia3 = maia3SanEvaluations;
+        }
 
-    const cached = await readMaiaCache(cacheKey);
-    if (cached) {
-      setEvaluations(cached.evaluations);
-      setSanEvaluations(cached.sanEvaluations);
-      setLichessData(cached.lichessData);
-      setIsInBook(cached.isInBook);
-      setEvaluationsFen(fenToAnalyze);
-      setIsLoading(false);
-      return cached.evaluations;
-    }
+        // Process Leela evaluation
+        if (leelaEval) {
+          evaluations.bigLeela = leelaEval; // UCI — for ease metric calculations
+          sanEvals.bigLeela = convertToSanEvaluation(leelaEval, targetFen); // SAN — for UI arrows
+        }
 
-    const currentAbortController = new AbortController();
-    abortControllerRef.current = currentAbortController;
+        // Process Elite Leela evaluation
+        if (eliteEval) {
+          evaluations.elitemaia = eliteEval;
+          sanEvals.elitemaia = convertToSanEvaluation(eliteEval, targetFen);
+        }
+
+        return evaluations;
+      } catch (err) {
+        console.error("[useNets]", err);
+        return undefined;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fen, JSON.stringify(models), supported],
+  );
+
+  /**
+   * Auto-analyze position on FEN change (unless in game review mode)
+   * Cancels previous requests when FEN changes or component unmounts
+   */
+  useEffect(() => {
+    if (!supported || gameReviewMode) return;
+
+    abortRef.current?.abort();
+    const abort = new AbortController();
+    abortRef.current = abort;
 
     setIsLoading(true);
     setError(null);
 
-    try {
-      const newEvaluations: UseMaiaEngineResult["evaluations"] = {};
-      const newSanEvaluations: UseMaiaEngineResult["sanEvaluations"] = {};
-      const newLichessData: UseMaiaEngineResult["lichessData"] = {};
-      let positionIsInBook = false;
+    analyzePosition(fen)
+      .then((result) => {
+        if (abort.signal.aborted || !result) return;
 
-      // ── Maia 2 ──────────────────────────────────────────────────────────
-      if (modelsToUse.includes("maia2") && maia2 && status.maia2 === "ready") {
-        if (currentAbortController.signal.aborted) return;
+        const sanEvals: UseMaiaEngineResult["sanEvaluations"] = {};
+        if (result.maia3) sanEvals.maia3 = result.maia3;
+        if (result.bigLeela) sanEvals.bigLeela = convertToSanEvaluation(result.bigLeela, fen);
+        if (result.elitemaia) sanEvals.elitemaia = convertToSanEvaluation(result.elitemaia, fen);
 
-        const maia2Evaluations: { [key: string]: MaiaEvaluation } = {};
-        const maia2SanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
-        const maia2LichessData: { [key: string]: LichessData } = {};
-        let anyLichessDataAvailable = false;
-
-        if (useLichessBook) {
-          const lichessResults = await Promise.all(
-            MAIA_MODELS.map((model) =>
-              fetchLichessData(fenToAnalyze, parseInt(model), currentAbortController.signal)
-            )
-          );
-
-          MAIA_MODELS.forEach((model, index) => {
-            const lichessResult = lichessResults[index];
-            if (lichessResult) {
-              const totalGames = lichessResult.white + lichessResult.draws + lichessResult.black;
-              maia2LichessData[model] = lichessResult;
-              anyLichessDataAvailable = true;
-              if (totalGames >= bookThreshold) {
-                positionIsInBook = true;
-                maia2Evaluations[model] = lichessToEvaluation(lichessResult);
-                maia2SanEvaluations[model] = lichessToSanEvaluation(lichessResult);
-              }
-            }
-          });
-
-          if (anyLichessDataAvailable) newLichessData.maia2 = maia2LichessData;
+        setEvaluations(result);
+        setSanEvaluations(sanEvals);
+        setEvaluationsFen(fen);
+      })
+      .catch((err) => {
+        if (!abort.signal.aborted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
         }
-
-        if (!positionIsInBook) {
-          const positions = [
-            { fen: fenToAnalyze, eloSelf: 1100, eloOppo: 1100 },
-            { fen: fenToAnalyze, eloSelf: 1200, eloOppo: 1200 },
-            { fen: fenToAnalyze, eloSelf: 1300, eloOppo: 1300 },
-            { fen: fenToAnalyze, eloSelf: 1400, eloOppo: 1400 },
-            { fen: fenToAnalyze, eloSelf: 1500, eloOppo: 1500 },
-            { fen: fenToAnalyze, eloSelf: 1600, eloOppo: 1600 },
-            { fen: fenToAnalyze, eloSelf: 1700, eloOppo: 1700 },
-            { fen: fenToAnalyze, eloSelf: 1800, eloOppo: 1800 },
-            { fen: fenToAnalyze, eloSelf: 1900, eloOppo: 1900 },
-          ];
-
-          const results = await maia2.batchEval(positions);
-          if (currentAbortController.signal.aborted) return;
-
-          MAIA_MODELS.forEach((model, index) => {
-            maia2Evaluations[model] = results[index];
-            maia2SanEvaluations[model] = convertToSanEvaluation(results[index], fenToAnalyze);
-          });
-
-          newEvaluations.maia2 = maia2Evaluations;
-        }
-
-        newSanEvaluations.maia2 = maia2SanEvaluations;
-      }
-
-      // ── BigLeela ─────────────────────────────────────────────────────────
-      if (modelsToUse.includes("bigLeela") && bigLeela && status.bigLeela === "ready") {
-        if (currentAbortController.signal.aborted) return;
-        const uciEval = await bigLeela.evaluate(fenToAnalyze);
-        newEvaluations.bigLeela = uciEval;
-        newSanEvaluations.bigLeela = convertToSanEvaluation(uciEval, fenToAnalyze);
-      }
-
-      // ── EliteMaia ────────────────────────────────────────────────────────
-      if (modelsToUse.includes("elitemaia") && elitemaia && status.elitemaia === "ready") {
-        if (currentAbortController.signal.aborted) return;
-        const uciEval = await elitemaia.evaluate(fenToAnalyze);
-        newEvaluations.elitemaia = uciEval;
-        newSanEvaluations.elitemaia = convertToSanEvaluation(uciEval, fenToAnalyze);
-      }
-
-      // ── Maia 3 ───────────────────────────────────────────────────────────
-      if (modelsToUse.includes("maia3") && maia3 && status.maia3 === "ready") {
-        if (currentAbortController.signal.aborted) return;
-
-        const positions = MAIA3_RATING_VALUES.map((rating) => ({
-          fen: fenToAnalyze,
-          eloSelf: rating,
-          eloOppo: rating,
-        }));
-
-        const results = await maia3.batchEvaluate(positions);
-        if (currentAbortController.signal.aborted) return;
-
-        const maia3Evaluations: { [key: string]: MaiaEvaluation } = {};
-        const maia3SanEvaluations: { [key: string]: SanMaiaEvaluation } = {};
-
-        MAIA3_MODELS.forEach((model, index) => {
-          maia3Evaluations[model] = results[index];
-          maia3SanEvaluations[model] = convertToSanEvaluation(results[index], fenToAnalyze);
-        });
-
-        newEvaluations.maia3 = maia3Evaluations;
-        newSanEvaluations.maia3 = maia3SanEvaluations;
-      }
-
-      if (!currentAbortController.signal.aborted) {
-        await writeMaiaCache(cacheKey, {
-          evaluations: newEvaluations,
-          sanEvaluations: newSanEvaluations,
-          lichessData: newLichessData,
-          isInBook: positionIsInBook,
-          timestamp: Date.now(),
-        });
-
-        setEvaluations(newEvaluations);
-        setSanEvaluations(newSanEvaluations);
-        setLichessData(newLichessData);
-        setIsInBook(positionIsInBook);
-        setEvaluationsFen(fenToAnalyze);
-
-        return newEvaluations;
-      }
-    } catch (err) {
-      if (!currentAbortController.signal.aborted) {
-        const e = err instanceof Error ? err : new Error("Unknown error");
-        setError(e);
-        console.error("Analysis error:", e);
-      }
-    } finally {
-      if (!currentAbortController.signal.aborted) {
-        setIsLoading(false);
-      }
-    }
-  }, [
-    fen,
-    maia2, bigLeela, elitemaia, maia3,
-    status.maia2, status.bigLeela, status.elitemaia, status.maia3,
-    activeModels,
-    enabledModels,
-    useLichessBook,
-    bookThreshold,
-  ]);
-
-  useEffect(() => {
-    if (gameReviewMode) return;
-
-    // activeModels is in the dep array — this effect re-runs automatically
-    // when a download completes and a model transitions to 'ready'.
-    // No polling loop needed; React handles the re-trigger.
-    if (activeModels.length === 0) return;
-
-    // Abort any in-flight analysis for a previous fen or model set
-    abortControllerRef.current?.abort();
-
-    analyzePosition();
+      })
+      .finally(() => {
+        if (!abort.signal.aborted) setIsLoading(false);
+      });
 
     return () => {
-      abortControllerRef.current?.abort();
+      abort.abort();
     };
-  }, [
-    fen,
-    activeModels,      // ← re-runs when any model finishes downloading
-    gameReviewMode,
-    analyzePosition,
-  ]);
+  }, [fen, gameReviewMode, supported, analyzePosition]);
+
+
+  if (!supported) {
+    return EMPTY_STATE;
+  }
 
   return {
     evaluations,
     sanEvaluations,
-    lichessData,
-    isInBook,
-    evaluationsFen,
     isLoading,
     Maiaerror: error,
+    evaluationsFen,
     analyzePositionNet: analyzePosition,
   };
 };
