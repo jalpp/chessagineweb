@@ -69,7 +69,7 @@ export const convertToSanEvaluation = (
 };
 
 export type MoveCategory = 'brilliant' | 'tricky' | 'normal' | 'book';
-export type QuadrantCandidateMoves = "Likely Good" | "Likely Bad" | "Unlikely Good" | "Unlikely Bad";
+export type QuadrantCandidateMoves = "Likely Good" | "Likely Bad" | "Unlikely Good" | "Unlikely Bad" | "Unknown";
 
 export interface QuadrantMove {
   rank: number;
