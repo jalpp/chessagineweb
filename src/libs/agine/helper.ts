@@ -107,9 +107,11 @@ export function getChessDbNoteWord(note: string): string {
       return "Good";
     case "?":
       return "Bad";
-    default:
+    case "??":
       return "unknown";
   }
+
+  return "Good";
 }
 
 export function getChessDBSpeech(data: CandidateMove[]): string {

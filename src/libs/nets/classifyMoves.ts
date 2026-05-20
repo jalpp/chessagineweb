@@ -19,8 +19,13 @@ export const QUADRANT_CONFIG = {
   },
   "Unlikely Bad": {
     label: "Rare Blunder",
-    color: '#64748b',
+    color: '#721900',
     description: 'Uncommon moves that are also weak'
+  },
+  "Unknown": {
+    label: "Uncertain",
+    color: '#646464',
+    description: 'Moves without enough data to determine quality'
   }
 } as const;
 
@@ -48,17 +53,20 @@ function qclassifyMove(
   improbableThreshold: number, 
   chessDbNote: string
 ): QuadrantCandidateMoves {
-  const isGoodMove = ['Best', 'Good', 'Very Good'];
+  const isGoodMove = ['best', 'good', 'very good'];
+  const isBad = ['bad']
 
-  if (probability > improbableThreshold && isGoodMove.includes(chessDbNote)) {
+  if (probability > improbableThreshold && isGoodMove.includes(chessDbNote.toLowerCase())) {
     return 'Likely Good';
-  } else if (probability > improbableThreshold && !isGoodMove.includes(chessDbNote)) {
+  } else if (probability > improbableThreshold && isBad.includes(chessDbNote.toLowerCase())) {
     return 'Likely Bad';
-  } else if (probability < improbableThreshold && isGoodMove.includes(chessDbNote)) {
+  } else if (probability < improbableThreshold && isGoodMove.includes(chessDbNote.toLowerCase())) {
     return 'Unlikely Good';
+  } else if (probability < improbableThreshold && isBad.includes(chessDbNote.toLowerCase())){
+    return 'Unlikely Bad';
   }
 
-  return 'Unlikely Bad';
+  return 'Unknown';
 }
 
 export function QuadrantClassification(
@@ -95,7 +103,8 @@ export function groupMovesByQuadrant(quadrantMoves: QuadrantMove[]): Record<Quad
     "Likely Good": [],
     "Likely Bad": [],
     "Unlikely Good": [],
-    "Unlikely Bad": []
+    "Unlikely Bad": [],
+    "Unknown": []
   };
   
   quadrantMoves.forEach(move => {

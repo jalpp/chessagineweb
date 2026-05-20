@@ -32,7 +32,6 @@ import { PositionRadarAnalysis } from "../tabs/PositionRadarAnalysis";
 import { PositionFenThemeAnalysis } from "../tabs/PositionalFenThemeAnalysis";
 import { UseMaiaEngineResult } from "@/libs/nets/types";
 import { NetResults } from "../nets/NetResults";
-import { NetProbabilityChart } from "../nets/NetBarGraph";
 import { ObjectiveHumanEval } from "../humanevalbar/ObjectiveHumanEval";
 
 interface BaseAnalysisViewProps {
@@ -236,12 +235,6 @@ function AgineAnalysisView({
               isMaiaLoading={isLoading} fen={fen} engine={engine}
               stockfishAnalysisResult={stockfishAnalysisResult} chessDbLoading={loading}
               chessDbMoves={chessdbdata} maiaerror={Maiaerror} />
-            {gameReview && gameReview.length > 0 && (
-              <>
-                <Divider sx={{ my: 1.5, borderColor: "divider" }} />
-                <NetProbabilityChart moves={gameReview} />
-              </>
-            )}
           </>
         )}
       </Section>
