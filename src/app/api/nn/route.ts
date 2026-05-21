@@ -1,9 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 const NN_SERVER = "https://nn-analyze-service-717993082875.us-central1.run.app";
 
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(
+    60, 
+    "60 s",
+  ),
+  analytics: true,
+  prefix: "@upstash/ratelimit",
+});
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    const { success, pending, limit, reset, remaining } = await ratelimit.limit(ip);
+
+    const response = NextResponse.json(
+      { success: false, error: "Rate limit exceeded" },
+      { status: 429 }
+    );
+    response.headers.set("X-RateLimit-Limit", limit.toString());
+    response.headers.set("X-RateLimit-Remaining", remaining.toString());
+    response.headers.set("X-RateLimit-Reset", reset.toString());
+
+    if (!success) {
+      return response;
+    }
+
     const body = await req.json();
     const { endpoint, ...rest } = body;
 
