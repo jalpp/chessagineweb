@@ -28,6 +28,7 @@
     "@mui/x-charts": "^8.26.0",
     "@openrouter/ai-sdk-provider": "^2.1.1",
     "@tavily/core": "^0.7.1",
+    "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "@vercel/analytics": "^1.6.1",
     "@vercel/functions": "^3.4.3",
