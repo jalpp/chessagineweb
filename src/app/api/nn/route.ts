@@ -3,6 +3,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 const NN_SERVER = "https://nn-analyze-service-717993082875.us-central1.run.app";
+const AUTH_TOKEN = process.env.NN_SERVER_AUTH_TOKEN; 
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -12,10 +13,7 @@ const CORS_HEADERS = {
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(
-    60, 
-    "60 s",
-  ),
+  limiter: Ratelimit.slidingWindow(60, "60 s"),
   analytics: true,
   prefix: "@upstash/ratelimit",
 });
@@ -61,9 +59,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const serverPath =
       endpoint === "batch-maia3" ? "/nn-batch-maia3" : "/nn-analyze";
 
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    
+    if (AUTH_TOKEN) {
+      headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+    }
+
     const upstream = await fetch(`${NN_SERVER}${serverPath}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(rest),
     });
 
