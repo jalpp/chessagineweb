@@ -4,6 +4,12 @@ import { Redis } from "@upstash/redis";
 
 const NN_SERVER = "https://nn-analyze-service-717993082875.us-central1.run.app";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
   limiter: Ratelimit.slidingWindow(
@@ -13,6 +19,13 @@ const ratelimit = new Ratelimit({
   analytics: true,
   prefix: "@upstash/ratelimit",
 });
+
+export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -25,7 +38,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const response = NextResponse.json(
       { success: false, error: "Rate limit exceeded" },
-      { status: 429 }
+      { status: 429, headers: CORS_HEADERS }
     );
     response.headers.set("X-RateLimit-Limit", limit.toString());
     response.headers.set("X-RateLimit-Remaining", remaining.toString());
@@ -41,7 +54,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (endpoint !== "analyze" && endpoint !== "batch-maia3") {
       return NextResponse.json(
         { success: false, error: "endpoint must be 'analyze' or 'batch-maia3'" },
-        { status: 400 }
+        { status: 400, headers: CORS_HEADERS }
       );
     }
 
@@ -58,17 +71,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const text = await upstream.text().catch(() => upstream.statusText);
       return NextResponse.json(
         { success: false, error: `NN server error [${upstream.status}]: ${text}` },
-        { status: upstream.status }
+        { status: upstream.status, headers: CORS_HEADERS }
       );
     }
 
     const data = await upstream.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers: CORS_HEADERS });
   } catch (error) {
     console.error("[/api/nn] error:", error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }
