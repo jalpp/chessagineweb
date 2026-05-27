@@ -4,7 +4,7 @@ import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 
 const NN_SERVER = "https://nn-analyze-service-717993082875.us-central1.run.app";
-const AUTH_TOKEN = process.env.NN_SERVER_AUTH_TOKEN; 
+const AUTH_TOKEN = process.env.NN_SERVER_AUTH_TOKEN;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,8 +21,7 @@ const ratelimit = new Ratelimit({
   prefix: "@upstash/ratelimit",
 });
 
-
-const CACHE_TTL = 3 * 7 * 24 * 60 * 60; 
+const CACHE_TTL = 3 * 7 * 24 * 60 * 60;
 
 function generateCacheKey(endpoint: string, body: Record<string, any>): string {
   const bodyStr = JSON.stringify(body);
@@ -30,11 +29,19 @@ function generateCacheKey(endpoint: string, body: Record<string, any>): string {
   return `nn-cache:${endpoint}:${hash}`;
 }
 
-export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
-  return new NextResponse(null, {
-    status: 204,
-    headers: CORS_HEADERS,
-  });
+function hasPerMoveWdl(data: any): boolean {
+  const topMoves = data?.data?.topMoves;
+  if (!Array.isArray(topMoves) || topMoves.length === 0) return false;
+  return topMoves.every(
+    (m: any) =>
+      m.wdl !== undefined &&
+      m.whiteWdl !== undefined &&
+      m.blackWdl !== undefined,
+  );
+}
+
+export async function OPTIONS(_req: NextRequest): Promise<NextResponse> {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -44,36 +51,48 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       req.headers.get("x-real-ip") ||
       "unknown";
 
-    const { success, pending, limit, reset, remaining } = await ratelimit.limit(ip);
+    const { success, limit, reset, remaining } = await ratelimit.limit(ip);
 
-    const response = NextResponse.json(
+    const rateLimitResponse = NextResponse.json(
       { success: false, error: "Rate limit exceeded" },
-      { status: 429, headers: CORS_HEADERS }
+      { status: 429, headers: CORS_HEADERS },
     );
-    response.headers.set("X-RateLimit-Limit", limit.toString());
-    response.headers.set("X-RateLimit-Remaining", remaining.toString());
-    response.headers.set("X-RateLimit-Reset", reset.toString());
+    rateLimitResponse.headers.set("X-RateLimit-Limit", limit.toString());
+    rateLimitResponse.headers.set(
+      "X-RateLimit-Remaining",
+      remaining.toString(),
+    );
+    rateLimitResponse.headers.set("X-RateLimit-Reset", reset.toString());
 
-    if (!success) {
-      return response;
-    }
+    if (!success) return rateLimitResponse;
 
     const body = await req.json();
     const { endpoint, ...rest } = body;
 
     if (endpoint !== "analyze" && endpoint !== "batch-maia3") {
       return NextResponse.json(
-        { success: false, error: "endpoint must be 'analyze' or 'batch-maia3'" },
-        { status: 400, headers: CORS_HEADERS }
+        {
+          success: false,
+          error: "endpoint must be 'analyze' or 'batch-maia3'",
+        },
+        { status: 400, headers: CORS_HEADERS },
       );
     }
 
+    const rawWDL = endpoint === "analyze" && rest.rawWDL === true;
     const cacheKey = generateCacheKey(endpoint, rest);
+
     try {
       const cachedData = await redis.get(cacheKey);
       if (cachedData) {
-        console.log(`[/api/nn] Cache hit for ${endpoint}`);
-        return NextResponse.json(cachedData, { headers: CORS_HEADERS });
+        if (!rawWDL || hasPerMoveWdl(cachedData)) {
+          console.log(`[/api/nn] Cache hit for ${endpoint}`);
+          return NextResponse.json(cachedData, { headers: CORS_HEADERS });
+        }
+        console.log(
+          `[/api/nn] Cache miss — stale entry lacks rawWDL, re-fetching`,
+        );
+        await redis.del(cacheKey);
       }
     } catch (cacheError) {
       console.warn("[/api/nn] Cache retrieval error:", cacheError);
@@ -82,8 +101,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const serverPath =
       endpoint === "batch-maia3" ? "/nn-batch-maia3" : "/nn-analyze";
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
     if (AUTH_TOKEN) {
       headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
     }
@@ -95,10 +116,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     if (!upstream.ok) {
-      const text = await upstream.text().catch(() => upstream.statusText);
+      let errorMessage = `NN server error [${upstream.status}]`;
+      if (upstream.status === 429) {
+        errorMessage = "Too many requests, please try again later.";
+      } else if (upstream.status === 500) {
+        errorMessage = "Internal server error";
+      } else {
+        const text = await upstream.text().catch(() => upstream.statusText);
+        errorMessage += text ? `: ${text}` : "";
+      }
       return NextResponse.json(
-        { success: false, error: `NN server error [${upstream.status}]: ${text}` },
-        { status: upstream.status, headers: CORS_HEADERS }
+        { success: false, error: errorMessage },
+        { status: upstream.status, headers: CORS_HEADERS },
       );
     }
 
@@ -106,7 +135,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     try {
       await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(data));
-      console.log(`[/api/nn] Cached response for ${endpoint} (TTL: ${CACHE_TTL}s)`);
+      console.log(
+        `[/api/nn] Cached response for ${endpoint} (TTL: ${CACHE_TTL}s)`,
+      );
     } catch (cacheError) {
       console.warn("[/api/nn] Cache storage error:", cacheError);
     }
@@ -115,8 +146,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error("[/api/nn] error:", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500, headers: CORS_HEADERS }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Internal error",
+      },
+      { status: 500, headers: CORS_HEADERS },
     );
   }
 }

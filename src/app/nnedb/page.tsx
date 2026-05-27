@@ -28,7 +28,7 @@ import {
   Dataset as DatasetIcon,
 } from "@mui/icons-material";
 
-// ─── Code block ───────────────────────────────────────────────────────────────
+
 const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
@@ -64,7 +64,6 @@ const CodeBlock: React.FC<{ code: string }> = ({ code }) => {
   );
 };
 
-// ─── POST badge ───────────────────────────────────────────────────────────────
 const MethodBadge = () => (
   <Chip
     label="POST"
@@ -74,7 +73,6 @@ const MethodBadge = () => (
   />
 );
 
-// ─── Parameter table row ──────────────────────────────────────────────────────
 const ParamRow: React.FC<{
   name: string;
   type: string;
@@ -161,6 +159,14 @@ Content-Type: application/json
   "rating": 1500
 }`;
 
+  const analyzeRequestRawWDL = `{
+  "endpoint": "analyze",
+  "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+  "engine": "maia3",
+  "rating": 1500,
+  "rawWDL": true
+}`;
+
   const analyzeResponse = `{
   "success": true,
   "data": {
@@ -189,6 +195,46 @@ Content-Type: application/json
     "LeelaZeroEstimateEval": "-0.47",
     "cacheHit": true,
     "_net": "leela"
+  }
+}`;
+
+  const analyzeResponseRawWDL = `{
+  "success": true,
+  "data": {
+    "topMoves": [
+      {
+        "move": "c5",
+        "probability": 0.418,
+        "percentage": "42%",
+        "wdl":      { "win": 0.61, "draw": 0.09, "loss": 0.30 },
+        "whiteWdl": { "win": 0.61, "draw": 0.09, "loss": 0.30 },
+        "blackWdl": { "win": 0.30, "draw": 0.09, "loss": 0.61 }
+      },
+      {
+        "move": "e5",
+        "probability": 0.096,
+        "percentage": "10%",
+        "wdl":      { "win": 0.55, "draw": 0.12, "loss": 0.33 },
+        "whiteWdl": { "win": 0.55, "draw": 0.12, "loss": 0.33 },
+        "blackWdl": { "win": 0.33, "draw": 0.12, "loss": 0.55 }
+      }
+      // ... remaining top moves
+    ],
+    "uciEval": {
+      "policy": { "c7c5": 0.418, ... },
+      "value": 0.425,
+      "rawWdl": {
+        "win":  0.256,
+        "draw": 0.339,
+        "loss": 0.405,
+        "whiteWdl": { "win": 0.256, "draw": 0.339, "loss": 0.405 },
+        "blackWdl": { "win": 0.405, "draw": 0.339, "loss": 0.256 }
+      }
+    },
+    "HumanEstimateEval":     "-0.82",
+    "LeelaZeroEstimateEval": "-0.47",
+    "cacheHit": false,
+    "_net": "maia3_1500"
   }
 }`;
 
@@ -261,7 +307,7 @@ Content-Type: application/json
         </Typography>
 
         <Box display="flex" flexWrap="wrap" gap={1}>
-          {["Leela T1-256", "Elite Leela", "Maia 3", "Maia 2"].map((n) => (
+          {["Leela T1-256", "Elite Leela", "Maia 3"].map((n) => (
             <Chip key={n} label={n} size="small" variant="outlined" color="primary" />
           ))}
         </Box>
@@ -355,8 +401,9 @@ Content-Type: application/json
         <AccordionDetails sx={{ borderTop: "1px solid", borderColor: "divider", pt: 2 }}>
           <Typography color="text.secondary" paragraph>
             Analyze a single chess position with any supported engine. For Maia engines
-            (<code>maia3</code>, a <code>rating</code> field is also
-            required to target a specific player strength.
+            (<code>maia3</code>), a <code>rating</code> field is also
+            required to target a specific player strength. Pass <code>rawWDL: true</code> to
+            receive per-move WDL breakdowns for all top moves.
           </Typography>
 
           <SectionHeading>Request body</SectionHeading>
@@ -378,8 +425,10 @@ Content-Type: application/json
                   desc="Neural network to use."
                   values={['"leela"', '"elite-leela"', '"maia3"']} />
                 <ParamRow name="rating" type="number"
-                  desc='Target player Elo. Required when engine is "maia3" or "maia2". Must be a multiple of 100 between 600 and 2600.'
+                  desc='Target player Elo. Required when engine is "maia3". Must be a multiple of 100 between 600 and 2600.'
                   values={["600", "700", "...", "2600"]} />
+                <ParamRow name="rawWDL" type="boolean"
+                  desc="When true, each top move includes per-move WDL from the side that played it (wdl), from white's perspective (whiteWdl), and from black's perspective (blackWdl). Computed by running one additional batch inference on the resulting positions. Omit or set false for lower latency." />
               </TableBody>
             </Table>
           </TableContainer>
@@ -393,8 +442,14 @@ Content-Type: application/json
           <SectionHeading>Example — Maia 3 at 1500</SectionHeading>
           <CodeBlock code={analyzeRequestMaia} />
 
-          <SectionHeading>Response — 200 OK</SectionHeading>
+          <SectionHeading>Example — Maia 3 at 1500 with rawWDL</SectionHeading>
+          <CodeBlock code={analyzeRequestRawWDL} />
+
+          <SectionHeading>Response — 200 OK (default)</SectionHeading>
           <CodeBlock code={analyzeResponse} />
+
+          <SectionHeading>Response — 200 OK (rawWDL: true)</SectionHeading>
+          <CodeBlock code={analyzeResponseRawWDL} />
 
           <SectionHeading>Response fields</SectionHeading>
           <TableContainer>
@@ -408,17 +463,27 @@ Content-Type: application/json
               </TableHead>
               <TableBody>
                 <ParamRow name="data.topMoves" type="TopMove[]"
-                  desc="Top moves sorted by descending probability. Each entry: move (SAN), probability (0–1), percentage (string)." />
+                  desc="Top 5 moves sorted by descending probability. Each entry: move (SAN), probability (0–1), percentage (string)." />
+                <ParamRow name="data.topMoves[n].wdl" type="SideWdl"
+                  desc="Present when rawWDL: true. WDL from the perspective of the side that played this move (win = good for the moving side). Computed by evaluating the resulting position after the move." />
+                <ParamRow name="data.topMoves[n].whiteWdl" type="SideWdl"
+                  desc="Present when rawWDL: true. WDL expressed from white's perspective after this move is played (win = white wins), regardless of who moved." />
+                <ParamRow name="data.topMoves[n].blackWdl" type="SideWdl"
+                  desc="Present when rawWDL: true. WDL expressed from black's perspective after this move is played (win = black wins). Mirror of whiteWdl." />
                 <ParamRow name="data.uciEval.policy" type="Record<string, number>"
                   desc="Full policy vector keyed by UCI move strings (e.g. 'e2e4'). Covers every legal move." />
                 <ParamRow name="data.uciEval.value" type="number"
-                  desc="Raw WDL value head (0–1). 0.5 = equal, >0.5 favours the side to move." />
-                <ParamRow name="data.uciEval.rawWdl" type="{ win, draw, loss }"
-                  desc="Decomposed WDL probabilities from the value head. win + draw + loss = 1." />
+                  desc="Win probability for the side to move (0–1). 0.5 = equal." />
+                <ParamRow name="data.uciEval.rawWdl" type="RawWdl"
+                  desc="Position-level WDL from the value head. win + draw + loss = 1. Always white-relative (win = white wins)." />
+                <ParamRow name="data.uciEval.rawWdl.whiteWdl" type="SideWdl"
+                  desc="Present when rawWDL: true. WDL from white's perspective. Identical to the top-level win/draw/loss fields." />
+                <ParamRow name="data.uciEval.rawWdl.blackWdl" type="SideWdl"
+                  desc="Present when rawWDL: true. WDL from black's perspective. win and loss are swapped relative to whiteWdl." />
                 <ParamRow name="data.HumanEstimateEval" type="string"
                   desc="Centipawn estimate calibrated to human-game outcomes. Negative = Black is better." />
                 <ParamRow name="data.LeelaZeroEstimateEval" type="string"
-                  desc="Centipawn estimate derived from Leela's own WDL." />
+                  desc="Centipawn estimate derived from from lc0 centipawn to eval formula, non Leela nets like maia can also have lc0 eval." />
                 <ParamRow name="data.cacheHit" type="boolean"
                   desc="True when the result was served from cache." />
                 <ParamRow name="data._net" type="string"
@@ -454,6 +519,11 @@ Content-Type: application/json
             (600–2600 in 100-Elo steps). Returns one response with results for every level —
             useful for understanding how move preferences shift with player strength.
           </Typography>
+
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <code>rawWDL</code> is not supported for this endpoint. Per-move WDL is only available
+            via the <code>analyze</code> endpoint.
+          </Alert>
 
           <SectionHeading>Request body</SectionHeading>
           <TableContainer sx={{ mb: 3 }}>
@@ -532,7 +602,7 @@ Content-Type: application/json
               {[
                 ["Cache Miss",
                   "If a position has never been queried before, the server runs live neural net inference and stores the result. cacheHit will be false."],
-                ["Cache hit",
+                ["Cache Hit",
                   "If the position was queried before, the stored result is returned immediately without re-running inference. cacheHit will be true."],
                 ["_createdAt",
                   "Timestamp of when the entry was first computed and written to the database. Present on cached responses."],
@@ -553,6 +623,87 @@ Content-Type: application/json
         <Alert severity="success">
           Querying an uncached position contributes it to NNEDB permanently — benefiting every
           future caller of that position.
+        </Alert>
+      </Paper>
+
+      {/* ── Rate limits ──────────────────────────────────────────────────── */}
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Box display="flex" alignItems="center" gap={1} mb={2}>
+          <ErrorIcon color="warning" />
+          <Typography variant="h5" fontWeight={700}>
+            Rate limits
+          </Typography>
+        </Box>
+
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Rate limiting is applied per IP address. Exceeding the
+          limit returns a <code>429 Too Many Requests</code> response immediately, the request is
+          not queued.
+        </Typography>
+
+        <TableContainer sx={{ mb: 3 }}>
+          <Table size="small" sx={tableHeadSx}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Parameter</TableCell>
+                <TableCell>Value</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {[
+                ["Limit",       "60 requests"],
+                ["Window",      "60 seconds"],
+                ["Scope",       "Per IP address"],
+                ["Applies to",  "All endpoints (analyze, batch-maia3)"],
+              ].map(([param, value]) => (
+                <TableRow key={param as string}>
+                  <TableCell sx={{ fontWeight: 600, color: "text.primary" }}>{param}</TableCell>
+                  <TableCell sx={{ fontFamily: "monospace", color: "text.secondary" }}>{value}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <SectionHeading>Response headers</SectionHeading>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Every response includes rate limit headers so clients can track their current usage.
+        </Typography>
+        <TableContainer sx={{ mb: 3 }}>
+          <Table size="small" sx={tableHeadSx}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Header</TableCell>
+                <TableCell>Description</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {[
+                ["X-RateLimit-Limit",     "Maximum requests allowed in the window (60)."],
+                ["X-RateLimit-Remaining", "Requests remaining in the current window."],
+                ["X-RateLimit-Reset",     "Unix timestamp (ms) when the window resets."],
+              ].map(([header, desc]) => (
+                <TableRow key={header as string}>
+                  <TableCell sx={{ fontFamily: "monospace", fontSize: "0.83rem", color: "text.primary" }}>{header}</TableCell>
+                  <TableCell sx={{ color: "text.secondary" }}>{desc}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <SectionHeading>429 — rate limit exceeded</SectionHeading>
+        <CodeBlock code={`HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1718123456789
+
+{ "success": false, "error": "Rate limit exceeded" }`} />
+
+        <Alert severity="warning">
+          Cache hits count toward the rate limit. If you are hitting 429s regularly, consider
+          caching responses client-side, cached positions return in milliseconds and can be
+          reused across sessions.
         </Alert>
       </Paper>
 
