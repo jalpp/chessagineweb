@@ -7,7 +7,7 @@ interface UseGameThemeReturn {
   setGameReviewTheme: (theme: GameReviewTheme | null) => void;
   isLoading: boolean;
   error: string | null;
-  analyzeGameTheme: (moveList: string[], customFen?: string, criticalMomentThreshold?: number) => Promise<void>;
+  analyzeGameTheme: (pgn: string, customFen?: string, criticalMomentThreshold?: number) => Promise<void>;
   reset: () => void;
 }
 
@@ -17,7 +17,7 @@ export function useGameTheme(): UseGameThemeReturn {
   const [error, setError] = useState<string | null>(null);
 
   const analyzeGameTheme = useCallback(async (
-    moveList: string[],
+    pgn: string,
     customFen?: string, 
   ) => {
   
@@ -31,8 +31,8 @@ export function useGameTheme(): UseGameThemeReturn {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          moveList: moveList,
-          customFen: customFen,
+          pgn: pgn,
+          fen: customFen,
         }),
       });
 

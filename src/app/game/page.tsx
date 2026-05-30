@@ -389,7 +389,7 @@ export default function GamePage() {
       initializeGameState(pgnText, startFen, moveList);
       if (autoAnalysis) {
         generateGameReview(moveList, startFen);
-        analyzeGameTheme(moveList, startFen);
+        analyzeGameTheme(pgnText, startFen);
       }
     } catch (err) {
       alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
@@ -405,7 +405,7 @@ export default function GamePage() {
       if (gameHash) setCurrentGameHash(gameHash);
       if (autoAnalysis) {
         generateGameReview(moveList, startFen);
-        analyzeGameTheme(moveList, startFen);
+        analyzeGameTheme(pgn, startFen);
       }
     } catch (err) {
       alert(`Invalid PGN: ${err instanceof Error ? err.message : err}`);
@@ -665,7 +665,7 @@ export default function GamePage() {
                   onClick={() => {
                     const startFen = extractStartingFen(pgnText);
                     generateGameReview(moves, startFen);
-                    analyzeGameTheme(moves, startFen);
+                    analyzeGameTheme(pgnText, startFen);
                   }}
                   sx={{ textTransform: "none", fontSize: "11px", flex: 1 }}
                 >
