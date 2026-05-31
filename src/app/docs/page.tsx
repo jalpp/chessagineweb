@@ -1,90 +1,19 @@
-"use client";
-import { usePageReady } from "@/hooks/usePageReady";
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Paper,
-  Container,
-  Tab,
-  Tabs,
-  CssBaseline,
-} from "@mui/material";
-import { PricingTable } from "@clerk/nextjs";
+import type { Metadata } from "next";
+import DocsClient from "./DocsClient";
 
-import { TabPanel } from "@/componets/tabs/tab";
-import { renderFAQ } from "@/componets/docs/RenderFaq";
-import { renderHeader } from "@/componets/docs/RenderChessAgineHeader";
-import { renderFeatures } from "@/componets/docs/RenderFeatures";
-import MCPdocs from "@/componets/docs/RenderMCPDocs";
-
-const TABS = ["Features", "FAQ", "Pricing", "ChessAgine MCP"];
-
-
-
-const ChessAgineDocumentation = () => {
-  usePageReady();
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
-  };
-
-  return (
-    <>
-      <CssBaseline />
-      <Container maxWidth="lg">
-        <Box sx={{ py: 4 }}>
-          {renderHeader()}
-
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs
-              value={selectedTab}
-              onChange={handleTabChange}
-              indicatorColor="primary"
-              textColor="primary"
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              {TABS.map((label) => (
-                <Tab key={label} label={label} />
-              ))}
-            </Tabs>
-          </Box>
-
-          <TabPanel value={selectedTab} index={0}>
-            {renderFeatures()}
-          </TabPanel>
-
-          <TabPanel value={selectedTab} index={1}>
-            {renderFAQ()}
-          </TabPanel>
-
-          <TabPanel value={selectedTab} index={2}>
-            <Box mb={3}>
-              <Typography variant="h4" fontWeight={700} gutterBottom>
-                Pricing
-              </Typography>
-            </Box>
-            
-            <PricingTable newSubscriptionRedirectUrl="/chat" />
-
-            <Box textAlign="center" mt={3}>
-              <Typography variant="caption" color="text.secondary">
-                Free models are from random free OpenRouter models, paid tier supports model on AgineCloud with daily cap limit.
-              </Typography>
-            </Box>
-          </TabPanel>
-
-          {/* MCP */}
-          <TabPanel value={selectedTab} index={3}>
-            <MCPdocs />
-          </TabPanel>
-
-        </Box>
-      </Container>
-    </>
-  );
+export const metadata: Metadata = {
+  title: "ChessAgine Docs – Features, FAQ, Pricing & MCP Setup",
+  description:
+    "Full documentation for ChessAgine: all features explained, FAQ, free vs paid plan comparison, and how to set up the ChessAgine MCP server for Claude Desktop.",
+  alternates: { canonical: "https://www.chessagine.com/docs" },
+  openGraph: {
+    title: "ChessAgine Docs – Features, Pricing & MCP Guide",
+    description:
+      "Everything you need to know about ChessAgine: features, plans, FAQ, and MCP server setup.",
+    url: "https://www.chessagine.com/docs",
+  },
 };
 
-export default ChessAgineDocumentation;
+export default function DocsPage() {
+  return <DocsClient />;
+}

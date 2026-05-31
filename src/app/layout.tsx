@@ -24,23 +24,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const BASE_URL = "https://www.chessagine.com";
+
 export const metadata: Metadata = {
-  title: "ChessAgine",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "ChessAgine",
+    template: "%s | ChessAgine",
+  },
   description:
-    "A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the chess community",
+    "Modern FOSS Chess analysis platform that has free game reviews, neural nets analysis and more",
+
+  alternates: {
+    canonical: BASE_URL,
+  },
 
   openGraph: {
-    title: "ChessAgine - AI-Powered Chess Training",
+    title: "ChessAgine",
     description:
-      "A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the chess community",
-    url: "https://www.chessagine.com/",
+      "Modern FOSS Chess analysis platform that has free game reviews, neural nets analysis and more",
+    url: BASE_URL,
     siteName: "ChessAgine",
     images: [
       {
-        url: "static/images/agineowl-og.png",
+        url: "/static/images/agine-gui.png",
         width: 1200,
-        height: 1200,
-        alt: "ChessAgine Logo",
+        height: 630,
+        alt: "ChessAgine",
       },
     ],
     locale: "en_US",
@@ -51,25 +61,29 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ChessAgine",
     description:
-      "A modern FOSS chess interface that combines LLMs and chess engines into one unified platform. Built for the chess community",
-    images: ["static/images/agineowl-og.png"],
+      "Modern FOSS Chess analysis platform that has free game reviews, neural nets analysis and more",
+    images: ["/static/images/agineowl-og.png"],
   },
 
   keywords: [
-    "chess training",
-    "OpenAI chess",
-    "Claude chess",
-    "Gemini chess",
-    "Stockfish",
-    "chess engine",
-    "chess AI",
-    "maia chess",
-    "stockfish",
-    "chess tutor",
-    "chess learning",
-    "chess engine",
+    "chess companion",
+    "AI chess",
+    "chess analysis",
+    "Stockfish browser",
+    "Maia chess",
+    "chess puzzles",
+    "chess game review",
+    "opening explorer",
+    "chess position analysis",
+    "free chess tools",
+    "open source chess",
     "chess MCP",
+    "nnedb",
     "chessagine",
+    "agine gui",
+    "chess neural network",
+    "chessagine",
+    "agine chat",
   ],
 
   robots: {
@@ -89,6 +103,39 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "ChessAgine",
+  url: BASE_URL,
+  description:
+    "Modern FOSS Chess analysis platform that has free game reviews, neural nets analysis and more",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  featureList: [
+    "Agine Chat – chat about chess with LLMs",
+    "Stockfish 11/16/17/18 browser-based analysis",
+    "Maia & Maia2 neural network analysis",
+    "Game analysis with PGN import and Lichess integration",
+    "Position board and theme analysis",
+    "Puzzle training from Lichess database",
+    "Play vs engines and neural networks",
+    "Opening explorer with master and player databases",
+    "ChessAgine MCP server for Claude Desktop",
+    "No installs – runs entirely in your browser",
+  ],
+  creator: {
+    "@type": "Organization",
+    name: "ChessAgine",
+    url: BASE_URL,
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -99,8 +146,11 @@ export default function RootLayout({
       <html lang="en">
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta name="theme-color" content="#000000" />
-          <link rel="canonical" href="https://www.chessagine.com" />
+          <link rel="canonical" href={BASE_URL} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
         </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}

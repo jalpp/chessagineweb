@@ -1,30 +1,19 @@
-"use client";
-import { usePageReady } from "@/hooks/usePageReady";
-import { Box, Container, Typography, Divider } from "@mui/material";
-import { PricingTable } from "@clerk/nextjs";
+import type { Metadata } from "next";
+import PricingClient from "./PricingClient";
 
-
-const PricingPage = () => {
-  usePageReady();
-  return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
-      <Box textAlign="center" mb={2}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          ChessAgine Pricing
-        </Typography>
-      </Box>
-
-      <Divider sx={{ my: 4 }} />
-
-      <PricingTable newSubscriptionRedirectUrl="/chat" />
-
-      <Box textAlign="center" mt={4}>
-        <Typography variant="caption" color="text.secondary">
-          Free models are from random free OpenRouter models, paid tier supports model on AgineCloud with daily cap limit.
-        </Typography>
-      </Box>
-    </Container>
-  );
+export const metadata: Metadata = {
+  title: "Pricing – Free Forever + Paid Tier for Premium Models",
+  description:
+    "All chess tools in ChessAgine are free forever. Upgrade to the paid tier to unlock premium AI models in chat and have the ability to save games on the cloud.",
+  alternates: { canonical: "https://www.chessagine.com/pricing" },
+  openGraph: {
+    title: "ChessAgine Pricing – Free Tools + Premium AI Models",
+    description:
+      "All chess tools are free. Paid tier unlocks saving games on cloud and better AI models",
+    url: "https://www.chessagine.com/pricing",
+  },
 };
 
-export default PricingPage;
+export default function PricingPage() {
+  return <PricingClient />;
+}
