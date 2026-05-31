@@ -832,7 +832,7 @@ export default function GamePage() {
                 ? "Engines & neural nets run automatically on every position."
                 : "Engines are paused. Use the button below to request analysis for the current position."}
             </Typography>
-            {!autoAnalysis && moves.length > 0 && gameReview.length === 0 && (
+            { moves.length > 0 && gameReview.length === 0 && (
               <Stack direction="row" spacing={1}>
                 <Button
                   size="small"
