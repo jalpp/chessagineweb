@@ -7,7 +7,7 @@ interface UseGameThemeReturn {
   setGameReviewTheme: (theme: GameReviewTheme | null) => void;
   isLoading: boolean;
   error: string | null;
-  analyzeGameTheme: (moveList: string[], customFen?: string, criticalMomentThreshold?: number) => Promise<void>;
+  analyzeGameTheme: (pgn: string, customFen?: string, criticalMomentThreshold?: number) => Promise<void>;
   reset: () => void;
 }
 
@@ -17,7 +17,7 @@ export function useGameTheme(): UseGameThemeReturn {
   const [error, setError] = useState<string | null>(null);
 
   const analyzeGameTheme = useCallback(async (
-    moveList: string[],
+    pgn: string,
     customFen?: string, 
   ) => {
   
@@ -31,19 +31,35 @@ export function useGameTheme(): UseGameThemeReturn {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          moveList: moveList,
-          customFen: customFen,
+          pgn: pgn,
+          fen: customFen,
         }),
       });
 
+      const rawData = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        console.log(errorData);
-        reset();
+        console.log(rawData);
+        setError(rawData?.error || 'Failed to analyze game theme');
+        setGameReviewTheme(null);
+        return;
       }
 
-      const data: GameReviewTheme = await response.json();
-      setGameReviewTheme(data);
+      const normalizedData = (
+        rawData?.success === true && rawData?.data ? rawData.data : rawData
+      ) as GameReviewTheme;
+
+      if (
+        !normalizedData ||
+        !normalizedData.whiteAnalysis ||
+        !normalizedData.blackAnalysis ||
+        !normalizedData.insights
+      ) {
+        setError('Invalid theme analysis response format');
+        setGameReviewTheme(null);
+        return;
+      }
+
+      setGameReviewTheme(normalizedData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);

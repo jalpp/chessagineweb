@@ -482,7 +482,7 @@ export default function PlayVsBotsPage() {
 
   const generateAnalsyis = () => {
     generateGameReview(game.history(), startingFen || fen);
-    analyzeGameTheme(game.history(), startingFen || fen);
+    analyzeGameTheme(game.pgn(), startingFen || fen);
   };
 
   const checkGameEnd = (currentGame: Chess): boolean => {

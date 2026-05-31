@@ -31,7 +31,7 @@ interface LoadLichessGameUrlProp {
   setComment: (comment: string) => void;
   setGameReview: (review: MoveAnalysis[]) => void;
   generateGameReview: (moves: string[]) => void;
-  analyzeGameTheme: (moveList: string[]) => void;
+  analyzeGameTheme: (pgn: string) => void;
   setInputsVisible: (view: boolean) => void;
   autoAnalysis?: boolean;
 }
@@ -71,7 +71,6 @@ function LoadLichessGameUrl({
     setLoadingGame(true);
     try {
       const fetchedPgn = await fetchLichessGame(gameId);
-      console.log("Fetched PGN:", fetchedPgn);
 
       try {
         const tempGame = new Chess();
@@ -93,7 +92,7 @@ function LoadLichessGameUrl({
         setGameReview([]);
         if (autoAnalysis) {
           generateGameReview(moveList);
-          analyzeGameTheme(moveList);
+          analyzeGameTheme(fetchedPgn);
         }
         setInputsVisible(false);
 

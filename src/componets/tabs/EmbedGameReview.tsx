@@ -204,7 +204,7 @@ export default function EmbeddedGameReview({
 
         if (triggerReview) {
           generateGameReview(moveList, startingFen);
-          analyzeGameTheme(moveList, startingFen);
+          analyzeGameTheme(cleaned, startingFen);
         }
       } catch (err) {
         setFetchError(`Failed to parse PGN: ${err instanceof Error ? err.message : String(err)}`);

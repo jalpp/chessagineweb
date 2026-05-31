@@ -82,7 +82,7 @@ export const PositionRadarAnalysis: React.FC<CurrentPositionAnalysisProps> = ({
   }
 
   // Get theme scores for current position
-  const allScores = gameReview.whiteAnalysis.overallThemes.moveByMoveScores;
+  const allScores = gameReview?.whiteAnalysis?.overallThemes?.moveByMoveScores;
   if (!allScores || allScores.length === 0 || currentMoveIndex >= allScores.length) {
     return (
       <Alert severity="info" sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}>
