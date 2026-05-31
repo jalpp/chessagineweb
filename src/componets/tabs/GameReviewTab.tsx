@@ -95,52 +95,15 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
   generateGameReview,
   fen,
   moves,
-  stockfishAnalysisResult,
   gameReviewLoading,
   currentMoveIndex,
-  gameReviewTheme,
-  comment,
   clock,
   whiteTitle,
   blackTitle,
   whitePlayer,
   blackPlayer,
   gameReviewProgress,
-  gameInfo,
-  goToMove,
 }) => {
-  const [userThoughts, setUserThoughts] = useState<string>("");
-  const [loadingStates, setLoadingStates] = useState<{
-    chat: Record<number, boolean>;
-    annotate: Record<number, boolean>;
-    gameReport: boolean;
-  }>({
-    chat: {},
-    annotate: {},
-    gameReport: false,
-  });
-
-  useEffect(() => {
-    setUserThoughts(comment || "");
-  }, [comment]);
-
-
-  const handleGameReportClick = () => {
-    setLoadingStates((prev) => ({
-      ...prev,
-      gameReport: true,
-    }));
-
-    const stats = getStatistics();
-    let newGameInfo = gameInfo;
-    if (stats) {
-      const { whiteStats, blackStats } = stats;
-      const whiteStatsStr = `White Stats: Best: ${whiteStats.Best}, Very Good: ${whiteStats["Very Good"]}, Good: ${whiteStats.Good}, Dubious: ${whiteStats.Dubious}, Mistake: ${whiteStats.Mistake}, Blunder: ${whiteStats.Blunder}, Book: ${whiteStats.Book}, accuracy: ${calculateAccuracy(whiteStats)}`;
-      const blackStatsStr = `Black Stats: Best: ${blackStats.Best}, Very Good: ${blackStats["Very Good"]}, Good: ${blackStats.Good}, Dubious: ${blackStats.Dubious}, Mistake: ${blackStats.Mistake}, Blunder: ${blackStats.Blunder}, Book: ${blackStats.Book}, accuracy: ${calculateAccuracy(blackStats)}`;
-      newGameInfo = `${gameInfo}\nGAME REVIEW DETAILS\n${whiteStatsStr}\n${blackStatsStr}`;
-    }
-  };
-
   const getStatistics = () => {
     if (!gameReview) return null;
 
@@ -191,23 +154,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
           <Typography variant="h6" sx={{ textAlign: "center" }}>
             Game Analysis
           </Typography>
-          <Typography variant="body2" sx={{ textAlign: "center" }}>
-            Generate detailed move-by-move game review
-          </Typography>
-
-          <Button
-            variant="contained"
-            onClick={() => generateGameReview(moves, fen)}
-            disabled={gameReviewLoading || moves.length === 0}
-            startIcon={!gameReviewLoading && <PlayCircle size={18} />}
-            sx={{
-              px: 3,
-              py: 1,
-            }}
-          >
-            {gameReviewLoading ? "Analyzing..." : "Generate Analysis"}
-          </Button>
-
           {gameReviewLoading && (
             <Box sx={{ width: "100%", maxWidth: 300 }}>
               <LinearProgress
@@ -249,7 +195,7 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
               <Box sx={{
                 px: 1.5, py: 1,
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                borderBottom: userThoughts || clock ? "1px solid" : "none",
+                borderBottom: clock ? "1px solid" : "none",
                 borderColor: style.color + "25",
               }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -272,18 +218,6 @@ const GameReviewTab: React.FC<GameReviewTabProps> = ({
                   }}
                 />
               </Box>
-
-              {/* Annotator note */}
-              {userThoughts && (
-                <Box sx={{ px: 1.5, py: 1, borderBottom: clock ? "1px solid" : "none", borderColor: style.color + "20" }}>
-                  <Typography sx={{ fontSize: "10px", color: "text.disabled", textTransform: "uppercase", letterSpacing: "0.6px", mb: 0.5, fontWeight: 600 }}>
-                    Note
-                  </Typography>
-                  <Typography sx={{ fontSize: "12px", fontStyle: "italic", color: "text.secondary", lineHeight: 1.5 }}>
-                    {userThoughts}
-                  </Typography>
-                </Box>
-              )}
 
               {/* Clock */}
               {clock && (

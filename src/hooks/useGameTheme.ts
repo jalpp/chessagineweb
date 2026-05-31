@@ -36,14 +36,30 @@ export function useGameTheme(): UseGameThemeReturn {
         }),
       });
 
+      const rawData = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        console.log(errorData);
-        reset();
+        console.log(rawData);
+        setError(rawData?.error || 'Failed to analyze game theme');
+        setGameReviewTheme(null);
+        return;
       }
 
-      const data: GameReviewTheme = await response.json();
-      setGameReviewTheme(data);
+      const normalizedData = (
+        rawData?.success === true && rawData?.data ? rawData.data : rawData
+      ) as GameReviewTheme;
+
+      if (
+        !normalizedData ||
+        !normalizedData.whiteAnalysis ||
+        !normalizedData.blackAnalysis ||
+        !normalizedData.insights
+      ) {
+        setError('Invalid theme analysis response format');
+        setGameReviewTheme(null);
+        return;
+      }
+
+      setGameReviewTheme(normalizedData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
