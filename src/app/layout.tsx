@@ -47,10 +47,10 @@ export const metadata: Metadata = {
     siteName: "ChessAgine",
     images: [
       {
-        url: "/static/images/agineowl-og.png",
+        url: "/static/images/agine-gui.png",
         width: 1200,
         height: 630,
-        alt: "ChessAgine – AI chess companion",
+        alt: "ChessAgine",
       },
     ],
     locale: "en_US",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "ChessAgine – Your AI Chess Companion",
+    title: "ChessAgine",
     description:
       "Modern FOSS Chess analysis platform that has free game reviews, neural nets analysis and more",
     images: ["/static/images/agineowl-og.png"],
@@ -78,6 +78,9 @@ export const metadata: Metadata = {
     "free chess tools",
     "open source chess",
     "chess MCP",
+    "nnedb",
+    "chessagine",
+    "agine gui",
     "chess neural network",
     "chessagine",
     "agine chat",
