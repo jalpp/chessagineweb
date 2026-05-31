@@ -4,7 +4,7 @@ import { usePageReady } from "@/hooks/usePageReady";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Box, Button, Stack, Typography, Divider,
-  Card, CardContent, Drawer, Fab,
+  Card, CardContent, Tab, Tabs, Drawer, Fab,
   useMediaQuery, useTheme,
   List, ListItemButton, ListItemText, ListItemIcon,
   IconButton, Tooltip, Chip, TextField, CircularProgress, Switch, FormControlLabel,
@@ -23,6 +23,11 @@ import {
   CheckCircle as ReadyIcon,
   HourglassEmpty as PendingIcon,
   DeleteOutline as DeleteIcon,
+  TrendingUp,
+  TrendingDown,
+  EmojiEvents,
+  Warning as WarningIcon,
+  Flag,
 } from "@mui/icons-material";
 import { Chess } from "chess.js";
 import useAgine from "@/hooks/useAgine";
@@ -49,38 +54,211 @@ import {
   serializeTree, deserializeTree, isMainLine,
 } from "@/lib/variationTree";
 import EvalGraph from "@/componets/tabs/EvalGraph";
-import { GameReviewDialog } from "@/componets/tabs/GameReviewDialog";
 import { MoveAnalysis } from "@/libs/agine/helper";
-import { GameReviewTheme } from "@/libs/themes/helper";
+import { GameReviewTheme, ThemeScore, getThemeLabelColor } from "@/libs/themes/helper";
+import { BarChart, LineChart, RadarChart } from "@mui/x-charts";
 import { PositionEval } from "@/stockfish/engine/engine";
 
 // ── GameReviewRightPanel ──────────────────────────────────────────────────────
 
 function GameReviewRightPanel({
-  gameReview, currentMoveIndex, goToMove, gameInfo, gameReviewTheme, stockfishAnalysisResult,
+  gameReview, currentMoveIndex, goToMove, gameInfo, gameReviewTheme,
 }: {
   gameReview: MoveAnalysis[];
   currentMoveIndex: number;
   goToMove: (index: number) => void;
   gameInfo: Record<string, string>;
   gameReviewTheme: GameReviewTheme | null;
-  stockfishAnalysisResult: PositionEval | null;
 }) {
-  return (
-    <Stack spacing={1.5} sx={{ pb: 2 }}>
-      {/* Eval graph — clickable */}
-      <EvalGraph moves={gameReview} goToMove={goToMove} currentMoveIndex={currentMoveIndex} key={`rp-graph-${gameReview.length}`} />
+  const [themeTab, setThemeTab] = useState(0);
 
-      {/* Theme analysis button */}
-      {gameReviewTheme && (
-        <GameReviewDialog
-          gameReview={gameReviewTheme}
-          currentMoveIndex={currentMoveIndex}
-          moveAnalysis={gameReview}
-          stockfishAnalysisResult={stockfishAnalysisResult}
-        />
+  const formatThemeName = (theme: string) =>
+    theme.split(/(?=[A-Z])/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+  const getThemeColor = (value: number) =>
+    value > 0 ? "success" : value < 0 ? "error" : ("default" as const);
+
+  const renderBarChart = (scores: ThemeScore) => {
+    const data = Object.entries(scores).map(([theme, score]) => ({
+      theme: formatThemeName(theme),
+      score,
+    }));
+    return (
+      <BarChart
+        xAxis={[{ dataKey: "theme", scaleType: "band", label: "Theme" }]}
+        series={[{ dataKey: "score", label: "Score", color: "#bb86fc" }]}
+        dataset={data}
+        height={300}
+        margin={{ left: 60, right: 20, bottom: 50 }}
+        grid={{ horizontal: true }}
+      />
+    );
+  };
+
+  const renderMoveByMoveChart = (scores: ThemeScore[]) => {
+    const fullMoveScores: ThemeScore[] = [];
+    for (let i = 0; i < scores.length; i += 2) {
+      if (i + 1 < scores.length) {
+        const themes = Object.keys(scores[i]) as (keyof ThemeScore)[];
+        const avgScore = {} as ThemeScore;
+        themes.forEach((theme) => {
+          avgScore[theme] = (scores[i][theme] + scores[i + 1][theme]) / 2;
+        });
+        fullMoveScores.push(avgScore);
+      } else {
+        fullMoveScores.push(scores[i]);
+      }
+    }
+    const moveNumbers = fullMoveScores.map((_, i) => i + 1);
+    const themes = Object.keys(fullMoveScores[0]);
+    return (
+      <LineChart
+        xAxis={[{ data: moveNumbers, label: "Move Number" }]}
+        series={themes.map((t) => ({
+          data: fullMoveScores.map((s) => s[t as keyof ThemeScore]),
+          label: formatThemeName(t),
+          color: getThemeLabelColor(t as keyof ThemeScore),
+        }))}
+        height={300}
+        margin={{ left: 60, right: 20, bottom: 50 }}
+        grid={{ horizontal: true }}
+      />
+    );
+  };
+
+  const renderRadarComparison = (whiteScores: ThemeScore, blackScores: ThemeScore) => {
+    const themes = Object.keys(whiteScores) as (keyof ThemeScore)[];
+    const whiteData = themes.map((theme) => whiteScores[theme]);
+    const blackData = themes.map((theme) => blackScores[theme]);
+    const metrics = themes.map((theme, index) => {
+      const maxVal = Math.max(whiteData[index], blackData[index]);
+      const minVal = Math.min(whiteData[index], blackData[index]);
+      const range = maxVal - minVal;
+      const padding = range * 0.2;
+      return {
+        name: formatThemeName(theme),
+        max: Math.ceil(maxVal + padding),
+        min: Math.floor(minVal - padding),
+      };
+    });
+    return (
+      <RadarChart
+        height={400}
+        series={[
+          { label: "White", data: whiteData, color: "#adeaf9ff", fillArea: true },
+          { label: "Black", data: blackData, color: "#f4aff2ff", fillArea: true },
+        ]}
+        radar={{ metrics }}
+      />
+    );
+  };
+
+  const renderPlayerAnalysis = (
+    analysis: GameReviewTheme["whiteAnalysis"] | GameReviewTheme["blackAnalysis"],
+    bestTheme: string,
+    worstTheme: string
+  ) => (
+    <Box>
+      <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
+        <Chip icon={<EmojiEvents />} label={`Best: ${formatThemeName(bestTheme)}`} color="success" />
+        <Chip icon={<WarningIcon />} label={`Worst: ${formatThemeName(worstTheme)}`} color="error" />
+      </Stack>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>Theme Changes</Typography>
+          {analysis.overallThemes.themeChanges.map((change, idx) => (
+            <Box key={idx} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+              <Typography variant="body2">{formatThemeName(change.theme)}</Typography>
+              <Chip
+                size="small"
+                icon={change.change > 0 ? <TrendingUp /> : <TrendingDown />}
+                label={`${change.change > 0 ? "+" : ""}${change.change.toFixed(2)} (${change.percentChange.toFixed(1)}%)`}
+                color={getThemeColor(change.change)}
+              />
+            </Box>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>Average Theme Scores</Typography>
+          {renderBarChart(analysis.averageThemeScores)}
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>Move-by-Move Theme Trends</Typography>
+          {renderMoveByMoveChart(analysis.overallThemes.moveByMoveScores)}
+        </CardContent>
+      </Card>
+    </Box>
+  );
+
+  // Show inline theme analysis
+  return (
+    <Box sx={{ pb: 2 }}>
+      <Tabs
+        value={themeTab}
+        onChange={(_e, v) => setThemeTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{ mb: 3, borderBottom: 1, borderColor: "divider" }}
+      >
+        <Tab label="Eval Graph" />
+        {gameReviewTheme && <Tab label="Game Analysis" />}
+        {gameReviewTheme && <Tab label="Game Insights" />}
+      </Tabs>
+
+      {themeTab === 0 && (
+        <EvalGraph moves={gameReview} goToMove={goToMove} currentMoveIndex={currentMoveIndex} key={`rp-graph-theme-${gameReview.length}`} />
       )}
-    </Stack>
+
+      {themeTab === 1 && gameReviewTheme && renderPlayerAnalysis(
+        gameReviewTheme.whiteAnalysis,
+        gameReviewTheme.insights.whiteBestTheme,
+        gameReviewTheme.insights.whiteWorstTheme
+      )}
+
+      {themeTab === 2 && gameReviewTheme && (
+        <Box>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>White vs Black Theme Comparison</Typography>
+              <Box sx={{ display: "flex", justifyContent: "center" }}>
+                {renderRadarComparison(
+                  gameReviewTheme.whiteAnalysis.averageThemeScores,
+                  gameReviewTheme.blackAnalysis.averageThemeScores
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Flag /> Turning Points
+              </Typography>
+              {gameReviewTheme.insights.turningPoints.map((tp, idx) => (
+                <Box
+                  key={idx}
+                  sx={{
+                    mb: 1.5, p: 2, borderRadius: 1, borderLeft: 4,
+                    borderColor: tp.player === "White" ? "primary.main" : "secondary.main",
+                  }}
+                >
+                  <Typography variant="body1" fontWeight="bold">Move {tp.moveNumber} • {tp.player}</Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5 }}><strong>{tp.move}</strong></Typography>
+                  <Chip size="small" label={tp.impact} sx={{ mt: 1 }} color={tp.impact.includes("+") ? "success" : "error"} />
+                </Box>
+              ))}
+            </CardContent>
+          </Card>
+        </Box>
+      )}
+    </Box>
   );
 }
 
@@ -122,7 +300,7 @@ export default function GamePage() {
 
   // Left panel state
   const [leftTab, setLeftTab] = useState<LeftTab>("load");
-  const [showEvalGraph, setShowEvalGraph] = useState(true);
+  const [showThemeView, setShowThemeView] = useState(true);
   const [loadSection, setLoadSection] = useState<LoadSection>("history");
 
   // Desktop inline-save state (title field + saving indicator)
@@ -442,7 +620,6 @@ export default function GamePage() {
       setPrevFen(resetGame.fen());
       setHistoryDialogOpen(false);
       setLeftTab("analysis");
-      setShowEvalGraph(true);
     } catch {
       alert("Error loading saved game");
     }
@@ -885,15 +1062,11 @@ export default function GamePage() {
               GAME REVIEW
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              {/* Toggle eval graph */}
-              {gameReview.length > 0 && (
-                <Tooltip title={showEvalGraph ? "Hide eval graph" : "Show eval graph"}>
-                  <IconButton size="small" onClick={() => setShowEvalGraph(v => !v)} sx={{ p: 0.4 }}>
-                    <Box component="svg" viewBox="0 0 16 16" sx={{ width: 14, height: 14 }}>
-                      <polyline points="1,13 4,8 7,10 10,4 13,7 15,3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                        opacity={showEvalGraph ? 1 : 0.35} />
-                      {!showEvalGraph && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity={0.5} />}
-                    </Box>
+              {/* Toggle theme analysis */}
+              {gameReview.length > 0 && gameReviewTheme && (
+                <Tooltip title={showThemeView ? "Show eval graph" : "Show theme analysis"}>
+                  <IconButton size="small" onClick={() => setShowThemeView(v => !v)} sx={{ p: 0.4, color: showThemeView ? "primary.main" : "text.secondary" }}>
+                    <AnalyticsIcon sx={{ fontSize: 14, opacity: showThemeView ? 1 : 0.5 }} />
                   </IconButton>
                 </Tooltip>
               )}
@@ -907,20 +1080,20 @@ export default function GamePage() {
             </Box>
           </Box>
 
-          {/* Move list — expands when graph is hidden */}
+          {/* Move list — expands when panel is hidden */}
           <Box sx={{
-            flex: showEvalGraph && gameReview.length > 0 ? "0 0 auto" : "1 1 auto",
-            maxHeight: showEvalGraph && gameReview.length > 0 ? "35vh" : "100%",
+            flex: showThemeView && gameReview.length > 0 ? "0 0 auto" : "1 1 auto",
+            maxHeight: showThemeView && gameReview.length > 0 ? "35vh" : "100%",
             minHeight: 120,
             overflow: "hidden",
-            borderBottom: showEvalGraph && gameReview.length > 0 ? 1 : 0,
+            borderBottom: showThemeView && gameReview.length > 0 ? 1 : 0,
             borderColor: "divider",
           }}>
             <AnnotatedMoveList tree={tree} onTreeChange={setTree} onNavigate={handleNavigate} gameResult={gameInfo.Result} gameReview={gameReview} />
           </Box>
 
-          {/* Game Review Graph — only shown when review is ready AND showEvalGraph is true */}
-          {showEvalGraph && gameReview.length > 0 && !gameReviewLoading && (
+          {/* Theme Analysis panel — only shown when toggled on and review ready */}
+          {showThemeView && gameReview.length > 0 && !gameReviewLoading && (
             <Box sx={{
               flex: 1, overflowY: "auto", p: 1,
               "&::-webkit-scrollbar": { width: "4px" },
@@ -932,7 +1105,6 @@ export default function GamePage() {
                 goToMove={goToMove}
                 gameInfo={gameInfo}
                 gameReviewTheme={gameReviewTheme}
-                stockfishAnalysisResult={stockfishAnalysisResult}
               />
             </Box>
           )}
