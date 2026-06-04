@@ -172,12 +172,6 @@ const IntegrationSettings: React.FC = () => {
   const { isSignedIn, has } = useAuth();
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
-  if (!isSignedIn) {
-    return (
-      <Alert severity="info">Please sign in to configure your API integrations.</Alert>
-    );
-  }
-
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -213,6 +207,15 @@ const IntegrationSettings: React.FC = () => {
       {/* ── Paid section ── */}
       <Divider sx={{ my: 3 }} />
 
+      {!isSignedIn ? (
+        <Alert severity="info" sx={{ mt: 1 }}>
+          <Typography variant="body2" fontWeight={600} gutterBottom>Sign in for API integrations & paid features</Typography>
+          <Typography variant="caption" color="text.secondary">
+            Create a free ChessAgine account to access paid API integrations, BYO-key models, and ChessboardMagic repertoire sync.
+          </Typography>
+        </Alert>
+      ) : (
+      <React.Fragment>
       <Box display="flex" alignItems="center" gap={1} mb={1}>
         <Typography variant="overline" color="text.secondary">
           Paid Features
@@ -355,6 +358,8 @@ const IntegrationSettings: React.FC = () => {
             }
           />
         </>
+      )}
+      </React.Fragment>
       )}
     </Box>
   );

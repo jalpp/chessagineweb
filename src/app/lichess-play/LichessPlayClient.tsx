@@ -24,9 +24,9 @@ import {
 } from "@mui/material";
 import {
   SportsEsports as PlayIcon, Flag as ResignIcon, Handshake as DrawIcon,
-  Close as CloseIcon, WifiTethering as LiveIcon, WifiTetheringOff as DisconnectedIcon,
+  Close as CloseIcon, WifiTethering as LiveIcon,
   OpenInNew as OpenIcon, Refresh as RefreshIcon, AnalyticsOutlined as ReviewIcon,
-  Tune as TuneIcon, LinkOutlined as LinkIcon,
+  Tune as TuneIcon, LinkOutlined as LinkIcon, SyncOutlined as ReconnectIcon,
 } from "@mui/icons-material";
 import { Menu as MenuIcon } from "lucide-react";
 import { Chess, type Square } from "chess.js";
@@ -37,6 +37,17 @@ import { useSessionStorage } from "usehooks-ts";
 import { getLichessToken, getLichessUsername, startLichessOAuth } from "@/lib/lichessOAuth";
 import { useSettings } from "@/context/SettingContext";
 import { getCurrentThemeColors, is3DSet, BOARD_THEMES, PIECE_STYLE_TYPES } from "@/libs/setting/helper";
+
+// Lichess logo — served from local public assets (real Lichess brand mark)
+const LichessIcon = ({ size = 22 }: { size?: number }) => (
+  <Box
+    component="img"
+    src="/static/images/lichess-logo.png"
+    alt="Lichess"
+    sx={{ width: size, height: size, display: "block", imageRendering: "crisp-edges" }}
+  />
+);
+
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const LICHESS = "https://lichess.org";
@@ -277,8 +288,8 @@ export default function LichessPlayClient() {
   const router   = useRouter();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
-  // isSignedIn kept only for Clerk-specific features; Lichess play is open to all
-  const { isSignedIn } = useAuth();
+  // useAuth kept for any future Clerk-gated features; Lichess play is open to all
+  useAuth();
 
   const { boardTheme, boardPieceType: pieceType, boardSize, boardAnimDuration: animDuration, boardShowCoords: showCoords, saveSettings } = useSettings();
   const setThemeSetting = useCallback((v: string) => saveSettings({ board_theme: v }), [saveSettings]);
@@ -710,16 +721,23 @@ export default function LichessPlayClient() {
   // ─── Control panel (inline JSX, not a component — avoids stale re-definition)
   const controlPanelContent = (
     <Stack spacing={2.5} sx={{ pb: 2 }}>
-      {/* Status row */}
+      {/* Status row — single indicator, settings toggle */}
       <Stack direction="row" spacing={1} alignItems="center">
-        {connected ? <LiveIcon fontSize="small" color="success" /> : <DisconnectedIcon fontSize="small" color="disabled" />}
-        <Typography variant="caption" color={connected ? "success.main" : "text.disabled"} sx={{ flex:1 }}>
-          {connected ? "Live stream active" : "Not connected"}
-        </Typography>
-        {phase === "playing" && gameId && (
-          <Chip label="LIVE" size="small" color="error" icon={<LiveIcon sx={{ fontSize:"14px !important" }} />} />
-        )}
-        <IconButton size="small" onClick={() => setSettingsOpen(p => !p)} color={settingsOpen ? "primary" : "default"}>
+        {phase === "playing" && gameId ? (
+          <Chip
+            label="LIVE"
+            size="small"
+            color="error"
+            icon={<LiveIcon sx={{ fontSize:"14px !important" }} />}
+            sx={{ fontWeight: 700 }}
+          />
+        ) : connected ? (
+          <Chip label="Connected" size="small" color="success" variant="outlined"
+            icon={<LiveIcon sx={{ fontSize:"12px !important" }} />} />
+        ) : null}
+        <Box sx={{ flex: 1 }} />
+        <IconButton size="small" onClick={() => setSettingsOpen(p => !p)} color={settingsOpen ? "primary" : "default"}
+          title="Board settings">
           <TuneIcon fontSize="small" />
         </IconButton>
       </Stack>
@@ -727,18 +745,55 @@ export default function LichessPlayClient() {
       <SettingsPanel open={settingsOpen} boardTheme={boardTheme} pieceType={pieceType}
         onSetTheme={setThemeSetting} onSetPiece={setPieceSetting} />
 
-      {/* Lichess connection — available to ALL users (guests included) */}
-      {!token && (
-        <Alert severity="warning" sx={{ fontSize:"0.8rem" }}>
-          <Stack spacing={1}>
-            <span>Connect your Lichess account to play.</span>
-            <Button size="small" variant="contained" color="warning" startIcon={
-              connectLoading ? <CircularProgress size={14} color="inherit" /> : <LinkIcon />
-            } onClick={handleConnectLichess} disabled={connectLoading} sx={{ alignSelf:"flex-start", textTransform:"none" }}>
-              {connectLoading ? "Redirecting to Lichess…" : "Connect Lichess Account"}
-            </Button>
-          </Stack>
-        </Alert>
+      {/* Lichess account — connect or reconnect, available to ALL users */}
+      {!token ? (
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ py: 2, px: 2, "&:last-child": { pb: 2 } }}>
+            <Stack direction="row" spacing={1.5} alignItems="flex-start">
+              <Box sx={{ color: "text.secondary", pt: 0.25, flexShrink: 0 }}>
+                <LichessIcon size={20} />
+              </Box>
+              <Stack spacing={1} flex={1}>
+                <Typography variant="body2" fontWeight={600}>Connect your Lichess account</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                  Link your free Lichess account to play rated &amp; casual games here in ChessAgine. Your token is stored locally — ChessAgine never stores credentials on a server.
+                </Typography>
+                <Button
+                  size="small" variant="contained" color="primary"
+                  startIcon={connectLoading ? <CircularProgress size={13} color="inherit" /> : <LinkIcon fontSize="small" />}
+                  onClick={handleConnectLichess} disabled={connectLoading}
+                  sx={{ textTransform: "none", fontWeight: 600, alignSelf: "flex-start", mt: 0.5 }}
+                >
+                  {connectLoading ? "Redirecting to Lichess…" : "Connect Lichess"}
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      ) : (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Chip
+            label={username}
+            size="small"
+            color="success"
+            variant="outlined"
+            icon={<Box sx={{ display: "flex", alignItems: "center", pl: 0.5, color: "success.main" }}><LichessIcon size={14} /></Box>}
+            component="a"
+            href={`https://lichess.org/@/${username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            clickable
+            sx={{ fontWeight: 600 }}
+          />
+          <Button
+            size="small" variant="text" color="inherit"
+            startIcon={connectLoading ? <CircularProgress size={13} color="inherit" /> : <ReconnectIcon fontSize="small" />}
+            onClick={handleConnectLichess} disabled={connectLoading}
+            sx={{ textTransform: "none", fontSize: "0.72rem", opacity: 0.6, "&:hover": { opacity: 1 } }}
+          >
+            {connectLoading ? "Redirecting…" : "Reconnect"}
+          </Button>
+        </Stack>
       )}
 
       {/* ── SEEK SETUP ── */}
@@ -855,13 +910,10 @@ export default function LichessPlayClient() {
   return (
     <Box sx={{ p:{ xs:1, sm:2, md:4 }, minHeight:"100vh" }}>
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3} flexWrap="wrap">
-        <Box component="img" src="https://lichess1.org/assets/logo/lichess-favicon-32.png" alt="Lichess"
-          sx={{ width:24, height:24 }} onError={e => { (e.target as HTMLImageElement).style.display="none"; }} />
+        <Box sx={{ color: "text.primary", display:"flex", alignItems:"center" }}>
+          <LichessIcon size={26} />
+        </Box>
         <Typography variant="h5" fontWeight={700}>Play on Lichess</Typography>
-        {username && (
-          <Chip label={username} size="small" color="success" variant="outlined" clickable
-            component="a" href={`https://lichess.org/@/${username}`} target="_blank" rel="noopener noreferrer" />
-        )}
         {inReview && (
           <Chip label="Reviewing" size="small" color="warning" variant="outlined"
             onDelete={returnToLive} deleteIcon={<CloseIcon />} />
