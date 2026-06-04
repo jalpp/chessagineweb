@@ -168,9 +168,14 @@ const TokenField: React.FC<TokenFieldProps> = ({
   );
 };
 
-const IntegrationSettings: React.FC = () => {
+const IntegrationSettings: React.FC<{ lichessOnly?: boolean }> = ({ lichessOnly = false }) => {
   const { isSignedIn, has } = useAuth();
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
+
+  // When lichessOnly=true, render just the Lichess connect button (no header, no paid section)
+  if (lichessOnly) {
+    return <LichessConnectButton />;
+  }
 
   return (
     <Box>
