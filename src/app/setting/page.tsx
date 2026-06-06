@@ -3,8 +3,8 @@
 import { usePageReady } from "@/hooks/usePageReady";
 import {
   Box, Container, Paper, Typography, Stack,
-  Select, MenuItem, FormControl, Switch, Slider, Button, Alert,
-  Card, CardContent, Tooltip,
+  Select, MenuItem, FormControl, Switch, Slider, Alert,
+  Tooltip,
 } from "@mui/material";
 import {
   Palette as PaletteIcon,
@@ -35,7 +35,7 @@ import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import DiamondIcon from "@mui/icons-material/Diamond";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
 import { CardGiftcard } from "@mui/icons-material";
-import React, { useMemo } from "react";
+import React from "react";
 
 // ─── GUI Themes ───────────────────────────────────────────────────────────────
 const GUI_THEMES = [
@@ -67,16 +67,13 @@ function knightSrc(pieceSet: string): string {
   return `/static/pieces/${pieceSet}/wN.png`;
 }
 
-// ─── Mini Board Preview ───────────────────────────────────────────────────────
-// A 4×4 corner of a chessboard with the current theme + a knight on d4
+
 const MINI_SQUARES = [
-  // row 0 (rank 8 visual top) — light-dark-light-dark
   [false, true,  false, true ],
   [true,  false, true,  false],
   [false, true,  false, true ],
   [true,  false, true,  false],
 ];
-// Knight sits at row-index 2, col-index 1 (a nice center-ish position)
 const KNIGHT_ROW = 2;
 const KNIGHT_COL = 1;
 
@@ -136,7 +133,6 @@ function MiniBoardPreview({ boardTheme, pieceType }: { boardTheme: string; piece
   );
 }
 
-// ─── Piece Picker ─────────────────────────────────────────────────────────────
 function PiecePicker({
   selected,
   onSelect,
@@ -224,7 +220,6 @@ function PiecePicker({
   );
 }
 
-// ─── Board Theme Picker ───────────────────────────────────────────────────────
 function BoardThemePicker({
   selected,
   onSelect,
@@ -245,8 +240,7 @@ function BoardThemePicker({
     >
       {Object.entries(BOARD_THEMES).map(([key, val]) => {
         const isSelected = selected === key;
-        // Tiny 2×2 board swatch
-        const swatchSquares = [false, true, true, false]; // light/dark/dark/light
+        const swatchSquares = [false, true, true, false]; 
         return (
           <Tooltip key={key} title={val.name} placement="top" arrow>
             <Box
@@ -329,7 +323,7 @@ function BoardThemePicker({
   );
 }
 
-// ─── Section wrapper (no free/paid badges) ────────────────────────────────────
+
 function Section({
   icon, title, children,
 }: {
@@ -389,9 +383,6 @@ export default function SettingsPage() {
     boardTheme, boardPieceType, boardSize, boardAnimDuration,
     boardShowCoords, boardFlipped, boardShowEvalBar, boardShowFen,
     boardShowHanging, boardShowSemiProtected,
-    engineDepth, engineLines, enginePicked,
-    pgnViewMode, chessdbShowScores, chessdbShowWinrates,
-    puzzleLevel, userPuzzleRating,
   } = useSettings();
 
   return (
@@ -574,98 +565,11 @@ export default function SettingsPage() {
             </Section>
           </Paper>
 
-          {/* ── 4. Stockfish Engine ── */}
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Section icon={<EngineIcon />} title="Stockfish Engine">
-              <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-                Settings for computer analysis in Position, Game Review, and Play Bot pages.
-              </Typography>
-
-              <SettingRow label="Engine Version" description="Which Stockfish build to use for analysis">
-                <FormControl fullWidth size="small">
-                  <Select value={enginePicked} onChange={e => saveSettings({ engine_picked: e.target.value })}>
-                    {ENGINE_OPTIONS.map(e => (
-                      <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </SettingRow>
-
-              <SettingRow label={`Analysis Depth: ${engineDepth}`} description="Higher depth = stronger but slower analysis">
-                <Slider value={engineDepth} min={5} max={30} step={1}
-                  onChange={(_, v) => saveSettings({ engine_depth: v as number })}
-                  marks={[{ value: 5, label: "5" }, { value: 18, label: "18" }, { value: 30, label: "30" }]}
-                  sx={{ width: { sm: 200 } }} />
-              </SettingRow>
-
-              <SettingRow label={`Analysis Lines: ${engineLines}`} description="Number of best move lines shown simultaneously">
-                <Slider value={engineLines} min={1} max={5} step={1}
-                  onChange={(_, v) => saveSettings({ engine_lines: v as number })}
-                  marks={[{ value: 1, label: "1" }, { value: 3, label: "3" }, { value: 5, label: "5" }]}
-                  sx={{ width: { sm: 200 } }} />
-              </SettingRow>
-            </Section>
-          </Paper>
-
-          {/* ── 5. Game Viewer ── */}
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Section icon={<PgnIcon />} title="Game Viewer">
-
-              <SettingRow label="Move List Display" description="How moves are shown in the game review panel">
-                <FormControl fullWidth size="small">
-                  <Select value={pgnViewMode} onChange={e => saveSettings({ pgn_view_mode: e.target.value })}>
-                    <MenuItem value="pgn">PGN Format</MenuItem>
-                    <MenuItem value="movelist">Move List</MenuItem>
-                  </Select>
-                </FormControl>
-              </SettingRow>
-
-              <SettingRow label="ChessDB — Show Scores" description="Display win/draw/loss scores in the opening book panel">
-                <Switch checked={chessdbShowScores}
-                  onChange={e => saveSettings({ chessdb_show_scores: e.target.checked })} />
-              </SettingRow>
-
-              <SettingRow label="ChessDB — Show Win Rates" description="Display percentage win rates alongside opening moves">
-                <Switch checked={chessdbShowWinrates}
-                  onChange={e => saveSettings({ chessdb_show_winrates: e.target.checked })} />
-              </SettingRow>
-            </Section>
-          </Paper>
-
-          {/* ── 6. Puzzles ── */}
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Section icon={<PuzzleIcon />} title="Puzzles">
-              <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-                Your puzzle rating updates automatically as you solve puzzles.
-              </Typography>
-
-              <SettingRow label={`Starting Puzzle Rating: ${puzzleLevel}`} description="Initial difficulty level for new puzzle sessions">
-                <Slider value={puzzleLevel} min={500} max={2800} step={100}
-                  onChange={(_, v) => saveSettings({ puzzle_level: v as number })}
-                  marks={[{ value: 500, label: "500" }, { value: 1500, label: "1500" }, { value: 2800, label: "2800" }]}
-                  sx={{ width: { sm: 200 } }} />
-              </SettingRow>
-
-              <SettingRow
-                label={`Your Puzzle Rating: ${Math.round(userPuzzleRating)}`}
-                description="Current ELO-style rating based on your puzzle performance"
-              >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Button size="small" variant="outlined" color="warning"
-                    onClick={() => saveSettings({ user_puzzle_rating: 1500 })}>
-                    Reset to 1500
-                  </Button>
-                </Stack>
-              </SettingRow>
-            </Section>
-          </Paper>
-
           {/* ── 7. Lichess Account ── */}
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
             <Section icon={<LinkIcon />} title="Lichess Account">
               <Typography variant="caption" color="text.secondary" display="block" mb={2}>
                 Connect your Lichess account to play live games, access your studies, and import your game history.
-                Your token is stored only in your browser — never on our servers.
               </Typography>
               <IntegrationSettings lichessOnly />
             </Section>

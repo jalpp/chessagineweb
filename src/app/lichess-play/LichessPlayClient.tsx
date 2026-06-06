@@ -812,7 +812,7 @@ export default function LichessPlayClient() {
             </Select>
           </FormControl>
           <Alert severity="info" sx={{ fontSize:"0.75rem", py:0.5 }}>
-            Seek pool: <strong>Rapid & Classical only</strong>. Bullet/Blitz require a direct challenge.
+            ChessAgine Lichess Seek pool: <strong>Rapid & Classical only</strong>.
           </Alert>
           <Stack direction="row" spacing={1}>
             <Box flex={1}>
