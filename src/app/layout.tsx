@@ -6,6 +6,7 @@ import "./globals.css";
 import SideNav from "@/componets/SideNav";
 import GlobalFooter from "@/componets/Globalfooter";
 import { NavigationProvider } from "@/context/NavigationContext";
+import { LichessGuardProvider } from "@/context/LichessGuardContext";
 import PageLoader from "@/componets/PageLoader";
 import { SIDEBAR_WIDTH } from "@/componets/SideNav";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -157,6 +158,7 @@ export default function RootLayout({
         >
           <ThemeProvider>
             <BodyWrapper>
+              <LichessGuardProvider>
               <NavigationProvider>
                 <PageLoader />
                 <Box sx={{
@@ -187,6 +189,7 @@ export default function RootLayout({
                     <Analytics />
                 </Box>
               </NavigationProvider>
+              </LichessGuardProvider>
             </BodyWrapper>
           </ThemeProvider>
         </body>

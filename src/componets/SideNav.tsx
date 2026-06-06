@@ -31,6 +31,7 @@ import { useClerk } from "@clerk/nextjs";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { ChatBubble, GitHub, SmartToy } from "@mui/icons-material";
 import { useNavigation } from "@/context/NavigationContext";
+import { useLichessGuard } from "@/context/LichessGuardContext";
 
 // Lichess logo — served from local public assets
 const LichessNavIcon = () => (
@@ -218,14 +219,16 @@ export default function SideNav() {
   const pathname = usePathname();
 
   const { startNavigation } = useNavigation();
+  const { requestNavigation } = useLichessGuard();
 
   const handleNavigation = (href: string, isExternal: boolean = false) => {
     if (isExternal) {
       window.open(href, "_blank", "noopener,noreferrer");
     } else {
-      // Don't trigger the loader if already on this page — usePageReady only
-      // fires on mount, so navigating to the current route would spin forever.
       if (pathname !== href) {
+        // Check if a Lichess game is in progress — guard returns false if blocked
+        const canProceed = requestNavigation(href);
+        if (!canProceed) return;
         startNavigation();
         router.push(href);
       }

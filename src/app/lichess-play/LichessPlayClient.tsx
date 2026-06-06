@@ -21,12 +21,14 @@ import {
   CircularProgress, Select, MenuItem, FormControl, InputLabel,
   ToggleButton, ToggleButtonGroup, Drawer, Fab, useMediaQuery,
   useTheme, Divider, Paper, IconButton, Collapse,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import {
   SportsEsports as PlayIcon, Flag as ResignIcon, Handshake as DrawIcon,
   Close as CloseIcon, WifiTethering as LiveIcon,
   OpenInNew as OpenIcon, Refresh as RefreshIcon, AnalyticsOutlined as ReviewIcon,
   Tune as TuneIcon, LinkOutlined as LinkIcon, SyncOutlined as ReconnectIcon,
+  WarningAmber as WarningIcon,
 } from "@mui/icons-material";
 import { Menu as MenuIcon } from "lucide-react";
 import { Chess, type Square } from "chess.js";
@@ -37,6 +39,7 @@ import { useSessionStorage } from "usehooks-ts";
 import { getLichessToken, getLichessUsername, startLichessOAuth } from "@/lib/lichessOAuth";
 import { useSettings } from "@/context/SettingContext";
 import { getCurrentThemeColors, is3DSet, BOARD_THEMES, PIECE_STYLE_TYPES } from "@/libs/setting/helper";
+import { useLichessGuard } from "@/context/LichessGuardContext";
 
 // Lichess logo — served from local public assets (real Lichess brand mark)
 const LichessIcon = ({ size = 22 }: { size?: number }) => (
@@ -295,6 +298,9 @@ export default function LichessPlayClient() {
   const setThemeSetting = useCallback((v: string) => saveSettings({ board_theme: v }), [saveSettings]);
   const setPieceSetting = useCallback((v: string) => saveSettings({ board_piece_type: v }), [saveSettings]);
 
+  // ── Navigation guard ──────────────────────────────────────────────────────
+  const { registerGuard, unregisterGuard, pendingHref, confirmNavigation, cancelNavigation } = useLichessGuard();
+
   // ── Credentials ──────────────────────────────────────────────────────────
   const [token,    setToken]    = useState("");
   const [username, setUsername] = useState("");
@@ -362,6 +368,39 @@ export default function LichessPlayClient() {
   // Stable ref to uciMoves so goToMove doesn't go stale
   const uciMovesRef = useRef(uciMoves);
   useEffect(() => { uciMovesRef.current = uciMoves; }, [uciMoves]);
+
+  // ── Navigation guard: register/unregister as game starts/ends ────────────
+  useEffect(() => {
+    if (phase === "playing") {
+      registerGuard();
+    } else {
+      unregisterGuard();
+    }
+    return () => { unregisterGuard(); }; // cleanup on unmount
+  }, [phase, registerGuard, unregisterGuard]);
+
+  // ── beforeunload: warn on browser tab close / refresh during game ─────────
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "You have a game in progress. If you leave, your game data will be lost. You can continue the game on Lichess.org.";
+      return e.returnValue;
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [phase]);
+
+  // ── Execute pending navigation after user confirms ────────────────────────
+  const handleConfirmLeave = useCallback(() => {
+    const href = pendingHref;
+    // Abort all streams before leaving
+    gameRef.current?.abort();
+    eventRef.current?.abort();
+    seekRef.current?.abort();
+    confirmNavigation();
+    if (href) router.push(href);
+  }, [pendingHref, confirmNavigation, router]);
 
   // ── 100ms local clock — only updates clock state, nothing else ───────────
   useEffect(() => {
@@ -985,6 +1024,76 @@ export default function LichessPlayClient() {
           </>
         )}
       </Stack>
+
+      {/* ── Leave Game Confirmation Modal ── */}
+      <Dialog
+        open={!!pendingHref}
+        onClose={cancelNavigation}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <WarningIcon color="warning" />
+            <Typography variant="h6" fontWeight={700}>Leave game in progress?</Typography>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent>
+          <Stack spacing={2}>
+            <Typography variant="body1">
+              You have a live Lichess game in progress. If you navigate away now:
+            </Typography>
+            <Box
+              component="ul"
+              sx={{ m: 0, pl: 2.5, "& li": { mb: 0.75 } }}
+            >
+              <Typography component="li" variant="body2" color="text.secondary">
+                All current board state and move history in ChessAgine will be lost.
+              </Typography>
+              <Typography component="li" variant="body2" color="text.secondary">
+                Your clock will keep running on Lichess — time loss may result in a forfeit.
+              </Typography>
+              <Typography component="li" variant="body2" color="text.secondary">
+                To continue, go to your{" "}
+                <Box
+                  component="a"
+                  href="https://lichess.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: "primary.main", textDecoration: "underline" }}
+                >
+                  Lichess account
+                </Box>
+                {" "}and resume the game there.
+              </Typography>
+            </Box>
+            <Alert severity="warning" sx={{ fontSize: "0.85rem" }}>
+              <strong>Your clock is still running.</strong> Return to this page to keep playing, or resign on Lichess before leaving.
+            </Alert>
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            variant="contained"
+            onClick={cancelNavigation}
+            autoFocus
+            sx={{ fontWeight: 700 }}
+          >
+            Stay in Game
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleConfirmLeave}
+          >
+            Leave Anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 }
