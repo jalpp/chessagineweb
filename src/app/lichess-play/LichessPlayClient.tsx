@@ -1,47 +1,116 @@
 "use client";
 
 /**
- * LichessPlayClient — Board API real-time play
+ * @file LichessPlayClient.tsx
+ * @description Main orchestration component for the Lichess Board API live play page.
  *
- * KEY ARCHITECTURE NOTES:
- * - All sub-components (PlayerRow, MoveList, SettingsPanel, ControlPanel) are
- *   defined OUTSIDE this component so React doesn't remount them on every
- *   state change (100ms clock = 10 renders/sec would destroy inner components).
- * - Game state is passed via stable props / refs so sub-components only
- *   re-render when their specific props change.
- * - Last move highlight uses #f6f669 (Lichess yellow) which is universally
- *   visible on all board themes regardless of square color.
+ * Responsibilities:
+ * - Manages all local game state (phase, clocks, moves, FEN, players)
+ * - Drives three Lichess SSE streams: event stream, seek drain, game stream
+ * - Handles click-to-move and drag-and-drop board interaction
+ * - Coordinates the navigation guard (prevents leaving mid-game)
+ * - Passes derived props down to memoised sub-components
+ *
+ * All network calls are delegated to @/libs/lichess/api.
+ * All chess utility functions are in @/libs/lichess/chess.
+ * All TypeScript types are in @/libs/lichess/types.
+ * Sub-components live in @/componets/lichess/play/.
  */
 
 import { usePageReady } from "@/hooks/usePageReady";
-import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import React from "react";
 import {
-  Box, Stack, Card, CardContent, Button, Typography, Chip, Alert,
-  CircularProgress, Select, MenuItem, FormControl, InputLabel,
-  ToggleButton, ToggleButtonGroup, Drawer, Fab, useMediaQuery,
-  useTheme, Divider, Paper, IconButton, Collapse,
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
+  Divider, Drawer, Fab, FormControl, IconButton, InputLabel,
+  MenuItem, Select, Stack, ToggleButton, ToggleButtonGroup,
+  Typography, useMediaQuery, useTheme,
 } from "@mui/material";
 import {
-  SportsEsports as PlayIcon, Flag as ResignIcon, Handshake as DrawIcon,
-  Close as CloseIcon, WifiTethering as LiveIcon,
-  OpenInNew as OpenIcon, Refresh as RefreshIcon, AnalyticsOutlined as ReviewIcon,
-  Tune as TuneIcon, LinkOutlined as LinkIcon, SyncOutlined as ReconnectIcon,
-  WarningAmber as WarningIcon,
+  AnalyticsOutlined as ReviewIcon,
+  Close as CloseIcon,
+  Handshake as DrawIcon,
+  Flag as ResignIcon,
+  LinkOutlined as LinkIcon,
+  OpenInNew as OpenIcon,
+  Refresh as RefreshIcon,
+  SportsEsports as PlayIcon,
+  SyncOutlined as ReconnectIcon,
+  Tune as TuneIcon,
+  WifiTethering as LiveIcon,
 } from "@mui/icons-material";
 import { Menu as MenuIcon } from "lucide-react";
 import { Chess, type Square } from "chess.js";
-import { Chessboard, PieceDropHandlerArgs, PieceRenderObject, SquareHandlerArgs } from "react-chessboard";
-import { useAuth } from "@clerk/nextjs";
+import {
+  Chessboard,
+  PieceDropHandlerArgs,
+  PieceRenderObject,
+  SquareHandlerArgs,
+} from "react-chessboard";
 import { useRouter } from "next/navigation";
 import { useSessionStorage } from "usehooks-ts";
-import { getLichessToken, getLichessUsername, startLichessOAuth } from "@/lib/lichessOAuth";
+
+// Settings
 import { useSettings } from "@/context/SettingContext";
-import { getCurrentThemeColors, is3DSet, BOARD_THEMES, PIECE_STYLE_TYPES } from "@/libs/setting/helper";
+import { getCurrentThemeColors, is3DSet } from "@/libs/setting/helper";
+
+// Lichess OAuth
+import {
+  getLichessToken,
+  getLichessUsername,
+  startLichessOAuth,
+} from "@/lib/lichessOAuth";
+
+// Navigation guard
 import { useLichessGuard } from "@/context/LichessGuardContext";
 
-// Lichess logo — served from local public assets (real Lichess brand mark)
+// Lichess Board API layer
+import {
+  postSeek,
+  postMove,
+  postResign,
+  postAbort,
+  postDrawOffer,
+  postDrawDecline,
+  streamEventStream,
+  streamBoardGame,
+} from "@/libs/lichess/api";
+
+// Chess utilities and constants
+import {
+  SEEK_TIME_CONTROLS,
+  TERMINAL_STATUSES,
+  LAST_MOVE_COLOR,
+  uciToSan,
+  fenAfterMoves,
+  buildGamePgn,
+  buildGameInfo,
+  statusToResultMessage,
+} from "@/libs/lichess/chess";
+
+// Types
+import type {
+  DrawPendingState,
+  GameFullEvent,
+  GamePhase,
+  GamePlayer,
+  GameStartEvent,
+  GameStateEvent,
+  LiveClock,
+  OpponentGoneEvent,
+  SeekColor,
+  SeekRated,
+} from "@/libs/lichess/types";
+
+// Sub-components
+import LichessPlayerRow from "@/componets/lichess/play/LichessPlayerRow";
+import LichessMoveList from "@/componets/lichess/play/LichessMoveList";
+import LichessBoardSettings from "@/componets/lichess/play/LichessBoardSettings";
+import LichessLeaveDialog from "@/componets/lichess/play/LichessLeaveDialog";
+
+// ─── Lichess logo ─────────────────────────────────────────────────────────────
+
+/** Renders the Lichess brand logo from local public assets. */
 const LichessIcon = ({ size = 22 }: { size?: number }) => (
   <Box
     component="img"
@@ -51,350 +120,137 @@ const LichessIcon = ({ size = 22 }: { size?: number }) => (
   />
 );
 
+// ─── Component ────────────────────────────────────────────────────────────────
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const LICHESS = "https://lichess.org";
-// Universal last-move highlight: Lichess yellow — visible on every board theme
-const LAST_MOVE_COLOR = "rgba(246,246,105,0.5)";
-
-interface TC { label: string; time: number; increment: number; }
-const SEEK_TIME_CONTROLS: TC[] = [
-  { label: "8+0 Rapid",       time: 8,  increment: 0  },
-  { label: "10+0 Rapid",      time: 10, increment: 0  },
-  { label: "10+5 Rapid",      time: 10, increment: 5  },
-  { label: "15+0 Rapid",      time: 15, increment: 0  },
-  { label: "15+10 Rapid",     time: 15, increment: 10 },
-  { label: "20+0 Rapid",      time: 20, increment: 0  },
-  { label: "25+0 Rapid",      time: 25, increment: 0  },
-  { label: "30+0 Classical",  time: 30, increment: 0  },
-  { label: "30+20 Classical", time: 30, increment: 20 },
-  { label: "45+45 Classical", time: 45, increment: 45 },
-  { label: "60+0 Classical",  time: 60, increment: 0  },
-];
-
-// ─── NDJSON ───────────────────────────────────────────────────────────────────
-async function* streamNdJson(res: Response): AsyncGenerator<Record<string, unknown>> {
-  const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const line of lines) {
-      const t = line.trim();
-      if (t) { try { yield JSON.parse(t); } catch { /* skip */ } }
-    }
-  }
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function uciToSan(uciMoves: string[]): string[] {
-  const chess = new Chess();
-  const san: string[] = [];
-  for (const uci of uciMoves) {
-    try {
-      const r = chess.move({ from: uci.slice(0,2) as Square, to: uci.slice(2,4) as Square, promotion: uci[4] as ("q"|"r"|"b"|"n"|undefined) });
-      if (r) san.push(r.san);
-    } catch { break; }
-  }
-  return san;
-}
-
-function fenAfterMoves(uciMoves: string[], count: number): string {
-  const chess = new Chess();
-  for (let i = 0; i < Math.min(count, uciMoves.length); i++) {
-    const m = uciMoves[i];
-    try { chess.move({ from: m.slice(0,2) as Square, to: m.slice(2,4) as Square, promotion: m[4] as ("q"|"r"|"b"|"n"|undefined) }); }
-    catch { break; }
-  }
-  return chess.fen();
-}
-
-const TERMINAL = new Set(["aborted","mate","resign","stalemate","timeout","draw","outoftime","cheat","noStart","unknownFinish","insufficientMaterialClaim","variantEnd"]);
-
-interface GamePlayer { id: string; name: string; title?: string|null; rating?: number; }
-interface LiveClock  { white: number; black: number }
-type GamePhase = "idle" | "seeking" | "playing" | "finished";
-
-function fmtMs(ms: number) {
-  const tot = Math.ceil(ms / 1000);
-  const m = Math.floor(tot / 60), s = tot % 60;
-  if (ms < 20000) return `${m}:${String(s).padStart(2,"0")}.${Math.floor((ms%1000)/100)}`;
-  return `${m}:${String(s).padStart(2,"0")}`;
-}
-
-// ─── PlayerRow (outside component — stable reference) ─────────────────────────
-interface PlayerRowProps {
-  side: "white"|"black";
-  player: GamePlayer|null;
-  clockMs: number;
-  isActive: boolean;
-  phase: GamePhase;
-}
-const PlayerRow = memo(({ side, player, clockMs, isActive, phase }: PlayerRowProps) => {
-  const low = clockMs < 30000 && phase === "playing";
-  return (
-    <Paper elevation={isActive ? 3 : 0} sx={{
-      px: 2, py: 1, border: "1px solid",
-      borderColor: isActive ? "primary.main" : "divider",
-      borderRadius: 2, transition: "border-color 0.3s, background-color 0.3s",
-      bgcolor: isActive ? "action.selected" : "transparent",
-    }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Box sx={{ width:14, height:14, borderRadius:"50%",
-            bgcolor: side==="white"?"#f0d9b5":"#3d2b1f", border:"1px solid", borderColor:"divider" }} />
-          <Typography variant="body2" fontWeight={600}>
-            {player?.name ?? (phase==="playing" ? "???" : "—")}
-            {player?.rating != null && (
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml:0.5 }}>
-                ({player.rating})
-              </Typography>
-            )}
-          </Typography>
-        </Stack>
-        {phase !== "idle" && phase !== "seeking" && (
-          <Typography variant="h6" fontFamily="monospace" fontWeight={700}
-            color={low ? "error.main" : isActive ? "primary.main" : "text.primary"}
-            sx={{ minWidth: 70, textAlign: "right" }}>
-            {fmtMs(clockMs)}
-          </Typography>
-        )}
-      </Stack>
-    </Paper>
-  );
-});
-PlayerRow.displayName = "PlayerRow";
-
-// ─── MoveList (outside component — stable reference) ──────────────────────────
-interface MoveListProps {
-  sanMoves: string[];
-  uciMoves: string[];
-  viewingMove: number|null;
-  onGoToMove: (idx: number) => void;
-  onReturnToLive: () => void;
-}
-const MoveList = memo(({ sanMoves, uciMoves: _u, viewingMove, onGoToMove, onReturnToLive }: MoveListProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (viewingMove === null && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [sanMoves.length, viewingMove]);
-
-  if (!sanMoves.length) return null;
-
-  return (
-    <>
-      <Divider />
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="caption" fontWeight={700} color="text.secondary" letterSpacing={1}>MOVES</Typography>
-        {viewingMove !== null && (
-          <Button size="small" variant="text" color="primary" sx={{ fontSize:"0.7rem", py:0, minWidth:0 }} onClick={onReturnToLive}>
-            ↩ Live
-          </Button>
-        )}
-      </Stack>
-      <Box ref={scrollRef} sx={{ maxHeight:200, overflowY:"auto", fontFamily:"monospace", fontSize:"0.78rem", lineHeight:1.9, px:0.5 }}>
-        {sanMoves.reduce<React.ReactElement[]>((acc, san, i) => {
-          if (i % 2 === 0) {
-            const blackSan = sanMoves[i + 1];
-            const wIdx = i, bIdx = i + 1;
-            const wActive = viewingMove === wIdx;
-            const bActive = blackSan != null && viewingMove === bIdx;
-            acc.push(
-              <span key={i} style={{ display:"inline-block", marginRight:8, userSelect:"none" }}>
-                <Typography component="span" variant="caption" color="text.disabled" sx={{ mr:0.5 }}>
-                  {Math.floor(i/2)+1}.
-                </Typography>
-                <Typography component="span" variant="caption" fontWeight={600}
-                  onClick={() => onGoToMove(wIdx)}
-                  sx={{ mr:0.75, px:0.5, borderRadius:1, cursor:"pointer",
-                    bgcolor: wActive ? "primary.main" : "transparent",
-                    color: wActive ? "primary.contrastText" : "text.primary",
-                    "&:hover": { bgcolor: wActive ? "primary.dark" : "action.hover" },
-                  }}>
-                  {san}
-                </Typography>
-                {blackSan && (
-                  <Typography component="span" variant="caption"
-                    onClick={() => onGoToMove(bIdx)}
-                    sx={{ mr:0.75, px:0.5, borderRadius:1, cursor:"pointer",
-                      bgcolor: bActive ? "primary.main" : "transparent",
-                      color: bActive ? "primary.contrastText" : "text.primary",
-                      "&:hover": { bgcolor: bActive ? "primary.dark" : "action.hover" },
-                    }}>
-                    {blackSan}
-                  </Typography>
-                )}
-              </span>
-            );
-          }
-          return acc;
-        }, [])}
-      </Box>
-    </>
-  );
-});
-MoveList.displayName = "MoveList";
-
-// ─── SettingsPanel ────────────────────────────────────────────────────────────
-interface SettingsPanelProps {
-  open: boolean;
-  boardTheme: string;
-  pieceType: string;
-  onSetTheme: (v: string) => void;
-  onSetPiece: (v: string) => void;
-}
-const SettingsPanel = memo(({ open, boardTheme, pieceType, onSetTheme, onSetPiece }: SettingsPanelProps) => (
-  <Collapse in={open}>
-    <Card variant="outlined" sx={{ mt:1, mb:1, borderRadius:2 }}>
-      <CardContent sx={{ py:1.5, px:2, "&:last-child":{ pb:1.5 } }}>
-        <Stack spacing={1.5}>
-          <Typography variant="caption" fontWeight={700} color="text.secondary" letterSpacing={1}>BOARD APPEARANCE</Typography>
-          <FormControl size="small" fullWidth>
-            <InputLabel>Board Theme</InputLabel>
-            <Select value={boardTheme} label="Board Theme" onChange={e => onSetTheme(e.target.value)}>
-              {Object.entries(BOARD_THEMES).map(([key, val]) => (
-                <MenuItem key={key} value={key}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Box sx={{ width:16, height:16, borderRadius:0.5,
-                      background:`linear-gradient(135deg, ${val.lightSquareColor} 50%, ${val.darkSquareColor} 50%)` }} />
-                    <span>{val.name}</span>
-                  </Stack>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" fullWidth>
-            <InputLabel>Piece Set</InputLabel>
-            <Select value={pieceType} label="Piece Set" onChange={e => onSetPiece(e.target.value)}>
-              {Object.entries(PIECE_STYLE_TYPES).map(([key, val]) => (
-                <MenuItem key={key} value={key}>{val.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
-      </CardContent>
-    </Card>
-  </Collapse>
-));
-SettingsPanel.displayName = "SettingsPanel";
-
-// ─── Main component ───────────────────────────────────────────────────────────
 export default function LichessPlayClient() {
   usePageReady();
+
   const router   = useRouter();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("md"));
-  // useAuth kept for any future Clerk-gated features; Lichess play is open to all
-  useAuth();
 
-  const { boardTheme, boardPieceType: pieceType, boardSize, boardAnimDuration: animDuration, boardShowCoords: showCoords, saveSettings } = useSettings();
-  const setThemeSetting = useCallback((v: string) => saveSettings({ board_theme: v }), [saveSettings]);
-  const setPieceSetting = useCallback((v: string) => saveSettings({ board_piece_type: v }), [saveSettings]);
+  const {
+    boardTheme, boardPieceType: pieceType, boardSize,
+    boardAnimDuration: animDuration, boardShowCoords: showCoords,
+    saveSettings,
+  } = useSettings();
+
+  const setThemeSetting = useCallback(
+    (v: string) => saveSettings({ board_theme: v }), [saveSettings]
+  );
+  const setPieceSetting = useCallback(
+    (v: string) => saveSettings({ board_piece_type: v }), [saveSettings]
+  );
 
   // ── Navigation guard ──────────────────────────────────────────────────────
-  const { registerGuard, unregisterGuard, pendingHref, confirmNavigation, cancelNavigation } = useLichessGuard();
+  const {
+    registerGuard, unregisterGuard,
+    pendingHref, confirmNavigation, cancelNavigation,
+  } = useLichessGuard();
 
-  // ── Credentials ──────────────────────────────────────────────────────────
-  const [token,    setToken]    = useState("");
-  const [username, setUsername] = useState("");
-  useEffect(() => { setToken(getLichessToken()); setUsername(getLichessUsername()); }, []);
+  // ── Lichess credentials (localStorage, no Clerk required) ────────────────
+  const [token,          setToken]          = useState("");
+  const [username,       setUsername]       = useState("");
+  const [connectLoading, setConnectLoading] = useState(false);
+
   useEffect(() => {
-    const h = (e: StorageEvent) => {
+    setToken(getLichessToken());
+    setUsername(getLichessUsername());
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
       if (e.key === "lichess-token" || e.key === "lichess-username") {
-        setToken(getLichessToken()); setUsername(getLichessUsername());
+        setToken(getLichessToken());
+        setUsername(getLichessUsername());
       }
     };
-    window.addEventListener("storage", h);
-    return () => window.removeEventListener("storage", h);
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, []);
-  const [connectLoading, setConnectLoading] = useState(false);
+
   const handleConnectLichess = useCallback(async () => {
     setConnectLoading(true);
     try { await startLichessOAuth(); }
     catch { setConnectLoading(false); }
   }, []);
 
-  // ── Seek settings ────────────────────────────────────────────────────────
+  // ── Seek settings ─────────────────────────────────────────────────────────
   const [tcIdx,  setTcIdx]  = useState(1);
-  const [rated,  setRated]  = useState<"rated"|"casual">("rated");
-  const [color,  setColor]  = useState<"random"|"white"|"black">("random");
+  const [rated,  setRated]  = useState<SeekRated>("rated");
+  const [color,  setColor]  = useState<SeekColor>("random");
 
-  // ── Game state (minimal setState calls to avoid churn) ───────────────────
+  // ── Game state ────────────────────────────────────────────────────────────
   const [phase,        setPhase]       = useState<GamePhase>("idle");
-  const [gameId,       setGameId]      = useState<string|null>(null);
+  const [gameId,       setGameId]      = useState<string | null>(null);
   const [game,         setGame]        = useState(() => new Chess());
   const [fen,          setFen]         = useState(() => new Chess().fen());
-  const [myColor,      setMyColor]     = useState<"white"|"black">("white");
-  const [players,      setPlayers]     = useState<{ white: GamePlayer|null; black: GamePlayer|null }>({ white: null, black: null });
+  const [myColor,      setMyColor]     = useState<"white" | "black">("white");
+  const [players,      setPlayers]     = useState<{ white: GamePlayer | null; black: GamePlayer | null }>({ white: null, black: null });
   const [clock,        setClock]       = useState<LiveClock>({ white: 0, black: 0 });
-  const [activeClock,  setActiveClock] = useState<"white"|"black"|null>(null);
+  const [activeClock,  setActiveClock] = useState<"white" | "black" | null>(null);
   const [result,       setResult]      = useState("");
   const [uciMoves,     setUciMoves]    = useState<string[]>([]);
   const [sanMoves,     setSanMoves]    = useState<string[]>([]);
-  const [lastMove,     setLastMove]    = useState<{ from: string; to: string }|null>(null);
-  const [drawPending,  setDrawPending] = useState<"none"|"iOffered"|"theyOffered">("none");
-  const [viewingMove,  setViewingMove] = useState<number|null>(null);
-  const [viewFen,      setViewFen]     = useState<string|null>(null);
+  const [lastMove,     setLastMove]    = useState<{ from: string; to: string } | null>(null);
+  const [drawPending,  setDrawPending] = useState<DrawPendingState>("none");
+  const [viewingMove,  setViewingMove] = useState<number | null>(null);
+  const [viewFen,      setViewFen]     = useState<string | null>(null);
   const [oppGone,      setOppGone]     = useState(false);
-  const [claimInSecs,  setClaimInSecs] = useState<number|null>(null);
+  const [claimInSecs,  setClaimInSecs] = useState<number | null>(null);
   const [error,        setError]       = useState("");
   const [connected,    setConnected]   = useState(false);
   const [drawerOpen,   setDrawerOpen]  = useState(false);
   const [settingsOpen, setSettingsOpen]= useState(false);
   const [finalPgn,     setFinalPgn]    = useState("");
 
-  // ── Click-to-move ────────────────────────────────────────────────────────
-  const [selectedSq,   setSelectedSq]  = useState<string|null>(null);
+  // Click-to-move selection
+  const [selectedSq,   setSelectedSq]  = useState<string | null>(null);
   const [legalTargets, setLegalTargets]= useState<string[]>([]);
 
-  // ── Session storage for game page handoff ─────────────────────────────────
+  // ── Session storage handoff to game review page ───────────────────────────
   const [, setReviewPgn]   = useSessionStorage("agine_game_page_pgn", "");
   const [, setReviewMoves] = useSessionStorage<string[]>("agine_game_moves", []);
-  const [, setReviewInfo]  = useSessionStorage<Record<string,string>>("agine_game_info", {});
+  const [, setReviewInfo]  = useSessionStorage<Record<string, string>>("agine_game_info", {});
 
   // ── Stream abort controllers ──────────────────────────────────────────────
-  const seekRef    = useRef<AbortController|null>(null);
-  const eventRef   = useRef<AbortController|null>(null);
-  const gameRef    = useRef<AbortController|null>(null);
-  const myColorRef = useRef(myColor);
-  useEffect(() => { myColorRef.current = myColor; }, [myColor]);
-  // Stable ref to uciMoves so goToMove doesn't go stale
+  const seekRef  = useRef<AbortController | null>(null);
+  const eventRef = useRef<AbortController | null>(null);
+  const gameRef  = useRef<AbortController | null>(null);
+
+  // Stable refs so callbacks never capture stale values
+  const myColorRef  = useRef(myColor);
   const uciMovesRef = useRef(uciMoves);
+  useEffect(() => { myColorRef.current  = myColor;  }, [myColor]);
   useEffect(() => { uciMovesRef.current = uciMoves; }, [uciMoves]);
 
-  // ── Navigation guard: register/unregister as game starts/ends ────────────
+  // ── Register / unregister navigation guard as game phase changes ──────────
   useEffect(() => {
     if (phase === "playing") {
       registerGuard();
     } else {
       unregisterGuard();
     }
-    return () => { unregisterGuard(); }; // cleanup on unmount
+    return () => { unregisterGuard(); };
   }, [phase, registerGuard, unregisterGuard]);
 
-  // ── beforeunload: warn on browser tab close / refresh during game ─────────
+  // ── Browser tab close / refresh warning during game ───────────────────────
   useEffect(() => {
     if (phase !== "playing") return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = "You have a game in progress. If you leave, your game data will be lost. You can continue the game on Lichess.org.";
+      e.returnValue =
+        "You have a game in progress. If you leave, your game data will be lost. " +
+        "You can continue the game on Lichess.org.";
       return e.returnValue;
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [phase]);
 
-  // ── Execute pending navigation after user confirms ────────────────────────
+  /** Aborts all streams and navigates to the confirmed pending href. */
   const handleConfirmLeave = useCallback(() => {
     const href = pendingHref;
-    // Abort all streams before leaving
     gameRef.current?.abort();
     eventRef.current?.abort();
     seekRef.current?.abort();
@@ -402,72 +258,95 @@ export default function LichessPlayClient() {
     if (href) router.push(href);
   }, [pendingHref, confirmNavigation, router]);
 
-  // ── 100ms local clock — only updates clock state, nothing else ───────────
+  // ── 100ms local clock ticker ──────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing" || !activeClock) return;
     const id = setInterval(() => {
-      setClock(p => ({ ...p, [activeClock]: Math.max(0, p[activeClock] - 100) }));
+      setClock(prev => ({ ...prev, [activeClock]: Math.max(0, prev[activeClock] - 100) }));
     }, 100);
     return () => clearInterval(id);
   }, [phase, activeClock]);
 
-  // ── Custom pieces ─────────────────────────────────────────────────────────
-  const getCustomPieces = useCallback((ps: string): PieceRenderObject => {
-    const pcs = ["P","N","B","R","Q","K"], cols = ["w","b"];
-    const cp: PieceRenderObject = {};
+  // ── Custom piece renderer ─────────────────────────────────────────────────
+  const buildCustomPieces = useCallback((ps: string): PieceRenderObject => {
+    const pieces = ["P", "N", "B", "R", "Q", "K"];
+    const colors = ["w", "b"];
+    const result: PieceRenderObject = {};
     if (is3DSet(ps)) {
-      const h: Record<string,number> = { P:1,N:1.2,B:1.2,R:1.2,Q:1.5,K:1.6 };
-      cols.forEach(c => pcs.forEach(p => {
-        const k = `${c}${p}`;
-        cp[k] = () => {
-          const w = document.querySelector('[data-column="a"][data-row="1"]')?.getBoundingClientRect()?.width ?? 80;
-          return <div style={{ width:w, height:w, position:"relative", pointerEvents:"none" }}>
-            <img src={`/static/pieces/${ps}/${k}.png`} width={w} height={h[p]*w}
-              style={{ position:"absolute", bottom:`${0.2*w}px`, objectFit: p==="K"?"contain":"cover" }} alt={k} />
-          </div>;
+      const heightScale: Record<string, number> = { P: 1, N: 1.2, B: 1.2, R: 1.2, Q: 1.5, K: 1.6 };
+      colors.forEach(c => pieces.forEach(p => {
+        const key = `${c}${p}`;
+        result[key] = () => {
+          const w = document.querySelector('[data-column="a"][data-row="1"]')
+            ?.getBoundingClientRect()?.width ?? 80;
+          return (
+            <div style={{ width: w, height: w, position: "relative", pointerEvents: "none" }}>
+              <img
+                src={`/static/pieces/${ps}/${key}.png`}
+                width={w}
+                height={heightScale[p] * w}
+                style={{ position: "absolute", bottom: `${0.2 * w}px`, objectFit: p === "K" ? "contain" : "cover" }}
+                alt={key}
+              />
+            </div>
+          );
         };
       }));
     } else {
-      cols.forEach(c => pcs.forEach(p => {
-        const k = `${c}${p}`;
-        const src = ps.toLowerCase() === "cburnett" || !ps
-          ? `/static/pieces/Cburnett/${k}.svg`
-          : `/static/pieces/${ps}/${k}.png`;
-        cp[k] = () => <img src={src} style={{ width:"100%",height:"100%",display:"block" }} alt={k} />;
+      colors.forEach(c => pieces.forEach(p => {
+        const key = `${c}${p}`;
+        const src = !ps || ps.toLowerCase() === "cburnett"
+          ? `/static/pieces/Cburnett/${key}.svg`
+          : `/static/pieces/${ps}/${key}.png`;
+        result[key] = () => (
+          <img src={src} style={{ width: "100%", height: "100%", display: "block" }} alt={key} />
+        );
       }));
     }
-    return cp;
+    return result;
   }, []);
-  const customPieces = useMemo(() => getCustomPieces(pieceType), [pieceType, getCustomPieces]);
 
-  // ── Square styles ─────────────────────────────────────────────────────────
-  const displayFen = viewFen ?? fen;
-  const tc = getCurrentThemeColors(boardTheme);
+  const customPieces = useMemo(
+    () => buildCustomPieces(pieceType), [pieceType, buildCustomPieces]
+  );
+
+  // ── Square highlight styles ───────────────────────────────────────────────
+  const displayFen  = viewFen ?? fen;
+  const themeColors = getCurrentThemeColors(boardTheme);
 
   const squareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {};
-    // Last move: always use the universal yellow — visible on every board theme
+
+    // Last-move / review-move highlight (Lichess yellow — visible on all board themes)
     const hlMove = viewingMove !== null && viewingMove < uciMoves.length
-      ? { from: uciMoves[viewingMove].slice(0,2), to: uciMoves[viewingMove].slice(2,4) }
+      ? { from: uciMoves[viewingMove].slice(0, 2), to: uciMoves[viewingMove].slice(2, 4) }
       : lastMove;
     if (hlMove) {
       styles[hlMove.from] = { backgroundColor: LAST_MOVE_COLOR };
       styles[hlMove.to]   = { backgroundColor: LAST_MOVE_COLOR };
     }
+
     // Click-to-move highlights — only in live mode
     if (viewingMove === null) {
-      if (selectedSq) styles[selectedSq] = { backgroundColor: tc.selectedSquareColor };
+      if (selectedSq) {
+        styles[selectedSq] = { backgroundColor: themeColors.selectedSquareColor };
+      }
       legalTargets.forEach(sq => {
         const hasPiece = !!game.get(sq as Square);
         styles[sq] = hasPiece
-          ? { backgroundColor: tc.squareClickLegalColor, boxShadow: `inset 0 0 0 3px ${tc.darkSquareColor}` }
-          : { background: `radial-gradient(circle, ${tc.squareClickLegalColor} 28%, transparent 28%)` };
+          ? {
+              backgroundColor: themeColors.squareClickLegalColor,
+              boxShadow: `inset 0 0 0 3px ${themeColors.darkSquareColor}`,
+            }
+          : {
+              background: `radial-gradient(circle, ${themeColors.squareClickLegalColor} 28%, transparent 28%)`,
+            };
       });
     }
     return styles;
-  }, [lastMove, viewingMove, uciMoves, selectedSq, legalTargets, tc, game]);
+  }, [lastMove, viewingMove, uciMoves, selectedSq, legalTargets, themeColors, game]);
 
-  // ── Apply game state from stream ──────────────────────────────────────────
+  // ── Apply incoming game state from stream ─────────────────────────────────
   const applyGameState = useCallback((
     moves: string, wtime: number, btime: number,
     wdraw?: boolean, bdraw?: boolean,
@@ -475,71 +354,62 @@ export default function LichessPlayClient() {
     const uciArr = moves ? moves.split(" ").filter(Boolean) : [];
     const ng = new Chess();
     for (const m of uciArr) {
-      try { ng.move({ from: m.slice(0,2) as Square, to: m.slice(2,4) as Square, promotion: m[4] as ("q"|"r"|"b"|"n"|undefined) }); }
-      catch { break; }
+      try {
+        ng.move({
+          from: m.slice(0, 2) as Square,
+          to:   m.slice(2, 4) as Square,
+          promotion: m[4] as ("q" | "r" | "b" | "n" | undefined),
+        });
+      } catch { break; }
     }
     setGame(ng); setFen(ng.fen());
     setUciMoves(uciArr); setSanMoves(uciToSan(uciArr));
     setClock({ white: wtime, black: btime });
     setActiveClock(ng.turn() === "w" ? "white" : "black");
     setSelectedSq(null); setLegalTargets([]);
-    setViewingMove(null); setViewFen(null); // snap back to live on new move
+    setViewingMove(null); setViewFen(null); // snap back to live on any new move
     if (uciArr.length > 0) {
       const last = uciArr[uciArr.length - 1];
-      setLastMove({ from: last.slice(0,2), to: last.slice(2,4) });
+      setLastMove({ from: last.slice(0, 2), to: last.slice(2, 4) });
     }
+    // Draw offers detected from wdraw/bdraw fields (GameStateEvent schema)
     const myC = myColorRef.current;
     if      (myC === "white" && bdraw) setDrawPending("theyOffered");
     else if (myC === "black" && wdraw) setDrawPending("theyOffered");
     else if (myC === "white" && wdraw) setDrawPending("iOffered");
     else if (myC === "black" && bdraw) setDrawPending("iOffered");
-    else setDrawPending("none");
+    else                               setDrawPending("none");
   }, []);
 
   const handleGameEnd = useCallback((status: string, winner?: string) => {
-    setPhase("finished"); setActiveClock(null); setConnected(false);
-    setSelectedSq(null); setLegalTargets([]);
-    const w = winner === "white" ? "White" : "Black";
-    setResult(
-      status === "mate"                        ? `Checkmate! ${w} wins`
-      : status === "resign"                    ? `${w} wins by resignation`
-      : status === "outoftime"                 ? `${w} wins on time`
-      : status === "timeout"                   ? `${w} wins on timeout`
-      : status === "draw"                      ? "Draw"
-      : status === "stalemate"                 ? "Stalemate — Draw"
-      : status === "insufficientMaterialClaim" ? "Draw — Insufficient material"
-      : status === "aborted"                   ? "Game aborted"
-      : status === "noStart"                   ? "Game cancelled — no moves made"
-      : status === "cheat"                     ? "Game ended — cheat detected"
-      : `Game over (${status})`
-    );
+    setPhase("finished");
+    setActiveClock(null);
+    setConnected(false);
+    setSelectedSq(null);
+    setLegalTargets([]);
+    setResult(statusToResultMessage(status, winner));
   }, []);
 
-  // ── Streams ───────────────────────────────────────────────────────────────
-  const streamGame = useCallback(async (t: string, gid: string) => {
+  // ── Board API game stream ─────────────────────────────────────────────────
+  const startGameStream = useCallback(async (t: string, gid: string) => {
     const ctrl = new AbortController();
     gameRef.current = ctrl;
     try {
-      const res = await fetch(`${LICHESS}/api/board/game/stream/${gid}`, {
-        headers: { Authorization: `Bearer ${t}` }, signal: ctrl.signal,
-      });
-      if (!res.ok) { setError(`Game stream error: ${res.status}`); return; }
-      for await (const ev of streamNdJson(res)) {
+      for await (const ev of streamBoardGame(t, gid, ctrl.signal)) {
         if (ctrl.signal.aborted) break;
         if (ev.type === "gameFull") {
-          const gf = ev as { type: "gameFull"; white: GamePlayer; black: GamePlayer;
-            state: { moves: string; wtime: number; btime: number; status: string; winner?: string; wdraw?: boolean; bdraw?: boolean }; };
+          const gf = ev as unknown as GameFullEvent;
           setPlayers({ white: gf.white ?? null, black: gf.black ?? null });
           if (gf.state) {
             applyGameState(gf.state.moves, gf.state.wtime, gf.state.btime, gf.state.wdraw, gf.state.bdraw);
-            if (TERMINAL.has(gf.state.status)) handleGameEnd(gf.state.status, gf.state.winner);
+            if (TERMINAL_STATUSES.has(gf.state.status)) handleGameEnd(gf.state.status, gf.state.winner);
           }
         } else if (ev.type === "gameState") {
-          const gs = ev as { type: "gameState"; moves: string; wtime: number; btime: number; status: string; winner?: string; wdraw?: boolean; bdraw?: boolean };
+          const gs = ev as unknown as GameStateEvent;
           applyGameState(gs.moves, gs.wtime, gs.btime, gs.wdraw, gs.bdraw);
-          if (TERMINAL.has(gs.status)) handleGameEnd(gs.status, gs.winner);
+          if (TERMINAL_STATUSES.has(gs.status)) handleGameEnd(gs.status, gs.winner);
         } else if (ev.type === "opponentGone") {
-          const og = ev as { gone: boolean; claimWinInSeconds?: number };
+          const og = ev as unknown as OpponentGoneEvent;
           setOppGone(og.gone);
           setClaimInSecs(og.gone && og.claimWinInSeconds != null ? og.claimWinInSeconds : null);
         }
@@ -549,242 +419,243 @@ export default function LichessPlayClient() {
     }
   }, [applyGameState, handleGameEnd]);
 
-  const streamEvents = useCallback(async (t: string) => {
+  // ── Lichess event stream (catches gameStart) ──────────────────────────────
+  const startEventStream = useCallback(async (t: string) => {
     const ctrl = new AbortController();
     eventRef.current = ctrl;
     setConnected(true);
     try {
-      const res = await fetch(`${LICHESS}/api/stream/event`, {
-        headers: { Authorization: `Bearer ${t}` }, signal: ctrl.signal,
-      });
-      if (!res.ok) { setError(`Event stream error: ${res.status}`); setConnected(false); return; }
-      for await (const ev of streamNdJson(res)) {
+      for await (const ev of streamEventStream(t, ctrl.signal)) {
         if (ctrl.signal.aborted) break;
         if (ev.type === "gameStart") {
-          const g = (ev as { type: "gameStart"; game: { gameId: string; color: "white"|"black"; compat?: { board?: boolean } } }).game;
+          const { game: g } = ev as unknown as GameStartEvent;
           if (g.compat && g.compat.board === false) continue;
-          const side: "white"|"black" = g.color === "black" ? "black" : "white";
-          setMyColor(side); myColorRef.current = side;
-          setGameId(g.gameId); setPhase("playing");
+          const side: "white" | "black" = g.color === "black" ? "black" : "white";
+          setMyColor(side);
+          myColorRef.current = side;
+          setGameId(g.gameId);
+          setPhase("playing");
           seekRef.current?.abort();
-          streamGame(t, g.gameId);
+          startGameStream(t, g.gameId);
         }
       }
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) setConnected(false);
     }
-  }, [streamGame]);
+  }, [startGameStream]);
 
   // ── Seek ──────────────────────────────────────────────────────────────────
-  const seekGame = useCallback(async () => {
+  const handleSeek = useCallback(async () => {
     if (!token) return;
-    setError(""); setResult(""); setFinalPgn(""); setOppGone(false); setClaimInSecs(null);
+    setError(""); setResult(""); setFinalPgn("");
+    setOppGone(false); setClaimInSecs(null);
     setPhase("seeking");
-    streamEvents(token);
+    startEventStream(token); // open event stream FIRST so gameStart is never missed
     const ctrl = new AbortController();
     seekRef.current = ctrl;
-    const tc = SEEK_TIME_CONTROLS[tcIdx];
     try {
-      const body = new URLSearchParams({
-        rated: String(rated === "rated"), time: String(tc.time),
-        increment: String(tc.increment), variant: "standard", color,
-      });
-      const res = await fetch(`${LICHESS}/api/board/seek`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
-        body, signal: ctrl.signal,
-      });
-      if (!res.ok && !ctrl.signal.aborted) {
-        const txt = await res.text().catch(() => res.statusText);
-        setError(`Seek failed (${res.status}): ${txt}`);
-        setPhase("idle"); return;
-      }
-      if (res.body) {
-        const reader = res.body.getReader();
-        try { while (true) { const { done } = await reader.read(); if (done || ctrl.signal.aborted) break; } }
-        catch { /* aborted = seek accepted or cancelled */ }
-      }
+      await postSeek(token, SEEK_TIME_CONTROLS[tcIdx], rated, color, ctrl.signal);
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) {
-        setError("Seek failed or cancelled"); setPhase("idle");
+        setError((e as Error).message);
+        setPhase("idle");
       }
     }
-  }, [token, tcIdx, rated, color, streamEvents]);
+  }, [token, tcIdx, rated, color, startEventStream]);
 
-  const cancelSeek = useCallback(() => {
-    seekRef.current?.abort(); eventRef.current?.abort();
-    setPhase("idle"); setConnected(false);
+  const handleCancelSeek = useCallback(() => {
+    seekRef.current?.abort();
+    eventRef.current?.abort();
+    setPhase("idle");
+    setConnected(false);
   }, []);
 
-  // ── Move helpers ──────────────────────────────────────────────────────────
-  const sendMove = useCallback(async (uci: string) => {
-    if (!gameId || !token) return;
-    const res = await fetch(`${LICHESS}/api/board/game/${gameId}/move/${uci}`, {
-      method: "POST", headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => null);
-    if (res && !res.ok) setError(`Move rejected: ${await res.text().catch(() => "")}`);
-  }, [gameId, token]);
+  // ── Move execution ────────────────────────────────────────────────────────
 
-  const isMyTurn = useCallback(() => {
-    if (phase !== "playing" || viewingMove !== null) return false;
-    const t = game.turn();
-    return (myColor === "white" && t === "w") || (myColor === "black" && t === "b");
-  }, [phase, game, myColor, viewingMove]);
-
-  const executeMove = useCallback((from: Square, to: Square) => {
+  /** Validates and optimistically applies a move; sends it to Lichess. */
+  const executeMove = useCallback((from: Square, to: Square): boolean => {
     const piece = game.get(from);
     let uci = `${from}${to}`;
-    if (piece?.type === "p" && ((myColor === "white" && to[1] === "8") || (myColor === "black" && to[1] === "1"))) uci += "q";
+    if (piece?.type === "p" && (
+      (myColor === "white" && to[1] === "8") ||
+      (myColor === "black" && to[1] === "1")
+    )) uci += "q";
+
     const ng = new Chess(); ng.loadPgn(game.pgn());
     const mv = ng.move({ from, to, promotion: "q" });
     if (!mv) return false;
+
     setGame(ng); setFen(ng.fen()); setLastMove({ from, to });
     setSelectedSq(null); setLegalTargets([]);
-    sendMove(uci);
+
+    if (gameId && token) {
+      postMove(token, gameId, uci).catch(err => setError((err as Error).message));
+    }
     return true;
-  }, [game, myColor, sendMove]);
+  }, [game, myColor, gameId, token]);
+
+  const isMyTurn = useCallback((): boolean => {
+    if (phase !== "playing" || viewingMove !== null) return false;
+    const turn = game.turn();
+    return (myColor === "white" && turn === "w") || (myColor === "black" && turn === "b");
+  }, [phase, game, myColor, viewingMove]);
 
   const onSquareClick = useCallback(({ square }: SquareHandlerArgs) => {
     if (!isMyTurn()) return;
-    const sq = square as Square;
-    const piece = game.get(sq);
+    const sq     = square as Square;
+    const piece  = game.get(sq);
     const myChar = myColor === "white" ? "w" : "b";
     if (selectedSq) {
       if (legalTargets.includes(square)) { executeMove(selectedSq as Square, sq); return; }
       if (piece?.color === myChar) {
-        setSelectedSq(square); setLegalTargets(game.moves({ square: sq, verbose: true }).map(m => m.to)); return;
+        setSelectedSq(square);
+        setLegalTargets(game.moves({ square: sq, verbose: true }).map(m => m.to));
+        return;
       }
-      setSelectedSq(null); setLegalTargets([]); return;
+      setSelectedSq(null); setLegalTargets([]);
+      return;
     }
     if (piece?.color === myChar) {
-      setSelectedSq(square); setLegalTargets(game.moves({ square: sq, verbose: true }).map(m => m.to));
+      setSelectedSq(square);
+      setLegalTargets(game.moves({ square: sq, verbose: true }).map(m => m.to));
     }
   }, [isMyTurn, selectedSq, legalTargets, game, myColor, executeMove]);
 
   const onDrop = useCallback(({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
     if (!isMyTurn() || !sourceSquare || !targetSquare) return false;
-    const from = sourceSquare as Square, to = targetSquare as Square;
-    const piece = game.get(from);
+    const piece = game.get(sourceSquare as Square);
     if (!piece || piece.color !== (myColor === "white" ? "w" : "b")) return false;
-    return executeMove(from, to);
+    return executeMove(sourceSquare as Square, targetSquare as Square);
   }, [isMyTurn, game, myColor, executeMove]);
 
-  // ── Move navigation — uses ref so MoveList clicks are never stale ─────────
+  // ── Move list navigation ──────────────────────────────────────────────────
+
+  /**
+   * Navigates the board to a historical position.
+   * Reads uciMovesRef (stable) so this callback never goes stale.
+   */
   const goToMove = useCallback((moveIdx: number) => {
     const moves = uciMovesRef.current;
-    if (moveIdx < 0 || moves.length === 0) { setViewingMove(null); setViewFen(null); return; }
-    if (moveIdx >= moves.length) { setViewingMove(null); setViewFen(null); return; }
+    if (!moves.length || moveIdx < 0 || moveIdx >= moves.length) {
+      setViewingMove(null); setViewFen(null);
+      return;
+    }
     setViewingMove(moveIdx);
     setViewFen(fenAfterMoves(moves, moveIdx + 1));
     setSelectedSq(null); setLegalTargets([]);
-  }, []); // stable — reads uciMovesRef
+  }, []); // intentionally empty — reads ref
 
   const returnToLive = useCallback(() => {
-    setViewingMove(null); setViewFen(null); setSelectedSq(null); setLegalTargets([]);
+    setViewingMove(null); setViewFen(null);
+    setSelectedSq(null); setLegalTargets([]);
   }, []);
 
   // ── Game actions ──────────────────────────────────────────────────────────
-  const lichessPost = useCallback((path: string) =>
-    fetch(`${LICHESS}${path}`, { method:"POST", headers:{ Authorization:`Bearer ${token}` } }).catch(() => null)
-  , [token]);
-  const resign      = useCallback(() => { if (gameId) lichessPost(`/api/board/game/${gameId}/resign`); }, [gameId, lichessPost]);
-  const abortGame   = useCallback(() => { if (gameId) lichessPost(`/api/board/game/${gameId}/abort`); }, [gameId, lichessPost]);
-  const offerDraw   = useCallback(() => { if (gameId) lichessPost(`/api/board/game/${gameId}/draw/yes`).then(() => setDrawPending("iOffered")); }, [gameId, lichessPost]);
-  const acceptDraw  = useCallback(() => { if (gameId) lichessPost(`/api/board/game/${gameId}/draw/yes`).then(() => setDrawPending("iOffered")); }, [gameId, lichessPost]);
-  const declineDraw = useCallback(() => { if (gameId) lichessPost(`/api/board/game/${gameId}/draw/no`).then(() => setDrawPending("none")); }, [gameId, lichessPost]);
+
+  const handleResign = useCallback(() => {
+    if (gameId && token) postResign(token, gameId).catch(() => {});
+  }, [gameId, token]);
+
+  const handleAbort = useCallback(() => {
+    if (gameId && token) postAbort(token, gameId).catch(() => {});
+  }, [gameId, token]);
+
+  const handleOfferDraw = useCallback(() => {
+    if (!gameId || !token) return;
+    postDrawOffer(token, gameId).then(() => setDrawPending("iOffered")).catch(() => {});
+  }, [gameId, token]);
+
+  const handleAcceptDraw = useCallback(() => {
+    if (!gameId || !token) return;
+    postDrawOffer(token, gameId).then(() => setDrawPending("iOffered")).catch(() => {});
+  }, [gameId, token]);
+
+  const handleDeclineDraw = useCallback(() => {
+    if (!gameId || !token) return;
+    postDrawDecline(token, gameId).then(() => setDrawPending("none")).catch(() => {});
+  }, [gameId, token]);
 
   // ── PGN + review ──────────────────────────────────────────────────────────
-  const buildPgn = useCallback(() => {
-    if (!sanMoves.length) return "";
-    const tc = SEEK_TIME_CONTROLS[tcIdx];
-    const chess = new Chess();
-    for (const m of uciMoves) {
-      try { chess.move({ from: m.slice(0,2) as Square, to: m.slice(2,4) as Square, promotion: m[4] as ("q"|"r"|"b"|"n"|undefined) }); }
-      catch { break; }
-    }
-    chess.setHeader("White",       players.white?.name ?? "?");
-    chess.setHeader("Black",       players.black?.name ?? "?");
-    chess.setHeader("WhiteElo",    players.white?.rating != null ? String(players.white.rating) : "?");
-    chess.setHeader("BlackElo",    players.black?.rating != null ? String(players.black.rating) : "?");
-    chess.setHeader("Event",       rated === "rated" ? "Rated game" : "Casual game");
-    chess.setHeader("TimeControl", `${tc.time * 60}+${tc.increment}`);
-    chess.setHeader("Site",        `https://lichess.org/${gameId ?? ""}`);
-    chess.setHeader("Date",        new Date().toISOString().split("T")[0]);
-    if (result) chess.setHeader("Result", result.includes("White wins") ? "1-0" : result.includes("Black wins") ? "0-1" : "1/2-1/2");
-    return chess.pgn();
-  }, [sanMoves, uciMoves, tcIdx, players, rated, gameId, result]);
 
-  const reviewGame = useCallback(() => {
-    const pgn = finalPgn || buildPgn();
+  const getPgnOptions = useCallback(() => ({
+    uciMoves, players, tc: SEEK_TIME_CONTROLS[tcIdx], rated, gameId, result,
+  }), [uciMoves, players, tcIdx, rated, gameId, result]);
+
+  const handleReviewGame = useCallback(() => {
+    const opts = getPgnOptions();
+    const pgn  = finalPgn || buildGamePgn(opts);
     if (!pgn) return;
-    const tc = SEEK_TIME_CONTROLS[tcIdx];
-    const info: Record<string,string> = {
-      White: players.white?.name ?? "?", Black: players.black?.name ?? "?",
-      WhiteElo: players.white?.rating != null ? String(players.white.rating) : "?",
-      BlackElo: players.black?.rating != null ? String(players.black.rating) : "?",
-      Event: rated === "rated" ? "Rated game" : "Casual game",
-      Site: `https://lichess.org/${gameId ?? ""}`,
-      Date: new Date().toISOString().split("T")[0],
-      TimeControl: `${tc.time * 60}+${tc.increment}`,
-      ...(result ? { Result: result.includes("White wins") ? "1-0" : result.includes("Black wins") ? "0-1" : "1/2-1/2" } : {}),
-    };
-    setReviewPgn(pgn); setReviewMoves(sanMoves); setReviewInfo(info);
+    setReviewPgn(pgn);
+    setReviewMoves(sanMoves);
+    setReviewInfo(buildGameInfo(opts));
     router.push("/game");
-  }, [finalPgn, buildPgn, players, rated, gameId, result, tcIdx, sanMoves, setReviewPgn, setReviewMoves, setReviewInfo, router]);
+  }, [finalPgn, getPgnOptions, sanMoves, setReviewPgn, setReviewMoves, setReviewInfo, router]);
 
+  // Persist PGN when game ends so the Review button has data immediately
   useEffect(() => {
-    if (phase === "finished" && sanMoves.length > 0) setFinalPgn(buildPgn());
-  }, [phase]); // eslint-disable-line
+    if (phase === "finished" && sanMoves.length > 0) {
+      setFinalPgn(buildGamePgn(getPgnOptions()));
+    }
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const resetForNew = useCallback(() => {
+  const handleReset = useCallback(() => {
     gameRef.current?.abort(); eventRef.current?.abort(); seekRef.current?.abort();
-    setPhase("idle"); setGameId(null); setGame(new Chess()); setFen(new Chess().fen());
-    setPlayers({ white: null, black: null }); setClock({ white: 0, black: 0 }); setActiveClock(null);
+    setPhase("idle"); setGameId(null);
+    setGame(new Chess()); setFen(new Chess().fen());
+    setPlayers({ white: null, black: null });
+    setClock({ white: 0, black: 0 }); setActiveClock(null);
     setResult(""); setUciMoves([]); setSanMoves([]); setLastMove(null);
     setDrawPending("none"); setError(""); setConnected(false);
     setSelectedSq(null); setLegalTargets([]); setFinalPgn("");
     setViewingMove(null); setViewFen(null); setOppGone(false); setClaimInSecs(null);
   }, []);
 
-  // ── Derived (stable — only recompute when inputs change) ──────────────────
-  const oppSide  = myColor === "white" ? "black" : "white";
-  const boardPx  = Math.min(boardSize, isMobile ? (typeof window !== "undefined" ? window.innerWidth - 32 : 380) : 600);
-  const inReview = viewingMove !== null;
+  // ── Derived values ────────────────────────────────────────────────────────
 
-  // Memoize player props so PlayerRow only re-renders when needed
+  const oppSide    = myColor === "white" ? "black" : "white";
+  const boardPx    = Math.min(
+    boardSize,
+    isMobile ? (typeof window !== "undefined" ? window.innerWidth - 32 : 380) : 600
+  );
+  const inReview   = viewingMove !== null;
   const oppClockMs = myColor === "white" ? clock.black : clock.white;
   const myClockMs  = myColor === "white" ? clock.white : clock.black;
-  const oppActive  = activeClock === oppSide && phase === "playing" && !inReview;
-  const myActive   = activeClock === myColor && phase === "playing" && !inReview;
+  const oppActive  = activeClock === oppSide  && phase === "playing" && !inReview;
+  const myActive   = activeClock === myColor  && phase === "playing" && !inReview;
 
-  // ─── Control panel (inline JSX, not a component — avoids stale re-definition)
+  // ── Control panel ─────────────────────────────────────────────────────────
+  // Kept as inline JSX (not extracted to a component) so it shares the parent
+  // closure without introducing stale-closure issues from memo + prop drilling.
   const controlPanelContent = (
     <Stack spacing={2.5} sx={{ pb: 2 }}>
-      {/* Status row — single indicator, settings toggle */}
+
+      {/* Status indicator + settings toggle */}
       <Stack direction="row" spacing={1} alignItems="center">
         {phase === "playing" && gameId ? (
-          <Chip
-            label="LIVE"
-            size="small"
-            color="error"
-            icon={<LiveIcon sx={{ fontSize:"14px !important" }} />}
-            sx={{ fontWeight: 700 }}
-          />
+          <Chip label="LIVE" size="small" color="error"
+            icon={<LiveIcon sx={{ fontSize: "14px !important" }} />}
+            sx={{ fontWeight: 700 }} />
         ) : connected ? (
           <Chip label="Connected" size="small" color="success" variant="outlined"
-            icon={<LiveIcon sx={{ fontSize:"12px !important" }} />} />
+            icon={<LiveIcon sx={{ fontSize: "12px !important" }} />} />
         ) : null}
         <Box sx={{ flex: 1 }} />
-        <IconButton size="small" onClick={() => setSettingsOpen(p => !p)} color={settingsOpen ? "primary" : "default"}
-          title="Board settings">
+        <IconButton size="small" title="Board appearance settings"
+          onClick={() => setSettingsOpen(p => !p)}
+          color={settingsOpen ? "primary" : "default"}>
           <TuneIcon fontSize="small" />
         </IconButton>
       </Stack>
 
-      <SettingsPanel open={settingsOpen} boardTheme={boardTheme} pieceType={pieceType}
-        onSetTheme={setThemeSetting} onSetPiece={setPieceSetting} />
+      <LichessBoardSettings
+        open={settingsOpen}
+        boardTheme={boardTheme}
+        pieceType={pieceType}
+        onSetTheme={setThemeSetting}
+        onSetPiece={setPieceSetting}
+      />
 
-      {/* Lichess account — connect or reconnect, available to ALL users */}
+      {/* Lichess account row */}
       {!token ? (
         <Card variant="outlined" sx={{ borderRadius: 2 }}>
           <CardContent sx={{ py: 2, px: 2, "&:last-child": { pb: 2 } }}>
@@ -795,14 +666,13 @@ export default function LichessPlayClient() {
               <Stack spacing={1} flex={1}>
                 <Typography variant="body2" fontWeight={600}>Connect your Lichess account</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                  Link your free Lichess account to play rated &amp; casual games here in ChessAgine. Your token is stored locally — ChessAgine never stores credentials on a server.
+                  Link your free Lichess account to play rated &amp; casual games here in ChessAgine.
+                  Your token is stored locally — ChessAgine never stores credentials on a server.
                 </Typography>
-                <Button
-                  size="small" variant="contained" color="primary"
+                <Button size="small" variant="contained" color="primary"
                   startIcon={connectLoading ? <CircularProgress size={13} color="inherit" /> : <LinkIcon fontSize="small" />}
                   onClick={handleConnectLichess} disabled={connectLoading}
-                  sx={{ textTransform: "none", fontWeight: 600, alignSelf: "flex-start", mt: 0.5 }}
-                >
+                  sx={{ textTransform: "none", fontWeight: 600, alignSelf: "flex-start", mt: 0.5 }}>
                   {connectLoading ? "Redirecting to Lichess…" : "Connect Lichess"}
                 </Button>
               </Stack>
@@ -811,31 +681,20 @@ export default function LichessPlayClient() {
         </Card>
       ) : (
         <Stack direction="row" spacing={1} alignItems="center">
-          <Chip
-            label={username}
-            size="small"
-            color="success"
-            variant="outlined"
+          <Chip label={username} size="small" color="success" variant="outlined" clickable
             icon={<Box sx={{ display: "flex", alignItems: "center", pl: 0.5, color: "success.main" }}><LichessIcon size={14} /></Box>}
-            component="a"
-            href={`https://lichess.org/@/${username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            clickable
-            sx={{ fontWeight: 600 }}
-          />
-          <Button
-            size="small" variant="text" color="inherit"
+            component="a" href={`https://lichess.org/@/${username}`} target="_blank" rel="noopener noreferrer"
+            sx={{ fontWeight: 600 }} />
+          <Button size="small" variant="text" color="inherit"
             startIcon={connectLoading ? <CircularProgress size={13} color="inherit" /> : <ReconnectIcon fontSize="small" />}
             onClick={handleConnectLichess} disabled={connectLoading}
-            sx={{ textTransform: "none", fontSize: "0.72rem", opacity: 0.6, "&:hover": { opacity: 1 } }}
-          >
+            sx={{ textTransform: "none", fontSize: "0.72rem", opacity: 0.6, "&:hover": { opacity: 1 } }}>
             {connectLoading ? "Redirecting…" : "Reconnect"}
           </Button>
         </Stack>
       )}
 
-      {/* ── SEEK SETUP ── */}
+      {/* Seek setup (idle / finished) */}
       {(phase === "idle" || phase === "finished") && token && (
         <>
           {phase === "finished" && result && (
@@ -850,8 +709,8 @@ export default function LichessPlayClient() {
               {SEEK_TIME_CONTROLS.map((t, i) => <MenuItem key={i} value={i}>{t.label}</MenuItem>)}
             </Select>
           </FormControl>
-          <Alert severity="info" sx={{ fontSize:"0.75rem", py:0.5 }}>
-            ChessAgine Lichess Seek pool: <strong>Rapid & Classical only</strong>.
+          <Alert severity="info" sx={{ fontSize: "0.75rem", py: 0.5 }}>
+            Seek pool: <strong>Rapid &amp; Classical only</strong>. Bullet/Blitz require a direct challenge.
           </Alert>
           <Stack direction="row" spacing={1}>
             <Box flex={1}>
@@ -871,41 +730,43 @@ export default function LichessPlayClient() {
             </Box>
           </Stack>
           <Button variant="contained" fullWidth size="large" startIcon={<PlayIcon />}
-            onClick={seekGame} sx={{ borderRadius:2, fontWeight:700 }}>
+            onClick={handleSeek} sx={{ borderRadius: 2, fontWeight: 700 }}>
             {phase === "finished" ? "New Game" : "Find Game on Lichess"}
           </Button>
           {phase === "finished" && finalPgn && (
-            <Button variant="outlined" fullWidth startIcon={<ReviewIcon />} onClick={reviewGame}>Review This Game</Button>
+            <Button variant="outlined" fullWidth startIcon={<ReviewIcon />} onClick={handleReviewGame}>
+              Review This Game
+            </Button>
           )}
           {phase === "finished" && (
-            <Button variant="outlined" fullWidth startIcon={<RefreshIcon />} onClick={resetForNew}>Reset</Button>
+            <Button variant="outlined" fullWidth startIcon={<RefreshIcon />} onClick={handleReset}>Reset</Button>
           )}
         </>
       )}
 
-      {/* ── SEEKING ── */}
+      {/* Seeking */}
       {phase === "seeking" && (
-        <Card variant="outlined" sx={{ borderRadius:2 }}>
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
           <CardContent>
             <Stack spacing={2} alignItems="center" py={1}>
               <CircularProgress size={32} />
               <Typography variant="body2" color="text.secondary" textAlign="center">Looking for an opponent…</Typography>
               <Typography variant="caption" color="text.disabled">{SEEK_TIME_CONTROLS[tcIdx].label} · {rated}</Typography>
-              <Button variant="outlined" color="error" size="small" onClick={cancelSeek}>Cancel</Button>
+              <Button variant="outlined" color="error" size="small" onClick={handleCancelSeek}>Cancel</Button>
             </Stack>
           </CardContent>
         </Card>
       )}
 
-      {/* ── IN GAME ── */}
+      {/* In-game controls */}
       {phase === "playing" && gameId && (
         <>
           <Divider />
           {drawPending === "theyOffered" && (
             <Alert severity="info" action={
               <Stack direction="row" spacing={0.5}>
-                <Button size="small" color="success" onClick={acceptDraw}>Accept</Button>
-                <Button size="small" color="error" onClick={declineDraw}>Decline</Button>
+                <Button size="small" color="success" onClick={handleAcceptDraw}>Accept</Button>
+                <Button size="small" color="error"   onClick={handleDeclineDraw}>Decline</Button>
               </Stack>
             }>Opponent offers a draw</Alert>
           )}
@@ -916,15 +777,14 @@ export default function LichessPlayClient() {
           )}
           <Stack spacing={1}>
             {uciMoves.length < 2 && (
-              <Button variant="outlined" color="warning" fullWidth onClick={abortGame} size="small">Abort Game</Button>
+              <Button variant="outlined" color="warning" fullWidth size="small" onClick={handleAbort}>Abort Game</Button>
             )}
-            <Button variant="outlined" color="secondary" fullWidth startIcon={<DrawIcon />}
-              onClick={offerDraw} disabled={drawPending === "iOffered"} size="small">
+            <Button variant="outlined" color="secondary" fullWidth size="small"
+              startIcon={<DrawIcon />} onClick={handleOfferDraw} disabled={drawPending === "iOffered"}>
               {drawPending === "iOffered" ? "Draw Offered…" : "Offer Draw"}
             </Button>
-            <Button variant="contained" color="error" fullWidth startIcon={<ResignIcon />} onClick={resign} size="small">
-              Resign
-            </Button>
+            <Button variant="contained" color="error" fullWidth size="small"
+              startIcon={<ResignIcon />} onClick={handleResign}>Resign</Button>
           </Stack>
           <Divider />
           <Button variant="text" size="small" fullWidth endIcon={<OpenIcon fontSize="small" />}
@@ -934,10 +794,9 @@ export default function LichessPlayClient() {
         </>
       )}
 
-      {/* Move list — stable external component, receives stable callbacks */}
-      <MoveList
+      {/* Move list */}
+      <LichessMoveList
         sanMoves={sanMoves}
-        uciMoves={uciMoves}
         viewingMove={viewingMove}
         onGoToMove={goToMove}
         onReturnToLive={returnToLive}
@@ -945,11 +804,12 @@ export default function LichessPlayClient() {
     </Stack>
   );
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ p:{ xs:1, sm:2, md:4 }, minHeight:"100vh" }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 4 }, minHeight: "100vh" }}>
+
       <Stack direction="row" alignItems="center" spacing={1.5} mb={3} flexWrap="wrap">
-        <Box sx={{ color: "text.primary", display:"flex", alignItems:"center" }}>
+        <Box sx={{ color: "text.primary", display: "flex", alignItems: "center" }}>
           <LichessIcon size={26} />
         </Box>
         <Typography variant="h5" fontWeight={700}>Play on Lichess</Typography>
@@ -959,47 +819,53 @@ export default function LichessPlayClient() {
         )}
       </Stack>
 
-      {error && <Alert severity="error" sx={{ mb:2 }} onClose={() => setError("")}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>{error}</Alert>
+      )}
 
-      <Stack direction={{ xs:"column", lg:"row" }} spacing={{ xs:2, md:3 }}>
-        {/* ── Board ── */}
-        <Box sx={{ flex:"0 0 auto", display:"flex", flexDirection:"column", alignItems:{ xs:"center", lg:"flex-start" } }}>
-          <Box sx={{ width:boardPx, maxWidth:"100%", mb:1 }}>
-            <PlayerRow side={oppSide} player={players[oppSide]} clockMs={oppClockMs} isActive={oppActive} phase={phase} />
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={{ xs: 2, md: 3 }}>
+
+        {/* Board column */}
+        <Box sx={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: { xs: "center", lg: "flex-start" } }}>
+          <Box sx={{ width: boardPx, maxWidth: "100%", mb: 1 }}>
+            <LichessPlayerRow side={oppSide} player={players[oppSide]} clockMs={oppClockMs} isActive={oppActive} phase={phase} />
           </Box>
           <Box sx={{
-            width:boardPx, maxWidth:"100%", borderRadius:2, overflow:"hidden",
+            width: boardPx, maxWidth: "100%", borderRadius: 2, overflow: "hidden",
             boxShadow: phase === "playing" ? "0 0 0 3px #3a86ff44, 0 8px 32px rgba(0,0,0,0.3)" : "0 8px 32px rgba(0,0,0,0.12)",
-            transition:"box-shadow 0.3s",
+            transition: "box-shadow 0.3s",
           }}>
             <Chessboard options={{
-              position: displayFen,
-              boardOrientation: myColor,
-              onPieceDrop: onDrop,
-              onSquareClick: onSquareClick,
-              allowDragging: isMyTurn(),
-              squareStyles: squareStyles,
-              darkSquareStyle:  { backgroundColor: tc.darkSquareColor },
-              lightSquareStyle: { backgroundColor: tc.lightSquareColor },
-              pieces: customPieces,
+              position:            displayFen,
+              boardOrientation:    myColor,
+              onPieceDrop:         onDrop,
+              onSquareClick:       onSquareClick,
+              allowDragging:       isMyTurn(),
+              squareStyles:        squareStyles,
+              darkSquareStyle:     { backgroundColor: themeColors.darkSquareColor },
+              lightSquareStyle:    { backgroundColor: themeColors.lightSquareColor },
+              pieces:              customPieces,
               animationDurationInMs: animDuration,
-              showNotation: showCoords,
-              boardStyle: { width:boardPx, height:boardPx },
+              showNotation:        showCoords,
+              boardStyle:          { width: boardPx, height: boardPx },
             }} />
           </Box>
-          <Box sx={{ width:boardPx, maxWidth:"100%", mt:1 }}>
-            <PlayerRow side={myColor} player={players[myColor]} clockMs={myClockMs} isActive={myActive} phase={phase} />
+          <Box sx={{ width: boardPx, maxWidth: "100%", mt: 1 }}>
+            <LichessPlayerRow side={myColor} player={players[myColor]} clockMs={myClockMs} isActive={myActive} phase={phase} />
           </Box>
         </Box>
 
-        {/* ── Desktop panel ── */}
+        {/* Desktop control panel */}
         {!isMobile && (
-          <Box sx={{ flex:1, minWidth:0 }}>
-            <Card sx={{ borderRadius:3, boxShadow:"0 8px 32px rgba(138,43,226,0.08)",
-              height:{ lg:"calc(100vh - 140px)" }, maxHeight:{ lg:"calc(100vh - 140px)" }, overflow:"auto" }}>
-              <CardContent sx={{ p:3 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Card sx={{ borderRadius: 3, boxShadow: "0 8px 32px rgba(138,43,226,0.08)",
+              height: { lg: "calc(100vh - 140px)" }, maxHeight: { lg: "calc(100vh - 140px)" }, overflow: "auto" }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight={700} gutterBottom>
-                  {phase==="idle"&&"Game Setup"}{phase==="seeking"&&"Seeking…"}{phase==="playing"&&"In Game"}{phase==="finished"&&"Game Over"}
+                  {phase === "idle"     && "Game Setup"}
+                  {phase === "seeking"  && "Seeking…"}
+                  {phase === "playing"  && "In Game"}
+                  {phase === "finished" && "Game Over"}
                 </Typography>
                 {controlPanelContent}
               </CardContent>
@@ -1007,93 +873,33 @@ export default function LichessPlayClient() {
           </Box>
         )}
 
-        {/* ── Mobile ── */}
+        {/* Mobile FAB + drawer */}
         {isMobile && (
           <>
-            <Fab color="primary" onClick={() => setDrawerOpen(true)} sx={{ position:"fixed", bottom:24, right:24, zIndex:1000 }}>
+            <Fab color="primary" onClick={() => setDrawerOpen(true)}
+              sx={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}>
               <MenuIcon />
             </Fab>
             <Drawer anchor="bottom" open={drawerOpen} onClose={() => setDrawerOpen(false)}
-              sx={{ "& .MuiDrawer-paper": { height:"85vh", borderTopLeftRadius:16, borderTopRightRadius:16 } }}>
-              <Box sx={{ p:2, borderBottom:1, borderColor:"divider", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <Typography variant="h6" fontWeight={600}>{phase==="playing"?"In Game":"Game Setup"}</Typography>
+              sx={{ "& .MuiDrawer-paper": { height: "85vh", borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+              <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Typography variant="h6" fontWeight={600}>
+                  {phase === "playing" ? "In Game" : "Game Setup"}
+                </Typography>
                 <IconButton onClick={() => setDrawerOpen(false)} size="small"><CloseIcon /></IconButton>
               </Box>
-              <Box sx={{ flex:1, overflowY:"auto", p:2 }}>{controlPanelContent}</Box>
+              <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>{controlPanelContent}</Box>
             </Drawer>
           </>
         )}
       </Stack>
 
-      {/* ── Leave Game Confirmation Modal ── */}
-      <Dialog
+      {/* Leave-game confirmation modal */}
+      <LichessLeaveDialog
         open={!!pendingHref}
-        onClose={cancelNavigation}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <WarningIcon color="warning" />
-            <Typography variant="h6" fontWeight={700}>Leave game in progress?</Typography>
-          </Stack>
-        </DialogTitle>
-
-        <DialogContent>
-          <Stack spacing={2}>
-            <Typography variant="body1">
-              You have a live Lichess game in progress. If you navigate away now:
-            </Typography>
-            <Box
-              component="ul"
-              sx={{ m: 0, pl: 2.5, "& li": { mb: 0.75 } }}
-            >
-              <Typography component="li" variant="body2" color="text.secondary">
-                All current board state and move history in ChessAgine will be lost.
-              </Typography>
-              <Typography component="li" variant="body2" color="text.secondary">
-                Your clock will keep running on Lichess — time loss may result in a forfeit.
-              </Typography>
-              <Typography component="li" variant="body2" color="text.secondary">
-                To continue, go to your{" "}
-                <Box
-                  component="a"
-                  href="https://lichess.org"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ color: "primary.main", textDecoration: "underline" }}
-                >
-                  Lichess account
-                </Box>
-                {" "}and resume the game there.
-              </Typography>
-            </Box>
-            <Alert severity="warning" sx={{ fontSize: "0.85rem" }}>
-              <strong>Your clock is still running.</strong> Return to this page to keep playing, or resign on Lichess before leaving.
-            </Alert>
-          </Stack>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-          <Button
-            variant="contained"
-            onClick={cancelNavigation}
-            autoFocus
-            sx={{ fontWeight: 700 }}
-          >
-            Stay in Game
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={handleConfirmLeave}
-          >
-            Leave Anyway
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+        onCancel={cancelNavigation}
+        onConfirm={handleConfirmLeave}
+      />
     </Box>
   );
 }
