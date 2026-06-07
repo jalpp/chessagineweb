@@ -29,22 +29,34 @@ import {
 } from "react-icons/fa6";
 import { useClerk } from "@clerk/nextjs";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import { ChatBubble, GitHub, SmartToy, BarChart } from "@mui/icons-material";
+import { ChatBubble, GitHub, SmartToy } from "@mui/icons-material";
 import { useNavigation } from "@/context/NavigationContext";
+import { useLichessGuard } from "@/context/LichessGuardContext";
 
+// Lichess logo — served from local public assets
+const LichessNavIcon = () => (
+  <img
+    src="/static/images/lichess-logo.png"
+    alt="Lichess"
+    width={18}
+    height={18}
+    style={{ display: "block", imageRendering: "crisp-edges" }}
+  />
+);
 
-export const SIDEBAR_WIDTH = 64; 
+export const SIDEBAR_WIDTH = 64;
 
 const navLinks = [
-  { label: "Analyze Position", href: "/position",                             icon: <FaChessBoard size={18} />, isExternal: false },
-  { label: "Analyze Game",     href: "/game",                                 icon: <FaChessPawn  size={18} />, isExternal: false },
-  { label: "Play Bot",         href: "/play",                                 icon: <SmartToy sx={{ fontSize: 18 }} />,    isExternal: false },
-  { label: "Agine Chat",       href: "/chat",                                 icon: <ChatBubble sx={{ fontSize: 18 }} />,  isExternal: false },
-  { label: "Puzzles",          href: "/puzzle",                               icon: <FaPuzzlePiece size={18} />,           isExternal: false },
-  { label: "Settings",         href: "/setting",                              icon: <FaGear size={18} />,                  isExternal: false },
-  { label: "Docs",             href: "/docs",                                 icon: <FaBook size={18} />,                  isExternal: false },
-  { label: "GitHub",           href: "https://github.com/jalpp/chessagineweb", icon: <GitHub sx={{ fontSize: 18 }} />,    isExternal: true  },
-  { label: "Discord",          href: "https://discord.gg/bCPwe6XWcH",         icon: <FaDiscord size={18} />,              isExternal: true  },
+  { label: "Analyze Position", href: "/position",                              icon: <FaChessBoard size={18} />,   isExternal: false },
+  { label: "Analyze Game",     href: "/game",                                  icon: <FaChessPawn  size={18} />,   isExternal: false },
+  { label: "Play Bot",         href: "/play",                                  icon: <SmartToy sx={{ fontSize: 18 }} />, isExternal: false },
+  { label: "Play on Lichess",  href: "/lichess-play",                          icon: <LichessNavIcon />,           isExternal: false },
+  { label: "Agine Chat",       href: "/chat",                                  icon: <ChatBubble sx={{ fontSize: 18 }} />, isExternal: false },
+  { label: "Puzzles",          href: "/puzzle",                                icon: <FaPuzzlePiece size={18} />,  isExternal: false },
+  { label: "Settings",         href: "/setting",                               icon: <FaGear size={18} />,         isExternal: false },
+  { label: "Docs",             href: "/docs",                                  icon: <FaBook size={18} />,         isExternal: false },
+  { label: "GitHub",           href: "https://github.com/jalpp/chessagineweb", icon: <GitHub sx={{ fontSize: 18 }} />, isExternal: true },
+  { label: "Discord",          href: "https://discord.gg/bCPwe6XWcH",          icon: <FaDiscord size={18} />,     isExternal: true  },
 ];
 
 
@@ -176,14 +188,22 @@ function DesktopSideNav({
         <UserButton />
       </SignedIn>
       <SignedOut>
-       
         <Tooltip title="Sign In" placement="right" arrow>
-          <Typography
+          <Box
             onClick={() => openSignIn()}
-            sx={{ fontSize: "10px", color: "text.secondary", cursor: "pointer", textAlign: "center", px: 0.5 }}
+            sx={{
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 0.5,
+              color: "text.secondary",
+              "&:hover": { opacity: 0.75 },
+              transition: "opacity 0.15s",
+            }}
           >
-            Sign In
-          </Typography>
+            <Typography sx={{ fontSize: "9px", lineHeight: 1, color: "text.secondary" }}>Sign In</Typography>
+          </Box>
         </Tooltip>
       </SignedOut>
     </Box>
@@ -199,14 +219,16 @@ export default function SideNav() {
   const pathname = usePathname();
 
   const { startNavigation } = useNavigation();
+  const { requestNavigation } = useLichessGuard();
 
   const handleNavigation = (href: string, isExternal: boolean = false) => {
     if (isExternal) {
       window.open(href, "_blank", "noopener,noreferrer");
     } else {
-      // Don't trigger the loader if already on this page — usePageReady only
-      // fires on mount, so navigating to the current route would spin forever.
       if (pathname !== href) {
+        // Check if a Lichess game is in progress — guard returns false if blocked
+        const canProceed = requestNavigation(href);
+        if (!canProceed) return;
         startNavigation();
         router.push(href);
       }
