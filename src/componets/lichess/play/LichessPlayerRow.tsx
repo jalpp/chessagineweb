@@ -18,6 +18,8 @@ export interface LichessPlayerRowProps {
   clockMs:  number;
   isActive: boolean;
   phase:    GamePhase;
+  /** When true, hides the player rating for distraction-free play */
+  zenMode?: boolean;
 }
 
 /**
@@ -29,7 +31,7 @@ export interface LichessPlayerRowProps {
  * - Shows "???" while a game is in progress before player info arrives
  */
 const LichessPlayerRow = memo(
-  ({ side, player, clockMs, isActive, phase }: LichessPlayerRowProps) => {
+  ({ side, player, clockMs, isActive, phase, zenMode = false }: LichessPlayerRowProps) => {
     const isLowOnTime = clockMs < 30_000 && phase === "playing";
 
     return (
@@ -60,7 +62,7 @@ const LichessPlayerRow = memo(
             />
             <Typography variant="body2" fontWeight={600}>
               {player?.name ?? (phase === "playing" ? "???" : "—")}
-              {player?.rating != null && (
+              {!zenMode && player?.rating != null && (
                 <Typography
                   component="span"
                   variant="caption"

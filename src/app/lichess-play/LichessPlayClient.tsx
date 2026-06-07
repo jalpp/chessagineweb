@@ -38,6 +38,7 @@ import {
   SyncOutlined as ReconnectIcon,
   Tune as TuneIcon,
   WifiTethering as LiveIcon,
+  SelfImprovement as ZenIcon,
 } from "@mui/icons-material";
 import { Menu as MenuIcon } from "lucide-react";
 import { Chess, type Square } from "chess.js";
@@ -107,6 +108,9 @@ import LichessPlayerRow from "@/componets/lichess/play/LichessPlayerRow";
 import LichessMoveList from "@/componets/lichess/play/LichessMoveList";
 import LichessBoardSettings from "@/componets/lichess/play/LichessBoardSettings";
 import LichessLeaveDialog from "@/componets/lichess/play/LichessLeaveDialog";
+import LichessResignDialog from "@/componets/lichess/play/LichessResignDialog";
+import LichessDrawDialog from "@/componets/lichess/play/LichessDrawDialog";
+import LichessAbortDialog from "@/componets/lichess/play/LichessAbortDialog";
 
 // ─── Lichess logo ─────────────────────────────────────────────────────────────
 
@@ -203,6 +207,20 @@ export default function LichessPlayClient() {
   const [drawerOpen,   setDrawerOpen]  = useState(false);
   const [settingsOpen, setSettingsOpen]= useState(false);
   const [finalPgn,     setFinalPgn]    = useState("");
+  const [isAborted,    setIsAborted]   = useState(false);
+
+  // Zen mode — hides ratings and simplifies the seek setup UI
+  const [zenMode, setZenMode] = useState(false);
+
+  // Confirmation dialogs — prevent accidental resign/draw/abort
+  const [resignDialogOpen, setResignDialogOpen] = useState(false);
+  const [drawDialogOpen,   setDrawDialogOpen]   = useState(false);
+  const [drawIsAccepting,  setDrawIsAccepting]  = useState(false);
+  const [abortDialogOpen,  setAbortDialogOpen]  = useState(false);
+
+  // Board resize via drag — stores the user-chosen px size
+  const [boardPxOverride, setBoardPxOverride] = useState<number | null>(null);
+  const resizeDragRef = useRef<{ startX: number; startY: number; startSize: number } | null>(null);
 
   // Click-to-move selection
   const [selectedSq,   setSelectedSq]  = useState<string | null>(null);
@@ -387,7 +405,35 @@ export default function LichessPlayClient() {
     setConnected(false);
     setSelectedSq(null);
     setLegalTargets([]);
+    setIsAborted(status === "aborted" || status === "noStart");
     setResult(statusToResultMessage(status, winner));
+  }, []);
+
+  // ── Board resize via drag on bottom-right corner ──────────────────────────
+
+  /** Starts tracking a board resize drag from the corner handle. */
+  const onResizeDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const currentSize = boardPxOverride ?? Math.min(
+      boardSize,
+      isMobile ? (typeof window !== "undefined" ? window.innerWidth - 32 : 380) : 600
+    );
+    resizeDragRef.current = { startX: e.clientX, startY: e.clientY, startSize: currentSize };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [boardPxOverride, boardSize, isMobile]);
+
+  const onResizeDragMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeDragRef.current) return;
+    const { startX, startY, startSize } = resizeDragRef.current;
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+    const delta  = (Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY);
+    const newSize = Math.max(240, Math.min(800, startSize + delta));
+    setBoardPxOverride(newSize);
+  }, []);
+
+  const onResizeDragEnd = useCallback(() => {
+    resizeDragRef.current = null;
   }, []);
 
   // ── Board API game stream ─────────────────────────────────────────────────
@@ -552,20 +598,30 @@ export default function LichessPlayClient() {
 
   // ── Game actions ──────────────────────────────────────────────────────────
 
+  // ── Game actions — open confirm dialogs instead of acting directly ────────
+
+  const handleResignClick  = useCallback(() => setResignDialogOpen(true),  []);
+  const handleAbortClick   = useCallback(() => setAbortDialogOpen(true),   []);
+
+  /** Open draw dialog: accepting = true when opponent offered, false when we're offering */
+  const handleOfferDrawClick  = useCallback(() => { setDrawIsAccepting(false); setDrawDialogOpen(true); }, []);
+  const handleAcceptDrawClick = useCallback(() => { setDrawIsAccepting(true);  setDrawDialogOpen(true); }, []);
+
+  /** Confirmed resign */
   const handleResign = useCallback(() => {
+    setResignDialogOpen(false);
     if (gameId && token) postResign(token, gameId).catch(() => {});
   }, [gameId, token]);
 
+  /** Confirmed abort */
   const handleAbort = useCallback(() => {
+    setAbortDialogOpen(false);
     if (gameId && token) postAbort(token, gameId).catch(() => {});
   }, [gameId, token]);
 
-  const handleOfferDraw = useCallback(() => {
-    if (!gameId || !token) return;
-    postDrawOffer(token, gameId).then(() => setDrawPending("iOffered")).catch(() => {});
-  }, [gameId, token]);
-
-  const handleAcceptDraw = useCallback(() => {
+  /** Confirmed draw offer or acceptance */
+  const handleDrawConfirm = useCallback(() => {
+    setDrawDialogOpen(false);
     if (!gameId || !token) return;
     postDrawOffer(token, gameId).then(() => setDrawPending("iOffered")).catch(() => {});
   }, [gameId, token]);
@@ -608,12 +664,13 @@ export default function LichessPlayClient() {
     setDrawPending("none"); setError(""); setConnected(false);
     setSelectedSq(null); setLegalTargets([]); setFinalPgn("");
     setViewingMove(null); setViewFen(null); setOppGone(false); setClaimInSecs(null);
+    setIsAborted(false);
   }, []);
 
   // ── Derived values ────────────────────────────────────────────────────────
 
   const oppSide    = myColor === "white" ? "black" : "white";
-  const boardPx    = Math.min(
+  const boardPx    = boardPxOverride ?? Math.min(
     boardSize,
     isMobile ? (typeof window !== "undefined" ? window.innerWidth - 32 : 380) : 600
   );
@@ -629,7 +686,7 @@ export default function LichessPlayClient() {
   const controlPanelContent = (
     <Stack spacing={2.5} sx={{ pb: 2 }}>
 
-      {/* Status indicator + settings toggle */}
+      {/* Status indicator + settings + zen toggles */}
       <Stack direction="row" spacing={1} alignItems="center">
         {phase === "playing" && gameId ? (
           <Chip label="LIVE" size="small" color="error"
@@ -640,6 +697,14 @@ export default function LichessPlayClient() {
             icon={<LiveIcon sx={{ fontSize: "12px !important" }} />} />
         ) : null}
         <Box sx={{ flex: 1 }} />
+        <IconButton
+          size="small"
+          title={zenMode ? "Exit Zen Mode" : "Zen Mode — hide ratings"}
+          onClick={() => setZenMode(p => !p)}
+          color={zenMode ? "primary" : "default"}
+        >
+          <ZenIcon fontSize="small" />
+        </IconButton>
         <IconButton size="small" title="Board appearance settings"
           onClick={() => setSettingsOpen(p => !p)}
           color={settingsOpen ? "primary" : "default"}>
@@ -703,37 +768,41 @@ export default function LichessPlayClient() {
               (result.includes("Black wins") && myColor === "black") ? "success" : "info"
             }>{result}</Alert>
           )}
-          <FormControl fullWidth size="small">
-            <InputLabel>Time Control</InputLabel>
-            <Select value={tcIdx} label="Time Control" onChange={e => setTcIdx(Number(e.target.value))}>
-              {SEEK_TIME_CONTROLS.map((t, i) => <MenuItem key={i} value={i}>{t.label}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <Alert severity="info" sx={{ fontSize: "0.75rem", py: 0.5 }}>
-            Seek pool: <strong>Rapid &amp; Classical only</strong>. Bullet/Blitz require a direct challenge.
-          </Alert>
-          <Stack direction="row" spacing={1}>
-            <Box flex={1}>
-              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>Rating</Typography>
-              <ToggleButtonGroup value={rated} exclusive fullWidth size="small" onChange={(_, v) => v && setRated(v)}>
-                <ToggleButton value="rated">Rated</ToggleButton>
-                <ToggleButton value="casual">Casual</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-            <Box flex={1}>
-              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>Color</Typography>
-              <ToggleButtonGroup value={color} exclusive fullWidth size="small" onChange={(_, v) => v && setColor(v)}>
-                <ToggleButton value="random">Any</ToggleButton>
-                <ToggleButton value="white">White</ToggleButton>
-                <ToggleButton value="black">Black</ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-          </Stack>
+          {!zenMode && (
+            <>
+              <FormControl fullWidth size="small">
+                <InputLabel>Time Control</InputLabel>
+                <Select value={tcIdx} label="Time Control" onChange={e => setTcIdx(Number(e.target.value))}>
+                  {SEEK_TIME_CONTROLS.map((t, i) => <MenuItem key={i} value={i}>{t.label}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <Alert severity="info" sx={{ fontSize: "0.75rem", py: 0.5 }}>
+                Seek pool: <strong>Rapid &amp; Classical only</strong>. Bullet/Blitz require a direct challenge.
+              </Alert>
+              <Stack direction="row" spacing={1}>
+                <Box flex={1}>
+                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>Rating</Typography>
+                  <ToggleButtonGroup value={rated} exclusive fullWidth size="small" onChange={(_, v) => v && setRated(v)}>
+                    <ToggleButton value="rated">Rated</ToggleButton>
+                    <ToggleButton value="casual">Casual</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+                <Box flex={1}>
+                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>Color</Typography>
+                  <ToggleButtonGroup value={color} exclusive fullWidth size="small" onChange={(_, v) => v && setColor(v)}>
+                    <ToggleButton value="random">Any</ToggleButton>
+                    <ToggleButton value="white">White</ToggleButton>
+                    <ToggleButton value="black">Black</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+              </Stack>
+            </>
+          )}
           <Button variant="contained" fullWidth size="large" startIcon={<PlayIcon />}
             onClick={handleSeek} sx={{ borderRadius: 2, fontWeight: 700 }}>
             {phase === "finished" ? "New Game" : "Find Game on Lichess"}
           </Button>
-          {phase === "finished" && finalPgn && (
+          {phase === "finished" && finalPgn && !isAborted && (
             <Button variant="outlined" fullWidth startIcon={<ReviewIcon />} onClick={handleReviewGame}>
               Review This Game
             </Button>
@@ -765,7 +834,7 @@ export default function LichessPlayClient() {
           {drawPending === "theyOffered" && (
             <Alert severity="info" action={
               <Stack direction="row" spacing={0.5}>
-                <Button size="small" color="success" onClick={handleAcceptDraw}>Accept</Button>
+                <Button size="small" color="success" onClick={handleAcceptDrawClick}>Accept</Button>
                 <Button size="small" color="error"   onClick={handleDeclineDraw}>Decline</Button>
               </Stack>
             }>Opponent offers a draw</Alert>
@@ -777,14 +846,14 @@ export default function LichessPlayClient() {
           )}
           <Stack spacing={1}>
             {uciMoves.length < 2 && (
-              <Button variant="outlined" color="warning" fullWidth size="small" onClick={handleAbort}>Abort Game</Button>
+              <Button variant="outlined" color="warning" fullWidth size="small" onClick={handleAbortClick}>Abort Game</Button>
             )}
             <Button variant="outlined" color="secondary" fullWidth size="small"
-              startIcon={<DrawIcon />} onClick={handleOfferDraw} disabled={drawPending === "iOffered"}>
+              startIcon={<DrawIcon />} onClick={handleOfferDrawClick} disabled={drawPending === "iOffered"}>
               {drawPending === "iOffered" ? "Draw Offered…" : "Offer Draw"}
             </Button>
             <Button variant="contained" color="error" fullWidth size="small"
-              startIcon={<ResignIcon />} onClick={handleResign}>Resign</Button>
+              startIcon={<ResignIcon />} onClick={handleResignClick}>Resign</Button>
           </Stack>
           <Divider />
           <Button variant="text" size="small" fullWidth endIcon={<OpenIcon fontSize="small" />}
@@ -828,12 +897,13 @@ export default function LichessPlayClient() {
         {/* Board column */}
         <Box sx={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: { xs: "center", lg: "flex-start" } }}>
           <Box sx={{ width: boardPx, maxWidth: "100%", mb: 1 }}>
-            <LichessPlayerRow side={oppSide} player={players[oppSide]} clockMs={oppClockMs} isActive={oppActive} phase={phase} />
+            <LichessPlayerRow side={oppSide} player={players[oppSide]} clockMs={oppClockMs} isActive={oppActive} phase={phase} zenMode={zenMode} />
           </Box>
           <Box sx={{
             width: boardPx, maxWidth: "100%", borderRadius: 2, overflow: "hidden",
             boxShadow: phase === "playing" ? "0 0 0 3px #3a86ff44, 0 8px 32px rgba(0,0,0,0.3)" : "0 8px 32px rgba(0,0,0,0.12)",
             transition: "box-shadow 0.3s",
+            position: "relative",
           }}>
             <Chessboard options={{
               position:            displayFen,
@@ -849,9 +919,32 @@ export default function LichessPlayClient() {
               showNotation:        showCoords,
               boardStyle:          { width: boardPx, height: boardPx },
             }} />
+            {/* Drag handle — bottom-right corner for board resizing */}
+            <Box
+              onPointerDown={onResizeDragStart}
+              onPointerMove={onResizeDragMove}
+              onPointerUp={onResizeDragEnd}
+              onPointerCancel={onResizeDragEnd}
+              sx={{
+                position: "absolute", bottom: 0, right: 0,
+                width: 18, height: 18,
+                cursor: "nwse-resize",
+                touchAction: "none",
+                display: "flex", alignItems: "flex-end", justifyContent: "flex-end",
+                p: "3px",
+                zIndex: 10,
+              }}
+            >
+              <Box sx={{
+                width: 10, height: 10,
+                borderRight: "2px solid", borderBottom: "2px solid",
+                borderColor: "rgba(255,255,255,0.45)",
+                borderRadius: "0 0 2px 0",
+              }} />
+            </Box>
           </Box>
           <Box sx={{ width: boardPx, maxWidth: "100%", mt: 1 }}>
-            <LichessPlayerRow side={myColor} player={players[myColor]} clockMs={myClockMs} isActive={myActive} phase={phase} />
+            <LichessPlayerRow side={myColor} player={players[myColor]} clockMs={myClockMs} isActive={myActive} phase={phase} zenMode={zenMode} />
           </Box>
         </Box>
 
@@ -893,6 +986,24 @@ export default function LichessPlayClient() {
           </>
         )}
       </Stack>
+
+      {/* Confirmation dialogs — prevent accidental actions */}
+      <LichessResignDialog
+        open={resignDialogOpen}
+        onCancel={() => setResignDialogOpen(false)}
+        onConfirm={handleResign}
+      />
+      <LichessDrawDialog
+        open={drawDialogOpen}
+        isAccepting={drawIsAccepting}
+        onCancel={() => setDrawDialogOpen(false)}
+        onConfirm={handleDrawConfirm}
+      />
+      <LichessAbortDialog
+        open={abortDialogOpen}
+        onCancel={() => setAbortDialogOpen(false)}
+        onConfirm={handleAbort}
+      />
 
       {/* Leave-game confirmation modal */}
       <LichessLeaveDialog
