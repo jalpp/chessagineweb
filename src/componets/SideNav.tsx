@@ -29,7 +29,7 @@ import {
 } from "react-icons/fa6";
 import { useClerk } from "@clerk/nextjs";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import { ChatBubble, GitHub, SmartToy } from "@mui/icons-material";
+import { ChatBubble, GitHub, QueryStats, SmartToy } from "@mui/icons-material";
 import { useNavigation } from "@/context/NavigationContext";
 import { useLichessGuard } from "@/context/LichessGuardContext";
 
@@ -49,6 +49,7 @@ export const SIDEBAR_WIDTH = 64;
 const navLinks = [
   { label: "Analyze Position", href: "/position",                              icon: <FaChessBoard size={18} />,   isExternal: false },
   { label: "Analyze Game",     href: "/game",                                  icon: <FaChessPawn  size={18} />,   isExternal: false },
+  { label: "Agine Analyzer",   href: "/agine-analyzer",                          icon: <QueryStats sx={{ fontSize: 18 }} />, isExternal: false },
   { label: "Play Bot",         href: "/play",                                  icon: <SmartToy sx={{ fontSize: 18 }} />, isExternal: false },
   { label: "Play on Lichess",  href: "/lichess-play",                          icon: <LichessNavIcon />,           isExternal: false },
   { label: "Agine Chat",       href: "/chat",                                  icon: <ChatBubble sx={{ fontSize: 18 }} />, isExternal: false },
