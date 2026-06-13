@@ -11,6 +11,12 @@ import {
   Paper,
   Select,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from "@mui/material";
 import { TrackChanges as TrackChangesIcon } from "@mui/icons-material";
@@ -144,33 +150,63 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
       );
     };
 
+    /**
+     * x-charts RadarChart uses a single shared 0-based scale across every
+     * metric axis, but Agine theme scores are signed (roughly -1..1) and
+     * each theme has its own natural range. Without normalization, an
+     * extreme value on one axis (e.g. a single-loss outlier) stretches
+     * every other axis, producing the "exploded star" shape.
+     *
+     * Fix: per metric, find the max absolute value across all series and
+     * map [-max, max] -> [0, 1]. Every axis is then independently scaled
+     * to its own spread, while staying on the chart's shared 0..1 scale.
+     */
     const radarSeries = useMemo(() => {
-      const series = [];
+      const rawSeries: { label: string; values: number[]; color: string }[] = [];
       if (winAverage) {
-        series.push({
+        rawSeries.push({
           label: "In wins",
-          data: THEME_KEYS.map((key) => winAverage[key]),
+          values: THEME_KEYS.map((key) => winAverage[key]),
           color: "#81c784",
-          fillArea: true,
         });
       }
       if (lossAverage) {
-        series.push({
+        rawSeries.push({
           label: "In losses",
-          data: THEME_KEYS.map((key) => lossAverage[key]),
+          values: THEME_KEYS.map((key) => lossAverage[key]),
           color: "#ef6f6f",
-          fillArea: true,
         });
       }
-      if (series.length === 0 && overallAverage) {
-        series.push({
+      if (rawSeries.length === 0 && overallAverage) {
+        rawSeries.push({
           label: "Average",
-          data: THEME_KEYS.map((key) => overallAverage[key]),
+          values: THEME_KEYS.map((key) => overallAverage[key]),
           color: "#bb86fc",
-          fillArea: true,
         });
       }
-      return series;
+      if (rawSeries.length === 0) return [];
+
+      // Per-axis (per theme) max absolute value across all series
+      const axisMax = THEME_KEYS.map((_, axisIndex) =>
+        Math.max(
+          0.0001,
+          ...rawSeries.map((s) => Math.abs(s.values[axisIndex]))
+        )
+      );
+
+      return rawSeries.map((s) => ({
+        label: s.label,
+        color: s.color,
+        fillArea: true,
+        data: s.values.map((value, axisIndex) =>
+          // Map [-max, max] -> [0, 1] per axis
+          (value / axisMax[axisIndex] + 1) / 2
+        ),
+        valueFormatter: (_value: number | null, ctx: { dataIndex?: number }) =>
+          ctx.dataIndex !== undefined
+            ? s.values[ctx.dataIndex].toFixed(2)
+            : "",
+      }));
     }, [winAverage, lossAverage, overallAverage]);
 
     if (games.length === 0) {
@@ -295,9 +331,21 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
                 radar={{
                   metrics: THEME_KEYS.map((theme) => ({
                     name: formatThemeName(theme),
+                    min: 0,
+                    max: 1,
                   })),
                 }}
               />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                textAlign="center"
+                mt={1}
+              >
+                Each axis is scaled to its own range — hover a point to see
+                the actual theme score
+              </Typography>
             </Box>
 
             <Box>
@@ -339,6 +387,12 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
                     data: profiles.map((_, i) => i + 1),
                     label: "Game (oldest → newest)",
                     scaleType: "linear" as const,
+                    valueFormatter: (value: number) => {
+                      const p = profiles[value - 1];
+                      return p
+                        ? `Game ${value}: vs ${p.game.opponentName} (${p.game.outcome})`
+                        : `Game ${value}`;
+                    },
                   },
                 ]}
                 series={selectedThemes.map((theme) => ({
@@ -347,8 +401,72 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
                   color: getThemeLabelColor(theme),
                   showMark: true,
                   curve: "linear" as const,
+                  valueFormatter: (
+                    value: number | null,
+                    ctx: { dataIndex?: number }
+                  ) => {
+                    if (value === null || ctx.dataIndex === undefined) return "";
+                    const p = profiles[ctx.dataIndex];
+                    return `${value.toFixed(2)} (vs ${p.game.opponentName}, ${p.game.outcome})`;
+                  },
                 }))}
               />
+            </Box>
+
+            <Box>
+              <Typography fontWeight={600} gutterBottom>
+                Per-Game Theme Scores
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={1}
+              >
+                Oldest game first, matching the trend chart above
+              </Typography>
+              <TableContainer sx={{ maxHeight: 360 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>#</TableCell>
+                      <TableCell>Opponent</TableCell>
+                      <TableCell>Result</TableCell>
+                      {THEME_KEYS.map((theme) => (
+                        <TableCell key={theme} align="right">
+                          {formatThemeName(theme)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {profiles.map((p, i) => (
+                      <TableRow key={p.game.gameId} hover>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>{p.game.opponentName}</TableCell>
+                        <TableCell
+                          sx={{
+                            color:
+                              p.game.outcome === "win"
+                                ? "success.main"
+                                : p.game.outcome === "loss"
+                                ? "error.main"
+                                : "text.secondary",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {p.game.outcome}
+                        </TableCell>
+                        {THEME_KEYS.map((theme) => (
+                          <TableCell key={theme} align="right">
+                            {p.profile[theme].toFixed(2)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
 
             <Stack
