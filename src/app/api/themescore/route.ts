@@ -54,10 +54,50 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 }
 
+const THEME_SCORE_KEYS = [
+  "material",
+  "mobility",
+  "space",
+  "positional",
+  "kingSafety",
+  "tactical",
+  "darksqaureControl",
+  "lightsqaureControl",
+  "tempo",
+] as const;
+
+function normalizeThemeScores(payload: unknown) {
+  const candidate =
+    payload && typeof payload === "object" && !Array.isArray(payload) && "data" in payload
+      ? (payload as { data?: unknown }).data
+      : payload;
+
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return payload;
+  }
+
+  const normalized: Record<string, number> = {};
+
+  for (const key of THEME_SCORE_KEYS) {
+    const rawValue = (candidate as Record<string, unknown>)[key];
+    const numericValue = typeof rawValue === "number" ? rawValue : Number(rawValue);
+    normalized[key] = Number.isFinite(numericValue) ? numericValue : 0;
+  }
+
+  return normalized;
+}
+
 async function parseUpstreamResponse(upstream: Response) {
   const text = await upstream.text();
+
   try {
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+
+    if (parsed && typeof parsed === "object" && "success" in parsed) {
+      return normalizeThemeScores(parsed);
+    }
+
+    return normalizeThemeScores(parsed);
   } catch {
     return { error: text || upstream.statusText };
   }

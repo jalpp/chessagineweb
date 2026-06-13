@@ -140,6 +140,16 @@ export function classifyUserMoves(
     if (!moveObject) break;
 
     if (moverIsWhite !== userIsWhite) continue;
+
+    // A move that ends the game in the user's favor is never a mistake —
+    // without this, missing/neutral evals after a mating move could register
+    // as a huge win-rate drop and flag the checkmate as a blunder.
+    if (board.isCheckmate()) {
+      qualityCounts["Best"]++;
+      accuracies.push(100);
+      continue;
+    }
+
     if (ply + 1 >= winRates.length) continue;
 
     if (ply < bookPlies) {

@@ -11,6 +11,42 @@ export interface ThemeScore {
     tempo: number;
 }
 
+const THEME_SCORE_KEYS: (keyof ThemeScore)[] = [
+  "material",
+  "mobility",
+  "space",
+  "positional",
+  "kingSafety",
+  "tactical",
+  "darksqaureControl",
+  "lightsqaureControl",
+  "tempo",
+];
+
+export function normalizeThemeScore(value: unknown): number {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+export function normalizeThemeScores(payload: unknown): ThemeScore | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+
+  const source =
+    "data" in payload && payload.data && typeof payload.data === "object" && !Array.isArray(payload.data)
+      ? (payload.data as Record<string, unknown>)
+      : (payload as Record<string, unknown>);
+
+  const normalized = {} as ThemeScore;
+
+  for (const key of THEME_SCORE_KEYS) {
+    normalized[key] = normalizeThemeScore(source[key]);
+  }
+
+  return normalized;
+}
+
 
 interface ThemeChange {
   theme: string;

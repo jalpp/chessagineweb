@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Color } from 'chess.js';
-import { ThemeScore } from '@/libs/themes/helper';
+import { ThemeScore, normalizeThemeScores } from '@/libs/themes/helper';
 import { getThemeScoreCache, setThemeScoreCache } from '@/libs/themes/cache';
 
 interface UseThemeScoreResult {
@@ -30,8 +30,9 @@ export function useThemeScore(fen: string | null, color: Color): UseThemeScoreRe
         try {
             if (cacheKey) {
                 const cached = await getThemeScoreCache(cacheKey);
-                if (cached) {
-                    setScores(cached);
+                const normalizedCached = normalizeThemeScores(cached);
+                if (normalizedCached) {
+                    setScores(normalizedCached);
                     setLoading(false);
                     return;
                 }
@@ -48,7 +49,11 @@ export function useThemeScore(fen: string | null, color: Color): UseThemeScoreRe
                 throw new Error(errorData.error || 'Failed to fetch theme scores');
             }
 
-            const data: ThemeScore = await response.json();
+            const rawData = await response.json();
+            const data = normalizeThemeScores(rawData);
+            if (!data) {
+                throw new Error('Invalid theme score payload');
+            }
             setScores(data);
 
             if (cacheKey) {

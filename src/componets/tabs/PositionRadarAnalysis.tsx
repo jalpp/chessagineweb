@@ -20,7 +20,7 @@ import {
 import { RadarChart } from "@mui/x-charts";
 import { MoveAnalysis, MoveQuality } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from "./GameReviewTab";
-import { ThemeScore, GameReviewTheme, getThemeLabelColor } from "@/libs/themes/helper";
+import { ThemeScore, GameReviewTheme, getThemeLabelColor, normalizeThemeScore } from "@/libs/themes/helper";
 import { getThemeIcon } from "./PositionalFenThemeAnalysis";
 import GuessTheme from "../puzzle/GuessPtag";
 import { PositionEval} from "@/stockfish/engine/engine";
@@ -290,7 +290,7 @@ export const PositionRadarAnalysis: React.FC<CurrentPositionAnalysisProps> = ({
                             fontWeight: 600
                           }}
                         >
-                          {currentThemeScores[theme].toFixed(2)}
+                          {normalizeThemeScore(currentThemeScores[theme]).toFixed(2)}
                         </Typography>
                       </CardContent>
                     </Card>

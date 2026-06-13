@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Chess } from "chess.js";
+import { Chess, type Square } from "chess.js";
 import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { centipawnToWinRate, evaluationToWinRate } from "@/libs/game/gamereview";
 import { isFenInAllDatabases } from "@/libs/openingdatabase/ecoDatabase";
@@ -17,7 +17,13 @@ import type {
   BatchReviewOptions,
   BatchReviewPhase,
   BatchReviewResult,
+  KeyPosition,
 } from "@/libs/batchreview/types";
+
+/** Hard cap on candidate positions sent through puzzle validation. */
+const MAX_PUZZLE_CANDIDATES = 60;
+/** Depth for the engine fallback when validating puzzle best moves. */
+const PUZZLE_VALIDATION_DEPTH = 14;
 
 /**
  * Batch game review orchestration hook.
@@ -71,12 +77,24 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
       const moveHistory: string[] = [];
       const bookPlies = game.opening?.ply ?? 0;
 
+      const terminalRates = new Map<number, number>();
+
       for (let ply = 0; ply < sanMoves.length; ply++) {
         const moveObject = board.move(sanMoves[ply]);
         if (!moveObject) break;
         moveHistory.push(
           moveObject.from + moveObject.to + (moveObject.promotion || "")
         );
+
+        // Terminal positions have no meaningful engine/ChessDB eval — pin
+        // them explicitly so a delivered mate never looks like a blunder
+        if (board.isCheckmate()) {
+          // Side to move is the mated side
+          terminalRates.set(ply, board.turn() === "b" ? 100 : 0);
+        } else if (board.isGameOver()) {
+          terminalRates.set(ply, 50);
+        }
+
         plies.push({
           plyIndex: ply,
           postMovefen: board.fen(),
@@ -88,6 +106,9 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
 
       const winRates: number[] = new Array(plies.length + 1).fill(50);
       winRates[0] = centipawnToWinRate(0);
+      terminalRates.forEach((rate, ply) => {
+        winRates[ply + 1] = rate;
+      });
       // Book positions stay balanced; carry the opening baseline forward
       plies
         .filter((p) => p.openingMatch)
@@ -95,8 +116,10 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
           winRates[p.plyIndex + 1] = centipawnToWinRate(0);
         });
 
-      // ── Phase A: parallel ChessDB on non-book positions ──────────────────
-      const nonBook = plies.filter((p) => !p.openingMatch);
+      // ── Phase A: parallel ChessDB on non-book, non-terminal positions ────
+      const nonBook = plies.filter(
+        (p) => !p.openingMatch && !terminalRates.has(p.plyIndex)
+      );
       const dbResults = await parallelLimit(
         nonBook.map((p) => () => fetchChessDBFast(p.postMovefen)),
         8
@@ -141,6 +164,101 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
     [stockfishEngine]
   );
 
+  /**
+   * Validates puzzle candidates: a position only becomes a puzzle when the
+   * move the user played was NOT the engine's top move. Resolves the best
+   * move for each candidate (ChessDB first, engine fallback), stores it on
+   * the position, and drops candidates whose played move matches it or whose
+   * best move can't be determined.
+   *
+   * @param candidates - Blunder/mistake positions, worst drops first
+   * @param onProgress - Called with 0–1 completion fraction
+   * @returns Verified puzzles with bestMove (SAN) filled in
+   */
+  const validatePuzzleCandidates = useCallback(
+    async (
+      candidates: KeyPosition[],
+      onProgress: (fraction: number) => void,
+      signal: AbortSignal
+    ): Promise<KeyPosition[]> => {
+      const capped = candidates.slice(0, MAX_PUZZLE_CANDIDATES);
+      let completed = 0;
+
+      /** Resolves the best move SAN at a pre-move FEN, hint → ChessDB → engine. */
+      const resolveBest = async (
+        position: KeyPosition
+      ): Promise<string | null> => {
+        const tryParse = (hint: string): string | null => {
+          const board = new Chess(position.fen);
+          try {
+            const move = board.move(hint);
+            if (move) return move.san;
+          } catch {
+            // SAN parse failed — try UCI shape below
+          }
+          if (/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(hint)) {
+            try {
+              const move = new Chess(position.fen).move({
+                from: hint.slice(0, 2) as Square,
+                to: hint.slice(2, 4) as Square,
+                promotion: hint.slice(4) || undefined,
+              });
+              if (move) return move.san;
+            } catch {
+              return null;
+            }
+          }
+          return null;
+        };
+
+        if (position.bestMove) {
+          const san = tryParse(position.bestMove);
+          if (san) return san;
+        }
+
+        const dbMoves = await fetchChessDBFast(position.fen);
+        if (dbMoves.length > 0 && dbMoves[0].uci !== "N/A") {
+          const san = tryParse(dbMoves[0].uci);
+          if (san) return san;
+        }
+
+        if (stockfishEngine && !signal.aborted) {
+          const analysis = await stockfishEngine.evaluatePositionWithUpdate({
+            fen: position.fen,
+            depth: PUZZLE_VALIDATION_DEPTH,
+            multiPv: 1,
+          });
+          if (analysis.bestMove) return tryParse(analysis.bestMove);
+        }
+        return null;
+      };
+
+      // ChessDB lookups are network bound — overlap them; the engine
+      // fallback inside resolveBest serializes itself on the worker
+      const resolved = await parallelLimit(
+        capped.map((position) => async () => {
+          const bestSan = signal.aborted ? null : await resolveBest(position);
+          completed++;
+          onProgress(completed / capped.length);
+          return bestSan;
+        }),
+        4
+      );
+
+      const puzzles: KeyPosition[] = [];
+      capped.forEach((position, i) => {
+        const bestSan = resolved[i];
+        // Keep only verified puzzles: best move known AND different from
+        // what the user played
+        if (bestSan && bestSan !== position.playedSan) {
+          puzzles.push({ ...position, bestMove: bestSan });
+        }
+      });
+      return puzzles;
+    },
+    [stockfishEngine]
+  );
+
   /** Cancels an in-flight batch review run. */
   const cancelBatchReview = useCallback(() => {
     abortRef.current?.abort();
@@ -168,7 +286,7 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
           (downloaded) => {
             setProgressLabel(`Downloading games from Lichess… ${downloaded}`);
             setProgress(
-              Math.min(25, Math.round((downloaded / options.maxGames) * 25))
+              Math.min(20, Math.round((downloaded / options.maxGames) * 20))
             );
           },
           abort.signal
@@ -221,7 +339,7 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
             )
           );
 
-          setProgress(25 + Math.round(((i + 1) / reviewable.length) * 75));
+          setProgress(20 + Math.round(((i + 1) / reviewable.length) * 65));
         }
 
         if (summaries.length === 0) {
@@ -230,7 +348,18 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
           );
         }
 
-        setResult(aggregateBatchResult(options.username, summaries));
+        const aggregated = aggregateBatchResult(options.username, summaries);
+
+        // ── Validate puzzles (85–100% of progress) ─────────────────────────
+        setProgressLabel("Building your puzzle pack…");
+        aggregated.keyPositions = await validatePuzzleCandidates(
+          aggregated.keyPositions,
+          (fraction) => setProgress(85 + Math.round(fraction * 15)),
+          abort.signal
+        );
+        if (abort.signal.aborted) return;
+
+        setResult(aggregated);
         setProgress(100);
         setPhase("done");
         setProgressLabel("");
@@ -241,7 +370,7 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
         setPhase("error");
       }
     },
-    [evaluateGameLocally]
+    [evaluateGameLocally, validatePuzzleCandidates]
   );
 
   return {
