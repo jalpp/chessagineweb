@@ -228,7 +228,7 @@ const BatchReviewSetup: React.FC<BatchReviewSetupProps> = ({
           disabled={disabled || !lichessUsername.trim()}
           sx={{ py: 1.4, fontWeight: 700, borderRadius: "10px" }}
         >
-          Analyze My Games
+          Analyze Games
         </Button>
       </Stack>
     </Paper>
