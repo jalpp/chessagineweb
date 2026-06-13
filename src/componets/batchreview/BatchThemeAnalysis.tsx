@@ -1,171 +1,185 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  FormControl,
+  InputLabel,
   LinearProgress,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Typography,
 } from "@mui/material";
 import { TrackChanges as TrackChangesIcon } from "@mui/icons-material";
-import { BarChart, PieChart, RadarChart } from "@mui/x-charts";
-import { Color } from "chess.js";
-import { KeyPosition } from "@/libs/batchreview/types";
+import { LineChart, RadarChart } from "@mui/x-charts";
+import { GameSummary } from "@/libs/batchreview/types";
 import { parallelLimit } from "@/libs/batchreview/chessdb";
 import {
-  ThemeScore,
-  themeColors,
-  themeLabels,
-} from "@/libs/themes/helper";
-import { getThemeScoreCache, setThemeScoreCache } from "@/libs/themes/cache";
+  averageThemeProfiles,
+  fetchGameThemeReview,
+  getUserThemeProfile,
+  THEME_KEYS,
+} from "@/libs/batchreview/themes";
+import { getThemeLabelColor, ThemeScore } from "@/libs/themes/helper";
+import TutorSegmentBar from "./TutorSegmentBar";
 
 interface BatchThemeAnalysisProps {
-  /** Blunder/mistake positions to profile, worst drops first. */
-  keyPositions: KeyPosition[];
+  /** Reviewed games, newest first (as produced by the analyzer). */
+  games: GameSummary[];
 }
 
-/** Maximum positions sent to the themes API per run, to bound cost. */
-const MAX_THEME_POSITIONS = 30;
-
-/**
- * Fetches a theme score for one FEN via the themes API, with the same
- * IndexedDB cache keys used by useThemeScore.
- */
-async function fetchThemeScoreFast(
-  fen: string,
-  color: Color
-): Promise<ThemeScore | null> {
-  const cacheKey = `${fen}|${color}`;
-  try {
-    const cached = await getThemeScoreCache(cacheKey);
-    if (cached) return cached;
-
-    const response = await fetch("/api/themescore", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fen, color }),
-    });
-    if (!response.ok) return null;
-
-    const data: ThemeScore = await response.json();
-    await setThemeScoreCache(cacheKey, data);
-    return data;
-  } catch {
-    return null;
-  }
+/** One game's theme profile from the user's perspective. */
+interface GameThemeProfile {
+  game: GameSummary;
+  profile: ThemeScore;
 }
 
-const formatThemeName = (theme: keyof ThemeScore) =>
-  themeLabels[theme] ||
+const SAMPLE_OPTIONS = [10, 20, 30];
+
+const formatThemeName = (theme: string) =>
   theme
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (char) => char.toUpperCase());
+    .split(/(?=[A-Z])/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
 /**
- * Theme profile across the user's mistake positions, powered by the themes
- * API. Averages each theme score at the moments right before the user went
- * wrong, surfacing recurring weaknesses (e.g. king safety, dark squares).
+ * Batch theme analysis powered by the Agine themes engine.
+ *
+ * Fetches a per-game theme review (cached per game id) and shows:
+ * - A radar comparing the user's average theme profile in wins vs losses
+ * - A line graph of selected theme scores across games (oldest → newest)
+ * - Weakest/strongest theme chips
  */
 const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
-  ({ keyPositions }) => {
+  ({ games }) => {
+    const [sampleSize, setSampleSize] = useState(
+      SAMPLE_OPTIONS.find((n) => n >= Math.min(games.length, 10)) ?? 10
+    );
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [averages, setAverages] = useState<ThemeScore | null>(null);
-    const [sampled, setSampled] = useState(0);
-
-    const positions = useMemo(
-      () => keyPositions.slice(0, MAX_THEME_POSITIONS),
-      [keyPositions]
+    const [profiles, setProfiles] = useState<GameThemeProfile[] | null>(null);
+    const [selectedThemes, setSelectedThemes] = useState<(keyof ThemeScore)[]>(
+      []
     );
 
     const handleGenerate = useCallback(async () => {
       setLoading(true);
       setProgress(0);
+      // Most recent N games, processed oldest → newest for the trend chart
+      const sample = games.slice(0, sampleSize).reverse();
 
       let completed = 0;
-      const scores = await parallelLimit(
-        positions.map((position) => async () => {
-          const sideToMove = position.fen.split(" ")[1] as Color;
-          const score = await fetchThemeScoreFast(position.fen, sideToMove);
+      const fetched = await parallelLimit(
+        sample.map((game) => async () => {
+          const review = await fetchGameThemeReview(game.pgn, game.gameId);
           completed++;
-          setProgress(Math.round((completed / positions.length) * 100));
-          return score;
+          setProgress(Math.round((completed / sample.length) * 100));
+          if (!review) return null;
+          const profile = getUserThemeProfile(review, game.userColor);
+          return profile ? { game, profile } : null;
         }),
-        4
+        3
       );
 
-      const valid = scores.filter((s): s is ThemeScore => s !== null);
-      setSampled(valid.length);
+      const valid = fetched.filter((p): p is GameThemeProfile => p !== null);
+      setProfiles(valid);
 
-      if (valid.length > 0) {
-        const keys = Object.keys(valid[0]) as (keyof ThemeScore)[];
-        const sums = keys.reduce(
-          (acc, key) => ({ ...acc, [key]: 0 }),
-          {} as ThemeScore
-        );
-        for (const score of valid) {
-          for (const key of keys) sums[key] += score[key];
-        }
-        for (const key of keys) {
-          sums[key] = Math.round((sums[key] / valid.length) * 100) / 100;
-        }
-        setAverages(sums);
-      } else {
-        setAverages(null);
+      // Default the trend chart to the user's three weakest themes
+      const overall = averageThemeProfiles(valid.map((p) => p.profile));
+      if (overall) {
+        const weakest = (Object.entries(overall) as [keyof ThemeScore, number][])
+          .sort((a, b) => a[1] - b[1])
+          .slice(0, 3)
+          .map(([theme]) => theme);
+        setSelectedThemes(weakest);
       }
       setLoading(false);
-    }, [positions]);
+    }, [games, sampleSize]);
 
-    const { weakest, strongest, themeKeys, chartData, pieData } = useMemo(() => {
-      if (!averages) {
-        return {
-          weakest: [],
-          strongest: [],
-          themeKeys: [] as (keyof ThemeScore)[],
-          chartData: [],
-          pieData: [],
-        };
+    const overallAverage = useMemo(
+      () =>
+        profiles ? averageThemeProfiles(profiles.map((p) => p.profile)) : null,
+      [profiles]
+    );
+
+    const winAverage = useMemo(
+      () =>
+        profiles
+          ? averageThemeProfiles(
+              profiles
+                .filter((p) => p.game.outcome === "win")
+                .map((p) => p.profile)
+            )
+          : null,
+      [profiles]
+    );
+
+    const lossAverage = useMemo(
+      () =>
+        profiles
+          ? averageThemeProfiles(
+              profiles
+                .filter((p) => p.game.outcome === "loss")
+                .map((p) => p.profile)
+            )
+          : null,
+      [profiles]
+    );
+
+    const { weakest, strongest } = useMemo(() => {
+      if (!overallAverage)
+        return { weakest: [] as [string, number][], strongest: [] as [string, number][] };
+      const entries = Object.entries(overallAverage).sort((a, b) => a[1] - b[1]);
+      return { weakest: entries.slice(0, 3), strongest: entries.slice(-3).reverse() };
+    }, [overallAverage]);
+
+    const toggleTheme = (theme: keyof ThemeScore) => {
+      setSelectedThemes((prev) =>
+        prev.includes(theme)
+          ? prev.filter((t) => t !== theme)
+          : [...prev, theme]
+      );
+    };
+
+    const radarSeries = useMemo(() => {
+      const series = [];
+      if (winAverage) {
+        series.push({
+          label: "In wins",
+          data: THEME_KEYS.map((key) => winAverage[key]),
+          color: "#81c784",
+          fillArea: true,
+        });
       }
+      if (lossAverage) {
+        series.push({
+          label: "In losses",
+          data: THEME_KEYS.map((key) => lossAverage[key]),
+          color: "#ef6f6f",
+          fillArea: true,
+        });
+      }
+      if (series.length === 0 && overallAverage) {
+        series.push({
+          label: "Average",
+          data: THEME_KEYS.map((key) => overallAverage[key]),
+          color: "#bb86fc",
+          fillArea: true,
+        });
+      }
+      return series;
+    }, [winAverage, lossAverage, overallAverage]);
 
-      const entries = (Object.keys(averages) as (keyof ThemeScore)[])
-        .map((theme) => [theme, averages[theme]] as const)
-        .sort((a, b) => a[1] - b[1]);
-
-      const themeKeys = Object.keys(averages) as (keyof ThemeScore)[];
-      const chartData = themeKeys.map((theme) => ({
-        theme,
-        label: formatThemeName(theme),
-        score: averages[theme],
-        color: themeColors[theme] || "#bb86fc",
-      }));
-
-      const total = chartData.reduce((sum, item) => sum + item.score, 0);
-      const pieData = chartData.map((item) => ({
-        id: item.theme,
-        label: item.label,
-        value: total > 0 ? (item.score / total) * 100 : 0,
-        color: item.color,
-      }));
-
-      return {
-        weakest: entries.slice(0, 3),
-        strongest: entries.slice(-3).reverse(),
-        themeKeys,
-        chartData,
-        pieData,
-      };
-    }, [averages]);
-
-    if (keyPositions.length === 0) {
+    if (games.length === 0) {
       return (
         <Paper elevation={2} sx={{ p: 2 }}>
           <Typography variant="h6" color="text.primary" gutterBottom>
             Theme Analysis
           </Typography>
-          <Typography color="text.secondary">
-            No mistake positions to profile in these games.
-          </Typography>
+          <Typography color="text.secondary">No games to profile.</Typography>
         </Paper>
       );
     }
@@ -176,111 +190,169 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
           Theme Analysis
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Profiles the positions right before your blunders and mistakes with
-          the Agine themes engine — low scores point at recurring weaknesses
+          Profiles each game with the Agine themes engine from your side of
+          the board — compare how your themes hold up in wins vs losses and
+          track them across games
         </Typography>
 
-        {!averages && !loading && (
-          <Box mt={2}>
+        {!profiles && !loading && (
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            mt={2}
+            alignItems={{ sm: "center" }}
+          >
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Games to profile</InputLabel>
+              <Select
+                value={sampleSize}
+                label="Games to profile"
+                onChange={(e) => setSampleSize(Number(e.target.value))}
+              >
+                {SAMPLE_OPTIONS.filter(
+                  (n, i) => i === 0 || SAMPLE_OPTIONS[i - 1] < games.length
+                ).map((n) => (
+                  <MenuItem key={n} value={n}>
+                    Most recent {Math.min(n, games.length)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button
               variant="contained"
               startIcon={<TrackChangesIcon />}
               onClick={() => void handleGenerate()}
             >
-              Generate Theme Profile ({positions.length} positions)
+              Generate Theme Analysis
             </Button>
-          </Box>
+          </Stack>
         )}
 
         {loading && (
           <Box mt={2}>
             <Typography fontSize="0.85rem" gutterBottom>
-              Scoring positions… {progress}%
+              Profiling games with the themes engine… {progress}%
             </Typography>
             <LinearProgress variant="determinate" value={progress} />
           </Box>
         )}
 
-        {averages && !loading && (
-          <Box mt={2}>
-            <Stack spacing={2}>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Theme score radar
-                </Typography>
-                <RadarChart
-                  height={360}
-                  series={[
-                    {
-                      label: "Avg score at mistakes",
-                      data: themeKeys.map((theme) => averages[theme]),
-                      color: "#bb86fc",
-                      fillArea: true,
-                    },
-                  ]}
-                  radar={{
-                    metrics: themeKeys.map((theme) => ({
-                      name: formatThemeName(theme),
-                    })),
-                  }}
-                />
-              </Paper>
+        {profiles && !loading && profiles.length === 0 && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            The themes engine couldn&apos;t profile these games right now —
+            try again later.
+          </Alert>
+        )}
 
-              <Stack
-                direction={{ xs: "column", lg: "row" }}
-                spacing={2}
-                useFlexGap
+        {profiles && !loading && profiles.length > 0 && overallAverage && (
+          <Stack spacing={3} mt={2}>
+            <Box>
+              <Typography fontWeight={600} gutterBottom>
+                Theme Strength
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={1.5}
               >
-                <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Theme score bars
-                  </Typography>
-                  <BarChart
-                    xAxis={[
-                      {
-                        dataKey: "label",
-                        scaleType: "band",
-                        label: "Theme",
-                      },
-                    ]}
-                    series={[
-                      {
-                        dataKey: "score",
-                        label: "Average score",
-                        color: "#bb86fc",
-                      },
-                    ]}
-                    dataset={chartData}
-                    height={280}
-                    margin={{ left: 60, right: 20, bottom: 70 }}
-                    grid={{ horizontal: true }}
-                  />
-                </Paper>
+                Average Agine theme scores across your games, scaled to your
+                strongest theme
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+                }}
+              >
+                {(() => {
+                  const maxScore = Math.max(
+                    0.0001,
+                    ...THEME_KEYS.map((key) => Math.abs(overallAverage[key]))
+                  );
+                  return THEME_KEYS.map((theme) => (
+                    <TutorSegmentBar
+                      key={theme}
+                      label={formatThemeName(theme)}
+                      fraction={Math.abs(overallAverage[theme]) / maxScore}
+                      detail={`Average score: ${overallAverage[theme]}`}
+                      color={getThemeLabelColor(theme)}
+                    />
+                  ));
+                })()}
+              </Box>
+            </Box>
 
-                <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Theme mix
-                  </Typography>
-                  <PieChart
-                    series={[
-                      {
-                        data: pieData,
-                        innerRadius: 56,
-                        outerRadius: 110,
-                        arcLabel: (item) => `${item.label}`,
-                        arcLabelMinAngle: 18,
-                      },
-                    ]}
-                    height={280}
+            <Box>
+              <Typography fontWeight={600} gutterBottom>
+                Wins vs Losses Theme Profile
+              </Typography>
+              <RadarChart
+                height={380}
+                series={radarSeries}
+                radar={{
+                  metrics: THEME_KEYS.map((theme) => ({
+                    name: formatThemeName(theme),
+                  })),
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography fontWeight={600} gutterBottom>
+                Theme Trend Across Games
+              </Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                useFlexGap
+                mb={1}
+              >
+                {THEME_KEYS.map((theme) => (
+                  <Chip
+                    key={theme}
+                    label={formatThemeName(theme)}
+                    size="small"
+                    onClick={() => toggleTheme(theme)}
+                    variant={
+                      selectedThemes.includes(theme) ? "filled" : "outlined"
+                    }
+                    sx={
+                      selectedThemes.includes(theme)
+                        ? {
+                            bgcolor: getThemeLabelColor(theme),
+                            color: "#fff",
+                            "&:hover": { bgcolor: getThemeLabelColor(theme) },
+                          }
+                        : undefined
+                    }
                   />
-                </Paper>
+                ))}
               </Stack>
-            </Stack>
+              <LineChart
+                height={300}
+                xAxis={[
+                  {
+                    data: profiles.map((_, i) => i + 1),
+                    label: "Game (oldest → newest)",
+                    scaleType: "linear" as const,
+                  },
+                ]}
+                series={selectedThemes.map((theme) => ({
+                  data: profiles.map((p) => p.profile[theme]),
+                  label: formatThemeName(theme),
+                  color: getThemeLabelColor(theme),
+                  showMark: true,
+                  curve: "linear" as const,
+                }))}
+              />
+            </Box>
 
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={2}
-              mt={2}
               justifyContent="center"
             >
               <Box>
@@ -290,13 +362,13 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
                   display="block"
                   gutterBottom
                 >
-                  Weakest themes when you err
+                  Weakest themes
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {weakest.map(([theme, score]) => (
                     <Chip
                       key={theme}
-                      label={`${formatThemeName(theme)}: ${score.toFixed(2)}`}
+                      label={`${formatThemeName(theme)}: ${score}`}
                       color="error"
                       variant="outlined"
                       size="small"
@@ -311,13 +383,13 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
                   display="block"
                   gutterBottom
                 >
-                  Holding up well
+                  Strongest themes
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {strongest.map(([theme, score]) => (
                     <Chip
                       key={theme}
-                      label={`${formatThemeName(theme)}: ${score.toFixed(2)}`}
+                      label={`${formatThemeName(theme)}: ${score}`}
                       color="success"
                       variant="outlined"
                       size="small"
@@ -327,22 +399,15 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
               </Box>
             </Stack>
 
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              display="block"
-              mt={1}
-              textAlign="center"
-            >
-              Based on {sampled} scored positions
-            </Typography>
-          </Box>
-        )}
-
-        {!averages && !loading && sampled === 0 && progress === 100 && (
-          <Typography color="text.secondary" mt={2}>
-            Theme scoring is unavailable right now — try again later.
-          </Typography>
+            <Box display="flex" justifyContent="center" gap={1}>
+              <Typography variant="caption" color="text.secondary">
+                Based on {profiles.length} profiled games
+              </Typography>
+              <Button size="small" onClick={() => setProfiles(null)}>
+                Profile different games
+              </Button>
+            </Box>
+          </Stack>
         )}
       </Paper>
     );

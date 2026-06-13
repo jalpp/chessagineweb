@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   IconButton,
   LinearProgress,
   Paper,
@@ -16,7 +15,6 @@ import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
   CheckCircle as CheckCircleIcon,
-  Download as DownloadIcon,
   Lightbulb as LightbulbIcon,
   OpenInNew as OpenIcon,
   Replay as ReplayIcon,
@@ -24,97 +22,28 @@ import {
 import { Chess, type Square } from "chess.js";
 import { Chessboard, PieceDropHandlerArgs } from "react-chessboard";
 import { KeyPosition } from "@/libs/batchreview/types";
-import { fetchChessDBFast } from "@/libs/batchreview/chessdb";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
 import { useSettings } from "@/context/SettingContext";
 import { getCurrentThemeColors } from "@/libs/setting/helper";
 
 interface BatchPuzzlePackProps {
-  /** Blunder/mistake positions, worst drops first. */
+  /** Verified puzzles: best move resolved and different from the played move. */
   keyPositions: KeyPosition[];
-  /** Engine used to resolve best moves when ChessDB has no entry. */
-  engine: UciEngine | undefined;
   /** Opens the puzzle's source game in the full analyzer. */
   onOpenGame: (gameId: string) => void;
 }
 
-/** Resolved puzzle solution in both notations. */
-interface PuzzleSolution {
-  uci: string;
-  san: string;
-}
-
-type PuzzleStatus = "loading" | "solving" | "correct" | "revealed";
-
-function escapeCsvValue(value: string | number | undefined): string {
-  const text = String(value ?? "").replace(/\r\n/g, "\n");
-  if (/[,"\n]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
-}
+type PuzzleStatus = "solving" | "correct" | "revealed";
 
 /**
- * Parses a best-move hint (SAN from Lichess judgments or bare UCI) into a
- * solution. @returns null when the hint doesn't produce a legal move.
- */
-function parseSolutionHint(fen: string, hint: string): PuzzleSolution | null {
-  const board = new Chess(fen);
-  // Try SAN first (Lichess `variation` tokens are SAN)
-  try {
-    const move = board.move(hint);
-    if (move) {
-      return {
-        uci: move.from + move.to + (move.promotion || ""),
-        san: move.san,
-      };
-    }
-  } catch {
-    // Fall through to UCI parsing
-  }
-  if (/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(hint)) {
-    try {
-      const move = new Chess(fen).move({
-        from: hint.slice(0, 2) as Square,
-        to: hint.slice(2, 4) as Square,
-        promotion: hint.slice(4) || undefined,
-      });
-      if (move) {
-        return {
-          uci: move.from + move.to + (move.promotion || ""),
-          san: move.san,
-        };
-      }
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function isSameMoveAsPlayed(
-  fen: string,
-  playedSan: string,
-  candidate: PuzzleSolution
-): boolean {
-  const actualMove = parseSolutionHint(fen, playedSan);
-  return Boolean(
-    actualMove &&
-      (candidate.uci === actualMove.uci || candidate.san === actualMove.san)
-  );
-}
-
-/**
- * Puzzle pack built from the user's own blunders and mistakes.
- * Each puzzle shows the position before the bad move — the user must find
- * the move that avoids it. Solutions come from Lichess judgments when
- * available, then ChessDB, then a local engine search.
+ * Puzzle board panel built from the user's verified blunders and mistakes.
+ * Designed for the analyzer's board column: big board on top, prompt,
+ * feedback and navigation beneath. Every puzzle's solution (bestMove SAN)
+ * is pre-validated by useBatchReview, so solving is fully offline.
  */
 const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
-  ({ keyPositions, engine, onOpenGame }) => {
+  ({ keyPositions, onOpenGame }) => {
     const [index, setIndex] = useState(0);
-    const [status, setStatus] = useState<PuzzleStatus>("loading");
-    const [solution, setSolution] = useState<PuzzleSolution | null>(null);
+    const [status, setStatus] = useState<PuzzleStatus>("solving");
     const [feedback, setFeedback] = useState<string | null>(null);
     const [displayFen, setDisplayFen] = useState<string | null>(null);
     const [solved, setSolved] = useState<Set<number>>(new Set());
@@ -124,72 +53,22 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
 
     const puzzle = keyPositions[index];
     const sideToMove = useMemo(
-      () => (puzzle ? (puzzle.fen.split(" ")[1] === "b" ? "black" : "white") : "white"),
+      () =>
+        puzzle
+          ? puzzle.fen.split(" ")[1] === "b"
+            ? "black"
+            : "white"
+          : "white",
       [puzzle]
     );
 
-    /** Resolves the best move for the current puzzle: hint → ChessDB → engine. */
-    const resolveSolution = useCallback(
-      async (position: KeyPosition): Promise<PuzzleSolution | null> => {
-        const returnIfValid = (candidate: PuzzleSolution | null) => {
-          if (!candidate) return null;
-          return isSameMoveAsPlayed(position.fen, position.playedSan, candidate)
-            ? null
-            : candidate;
-        };
-
-        if (position.bestMove) {
-          const parsed = parseSolutionHint(position.fen, position.bestMove);
-          const valid = returnIfValid(parsed);
-          if (valid) return valid;
-        }
-
-        const dbMoves = await fetchChessDBFast(position.fen);
-        if (dbMoves.length > 0 && dbMoves[0].uci !== "N/A") {
-          const parsed = parseSolutionHint(position.fen, dbMoves[0].uci);
-          const valid = returnIfValid(parsed);
-          if (valid) return valid;
-        }
-
-        if (engine) {
-          const analysis = await engine.evaluatePositionWithUpdate({
-            fen: position.fen,
-            depth: 16,
-            multiPv: 1,
-          });
-          if (analysis.bestMove) {
-            const parsed = parseSolutionHint(position.fen, analysis.bestMove);
-            const valid = returnIfValid(parsed);
-            if (valid) return valid;
-          }
-        }
-        return null;
-      },
-      [engine]
-    );
-
-    // Resolve the solution whenever the puzzle changes
+    // Reset the board state whenever the puzzle changes
     useEffect(() => {
       if (!puzzle) return;
-      let cancelled = false;
-      setStatus("loading");
-      setSolution(null);
+      setStatus("solving");
       setFeedback(null);
       setDisplayFen(puzzle.fen);
-
-      void resolveSolution(puzzle).then((resolved) => {
-        if (cancelled) return;
-        setSolution(resolved);
-        setStatus("solving");
-        if (!resolved) {
-          setFeedback("Couldn't determine a clear best move — explore freely");
-        }
-      });
-
-      return () => {
-        cancelled = true;
-      };
-    }, [puzzle, resolveSolution]);
+    }, [puzzle]);
 
     const goTo = useCallback(
       (next: number) => {
@@ -198,43 +77,6 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
       },
       [keyPositions.length]
     );
-
-    const handleDownloadCsv = useCallback(() => {
-      if (keyPositions.length === 0) return;
-
-      const rows = [
-        [
-          "gameId",
-          "moveLabel",
-          "quality",
-          "playedSan",
-          "bestMove",
-          "winRateDrop",
-          "fen",
-        ],
-        ...keyPositions.map((position) => [
-          position.gameId,
-          position.moveLabel,
-          position.quality,
-          position.playedSan,
-          position.bestMove ?? "",
-          position.winRateDrop,
-          position.fen,
-        ]),
-      ];
-
-      const csv = rows
-        .map((row) => row.map((value) => escapeCsvValue(String(value))).join(","))
-        .join("\n");
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `puzzle-pack-${new Date().toISOString().slice(0, 10)}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
-    }, [keyPositions]);
 
     const onDrop = useCallback(
       ({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
@@ -254,24 +96,12 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
         }
         if (!move) return false;
 
-        const playedUci = move.from + move.to + (move.promotion || "");
-
-        if (solution && (playedUci === solution.uci || move.san === solution.san)) {
-          const playedMove = parseSolutionHint(puzzle.fen, puzzle.playedSan);
-          const isSameAsPlayed =
-            playedMove &&
-            (playedUci === playedMove.uci || move.san === playedMove.san);
-
-          if (isSameAsPlayed) {
-            setFeedback(
-              "The analysis does not show a better move here — this entry appears to be a non-blunder or a mate line."
-            );
-            return false;
-          }
-
+        if (move.san === puzzle.bestMove) {
           setDisplayFen(board.fen());
           setStatus("correct");
-          setFeedback(`${solution.san} avoids the ${puzzle.quality.toLowerCase()}!`);
+          setFeedback(
+            `${move.san} avoids the ${puzzle.quality.toLowerCase()}!`
+          );
           setSolved((prev) => new Set(prev).add(index));
           return true;
         }
@@ -286,21 +116,21 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
         setFeedback(`${move.san} isn't the engine's choice here — try again`);
         return false;
       },
-      [status, puzzle, solution, index]
+      [status, puzzle, index]
     );
 
     const handleReveal = useCallback(() => {
-      if (!puzzle || !solution) return;
+      if (!puzzle?.bestMove) return;
       const board = new Chess(puzzle.fen);
       try {
-        board.move(solution.san);
+        board.move(puzzle.bestMove);
         setDisplayFen(board.fen());
       } catch {
         // Keep the pre-move position if the SAN somehow fails
       }
       setStatus("revealed");
-      setFeedback(`Best was ${solution.san} — you played ${puzzle.playedSan}`);
-    }, [puzzle, solution]);
+      setFeedback(`Best was ${puzzle.bestMove} — you played ${puzzle.playedSan}`);
+    }, [puzzle]);
 
     const handleRetry = useCallback(() => {
       if (!puzzle) return;
@@ -311,171 +141,112 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
 
     if (keyPositions.length === 0) {
       return (
-        <Paper elevation={2} sx={{ p: 2 }}>
+        <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
           <Typography variant="h6" color="text.primary" gutterBottom>
             Puzzle Pack
           </Typography>
           <Typography color="text.secondary">
-            No blunders or mistakes found in these games — clean play!
+            No verified blunders or mistakes in these games — clean play!
           </Typography>
         </Paper>
       );
     }
 
     return (
-      <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 } }}>
+      <Paper
+        elevation={2}
+        sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 3, overflow: "hidden" }}
+      >
         <Box
           display="flex"
           alignItems="center"
           justifyContent="space-between"
-          flexWrap="wrap"
           gap={1}
           mb={1}
         >
-          <Box>
-            <Typography variant="h6" color="text.primary">
-              Puzzle Pack
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Positions from your games, worst drops first — find the move
-              that avoids your {keyPositions[0].quality.toLowerCase()}s
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={handleDownloadCsv}
-            >
-              Download CSV
-            </Button>
-            <Chip
-              icon={<CheckCircleIcon />}
-              label={`${solved.size} / ${keyPositions.length} solved`}
-              color={solved.size === keyPositions.length ? "success" : "default"}
-              variant="outlined"
-            />
-          </Stack>
+          <Typography variant="h6" fontWeight={700}>
+            Puzzle Pack
+          </Typography>
+          <Chip
+            icon={<CheckCircleIcon />}
+            label={`${solved.size} / ${keyPositions.length}`}
+            color={solved.size === keyPositions.length ? "success" : "default"}
+            variant="outlined"
+            size="small"
+          />
         </Box>
 
         <LinearProgress
           variant="determinate"
           value={(solved.size / keyPositions.length) * 100}
-          sx={{ mb: 2, borderRadius: 2 }}
+          sx={{ mb: 1.5, borderRadius: 2 }}
         />
 
         <Box
           sx={{
-            display: "grid",
-            gap: 3,
-            gridTemplateColumns: { xs: "1fr", md: "minmax(280px, 440px) 1fr" },
-            alignItems: "start",
+            borderRadius: 2,
+            overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
           }}
         >
-          <Box sx={{ position: "relative" }}>
-            <Chessboard
-              options={{
-                position: displayFen ?? puzzle.fen,
-                boardOrientation: sideToMove,
-                onPieceDrop: onDrop,
-                allowDragging: status === "solving",
-                darkSquareStyle: {
-                  backgroundColor: themeColors.darkSquareColor,
-                },
-                lightSquareStyle: {
-                  backgroundColor: themeColors.lightSquareColor,
-                },
-                id: "agine-puzzle-pack",
-              }}
+          <Chessboard
+            options={{
+              position: displayFen ?? puzzle.fen,
+              boardOrientation: sideToMove,
+              onPieceDrop: onDrop,
+              allowDragging: status === "solving",
+              darkSquareStyle: { backgroundColor: themeColors.darkSquareColor },
+              lightSquareStyle: {
+                backgroundColor: themeColors.lightSquareColor,
+              },
+              id: "agine-puzzle-pack",
+            }}
+          />
+        </Box>
+
+        <Stack spacing={1.5} mt={1.5}>
+          <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+            <Chip
+              label={puzzle.quality}
+              color={puzzle.quality === "Blunder" ? "error" : "warning"}
+              size="small"
             />
-            {status === "loading" && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  bgcolor: "rgba(0,0,0,0.4)",
-                }}
-              >
-                <CircularProgress size={32} />
-              </Box>
-            )}
+            <Typography fontWeight={700} fontSize="0.95rem">
+              {sideToMove === "white" ? "White" : "Black"} to move
+            </Typography>
           </Box>
 
-          <Stack spacing={2}>
-            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-              <Chip
-                label={puzzle.quality}
-                color={puzzle.quality === "Blunder" ? "error" : "warning"}
-                size="small"
-              />
-              <Typography fontWeight={700}>
-                {sideToMove === "white" ? "White" : "Black"} to move
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Puzzle {index + 1} of {keyPositions.length}
-              </Typography>
-            </Box>
+          <Typography fontSize="0.85rem" color="text.secondary">
+            You played{" "}
+            <strong>
+              {puzzle.moveLabel} {puzzle.playedSan}
+            </strong>{" "}
+            here, losing {puzzle.winRateDrop}% win rate. Find the better move.
+          </Typography>
 
-            <Typography fontSize="0.9rem" color="text.secondary">
-              In the game you played{" "}
-              <strong>
-                {puzzle.moveLabel} {puzzle.playedSan}
-              </strong>
-              , losing {puzzle.winRateDrop}% win rate. Find the better move.
-            </Typography>
+          {feedback && (
+            <Alert
+              severity={
+                status === "correct"
+                  ? "success"
+                  : status === "revealed"
+                  ? "info"
+                  : "warning"
+              }
+              sx={{ py: 0.25 }}
+            >
+              {feedback}
+            </Alert>
+          )}
 
-            {feedback && (
-              <Alert
-                severity={
-                  status === "correct"
-                    ? "success"
-                    : status === "revealed"
-                    ? "info"
-                    : "warning"
-                }
-                sx={{ py: 0.5 }}
-              >
-                {feedback}
-              </Alert>
-            )}
-
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {status === "solving" && solution && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<LightbulbIcon />}
-                  onClick={handleReveal}
-                >
-                  Show solution
-                </Button>
-              )}
-              {(status === "correct" || status === "revealed") && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<ReplayIcon />}
-                  onClick={handleRetry}
-                >
-                  Retry
-                </Button>
-              )}
-              <Tooltip title="Open this game in the full analyzer">
-                <Button
-                  size="small"
-                  startIcon={<OpenIcon />}
-                  onClick={() => onOpenGame(puzzle.gameId)}
-                >
-                  Open game
-                </Button>
-              </Tooltip>
-            </Stack>
-
-            <Box display="flex" alignItems="center" gap={1}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            flexWrap="wrap"
+            gap={1}
+          >
+            <Box display="flex" alignItems="center" gap={0.5}>
               <IconButton
                 onClick={() => goTo(index - 1)}
                 disabled={index === 0}
@@ -493,19 +264,47 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
               >
                 <ArrowForwardIcon />
               </IconButton>
-              {status === "correct" && index < keyPositions.length - 1 && (
+            </Box>
+
+            <Box display="flex" gap={1}>
+              {status === "solving" && (
                 <Button
                   size="small"
-                  variant="contained"
-                  endIcon={<ArrowForwardIcon />}
-                  onClick={() => goTo(index + 1)}
+                  variant="outlined"
+                  startIcon={<LightbulbIcon />}
+                  onClick={handleReveal}
                 >
-                  Next puzzle
+                  Solution
                 </Button>
               )}
+              {(status === "correct" || status === "revealed") &&
+                (index < keyPositions.length - 1 ? (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    endIcon={<ArrowForwardIcon />}
+                    onClick={() => goTo(index + 1)}
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<ReplayIcon />}
+                    onClick={handleRetry}
+                  >
+                    Retry
+                  </Button>
+                ))}
+              <Tooltip title="Open this game in the full analyzer">
+                <IconButton size="small" onClick={() => onOpenGame(puzzle.gameId)}>
+                  <OpenIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </Box>
-          </Stack>
-        </Box>
+          </Box>
+        </Stack>
       </Paper>
     );
   }

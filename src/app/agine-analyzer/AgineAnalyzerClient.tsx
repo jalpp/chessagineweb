@@ -4,15 +4,19 @@
  * @file AgineAnalyzerClient.tsx
  * @description Orchestration component for the Agine Analyzer page.
  *
+ * Layout follows the Lichess play page standard: a responsive
+ * column/row Stack where the analysis card (scrollable, tabbed) sits on
+ * the left and the big puzzle board column sits on the right. The board
+ * column can be hidden to give the analysis full width.
+ *
  * Responsibilities:
  * - Hosts the setup form and kicks off useBatchReview runs
- * - Renders download/analysis progress
- * - Lays out result tabs: Overview (stats + plots), Openings, Puzzles
- *   (interactive pack from the user's blunders), Themes and Games
+ * - Renders download/analysis/puzzle-validation progress
+ * - Lays out analysis tabs: Overview, Openings, Themes, Games
  * - Hands a clicked game off to the full /game analyzer via the same
  *   sessionStorage keys used by the Lichess live-play review flow
  *
- * All network calls live in @/libs/batchreview/api.
+ * All network calls live in @/libs/batchreview/api and themes.
  * All analysis math lives in @/libs/batchreview/analysis.
  * Sub-components live in @/componets/batchreview/.
  */
@@ -22,6 +26,8 @@ import {
   Alert,
   Box,
   Button,
+  Card,
+  CardContent,
   Container,
   LinearProgress,
   Paper,
@@ -36,6 +42,9 @@ import {
   MenuBook as OpeningIcon,
   Replay as ReplayIcon,
   SportsEsports as GamesIcon,
+  TrackChanges as ThemeIcon,
+  VisibilityOff as HideBoardIcon,
+  Visibility as ShowBoardIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { useSessionStorage } from "usehooks-ts";
@@ -52,6 +61,7 @@ import BatchStatsOverview from "@/componets/batchreview/BatchStatsOverview";
 import BatchCharts from "@/componets/batchreview/BatchCharts";
 import BatchOpeningStats from "@/componets/batchreview/BatchOpeningStats";
 import BatchPuzzlePack from "@/componets/batchreview/BatchPuzzlePack";
+import BatchThemeAnalysis from "@/componets/batchreview/BatchThemeAnalysis";
 import BatchGameList from "@/componets/batchreview/BatchGameList";
 
 import {
@@ -80,6 +90,7 @@ export default function AgineAnalyzerClient() {
   } = useBatchReview(engine);
 
   const [activeTab, setActiveTab] = useState(0);
+  const [showPuzzleBoard, setShowPuzzleBoard] = useState(true);
 
   // Same handoff keys the Lichess live-play review flow writes for /game
   const [, setReviewPgn] = useSessionStorage("agine_game_page_pgn", "");
@@ -98,6 +109,7 @@ export default function AgineAnalyzerClient() {
         Math.min(BATCH_MAX_GAMES, options.maxGames)
       );
       setActiveTab(0);
+      setShowPuzzleBoard(true);
       void generateBatchReview({ ...options, maxGames: clamped });
     },
     [generateBatchReview]
@@ -138,98 +150,195 @@ export default function AgineAnalyzerClient() {
     cancelBatchReview();
   }, [setResult, cancelBatchReview]);
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={700} gutterBottom>
-        Agine Analyzer
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Batch-review your last {BATCH_MIN_GAMES}–{BATCH_MAX_GAMES} Lichess
-        games — results, opening performance, accuracy trends, puzzles built
-        from your own blunders and a theme profile of where you go wrong.
-      </Typography>
+  // ── Setup / progress view ───────────────────────────────────────────────
+  if (!result) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Stack direction="row" alignItems="center" spacing={1.5} mb={1}>
+          <Box
+            component="img"
+            src="/static/images/agineowl.png"
+            alt="ChessAgine"
+            sx={{ width: 52, height: 52 }}
+          />
+          <Typography variant="h4" fontWeight={700}>
+            Agine Analyzer
+          </Typography>
+        </Stack>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          Batch-review your last {BATCH_MIN_GAMES}–{BATCH_MAX_GAMES} Lichess
+          games — results, opening performance, accuracy trends, theme
+          analysis and puzzles built from your own blunders.
+        </Typography>
 
-      {!result && (
         <Box sx={{ maxWidth: 560 }}>
           <BatchReviewSetup onStart={handleStart} disabled={isRunning} />
         </Box>
-      )}
 
-      {isRunning && (
-        <Paper elevation={2} sx={{ p: 3, mt: 3, maxWidth: 560 }}>
-          <Stack spacing={2}>
-            <Typography fontSize="0.9rem">{progressLabel}</Typography>
-            <LinearProgress variant="determinate" value={progress} />
-            <Button onClick={cancelBatchReview} color="inherit" size="small">
-              Cancel
-            </Button>
-          </Stack>
-        </Paper>
-      )}
-
-      {phase === "error" && error && (
-        <Alert severity="error" sx={{ mt: 3, maxWidth: 560 }}>
-          {error}
-        </Alert>
-      )}
-
-      {result && (
-        <Stack spacing={3}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            flexWrap="wrap"
-            gap={1}
-          >
-            <Tabs
-              value={activeTab}
-              onChange={(_, v) => setActiveTab(v)}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              <Tab icon={<OverviewIcon />} iconPosition="start" label="Overview" />
-              <Tab icon={<OpeningIcon />} iconPosition="start" label="Openings" />
-              <Tab icon={<PuzzleIcon />} iconPosition="start" label="Puzzles" />
-              <Tab icon={<GamesIcon />} iconPosition="start" label="Games" />
-            </Tabs>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<ReplayIcon />}
-              onClick={handleNewReview}
-            >
-              New Review
-            </Button>
-          </Box>
-
-          {activeTab === 0 && (
-            <Stack spacing={3}>
-              <BatchStatsOverview result={result} />
-              <BatchCharts result={result} />
+        {isRunning && (
+          <Paper elevation={2} sx={{ p: 3, mt: 3, maxWidth: 560 }}>
+            <Stack spacing={2}>
+              <Typography fontSize="0.9rem">{progressLabel}</Typography>
+              <LinearProgress variant="determinate" value={progress} />
+              <Button onClick={cancelBatchReview} color="inherit" size="small">
+                Cancel
+              </Button>
             </Stack>
-          )}
+          </Paper>
+        )}
 
-          {activeTab === 1 && (
-            <BatchOpeningStats openingStats={result.openingStats} />
-          )}
+        {phase === "error" && error && (
+          <Alert severity="error" sx={{ mt: 3, maxWidth: 560 }}>
+            {error}
+          </Alert>
+        )}
+      </Container>
+    );
+  }
 
-          {activeTab === 2 && (
+  // ── Results view: analysis card left, puzzle board right ───────────────
+  const hasPuzzles = result.keyPositions.length > 0;
+
+  return (
+    <Box sx={{ p: { xs: 1, sm: 2, md: 4 }, minHeight: "100vh" }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1.5}
+        mb={3}
+        flexWrap="wrap"
+      >
+        <Box
+          component="img"
+          src="/static/images/agineowl.png"
+          alt="ChessAgine"
+          sx={{ width: 44, height: 44 }}
+        />
+        <Typography variant="h5" fontWeight={700}>
+          Agine Analyzer
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {result.games.length} games for {result.username}
+        </Typography>
+        <Box sx={{ flexGrow: 1 }} />
+        {hasPuzzles && (
+          <Button
+            variant="text"
+            size="small"
+            startIcon={showPuzzleBoard ? <HideBoardIcon /> : <ShowBoardIcon />}
+            onClick={() =>
+              setShowPuzzleBoard((v) => {
+                // The Puzzles tab disappears when the board returns
+                if (!v && activeTab === 4) setActiveTab(0);
+                return !v;
+              })
+            }
+          >
+            {showPuzzleBoard ? "Hide puzzle mode" : "Show puzzle mode"}
+          </Button>
+        )}
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<ReplayIcon />}
+          onClick={handleNewReview}
+        >
+          New Review
+        </Button>
+      </Stack>
+
+      <Stack
+        direction={{ xs: "column-reverse", lg: "row" }}
+        spacing={{ xs: 2, md: 3 }}
+        alignItems="flex-start"
+      >
+        {/* Analysis card (left on desktop, below the board on mobile) */}
+        <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
+          <Card
+            sx={{
+              borderRadius: 3,
+              boxShadow: "0 8px 32px rgba(138,43,226,0.08)",
+              height: { lg: "calc(100vh - 160px)" },
+              maxHeight: { lg: "calc(100vh - 160px)" },
+              overflow: "auto",
+            }}
+          >
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Tabs
+                value={activeTab}
+                onChange={(_, v) => setActiveTab(v)}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{ mb: 2, borderBottom: 1, borderColor: "divider" }}
+              >
+                <Tab icon={<OverviewIcon />} iconPosition="start" label="Overview" />
+                <Tab icon={<OpeningIcon />} iconPosition="start" label="Openings" />
+                <Tab icon={<ThemeIcon />} iconPosition="start" label="Themes" />
+                <Tab icon={<GamesIcon />} iconPosition="start" label="Games" />
+                {!showPuzzleBoard && hasPuzzles && (
+                  <Tab icon={<PuzzleIcon />} iconPosition="start" label="Puzzles" />
+                )}
+              </Tabs>
+
+              {activeTab === 0 && (
+                <Stack spacing={3}>
+                  <BatchStatsOverview result={result} />
+                  <BatchCharts result={result} />
+                </Stack>
+              )}
+
+              {activeTab === 1 && (
+                <BatchOpeningStats openingStats={result.openingStats} />
+              )}
+
+              {activeTab === 2 && <BatchThemeAnalysis games={result.games} />}
+
+              {activeTab === 3 && (
+                <BatchGameList
+                  games={result.games}
+                  onReviewGame={handleReviewGame}
+                />
+              )}
+
+              {activeTab === 4 && !showPuzzleBoard && hasPuzzles && (
+                <Stack spacing={2}>
+                  <Alert severity="info">
+                    Puzzle mode is hidden — show it to solve on the big board.
+                  </Alert>
+                  <Button
+                    variant="contained"
+                    startIcon={<PuzzleIcon />}
+                    onClick={() => {
+                      setShowPuzzleBoard(true);
+                      setActiveTab(0);
+                    }}
+                    sx={{ alignSelf: "flex-start" }}
+                  >
+                    Show puzzle mode
+                  </Button>
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Puzzle board column (right on desktop, on top on mobile) */}
+        {showPuzzleBoard && hasPuzzles && (
+          <Box
+            sx={{
+              flex: "0 0 auto",
+              width: { xs: "100%", sm: 480, lg: 460, xl: 520 },
+              maxWidth: "100%",
+              mx: { xs: "auto", lg: 0 },
+            }}
+          >
             <BatchPuzzlePack
               keyPositions={result.keyPositions}
-              engine={engine}
               onOpenGame={handleOpenGameById}
             />
-          )}
-
-          {activeTab === 3 && (
-            <BatchGameList
-              games={result.games}
-              onReviewGame={handleReviewGame}
-            />
-          )}
-        </Stack>
-      )}
-    </Container>
+          </Box>
+        )}
+      </Stack>
+    </Box>
   );
 }
