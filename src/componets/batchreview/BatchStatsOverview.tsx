@@ -231,21 +231,25 @@ const BatchStatsOverview: React.FC<BatchStatsOverviewProps> = React.memo(
                   label="Accuracy"
                   fraction={group.avgAccuracy / 100}
                   detail={`${group.avgAccuracy}% average accuracy`}
+                  valueLabel={`${group.avgAccuracy}%`}
                 />
                 <TutorSegmentBar
                   label="Score"
                   fraction={group.scorePercent / 100}
                   detail={`${group.scorePercent}% score across ${group.games.length} games`}
+                  valueLabel={`${group.scorePercent}%`}
                 />
                 <TutorSegmentBar
                   label="Blunder Avoidance"
                   fraction={1 - Math.min(1, group.blundersPerGame / 1.5)}
                   detail={`${group.blundersPerGame.toFixed(2)} blunders per game`}
+                  valueLabel={`${group.blundersPerGame.toFixed(2)}/game`}
                 />
                 <TutorSegmentBar
                   label="Mistake Avoidance"
                   fraction={1 - Math.min(1, group.mistakesPerGame / 3)}
                   detail={`${group.mistakesPerGame.toFixed(2)} mistakes per game`}
+                  valueLabel={`${group.mistakesPerGame.toFixed(2)}/game`}
                 />
               </Box>
             </Paper>

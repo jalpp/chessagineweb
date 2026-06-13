@@ -278,6 +278,7 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
                       fraction={Math.abs(overallAverage[theme]) / maxScore}
                       detail={`Average score: ${overallAverage[theme]}`}
                       color={getThemeLabelColor(theme)}
+                      valueLabel={overallAverage[theme].toFixed(2)}
                     />
                   ));
                 })()}

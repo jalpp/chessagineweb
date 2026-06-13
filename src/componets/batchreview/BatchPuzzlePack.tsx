@@ -4,10 +4,12 @@ import {
   Box,
   Button,
   Chip,
+  FormControlLabel,
   IconButton,
   LinearProgress,
   Paper,
   Stack,
+  Switch,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -18,6 +20,7 @@ import {
   Lightbulb as LightbulbIcon,
   OpenInNew as OpenIcon,
   Replay as ReplayIcon,
+  Settings as SettingsIcon,
 } from "@mui/icons-material";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, PieceDropHandlerArgs } from "react-chessboard";
@@ -32,7 +35,7 @@ interface BatchPuzzlePackProps {
   onOpenGame: (gameId: string) => void;
 }
 
-type PuzzleStatus = "solving" | "correct" | "revealed";
+type PuzzleStatus = "solving" | "correct" | "revealed" | "mistake";
 
 /**
  * Puzzle board panel built from the user's verified blunders and mistakes.
@@ -47,6 +50,8 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
     const [feedback, setFeedback] = useState<string | null>(null);
     const [displayFen, setDisplayFen] = useState<string | null>(null);
     const [solved, setSolved] = useState<Set<number>>(new Set());
+    const [interactiveMode, setInteractiveMode] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
 
     const { boardTheme } = useSettings();
     const themeColors = getCurrentThemeColors(boardTheme);
@@ -107,6 +112,16 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
         }
 
         if (move.san === puzzle.playedSan) {
+          if (interactiveMode) {
+            // Let the move land so the user sees the consequence, then
+            // identify it as the mistake from the actual game
+            setDisplayFen(board.fen());
+            setStatus("mistake");
+            setFeedback(
+              `That's the mistake! ${move.san} dropped ${puzzle.winRateDrop}% win rate in the actual game.`
+            );
+            return true;
+          }
           setFeedback(
             `${move.san} is the move you played in the game — it dropped ${puzzle.winRateDrop}% win rate. Try another!`
           );
@@ -116,7 +131,7 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
         setFeedback(`${move.san} isn't the engine's choice here — try again`);
         return false;
       },
-      [status, puzzle, index]
+      [status, puzzle, index, interactiveMode]
     );
 
     const handleReveal = useCallback(() => {
@@ -167,14 +182,53 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
           <Typography variant="h6" fontWeight={700}>
             Puzzle Pack
           </Typography>
-          <Chip
-            icon={<CheckCircleIcon />}
-            label={`${solved.size} / ${keyPositions.length}`}
-            color={solved.size === keyPositions.length ? "success" : "default"}
-            variant="outlined"
-            size="small"
-          />
+          <Box display="flex" alignItems="center" gap={1}>
+            <Chip
+              icon={<CheckCircleIcon />}
+              label={`${solved.size} / ${keyPositions.length}`}
+              color={solved.size === keyPositions.length ? "success" : "default"}
+              variant="outlined"
+              size="small"
+            />
+            <Tooltip title="Puzzle settings">
+              <IconButton
+                size="small"
+                onClick={() => setShowSettings((v) => !v)}
+                color={showSettings ? "primary" : "default"}
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
+
+        {showSettings && (
+          <Box
+            sx={{
+              mb: 1.5,
+              p: 1.5,
+              borderRadius: 2,
+              border: 1,
+              borderColor: "divider",
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={interactiveMode}
+                  onChange={(e) => setInteractiveMode(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography fontSize="0.85rem">
+                  Interactive mode — hide the move you played; if you replay
+                  it, we&apos;ll point out it was the mistake
+                </Typography>
+              }
+            />
+          </Box>
+        )}
 
         <LinearProgress
           variant="determinate"
@@ -217,11 +271,21 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
           </Box>
 
           <Typography fontSize="0.85rem" color="text.secondary">
-            You played{" "}
-            <strong>
-              {puzzle.moveLabel} {puzzle.playedSan}
-            </strong>{" "}
-            here, losing {puzzle.winRateDrop}% win rate. Find the better move.
+            {interactiveMode && status === "solving" ? (
+              <>
+                It&apos;s {puzzle.moveLabel} — find the best move in this
+                position.
+              </>
+            ) : (
+              <>
+                You played{" "}
+                <strong>
+                  {puzzle.moveLabel} {puzzle.playedSan}
+                </strong>{" "}
+                here, losing {puzzle.winRateDrop}% win rate. Find the better
+                move.
+              </>
+            )}
           </Typography>
 
           {feedback && (
@@ -229,7 +293,7 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
               severity={
                 status === "correct"
                   ? "success"
-                  : status === "revealed"
+                  : status === "revealed" || status === "mistake"
                   ? "info"
                   : "warning"
               }
@@ -277,7 +341,9 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
                   Solution
                 </Button>
               )}
-              {(status === "correct" || status === "revealed") &&
+              {(status === "correct" ||
+                status === "revealed" ||
+                status === "mistake") &&
                 (index < keyPositions.length - 1 ? (
                   <Button
                     size="small"

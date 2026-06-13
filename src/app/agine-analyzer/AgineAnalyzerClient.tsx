@@ -57,6 +57,7 @@ import { EngineName } from "@/stockfish/engine/engine";
 import useBatchReview from "@/hooks/useBatchReview";
 
 import BatchReviewSetup from "@/componets/batchreview/BatchReviewSetup";
+import AnalysisPreviewPanel from "@/componets/batchreview/AnalysisPreviewPanel";
 import BatchStatsOverview from "@/componets/batchreview/BatchStatsOverview";
 import BatchCharts from "@/componets/batchreview/BatchCharts";
 import BatchOpeningStats from "@/componets/batchreview/BatchOpeningStats";
@@ -171,27 +172,42 @@ export default function AgineAnalyzerClient() {
           analysis and puzzles built from your own blunders.
         </Typography>
 
-        <Box sx={{ maxWidth: 560 }}>
-          <BatchReviewSetup onStart={handleStart} disabled={isRunning} />
+        <Box
+          sx={{
+            display: "grid",
+            gap: 3,
+            gridTemplateColumns: { xs: "1fr", md: "minmax(320px, 480px) 1fr" },
+            alignItems: "start",
+          }}
+        >
+          <Box>
+            <BatchReviewSetup onStart={handleStart} disabled={isRunning} />
+
+            {isRunning && (
+              <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
+                <Stack spacing={2}>
+                  <Typography fontSize="0.9rem">{progressLabel}</Typography>
+                  <LinearProgress variant="determinate" value={progress} />
+                  <Button
+                    onClick={cancelBatchReview}
+                    color="inherit"
+                    size="small"
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Paper>
+            )}
+
+            {phase === "error" && error && (
+              <Alert severity="error" sx={{ mt: 3 }}>
+                {error}
+              </Alert>
+            )}
+          </Box>
+
+          <AnalysisPreviewPanel result={null} isRunning={isRunning} />
         </Box>
-
-        {isRunning && (
-          <Paper elevation={2} sx={{ p: 3, mt: 3, maxWidth: 560 }}>
-            <Stack spacing={2}>
-              <Typography fontSize="0.9rem">{progressLabel}</Typography>
-              <LinearProgress variant="determinate" value={progress} />
-              <Button onClick={cancelBatchReview} color="inherit" size="small">
-                Cancel
-              </Button>
-            </Stack>
-          </Paper>
-        )}
-
-        {phase === "error" && error && (
-          <Alert severity="error" sx={{ mt: 3, maxWidth: 560 }}>
-            {error}
-          </Alert>
-        )}
       </Container>
     );
   }

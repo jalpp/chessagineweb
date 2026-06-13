@@ -10,6 +10,8 @@ interface TutorSegmentBarProps {
   detail?: string;
   /** Overrides the filled-segment color (defaults to gold/red by fraction). */
   color?: string;
+  /** Compact value shown to the right of the label, e.g. "76.4%" or "12.3". */
+  valueLabel?: string;
 }
 
 const SEGMENTS = 7;
@@ -24,20 +26,33 @@ const RED = "#d96b6b";
  * values red, matching the Tutor visual language.
  */
 const TutorSegmentBar: React.FC<TutorSegmentBarProps> = React.memo(
-  ({ label, fraction, detail, color }) => {
+  ({ label, fraction, detail, color, valueLabel }) => {
     const clamped = Math.max(0, Math.min(1, fraction));
     const filled = Math.max(clamped > 0 ? 1 : 0, Math.round(clamped * SEGMENTS));
     const fillColor = color ?? (clamped >= 0.45 ? GOLD : RED);
 
     const bar = (
       <Box>
-        <Typography
-          fontSize="0.9rem"
-          fontWeight={600}
-          sx={{ color: fillColor, mb: 0.5 }}
+        <Box
+          display="flex"
+          alignItems="baseline"
+          justifyContent="space-between"
+          gap={1}
+          mb={0.5}
         >
-          {label}
-        </Typography>
+          <Typography fontSize="0.9rem" fontWeight={600} sx={{ color: fillColor }}>
+            {label}
+          </Typography>
+          {valueLabel && (
+            <Typography
+              fontSize="0.8rem"
+              fontWeight={700}
+              sx={{ color: fillColor, fontFamily: "monospace" }}
+            >
+              {valueLabel}
+            </Typography>
+          )}
+        </Box>
         <Box display="flex" gap={0.75}>
           {Array.from({ length: SEGMENTS }, (_, i) => (
             <Box
