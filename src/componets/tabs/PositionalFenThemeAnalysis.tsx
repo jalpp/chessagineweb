@@ -24,7 +24,7 @@ import {
   Visibility,
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
-import { getThemeLabelColor, ThemeScore } from "@/libs/themes/helper";
+import { getThemeLabelColor, ThemeScore, normalizeThemeScore } from "@/libs/themes/helper";
 import { PositionEval} from "@/stockfish/engine/engine";
 import GuessTheme from "../puzzle/GuessPtag";
 
@@ -224,7 +224,7 @@ export const PositionFenThemeAnalysis: React.FC<PositionFenThemeAnalysisProps> =
                           </Typography>
                         </Stack>
                         <Typography variant="h5" sx={{ color: getThemeLabelColor(theme) }}>
-                          {scores[theme].toFixed(2)}
+                          {normalizeThemeScore(scores[theme]).toFixed(2)}
                         </Typography>
                       </CardContent>
                     </Card>
