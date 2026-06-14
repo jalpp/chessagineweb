@@ -2,7 +2,7 @@
 
 import { usePageReady } from "@/hooks/usePageReady";
 import {
-  Box, Container, Paper, Typography, Stack,
+  Box, Button, Container, Paper, Typography, Stack,
   Select, MenuItem, FormControl, Switch, Slider, Alert,
   Tooltip,
 } from "@mui/material";
@@ -16,7 +16,7 @@ import {
   SmartToy as ModelIcon,
   CheckCircle as CheckIcon,
 } from "@mui/icons-material";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
 import { useSettings } from "@/context/SettingContext";
 import { useTheme as useAppTheme, ThemeType } from "@/context/ThemeContext";
@@ -376,6 +376,7 @@ function SettingRow({ label, description, children }: {
 export default function SettingsPage() {
   usePageReady();
   const { isSignedIn } = useAuth();
+  const {openSignIn} = useClerk(); 
   const { currentTheme, setTheme } = useAppTheme();
 
   const {
@@ -592,7 +593,9 @@ export default function SettingsPage() {
                   </Typography>
                 </Alert>
                 <Box display="flex" justifyContent="center">
-                  <SignIn routing="hash" />
+                  <Button variant="contained" onClick={() => openSignIn()}>
+                    Sign in
+                  </Button>
                 </Box>
               </Section>
             </Paper>

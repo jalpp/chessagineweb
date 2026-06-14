@@ -166,16 +166,12 @@ function ChatPageInner() {
         <Typography variant="body1" color="text.secondary">
           Please sign in or sign up to use Agine Chat.
         </Typography>
-         <Box
+         <Button
             onClick={() => openSignIn()}
-            sx={{
-  
-              "&:hover": { opacity: 0.75 },
-              transition: "opacity 0.15s",
-            }}
+            
           >
-            <Typography sx={{ lineHeight: 1, color: "text.secondary" }}>Sign In</Typography>
-          </Box>
+            Sign In
+          </Button>
       </Box>
     );
   }
