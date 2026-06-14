@@ -11,7 +11,7 @@ import { Thread } from "@/components/thread";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useTheme } from "@/context/ThemeContext";
 import { chatThemeVars } from "@/libs/setting/helper";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
 import { useState } from "react";
 import {
@@ -98,6 +98,7 @@ const chessAttachmentAdapter: AttachmentAdapter = {
 function ChatPageInner() {
   const { isSignedIn, has } = useAuth();
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
+  const {openSignIn} = useClerk();
  
   const { currentTheme } = useTheme();
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
@@ -165,7 +166,16 @@ function ChatPageInner() {
         <Typography variant="body1" color="text.secondary">
           Please sign in or sign up to use Agine Chat.
         </Typography>
-        <SignIn />
+         <Box
+            onClick={() => openSignIn()}
+            sx={{
+  
+              "&:hover": { opacity: 0.75 },
+              transition: "opacity 0.15s",
+            }}
+          >
+            <Typography sx={{ lineHeight: 1, color: "text.secondary" }}>Sign In</Typography>
+          </Box>
       </Box>
     );
   }
