@@ -27,6 +27,7 @@ import { RadarChart } from "@mui/x-charts";
 import { getThemeLabelColor, ThemeScore, normalizeThemeScore } from "@/libs/themes/helper";
 import { PositionEval} from "@/stockfish/engine/engine";
 import GuessTheme from "../puzzle/GuessPtag";
+import { formatThemeName } from "../batchreview/BatchThemeAnalysis";
 
 interface PositionFenThemeAnalysisProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -35,11 +36,6 @@ interface PositionFenThemeAnalysisProps {
   error: string | null;
 }
 
-const formatThemeName = (theme: string) =>
-  theme
-    .split(/(?=[A-Z])/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 
 export const getThemeIcon = (theme: keyof ThemeScore) => {
   switch (theme) {

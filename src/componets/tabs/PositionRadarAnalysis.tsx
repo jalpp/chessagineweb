@@ -24,6 +24,7 @@ import { ThemeScore, GameReviewTheme, getThemeLabelColor, normalizeThemeScore } 
 import { getThemeIcon } from "./PositionalFenThemeAnalysis";
 import GuessTheme from "../puzzle/GuessPtag";
 import { PositionEval} from "@/stockfish/engine/engine";
+import { formatThemeName } from "../batchreview/BatchThemeAnalysis";
 
 
 interface CurrentPositionAnalysisProps {
@@ -32,13 +33,6 @@ interface CurrentPositionAnalysisProps {
   stockfishAnalysisResult: PositionEval | null;
   moveAnalysis: MoveAnalysis[];
 }
-
-const formatThemeName = (theme: string) =>
-  theme
-    .split(/(?=[A-Z])/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-
 
 const getMoveQualityColor = (quality: string) => {
   return getMoveClassificationStyle(quality as MoveQuality).color
