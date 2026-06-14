@@ -144,11 +144,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(data, { headers: CORS_HEADERS });
   } catch (error) {
-    console.error("[/api/nn] error:", error);
+    console.error("[/api/nn] error:", error instanceof Error ? error.message : "Internal error");
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Internal error",
+        error: "Internal Server Error, plesae contact the developer",
       },
       { status: 500, headers: CORS_HEADERS },
     );
