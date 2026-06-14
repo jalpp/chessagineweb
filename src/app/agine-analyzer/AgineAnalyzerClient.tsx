@@ -40,12 +40,14 @@ import {
   BarChart as OverviewIcon,
   Extension as PuzzleIcon,
   MenuBook as OpeningIcon,
+  HelpOutline as HelpOutlineIcon,
   Replay as ReplayIcon,
   SportsEsports as GamesIcon,
   TrackChanges as ThemeIcon,
   VisibilityOff as HideBoardIcon,
   Visibility as ShowBoardIcon,
 } from "@mui/icons-material";
+import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useSessionStorage } from "usehooks-ts";
 import { Chess } from "chess.js";
@@ -155,7 +157,13 @@ export default function AgineAnalyzerClient() {
   if (!result) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5} mb={1}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.5}
+          mb={1}
+          flexWrap="wrap"
+        >
           <Box
             component="img"
             src="/static/images/agineowl.png"
@@ -165,6 +173,15 @@ export default function AgineAnalyzerClient() {
           <Typography variant="h4" fontWeight={700}>
             Agine Analyzer
           </Typography>
+          <Box sx={{ flexGrow: 1 }} />
+          <Button
+            component={NextLink}
+            href="/agine-analyzer/themes"
+            size="small"
+            startIcon={<HelpOutlineIcon />}
+          >
+            What do these scores mean?
+          </Button>
         </Stack>
         <Typography color="text.secondary" sx={{ mb: 3 }}>
           Batch-review your last {BATCH_MIN_GAMES}–{BATCH_MAX_GAMES} Lichess
@@ -253,6 +270,15 @@ export default function AgineAnalyzerClient() {
             {showPuzzleBoard ? "Hide puzzle mode" : "Show puzzle mode"}
           </Button>
         )}
+        <Button
+          component={NextLink}
+          href="/agine-analyzer/themes"
+          variant="text"
+          size="small"
+          startIcon={<HelpOutlineIcon />}
+        >
+          What do these scores mean?
+        </Button>
         <Button
           variant="outlined"
           size="small"

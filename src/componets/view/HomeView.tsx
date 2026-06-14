@@ -22,6 +22,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ExtensionIcon from "@mui/icons-material/Extension";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import QueryStatsIcon from "@mui/icons-material/QueryStats";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useLocalStorage } from "usehooks-ts";
@@ -104,6 +105,8 @@ const features: {
   path: string;
   colorKey: ColorKey;
   badge?: string;
+  /** Image-based icon (e.g. the Lichess logo) shown instead of `icon`. */
+  iconSrc?: string;
 }[] = [
   {
     icon: BoltIcon,
@@ -114,11 +117,30 @@ const features: {
     badge: "Popular",
   },
   {
+    icon: QueryStatsIcon,
+    title: "Agine Analyzer",
+    description:
+      "Batch-review your recent Lichess games — stats, openings, themes and puzzles built from your own blunders.",
+    path: "/agine-analyzer",
+    colorKey: "secondary",
+    badge: "New",
+  },
+  {
     icon: AnalyticsIcon,
     title: "Game Analysis",
     description: "Upload games or paste PGN for game analysis.",
     path: "/game",
-    colorKey: "secondary",
+    colorKey: "info",
+  },
+  {
+    icon: SportsEsportsIcon,
+    title: "Play on Lichess",
+    description:
+      "Connect your Lichess account and play rated or casual games with live Agine review.",
+    path: "/lichess-play",
+    colorKey: "success",
+    badge: "New",
+    iconSrc: "/static/images/lichess-logo.png",
   },
   {
     icon: ExtensionIcon,
@@ -291,7 +313,16 @@ function FeatureCard({
                 color,
               }}
             >
-              <IconComp sx={{ fontSize: 24 }} />
+              {feature.iconSrc ? (
+                <Box
+                  component="img"
+                  src={feature.iconSrc}
+                  alt=""
+                  sx={{ width: 24, height: 24, imageRendering: "crisp-edges" }}
+                />
+              ) : (
+                <IconComp sx={{ fontSize: 24 }} />
+              )}
             </Box>
             {feature.badge && (
               <Chip
@@ -502,6 +533,42 @@ export default function HomeView() {
               />
               
             </Box>
+
+            {/* Quick actions — the two fastest paths into the app */}
+            <Stack
+              className="anim-2"
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.5}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<QueryStatsIcon />}
+                endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
+                onClick={() => router.push("/agine-analyzer")}
+                sx={{ px: 3, fontWeight: 600 }}
+              >
+                Analyze My Games
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={
+                  <Box
+                    component="img"
+                    src="/static/images/lichess-logo.png"
+                    alt=""
+                    sx={{ width: 20, height: 20, imageRendering: "crisp-edges" }}
+                  />
+                }
+                endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
+                onClick={() => router.push("/lichess-play")}
+                sx={{ px: 3, fontWeight: 600 }}
+              >
+                Play on Lichess
+              </Button>
+            </Stack>
           </Stack>
         </Container>
       </Box>
@@ -593,15 +660,23 @@ export default function HomeView() {
               variant="body2"
               sx={{ color: "text.secondary", maxWidth: 520 }}
             >
-              Start with the Position Board to see how Agine's analysis works,
-              or jump into Game Analysis to review your most recent games with
-              engine and neural nets.
+              Connect your Lichess username to the Agine Analyzer for an
+              instant report on your recent games, or start with the Position
+              Board to see how Agine's analysis works.
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1.5} flexShrink={0}>
+          <Stack direction="row" spacing={1.5} flexShrink={0} flexWrap="wrap">
             <Button
               variant="contained"
+              size="medium"
+              endIcon={<QueryStatsIcon />}
+              onClick={() => router.push("/agine-analyzer")}
+            >
+              Analyze My Games
+            </Button>
+            <Button
+              variant="outlined"
               size="medium"
               endIcon={<BoltIcon />}
               onClick={() => router.push("/position")}

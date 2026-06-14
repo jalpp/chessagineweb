@@ -283,10 +283,14 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             });
             const pwwr = evaluationToWinRate(postAnalysis.lines?.[0]);
             postMoveWinRate = p.activePlayer === "w" ? pwwr : 100 - pwwr;
-            // Post-move cp from White's perspective (Stockfish always returns from side-to-move;
-            // after the move, the side-to-move is the opponent, so negate)
+            // postAnalysis.lines[0].cp is ALREADY normalized to White's
+            // perspective by parseEvaluationResults (it negates cp/mate
+            // whenever Black is to move at p.postMovefen). evalMove must
+            // stay in White's perspective for the eval graph, so it is used
+            // as-is — negating it here (as a previous version did) double-
+            // flips the sign and produces a White/Black-mirrored graph.
             const postCp = postAnalysis.lines?.[0]?.cp ?? 0;
-            evalMove = clampEvalCp(-postCp); // negate: opponent's good position is bad for White
+            evalMove = clampEvalCp(postCp);
           } else {
             postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
             // ChessDB rawEval is from the side-to-move's perspective at postMovefen;

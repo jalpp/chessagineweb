@@ -19,7 +19,8 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { TrackChanges as TrackChangesIcon } from "@mui/icons-material";
+import { TrackChanges as TrackChangesIcon, HelpOutline as HelpOutlineIcon } from "@mui/icons-material";
+import NextLink from "next/link";
 import { LineChart, RadarChart } from "@mui/x-charts";
 import { GameSummary } from "@/libs/batchreview/types";
 import { parallelLimit } from "@/libs/batchreview/chessdb";
@@ -222,14 +223,33 @@ const BatchThemeAnalysis: React.FC<BatchThemeAnalysisProps> = React.memo(
 
     return (
       <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 } }}>
-        <Typography variant="h6" color="text.primary" gutterBottom>
-          Theme Analysis
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Profiles each game with the Agine themes engine from your side of
-          the board — compare how your themes hold up in wins vs losses and
-          track them across games
-        </Typography>
+        <Box
+          display="flex"
+          alignItems="flex-start"
+          justifyContent="space-between"
+          gap={1}
+          flexWrap="wrap"
+        >
+          <Box>
+            <Typography variant="h6" color="text.primary" gutterBottom>
+              Theme Analysis
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Profiles each game with the Agine themes engine from your side
+              of the board — compare how your themes hold up in wins vs
+              losses and track them across games
+            </Typography>
+          </Box>
+          <Button
+            component={NextLink}
+            href="/agine-analyzer/themes"
+            size="small"
+            startIcon={<HelpOutlineIcon />}
+            sx={{ flexShrink: 0 }}
+          >
+            What do these scores mean?
+          </Button>
+        </Box>
 
         {!profiles && !loading && (
           <Stack

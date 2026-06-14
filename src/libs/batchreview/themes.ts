@@ -105,8 +105,22 @@ export async function fetchGameThemeReview(
 }
 
 /**
- * Extracts the reviewed user's average theme profile from a game review.
- * @returns Sanitized average scores for the user's color, or null
+ * Extracts the reviewed user's average theme profile from a game review,
+ * oriented to the user's own perspective.
+ *
+ * The themes service computes every ThemeScore as White-minus-Black for a
+ * given position (PositionScorer.getThemeScore negates symmetrically for
+ * "b", which cancels out — see src/themes/protocol/positionScorer.ts and
+ * src/themes/review/ovp.ts in jalpp/StockfishWasmApi). As a result,
+ * `review.whiteAnalysis.averageThemeScores` and
+ * `review.blackAnalysis.averageThemeScores` are numerically identical: both
+ * are "White minus Black", never "you minus opponent".
+ *
+ * To make a positive score mean "the reviewed user was ahead" regardless of
+ * which color they played, every theme value is negated for black-side
+ * users (White-minus-Black -> Black-minus-White = user-minus-opponent).
+ *
+ * @returns Sanitized, user-perspective average scores, or null
  */
 export function getUserThemeProfile(
   review: GameReviewTheme,
@@ -116,7 +130,15 @@ export function getUserThemeProfile(
     userColor === "white" ? review.whiteAnalysis : review.blackAnalysis;
   // normalizeThemeScores (themes wrapper fix) handles {data} envelopes and
   // coerces every theme key to a finite number
-  return normalizeThemeScores(side?.averageThemeScores ?? null);
+  const score = normalizeThemeScores(side?.averageThemeScores ?? null);
+  if (!score) return null;
+
+  if (userColor === "black") {
+    const flipped = { ...score };
+    for (const key of THEME_KEYS) flipped[key] = -flipped[key];
+    return flipped;
+  }
+  return score;
 }
 
 /**
