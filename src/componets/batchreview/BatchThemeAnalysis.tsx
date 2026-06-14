@@ -46,11 +46,20 @@ interface GameThemeProfile {
 
 const SAMPLE_OPTIONS = [10, 20, 30];
 
-const formatThemeName = (theme: string) =>
-  theme
-    .split(/(?=[A-Z])/)
+export const formatThemeName = (theme: string) => {
+  const lower = theme.toLowerCase();
+  if (lower.includes("light")) {
+    return "Light Square Control";
+  }
+  if (lower.includes("dark")) {
+    return "Dark Square Control";
+  }
+
+  return theme
+    .split(/(?=[A-Z])/) 
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
 
 /**
  * Batch theme analysis powered by the Agine themes engine.
