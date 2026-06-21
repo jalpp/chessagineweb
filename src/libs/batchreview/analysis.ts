@@ -194,6 +194,8 @@ export function classifyUserMoves(
         bestMove: lichessEntry?.variation?.split(" ")[0] ?? lichessEntry?.best,
         quality,
         winRateDrop: Math.round(drop),
+        whitePlayer: game.players.white.user?.name,
+        blackPlayer: game.players.black.user?.name,
       });
     }
   }

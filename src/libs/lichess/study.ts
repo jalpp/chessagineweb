@@ -84,10 +84,11 @@ function resolveBestMoveSan(fen: string, bestMove?: string): string | null {
 /**
  * Builds a single-game PGN "chapter" for one verified puzzle.
  *
- * Lichess names an imported chapter "<White> - <Black>" when both tags are
- * present, so the puzzle's quality/rank and win-rate drop are encoded in
- * those tags to double as a readable chapter title. The `Site` tag points
- * back at the source Lichess game so the chapter links to it.
+ * White/Black tags carry the real player names from the source game (so
+ * Lichess's "<White> - <Black>" chapter auto-naming is meaningful), and the
+ * puzzle explanation — side to move, what was played, and why it was a
+ * mistake — lives in a comment in the chapter body instead of being
+ * crammed into PGN headers. The `Site` tag points back at the source game.
  *
  * @param puzzle        - The verified puzzle (pre-move FEN + best move)
  * @param indexInPack   - 1-based position of this puzzle within the full pack
@@ -102,21 +103,29 @@ export function buildPuzzleChapterPgn(
     today.getMonth() + 1
   ).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
 
+  const sideToMove = puzzle.fen.split(" ")[1] === "b" ? "Black" : "White";
+  const white = pgnEscape(puzzle.whitePlayer || "White");
+  const black = pgnEscape(puzzle.blackPlayer || "Black");
+
   const tags = [
     `[Event "Agine Puzzle Pack"]`,
     `[Site "https://lichess.org/${puzzle.gameId}"]`,
     `[Date "${pgnDate}"]`,
-    `[White "${indexInPack}. ${pgnEscape(puzzle.quality)}"]`,
-    `[Black "${puzzle.winRateDrop}% win rate lost"]`,
+    `[White "${white}"]`,
+    `[Black "${black}"]`,
     `[Result "*"]`,
     `[Variant "Standard"]`,
     `[SetUp "1"]`,
     `[FEN "${puzzle.fen}"]`,
   ].join("\n");
 
-  const comment = `{ ${pgnEscape(puzzle.playedSan)} was played in the game here, losing ${puzzle.winRateDrop}% win rate. Find the engine's move. }`;
+  const comment = `{ Puzzle ${indexInPack} — ${sideToMove} to move. ${pgnEscape(
+    puzzle.playedSan
+  )} was played here — a ${pgnEscape(puzzle.quality)} that lost ${
+    puzzle.winRateDrop
+  }% win rate. Find the engine's move. }`;
   const movetext = san
-    ? `${puzzle.moveLabel} ${san} ${comment} *`
+    ? `${comment} ${puzzle.moveLabel} ${san} *`
     : `${comment} *`;
 
   return `${tags}\n\n${movetext}\n`;

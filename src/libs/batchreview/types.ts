@@ -87,6 +87,10 @@ export interface KeyPosition {
   quality: MoveQuality;
   /** Win-rate drop (percentage points) caused by the move. */
   winRateDrop: number;
+  /** White player's display name from the source game, when known. */
+  whitePlayer?: string;
+  /** Black player's display name from the source game, when known. */
+  blackPlayer?: string;
 }
 
 /** Per-game summary produced by the batch analyzer. */
