@@ -185,8 +185,8 @@ export default function AgineAnalyzerClient() {
         </Stack>
         <Typography color="text.secondary" sx={{ mb: 3 }}>
           Batch-review your last {BATCH_MIN_GAMES}–{BATCH_MAX_GAMES} Lichess
-          games — results, opening performance, accuracy trends, theme
-          analysis and puzzles built from your own blunders.
+          games results, opening performance, accuracy trends, theme
+          analysis and puzzles built from your own blunders. You can save the generated puzzle packs in to Lichess studies
         </Typography>
 
         <Box

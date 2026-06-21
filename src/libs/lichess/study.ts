@@ -123,7 +123,7 @@ export function buildPuzzleChapterPgn(
     puzzle.playedSan
   )} was played here — a ${pgnEscape(puzzle.quality)} that lost ${
     puzzle.winRateDrop
-  }% win rate. Find the engine's move. }`;
+  }% win rate. Find the best move. }`;
   const movetext = san
     ? `${comment} ${puzzle.moveLabel} ${san} *`
     : `${comment} *`;
@@ -247,9 +247,13 @@ export function suggestStudyName(
   batch: StudyBatch,
   totalBatches: number
 ): string {
+  const today = new Date();
+  const pgnDate = `${today.getFullYear()}.${String(
+    today.getMonth() + 1
+  ).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
   return totalBatches === 1
-    ? "Agine Puzzle Pack"
-    : `Agine Puzzle Pack ${batch.batchNumber}/${totalBatches} — ${batch.label}`;
+    ? `Agine Puzzle Pack ${pgnDate}`
+    : `Agine Puzzle Pack ${batch.batchNumber}/${totalBatches} — ${batch.label} ${pgnDate}`;
 }
 
 /** One chapter created by an import-pgn call. */
@@ -273,6 +277,7 @@ export async function importPgnToStudy(
   studyId: string,
   pgn: string
 ): Promise<ImportedChapter[]> {
+
   const body = new URLSearchParams({
     pgn,
     orientation: "white",
