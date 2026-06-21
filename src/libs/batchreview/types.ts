@@ -170,3 +170,15 @@ export type BatchReviewPhase =
 export const BATCH_MIN_GAMES = 5;
 export const BATCH_MAX_GAMES = 200;
 export const BATCH_LOCAL_DEPTH_DEFAULT = 12;
+
+/**
+ * Hard cap on verified puzzles kept in a single puzzle pack.
+ *
+ * Used both as the candidate cap before puzzle validation
+ * (see useBatchReview's `validatePuzzleCandidates`) and as the upper bound
+ * when exporting a puzzle pack to Lichess studies — see
+ * `@/libs/lichess/study`, which further splits packs at this size into
+ * STUDY_CHAPTER_CHUNK_SIZE-chapter studies (Lichess caps a study at 64
+ * chapters).
+ */
+export const MAX_PUZZLE_PACK_SIZE = 200;

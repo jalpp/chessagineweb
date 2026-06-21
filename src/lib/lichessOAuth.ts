@@ -8,6 +8,7 @@ const REDIRECT_URI =
 
 export const LICHESS_SCOPES = [
   "study:read",
+  "study:write",
   "board:play",
 ].join(" ");
 
