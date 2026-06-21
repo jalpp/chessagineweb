@@ -17,6 +17,7 @@ import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
   CheckCircle as CheckCircleIcon,
+  CloudUpload as CloudUploadIcon,
   Lightbulb as LightbulbIcon,
   OpenInNew as OpenIcon,
   Replay as ReplayIcon,
@@ -27,6 +28,7 @@ import { Chessboard, PieceDropHandlerArgs } from "react-chessboard";
 import { KeyPosition } from "@/libs/batchreview/types";
 import { useSettings } from "@/context/SettingContext";
 import { getCurrentThemeColors } from "@/libs/setting/helper";
+import SaveToLichessStudyDialog from "./SaveToLichessStudyDialog";
 
 interface BatchPuzzlePackProps {
   /** Verified puzzles: best move resolved and different from the played move. */
@@ -52,6 +54,7 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
     const [solved, setSolved] = useState<Set<number>>(new Set());
     const [interactiveMode, setInteractiveMode] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
+    const [showSaveDialog, setShowSaveDialog] = useState(false);
 
     const { boardTheme } = useSettings();
     const themeColors = getCurrentThemeColors(boardTheme);
@@ -168,6 +171,7 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
     }
 
     return (
+      <>
       <Paper
         elevation={2}
         sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 3, overflow: "hidden" }}
@@ -190,6 +194,15 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
               variant="outlined"
               size="small"
             />
+            <Tooltip title="Save this puzzle pack to a Lichess study">
+              <IconButton
+                size="small"
+                onClick={() => setShowSaveDialog(true)}
+                color={showSaveDialog ? "primary" : "default"}
+              >
+                <CloudUploadIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Puzzle settings">
               <IconButton
                 size="small"
@@ -372,6 +385,13 @@ const BatchPuzzlePack: React.FC<BatchPuzzlePackProps> = React.memo(
           </Box>
         </Stack>
       </Paper>
+
+      <SaveToLichessStudyDialog
+        open={showSaveDialog}
+        onClose={() => setShowSaveDialog(false)}
+        keyPositions={keyPositions}
+      />
+      </>
     );
   }
 );

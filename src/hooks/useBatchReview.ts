@@ -19,9 +19,13 @@ import type {
   BatchReviewResult,
   KeyPosition,
 } from "@/libs/batchreview/types";
+import { MAX_PUZZLE_PACK_SIZE } from "@/libs/batchreview/types";
 
-/** Hard cap on candidate positions sent through puzzle validation. */
-const MAX_PUZZLE_CANDIDATES = 60;
+/**
+ * Hard cap on candidate positions sent through puzzle validation.
+ * Shared with the Lichess study export feature — see MAX_PUZZLE_PACK_SIZE.
+ */
+const MAX_PUZZLE_CANDIDATES = MAX_PUZZLE_PACK_SIZE;
 /** Depth for the engine fallback when validating puzzle best moves. */
 const PUZZLE_VALIDATION_DEPTH = 14;
 
