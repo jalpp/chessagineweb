@@ -17,10 +17,7 @@ import { validateFen } from "chess.js";
  * Some of move classification logic is taken from ChessKit devs
  * https://github.com/GuillaumeSD/Chesskit/blob/main/src/lib/engine/helpers/moveClassification.ts
  *
- * Performance rewrite: all ChessDB fetches run in parallel (8 concurrent),
- * BigLeela net evals fire non-blocking while Stockfish runs serially only
- * for positions ChessDB missed.
- *
+ * 
  * @author jalpp, ChessKit devs
  */
 
@@ -90,6 +87,24 @@ async function parallelLimit<T>(
 }
 
 // ---------------------------------------------------------------------------
+// Detect terminal game states from a post-move FEN
+// ---------------------------------------------------------------------------
+interface TerminalState {
+  isCheckmate: boolean;
+  isStalemate: boolean;
+  isDraw: boolean; // stalemate, insufficient material, 50-move, repetition
+}
+
+function getTerminalState(fen: string): TerminalState {
+  const board = new Chess(fen);
+  return {
+    isCheckmate: board.isCheckmate(),
+    isStalemate: board.isStalemate(),
+    isDraw: board.isDraw(),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: number = 15) => {
@@ -123,6 +138,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           arrowMove: Move;
           uciMove: string;
           openingMatch: boolean;
+          terminal: TerminalState;
           /** UCI moves from the game start up to (not including) this ply.
            *  Used as "position startpos moves <...>" to warm Stockfish's TT
            *  with ancestor positions before searching preMovefen.
@@ -160,6 +176,7 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             arrowMove: moveObject,
             uciMove,
             openingMatch: isFenInAllDatabases(gameBoard.fen()),
+            terminal: getTerminalState(gameBoard.fen()),
             movesUpToPre,
             movesUpToPost: [...moveHistory],
           });
@@ -169,6 +186,8 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
         setGameReviewProgress(5);
 
         // ── Phase 1: parallel ChessDB (8 concurrent, pre+post together) ─────
+        // Skip ChessDB fetch for the post-move FEN of terminal positions — they
+        // have no legal moves so ChessDB always returns empty, saving a round trip.
         const nonBook = plyInfos.filter((p) => !p.openingMatch);
 
         const [preResults, postResults] = await Promise.all([
@@ -177,7 +196,11 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             8
           ),
           parallelLimit(
-            nonBook.map((p) => () => fetchChessDBFast(p.postMovefen)),
+            nonBook.map((p) => () =>
+              p.terminal.isCheckmate || p.terminal.isDraw
+                ? Promise.resolve([] as CandidateMove[])
+                : fetchChessDBFast(p.postMovefen)
+            ),
             8
           ),
         ]);
@@ -231,12 +254,28 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           const preData = preDB.get(p.plyIndex)!;
           const postData = postDB.get(p.plyIndex)!;
 
+          // ── Terminal position short-circuit ──────────────────────────────────
+          // If the move delivered checkmate or ended in a draw, we can set the
+          // post-move eval and win-rate directly without calling the engine.
+          // The pre-move side still needs evaluating normally (handled below).
+          let terminalEvalMove: number | undefined;
+          let terminalPostWinRate: number | undefined;
+
+          if (p.terminal.isCheckmate) {
+            // The active player just delivered checkmate — they won.
+            terminalEvalMove = p.activePlayer === "w" ? 1100 : -1100;
+            terminalPostWinRate = p.activePlayer === "w" ? 100 : 0;
+          } else if (p.terminal.isDraw || p.terminal.isStalemate) {
+            terminalEvalMove = 0;
+            terminalPostWinRate = 50;
+          }
+
           let preMoveWinRate = 0;
           let secondBestWinRate: number | undefined;
-          let postMoveWinRate = 0;
+          let postMoveWinRate = terminalPostWinRate ?? 0;
           let bestMove: string | undefined;
           let sanBestMove: string | undefined;
-          let evalMove = 0;
+          let evalMove = terminalEvalMove ?? 0;
           let sfAnalysis: any;
 
           if (preData.length === 0) {
@@ -258,14 +297,12 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               : undefined;
 
             bestMove = analysis.bestMove;
-            // evalMove is assigned from the POST-move position below
 
             const tmp = new Chess(p.preMovefen);
             const mo = bestMove ? tmp.move(bestMove) : undefined;
             sanBestMove = mo?.san;
           } else {
             preMoveWinRate = percentToNumber(preData[0].winrate);
-            // Use rawEval (centipawns) from ChessDB, not the pre-divided score string
             secondBestWinRate = preData[1]
               ? percentToNumber(preData[1].winrate)
               : undefined;
@@ -274,29 +311,33 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
           }
 
           // ── Evaluate the position AFTER the move (fixes 1-ply lag) ─────────
-          if (postData.length === 0) {
-            const postAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
-              fen: p.postMovefen,
-              depth: searchDepth,
-              multiPv: 1,
-              moves: isStartPos ? p.movesUpToPost : null,
-            });
-            const pwwr = evaluationToWinRate(postAnalysis.lines?.[0]);
-            postMoveWinRate = p.activePlayer === "w" ? pwwr : 100 - pwwr;
-            // postAnalysis.lines[0].cp is ALREADY normalized to White's
-            // perspective by parseEvaluationResults (it negates cp/mate
-            // whenever Black is to move at p.postMovefen). evalMove must
-            // stay in White's perspective for the eval graph, so it is used
-            // as-is — negating it here (as a previous version did) double-
-            // flips the sign and produces a White/Black-mirrored graph.
-            const postCp = postAnalysis.lines?.[0]?.cp ?? 0;
-            evalMove = clampEvalCp(postCp);
-          } else {
-            postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
-            // ChessDB rawEval is from the side-to-move's perspective at postMovefen;
-            // negate to convert to White's perspective
-            const postRaw = Number(postData[0].rawEval ?? 0);
-            evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
+          // Skip engine call entirely for terminal positions — we already have
+          // the correct values from the short-circuit above.
+          if (terminalEvalMove === undefined) {
+            if (postData.length === 0) {
+              const postAnalysis = await stockfishEngine.evaluatePositionWithUpdate({
+                fen: p.postMovefen,
+                depth: searchDepth,
+                multiPv: 1,
+                moves: isStartPos ? p.movesUpToPost : null,
+              });
+              const pwwr = evaluationToWinRate(postAnalysis.lines?.[0]);
+              postMoveWinRate = p.activePlayer === "w" ? pwwr : 100 - pwwr;
+              // postAnalysis.lines[0].cp is ALREADY normalized to White's
+              // perspective by parseEvaluationResults (it negates cp/mate
+              // whenever Black is to move at p.postMovefen). evalMove must
+              // stay in White's perspective for the eval graph, so it is used
+              // as-is — negating it here (as a previous version did) double-
+              // flips the sign and produces a White/Black-mirrored graph.
+              const postCp = postAnalysis.lines?.[0]?.cp ?? 0;
+              evalMove = clampEvalCp(postCp);
+            } else {
+              postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
+              // ChessDB rawEval is from the side-to-move's perspective at postMovefen;
+              // negate to convert to White's perspective
+              const postRaw = Number(postData[0].rawEval ?? 0);
+              evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
+            }
           }
 
           sfCache.set(p.plyIndex, {
@@ -340,6 +381,26 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
             continue;
           }
 
+          // ── Terminal position classification ─────────────────────────────────
+          // A checkmating move is always "Best" regardless of win-rate delta.
+          // A stalemating move is classified normally (stalemate from a winning
+          // position is a blunder; from a lost position it may be the best escape).
+          if (p.terminal.isCheckmate) {
+            const sf = sfCache.get(p.plyIndex);
+            moveEvaluations.push({
+              plyNumber: p.plyIndex,
+              fen: p.preMovefen,
+              notation: p.moveNotation,
+              sanNotation: p.arrowMove.san,
+              evalMove: p.activePlayer === "w" ? 1100 : -1100,
+              currenFen: p.postMovefen,
+              arrowMove: p.arrowMove,
+              quality: "Best",
+              player: p.activePlayer,
+            });
+            continue;
+          }
+
           const preData = preDB.get(p.plyIndex)!;
           const postData = postDB.get(p.plyIndex)!;
           const sf = sfCache.get(p.plyIndex);
@@ -367,12 +428,16 @@ const useGameReview = (stockfishEngine: UciEngine | undefined, searchDepth: numb
               : undefined;
             bestMove = preData[0].uci;
             sanBestMove = preData[0].san;
-            postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
-            // Use post-move rawEval (centipawns) for correct graph scale and no 1-ply lag.
-            // ChessDB rawEval is from the side-to-move at postMovefen (the opponent after the move);
-            // negate to convert to White's perspective.
-            const postRaw = Number(postData[0].rawEval ?? 0);
-            evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
+
+            if (p.terminal.isDraw || p.terminal.isStalemate) {
+              // Draw/stalemate terminal — use hard-coded values
+              postMoveWinRate = 50;
+              evalMove = 0;
+            } else {
+              postMoveWinRate = 100 - percentToNumber(postData[0].winrate);
+              const postRaw = Number(postData[0].rawEval ?? 0);
+              evalMove = clampEvalCp(p.activePlayer === "w" ? -postRaw : postRaw);
+            }
           }
 
           const playedMove = moveHistory[i];
