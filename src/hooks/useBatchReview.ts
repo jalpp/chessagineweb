@@ -331,7 +331,9 @@ const useBatchReview = (stockfishEngine: UciEngine | undefined) => {
             userColor,
             winRates,
             game.opening?.ply ?? 0,
-            hasLichessAnalysis ? game.analysis : undefined
+            hasLichessAnalysis ? game.analysis : undefined,
+            options.blunderThreshold ?? 20,
+            options.mistakeThreshold ?? 10
           );
 
           summaries.push(

@@ -13,6 +13,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Slider,
   Stack,
   TextField,
   ToggleButton,
@@ -27,6 +28,8 @@ import {
 } from "@mui/icons-material";
 import {
   BATCH_LOCAL_DEPTH_DEFAULT,
+  BATCH_BLUNDER_THRESHOLD_DEFAULT,
+  BATCH_MISTAKE_THRESHOLD_DEFAULT,
   BatchReviewOptions,
 } from "@/libs/batchreview/types";
 
@@ -58,6 +61,8 @@ const BatchReviewSetup: React.FC<BatchReviewSetupProps> = ({
     "both"
   );
   const [localDepth, setLocalDepth] = useState(BATCH_LOCAL_DEPTH_DEFAULT);
+  const [blunderThreshold, setBlunderThreshold] = useState(BATCH_BLUNDER_THRESHOLD_DEFAULT);
+  const [mistakeThreshold, setMistakeThreshold] = useState(BATCH_MISTAKE_THRESHOLD_DEFAULT);
 
   const togglePerf = (perf: string) => {
     setPerfTypes((prev) =>
@@ -72,6 +77,8 @@ const BatchReviewSetup: React.FC<BatchReviewSetupProps> = ({
       perfTypes,
       rated: ratedFilter === "both" ? undefined : ratedFilter === "rated",
       localDepth,
+      blunderThreshold,
+      mistakeThreshold,
     });
   };
 
@@ -210,11 +217,64 @@ const BatchReviewSetup: React.FC<BatchReviewSetupProps> = ({
                 </FormControl>
               </Stack>
 
+              {/* CP Loss / classification thresholds */}
+              <Box>
+                <Typography fontSize="0.8rem" color="text.secondary" gutterBottom>
+                  Blunder threshold — win-rate drop to count as a blunder
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Slider
+                    value={blunderThreshold}
+                    onChange={(_, v) => {
+                      const val = v as number;
+                      setBlunderThreshold(val);
+                      // Ensure mistake threshold stays below blunder threshold
+                      if (mistakeThreshold >= val) setMistakeThreshold(Math.max(1, val - 1));
+                    }}
+                    min={5}
+                    max={40}
+                    step={1}
+                    disabled={disabled}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(v) => `${v}%`}
+                    sx={{ flex: 1, color: "#E57373" }}
+                  />
+                  <Typography fontSize="0.85rem" fontWeight={700} sx={{ minWidth: 36, color: "#E57373" }}>
+                    {blunderThreshold}%
+                  </Typography>
+                </Stack>
+              </Box>
+
+              <Box>
+                <Typography fontSize="0.8rem" color="text.secondary" gutterBottom>
+                  Mistake threshold — win-rate drop to count as a mistake
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Slider
+                    value={mistakeThreshold}
+                    onChange={(_, v) => {
+                      const val = v as number;
+                      setMistakeThreshold(Math.min(val, blunderThreshold - 1));
+                    }}
+                    min={1}
+                    max={blunderThreshold - 1}
+                    step={1}
+                    disabled={disabled}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(v) => `${v}%`}
+                    sx={{ flex: 1, color: "#FF8A65" }}
+                  />
+                  <Typography fontSize="0.85rem" fontWeight={700} sx={{ minWidth: 36, color: "#FF8A65" }}>
+                    {mistakeThreshold}%
+                  </Typography>
+                </Stack>
+              </Box>
+
               <Typography variant="caption" color="text.secondary">
                 Games that already have Lichess server analysis are reviewed
                 instantly. Other games use ChessDB cloud evals first, with a
                 shallow local Stockfish pass only for positions the cloud has
-                never seen.
+                never seen. CP loss thresholds only apply to locally-evaluated games.
               </Typography>
             </Stack>
           </AccordionDetails>

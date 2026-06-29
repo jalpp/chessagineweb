@@ -122,7 +122,9 @@ export function classifyUserMoves(
   userColor: "white" | "black",
   winRates: number[],
   bookPlies: number,
-  lichessEvals?: LichessEval[]
+  lichessEvals?: LichessEval[],
+  blunderThreshold = 20,
+  mistakeThreshold = 10
 ): ClassifiedGame {
   const qualityCounts = emptyQualityCounts();
   const keyPositions: KeyPosition[] = [];
@@ -178,7 +180,7 @@ export function classifyUserMoves(
           ? "Mistake"
           : "Dubious";
     } else {
-      quality = getMoveBasicClassification(moverBefore, moverAfter);
+      quality = getMoveBasicClassification(moverBefore, moverAfter, blunderThreshold, mistakeThreshold);
     }
 
     qualityCounts[quality]++;
