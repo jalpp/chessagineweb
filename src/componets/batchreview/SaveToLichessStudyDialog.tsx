@@ -1,21 +1,5 @@
 "use client";
 
-/**
- * @file SaveToLichessStudyDialog.tsx
- * @description Dialog for exporting the Agine Analyzer puzzle pack to
- * Lichess studies.
- *
- * A study tops out at 64 chapters, so the pack is split into
- * STUDY_CHAPTER_CHUNK_SIZE-sized batches (see @/libs/lichess/study). For
- * each batch the default path is "create a new study" via
- * `POST /api/study`, then import that batch's chapters into it via
- * `POST /api/study/{studyId}/import-pgn`. Each batch can instead target an
- * existing study (pick one of the user's, or paste a URL/ID) — useful once
- * the 30-new-studies-per-day cap is hit, or to keep adding to a study
- * that's already in use. Batches are sent one at a time, matching
- * Lichess's "only one request at a time" guidance.
- */
-
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {

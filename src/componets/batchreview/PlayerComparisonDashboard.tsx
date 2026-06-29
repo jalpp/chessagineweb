@@ -1,17 +1,3 @@
-/**
- * @file PlayerComparisonDashboard.tsx
- * @description Side-by-side latest-games trend comparison of two Lichess players.
- *
- * Fetches up to N recent games for each player (default 10, user-configurable),
- * runs the batch analyzer on both, then presents a head-to-head view of:
- *  - Accuracy, blunders/game, mistakes/game, score %
- *  - Opening performance (top openings per player)
- *  - Theme scores (radar chart)
- *
- * Puzzle packs are intentionally NOT generated — this is a lightweight
- * trend-comparison view only.
- */
-
 "use client";
 
 import React, { useCallback, useState } from "react";
@@ -280,135 +266,7 @@ const OpeningComparison: React.FC<{
   );
 };
 
-// ─── ThemeRadar ───────────────────────────────────────────────────────────────
-//
-// Uses the same per-axis normalization as BatchThemeAnalysis:
-//   raw value range is [-max, max] per axis → mapped to [0, 1] for the chart.
-// series[].data is a plain number[], radar.metrics drives the axis labels.
 
-const ThemeRadar: React.FC<{
-  profileA: ThemeScore | null;
-  profileB: ThemeScore | null;
-  nameA: string;
-  nameB: string;
-}> = ({ profileA, profileB, nameA, nameB }) => {
-  if (!profileA && !profileB) {
-    return (
-      <Alert severity="info">Theme data not available — try more games or re-run comparison.</Alert>
-    );
-  }
-
-  const keys = THEME_KEYS.slice(0, 8);
-
-  // Raw values per player per key
-  const rawA = keys.map((k) => (profileA ? (profileA[k] ?? 0) : 0));
-  const rawB = keys.map((k) => (profileB ? (profileB[k] ?? 0) : 0));
-
-  // Per-axis max absolute value (same normalization as BatchThemeAnalysis)
-  const axisMax = keys.map((_, i) =>
-    Math.max(0.0001, Math.abs(rawA[i]), Math.abs(rawB[i]))
-  );
-
-  // Map [-max, max] → [0, 1] per axis
-  const normalize = (raw: number, i: number) => (raw / axisMax[i] + 1) / 2;
-
-  const radarSeries = [
-    ...(profileA
-      ? [
-          {
-            label: nameA,
-            color: "#7c4dff",
-            fillArea: true,
-            data: rawA.map((v, i) => normalize(v, i)),
-            valueFormatter: (_: number | null, ctx: { dataIndex?: number }) =>
-              ctx.dataIndex !== undefined ? rawA[ctx.dataIndex].toFixed(2) : "",
-          },
-        ]
-      : []),
-    ...(profileB
-      ? [
-          {
-            label: nameB,
-            color: "#f50057",
-            fillArea: true,
-            data: rawB.map((v, i) => normalize(v, i)),
-            valueFormatter: (_: number | null, ctx: { dataIndex?: number }) =>
-              ctx.dataIndex !== undefined ? rawB[ctx.dataIndex].toFixed(2) : "",
-          },
-        ]
-      : []),
-  ];
-
-  const radarMetrics = keys.map((key) => ({
-    name: formatThemeName(key),
-    min: 0,
-    max: 1,
-  }));
-
-  return (
-    <Box>
-      <Typography fontSize="0.85rem" color="text.secondary" mb={2}>
-        Theme scores are per-axis normalized. Hover a point to see the raw score.
-        Higher = stronger in that dimension from each player&apos;s perspective.
-      </Typography>
-
-      <RadarChart
-        height={320}
-        series={radarSeries}
-        radar={{ metrics: radarMetrics }}
-      />
-
-      {/* Text breakdown below the chart */}
-      <Stack spacing={1} mt={2}>
-        {keys.map((key, i) => {
-          const a = profileA ? rawA[i] : null;
-          const b = profileB ? rawB[i] : null;
-          return (
-            <Box key={key}>
-              <Stack direction="row" justifyContent="space-between" mb={0.3}>
-                <Typography fontSize="0.72rem" color="#7c4dff">
-                  {a !== null ? a.toFixed(2) : "—"}
-                </Typography>
-                <Typography fontSize="0.72rem" color="text.secondary">
-                  {formatThemeName(key)}
-                </Typography>
-                <Typography fontSize="0.72rem" color="#f50057">
-                  {b !== null ? b.toFixed(2) : "—"}
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <Box sx={{ flex: 1, transform: "scaleX(-1)" }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={a !== null ? normalize(a, i) * 100 : 0}
-                    sx={{
-                      height: 5,
-                      borderRadius: 3,
-                      bgcolor: "action.hover",
-                      "& .MuiLinearProgress-bar": { bgcolor: "#7c4dff" },
-                    }}
-                  />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={b !== null ? normalize(b, i) * 100 : 0}
-                    sx={{
-                      height: 5,
-                      borderRadius: 3,
-                      bgcolor: "action.hover",
-                      "& .MuiLinearProgress-bar": { bgcolor: "#f50057" },
-                    }}
-                  />
-                </Box>
-              </Stack>
-            </Box>
-          );
-        })}
-      </Stack>
-    </Box>
-  );
-};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -488,37 +346,11 @@ const PlayerComparisonDashboard: React.FC<PlayerComparisonDashboardProps> = ({ o
     localDepth, blunderThreshold, mistakeThreshold, hookA, hookB,
   ]);
 
-  const fetchThemes = useCallback(
-    async (games: GameSummary[], setProfile: (p: ThemeScore | null) => void) => {
-      const sample = games.slice(0, 12);
-      const profiles: ThemeScore[] = [];
-      await parallelLimit(
-        sample.map((g) => async () => {
-          const review = await fetchGameThemeReview(g.pgn, g.gameId);
-          if (!review) return;
-          const prof = getUserThemeProfile(review, g.userColor);
-          if (prof) profiles.push(prof);
-        }),
-        4
-      );
-      setProfile(profiles.length > 0 ? averageThemeProfiles(profiles) : null);
-    },
-    []
-  );
-
   const handleTabChange = useCallback(
     async (_: React.SyntheticEvent, tab: number) => {
       setActiveTab(tab);
-      if (tab === 2 && resultA && resultB && !profileA && !profileB) {
-        setThemeLoading(true);
-        await Promise.all([
-          fetchThemes(resultA.games, setProfileA),
-          fetchThemes(resultB.games, setProfileB),
-        ]);
-        setThemeLoading(false);
-      }
     },
-    [resultA, resultB, profileA, profileB, fetchThemes]
+    [resultA, resultB, profileA, profileB]
   );
 
   const handleReset = useCallback(() => {
@@ -550,8 +382,8 @@ const PlayerComparisonDashboard: React.FC<PlayerComparisonDashboardProps> = ({ o
               icon={<InfoIcon fontSize="small" />}
               sx={{ fontSize: "0.82rem", borderRadius: 2 }}
             >
-              This compares the <strong>latest games trend</strong> for two Lichess players —
-              accuracy, error rates, openings and positional themes across their most recent
+              This compares the <strong>latest games trend</strong> for two Lichess players,
+              accuracy, error rates, openings across their most recent
               games. It reflects current form, not lifetime stats. Puzzle packs are not
               generated in comparison mode.
             </Alert>
@@ -893,7 +725,6 @@ const PlayerComparisonDashboard: React.FC<PlayerComparisonDashboardProps> = ({ o
           >
             <Tab label="Overview" />
             <Tab label="Openings" />
-            <Tab label="Themes" />
           </Tabs>
 
           {/* ── Overview ───────────────────────────────────────────────── */}
@@ -1020,26 +851,7 @@ const PlayerComparisonDashboard: React.FC<PlayerComparisonDashboardProps> = ({ o
             />
           )}
 
-          {/* ── Themes ─────────────────────────────────────────────────── */}
-          {activeTab === 2 && (
-            <Box>
-              {themeLoading ? (
-                <Stack alignItems="center" spacing={2} py={4}>
-                  <CircularProgress />
-                  <Typography color="text.secondary" fontSize="0.9rem">
-                    Fetching theme data for both players…
-                  </Typography>
-                </Stack>
-              ) : (
-                <ThemeRadar
-                  profileA={profileA}
-                  profileB={profileB}
-                  nameA={nameA}
-                  nameB={nameB}
-                />
-              )}
-            </Box>
-          )}
+    
         </CardContent>
       </Card>
     </Box>
