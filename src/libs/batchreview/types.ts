@@ -161,6 +161,16 @@ export interface BatchReviewOptions {
   rated?: boolean;
   /** Depth used by the local Stockfish pass for unanalyzed games. */
   localDepth: number;
+  /**
+   * Win-rate drop threshold (percentage points) for classifying a move as a Blunder.
+   * Defaults to 20 if omitted.
+   */
+  blunderThreshold?: number;
+  /**
+   * Win-rate drop threshold (percentage points) for classifying a move as a Mistake.
+   * Must be < blunderThreshold. Defaults to 10 if omitted.
+   */
+  mistakeThreshold?: number;
 }
 
 /** Progress phases reported while a batch review runs. */
@@ -174,6 +184,8 @@ export type BatchReviewPhase =
 export const BATCH_MIN_GAMES = 5;
 export const BATCH_MAX_GAMES = 200;
 export const BATCH_LOCAL_DEPTH_DEFAULT = 12;
+export const BATCH_BLUNDER_THRESHOLD_DEFAULT = 20;
+export const BATCH_MISTAKE_THRESHOLD_DEFAULT = 10;
 
 /**
  * Hard cap on verified puzzles kept in a single puzzle pack.

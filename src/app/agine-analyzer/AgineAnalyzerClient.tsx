@@ -34,6 +34,8 @@ import {
   Stack,
   Tab,
   Tabs,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import {
@@ -46,6 +48,8 @@ import {
   TrackChanges as ThemeIcon,
   VisibilityOff as HideBoardIcon,
   Visibility as ShowBoardIcon,
+  Person as PersonIcon,
+  CompareArrows as CompareIcon,
 } from "@mui/icons-material";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,6 +70,7 @@ import BatchOpeningStats from "@/componets/batchreview/BatchOpeningStats";
 import BatchPuzzlePack from "@/componets/batchreview/BatchPuzzlePack";
 import BatchThemeAnalysis from "@/componets/batchreview/BatchThemeAnalysis";
 import BatchGameList from "@/componets/batchreview/BatchGameList";
+import PlayerComparisonDashboard from "@/componets/batchreview/PlayerComparisonDashboard";
 
 import {
   BatchReviewOptions,
@@ -73,6 +78,8 @@ import {
   BATCH_MIN_GAMES,
   GameSummary,
 } from "@/libs/batchreview/types";
+
+type AnalyzerMode = "single" | "compare";
 
 export default function AgineAnalyzerClient() {
   usePageReady();
@@ -94,6 +101,7 @@ export default function AgineAnalyzerClient() {
 
   const [activeTab, setActiveTab] = useState(0);
   const [showPuzzleBoard, setShowPuzzleBoard] = useState(true);
+  const [analyzerMode, setAnalyzerMode] = useState<AnalyzerMode>("single");
 
   // Same handoff keys the Lichess live-play review flow writes for /game
   const [, setReviewPgn] = useSessionStorage("agine_game_page_pgn", "");
@@ -189,42 +197,79 @@ export default function AgineAnalyzerClient() {
           analysis and puzzles built from your own blunders. You can save the generated puzzle packs in to Lichess studies
         </Typography>
 
-        <Box
-          sx={{
-            display: "grid",
-            gap: 3,
-            gridTemplateColumns: { xs: "1fr", md: "minmax(320px, 480px) 1fr" },
-            alignItems: "start",
-          }}
-        >
-          <Box>
-            <BatchReviewSetup onStart={handleStart} disabled={isRunning} />
-
-            {isRunning && (
-              <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
-                <Stack spacing={2}>
-                  <Typography fontSize="0.9rem">{progressLabel}</Typography>
-                  <LinearProgress variant="determinate" value={progress} />
-                  <Button
-                    onClick={cancelBatchReview}
-                    color="inherit"
-                    size="small"
-                  >
-                    Cancel
-                  </Button>
-                </Stack>
-              </Paper>
-            )}
-
-            {phase === "error" && error && (
-              <Alert severity="error" sx={{ mt: 3 }}>
-                {error}
-              </Alert>
-            )}
-          </Box>
-
-          <AnalysisPreviewPanel result={null} isRunning={isRunning} />
+        {/* Mode selector */}
+        <Box sx={{ mb: 3 }}>
+          <Typography
+            fontSize="0.8rem"
+            fontWeight={600}
+            color="text.secondary"
+            sx={{ textTransform: "uppercase", letterSpacing: 0.5, mb: 1 }}
+          >
+            Analysis mode
+          </Typography>
+          <ToggleButtonGroup
+            value={analyzerMode}
+            exclusive
+            onChange={(_, v) => v !== null && setAnalyzerMode(v)}
+            disabled={isRunning}
+            size="small"
+            color="primary"
+          >
+            <ToggleButton value="single" sx={{ gap: 0.75, px: 2.5 }}>
+              <PersonIcon fontSize="small" />
+              1 Player Report
+            </ToggleButton>
+            <ToggleButton value="compare" sx={{ gap: 0.75, px: 2.5 }}>
+              <CompareIcon fontSize="small" />
+              Compare 2 Players
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Box>
+
+        {/* Compare mode */}
+        {analyzerMode === "compare" && (
+          <PlayerComparisonDashboard onBack={() => setAnalyzerMode("single")} />
+        )}
+
+        {/* Single player mode */}
+        {analyzerMode === "single" && (
+          <Box
+            sx={{
+              display: "grid",
+              gap: 3,
+              gridTemplateColumns: { xs: "1fr", md: "minmax(320px, 480px) 1fr" },
+              alignItems: "start",
+            }}
+          >
+            <Box>
+              <BatchReviewSetup onStart={handleStart} disabled={isRunning} />
+
+              {isRunning && (
+                <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
+                  <Stack spacing={2}>
+                    <Typography fontSize="0.9rem">{progressLabel}</Typography>
+                    <LinearProgress variant="determinate" value={progress} />
+                    <Button
+                      onClick={cancelBatchReview}
+                      color="inherit"
+                      size="small"
+                    >
+                      Cancel
+                    </Button>
+                  </Stack>
+                </Paper>
+              )}
+
+              {phase === "error" && error && (
+                <Alert severity="error" sx={{ mt: 3 }}>
+                  {error}
+                </Alert>
+              )}
+            </Box>
+
+            <AnalysisPreviewPanel result={null} isRunning={isRunning} />
+          </Box>
+        )}
       </Container>
     );
   }

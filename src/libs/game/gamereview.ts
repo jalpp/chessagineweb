@@ -112,11 +112,13 @@ export const isVeryGoodMove = (
 export const getMoveBasicClassification = (
   lastPositionWinPercentage: number,
   positionWinPercentage: number,
+  blunderThreshold = 20,
+  mistakeThreshold = 10,
 ): MoveQuality => {
   const winPercentageDiff = positionWinPercentage - lastPositionWinPercentage;
 
-  if (winPercentageDiff < -20) return "Blunder";
-  if (winPercentageDiff < -10) return "Mistake";
+  if (winPercentageDiff < -blunderThreshold) return "Blunder";
+  if (winPercentageDiff < -mistakeThreshold) return "Mistake";
   if (winPercentageDiff < -5) return "Dubious";
   if (winPercentageDiff < -2) return "Good";
   return "Very Good";
