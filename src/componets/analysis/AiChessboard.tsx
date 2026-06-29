@@ -498,7 +498,7 @@ export default function AiChessboardPanel({
 
   // ── Responsive board size ──────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
-  const [boardPx, setBoardPx] = useState(boardSize);
+  const [boardPx, setBoardPx] = useState(Math.floor(boardSize / 8) * 8);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -506,7 +506,11 @@ export default function AiChessboardPanel({
     const obs = new ResizeObserver(([entry]) => {
       const overhead = gameInfo ? 140 : 80;
       const available = Math.min(entry.contentRect.width, entry.contentRect.height - overhead);
-      setBoardPx(Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize)));
+      // Round DOWN to nearest multiple of 8 so the 8×8 CSS grid columns divide
+      // evenly into whole pixels — prevents sub-pixel rounding gaps (white lines)
+      // that appear between rows/columns on Safari and high-DPI displays.
+      const raw = Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize));
+      setBoardPx(Math.floor(raw / 8) * 8);
     });
     obs.observe(el);
     return () => obs.disconnect();
