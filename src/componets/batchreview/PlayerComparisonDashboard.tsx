@@ -281,6 +281,10 @@ const OpeningComparison: React.FC<{
 };
 
 // ─── ThemeRadar ───────────────────────────────────────────────────────────────
+//
+// Uses the same per-axis normalization as BatchThemeAnalysis:
+//   raw value range is [-max, max] per axis → mapped to [0, 1] for the chart.
+// series[].data is a plain number[], radar.metrics drives the axis labels.
 
 const ThemeRadar: React.FC<{
   profileA: ThemeScore | null;
@@ -295,51 +299,88 @@ const ThemeRadar: React.FC<{
   }
 
   const keys = THEME_KEYS.slice(0, 8);
-  const normalize = (score: number) => Math.max(0, Math.min(100, (score + 100) / 2));
 
-  const radarData = keys.map((key) => ({
-    theme: formatThemeName(key),
-    [nameA]: profileA ? normalize(profileA[key] ?? 0) : 0,
-    [nameB]: profileB ? normalize(profileB[key] ?? 0) : 0,
+  // Raw values per player per key
+  const rawA = keys.map((k) => (profileA ? (profileA[k] ?? 0) : 0));
+  const rawB = keys.map((k) => (profileB ? (profileB[k] ?? 0) : 0));
+
+  // Per-axis max absolute value (same normalization as BatchThemeAnalysis)
+  const axisMax = keys.map((_, i) =>
+    Math.max(0.0001, Math.abs(rawA[i]), Math.abs(rawB[i]))
+  );
+
+  // Map [-max, max] → [0, 1] per axis
+  const normalize = (raw: number, i: number) => (raw / axisMax[i] + 1) / 2;
+
+  const radarSeries = [
+    ...(profileA
+      ? [
+          {
+            label: nameA,
+            color: "#7c4dff",
+            fillArea: true,
+            data: rawA.map((v, i) => normalize(v, i)),
+            valueFormatter: (_: number | null, ctx: { dataIndex?: number }) =>
+              ctx.dataIndex !== undefined ? rawA[ctx.dataIndex].toFixed(2) : "",
+          },
+        ]
+      : []),
+    ...(profileB
+      ? [
+          {
+            label: nameB,
+            color: "#f50057",
+            fillArea: true,
+            data: rawB.map((v, i) => normalize(v, i)),
+            valueFormatter: (_: number | null, ctx: { dataIndex?: number }) =>
+              ctx.dataIndex !== undefined ? rawB[ctx.dataIndex].toFixed(2) : "",
+          },
+        ]
+      : []),
+  ];
+
+  const radarMetrics = keys.map((key) => ({
+    name: formatThemeName(key),
+    min: 0,
+    max: 1,
   }));
 
   return (
     <Box>
       <Typography fontSize="0.85rem" color="text.secondary" mb={2}>
-        Theme scores are normalized 0–100. Higher = stronger in that dimension from each
-        player&apos;s own perspective.
+        Theme scores are per-axis normalized. Hover a point to see the raw score.
+        Higher = stronger in that dimension from each player&apos;s perspective.
       </Typography>
+
       <RadarChart
-        height={300}
-        series={[
-          { label: nameA, dataKey: nameA, color: "#7c4dff" },
-          { label: nameB, dataKey: nameB, color: "#f50057" },
-        ]}
-        data={radarData}
-        radar={{ labelFormatter: (v: string) => v }}
+        height={320}
+        series={radarSeries}
+        radar={{ metrics: radarMetrics }}
       />
+
+      {/* Text breakdown below the chart */}
       <Stack spacing={1} mt={2}>
-        {keys.map((key) => {
-          const a = profileA ? normalize(profileA[key] ?? 0) : null;
-          const b = profileB ? normalize(profileB[key] ?? 0) : null;
+        {keys.map((key, i) => {
+          const a = profileA ? rawA[i] : null;
+          const b = profileB ? rawB[i] : null;
           return (
             <Box key={key}>
               <Stack direction="row" justifyContent="space-between" mb={0.3}>
                 <Typography fontSize="0.72rem" color="#7c4dff">
-                  {a !== null ? a.toFixed(0) : "—"}
+                  {a !== null ? a.toFixed(2) : "—"}
                 </Typography>
                 <Typography fontSize="0.72rem" color="text.secondary">
                   {formatThemeName(key)}
                 </Typography>
                 <Typography fontSize="0.72rem" color="#f50057">
-                  {b !== null ? b.toFixed(0) : "—"}
+                  {b !== null ? b.toFixed(2) : "—"}
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={0.5} alignItems="center">
                 <Box sx={{ flex: 1, transform: "scaleX(-1)" }}>
                   <LinearProgress
                     variant="determinate"
-                    value={a ?? 0}
+                    value={a !== null ? normalize(a, i) * 100 : 0}
                     sx={{
                       height: 5,
                       borderRadius: 3,
@@ -351,7 +392,7 @@ const ThemeRadar: React.FC<{
                 <Box sx={{ flex: 1 }}>
                   <LinearProgress
                     variant="determinate"
-                    value={b ?? 0}
+                    value={b !== null ? normalize(b, i) * 100 : 0}
                     sx={{
                       height: 5,
                       borderRadius: 3,
