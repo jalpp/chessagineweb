@@ -25,7 +25,7 @@ import {
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 import { getThemeLabelColor, ThemeScore, normalizeThemeScore } from "@/libs/themes/helper";
-import { PositionEval} from "@/stockfish/engine/engine";
+import { PositionEval} from "@jalpp/stockfishts";
 import GuessTheme from "../puzzle/GuessPtag";
 import { formatThemeName } from "../batchreview/BatchThemeAnalysis";
 

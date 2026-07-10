@@ -1,5 +1,5 @@
 import { Box, Typography, Tooltip } from "@mui/material";
-import { LineEval } from "@/stockfish/engine/engine";
+import { LineEval } from "@jalpp/stockfishts";
 import { BoardOrientation } from "./AiChessboard";
 
 interface EvalBarProps {

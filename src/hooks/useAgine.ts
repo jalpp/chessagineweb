@@ -1,5 +1,5 @@
 import { useEngine } from "@/stockfish/hooks/useEngine";
-import { EngineName, PositionEval, LineEval } from "@/stockfish/engine/engine";
+import { EngineName, PositionEval, LineEval } from "@jalpp/stockfishts";
 import {
   MasterGames,
   getOpeningStats,

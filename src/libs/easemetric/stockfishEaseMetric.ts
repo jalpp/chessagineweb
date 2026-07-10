@@ -1,6 +1,6 @@
 import { MaiaEvaluation } from "../nets/types";
 import { EaseMetricStrategy } from "./easeMetricStrategy";
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts"
 
 export class StockfishEaseMetricCalculator extends EaseMetricStrategy {
   constructor(log: boolean) {

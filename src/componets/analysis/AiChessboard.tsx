@@ -11,10 +11,10 @@ import {
   RotateLeft, Upload,
 } from "@mui/icons-material";
 import { Chessboard, PieceRenderObject, Arrow } from "react-chessboard";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
+import { UciEngine } from "@jalpp/stockfishts";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Chess, Square } from "chess.js";
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts";
 import { MasterGames } from "../../libs/openingdatabase/helper";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { MoveAnalysis } from "@/libs/agine/helper";

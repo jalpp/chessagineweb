@@ -29,9 +29,9 @@ import { MaiaEvaluation, ModelType, MODEL_CONFIGS } from "@/libs/nets/types";
 import { CandidateMove } from "@/libs/agine/helper";
 import { QuadrantClassification } from "@/libs/nets/classifyMoves";
 import { QuadrantAnalysisView } from "./QuadrantAnalysisView";
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts";
 import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMetric";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
+import { UciEngine } from "@jalpp/stockfishts";
 import { Chess } from "chess.js";
 import { MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
 

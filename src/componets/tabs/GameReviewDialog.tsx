@@ -30,7 +30,7 @@ import { MoveAnalysis } from "@/libs/agine/helper";
 import { PositionRadarAnalysis } from "./PositionRadarAnalysis";
 import { GameReviewTheme, getThemeLabelColor} from "@/libs/themes/helper";
 import { ThemeScore } from "@/libs/themes/helper";
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts";
 
 
 interface GameReviewDialogProps {

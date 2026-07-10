@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
+import { UciEngine } from "@jalpp/stockfishts";
 import { centipawnToWinRate, evaluationToWinRate } from "@/libs/game/gamereview";
 import { isFenInAllDatabases } from "@/libs/openingdatabase/ecoDatabase";
 import { fetchChessDBFast, parallelLimit } from "@/libs/batchreview/chessdb";

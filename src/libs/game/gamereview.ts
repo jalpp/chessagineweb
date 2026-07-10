@@ -1,5 +1,5 @@
 import { MoveQuality } from "../agine/helper";
-import { LineEval } from "@/stockfish/engine/engine";
+import { LineEval } from "@jalpp/stockfishts";
 import { Color } from "chess.js";
 
 export const centipawnToWinRate = (centipawn: number): number => {

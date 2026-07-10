@@ -23,7 +23,7 @@ import { getMoveClassificationStyle } from "./GameReviewTab";
 import { ThemeScore, GameReviewTheme, getThemeLabelColor, normalizeThemeScore } from "@/libs/themes/helper";
 import { getThemeIcon } from "./PositionalFenThemeAnalysis";
 import GuessTheme from "../puzzle/GuessPtag";
-import { PositionEval} from "@/stockfish/engine/engine";
+import { PositionEval} from "@jalpp/stockfishts";
 import { formatThemeName } from "../batchreview/BatchThemeAnalysis";
 
 

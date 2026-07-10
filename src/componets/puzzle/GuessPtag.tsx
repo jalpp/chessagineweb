@@ -17,7 +17,7 @@ import {
   EmojiEvents as TrophyIcon,
 } from '@mui/icons-material';
 import { ThemeScore, GuessState, themeLabels } from '@/libs/themes/helper';
-import { PositionEval} from '@/stockfish/engine/engine';
+import { PositionEval} from '@jalpp/stockfishts';
 
 interface GuessThemeProps {
   stockfishAnalysisResult: PositionEval | null;
