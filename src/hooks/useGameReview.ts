@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Chess, Move, Color } from "chess.js";
 import { isFenInAllDatabases } from "../libs/openingdatabase/ecoDatabase";
 import { useSessionStorage } from "usehooks-ts";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
+import { UciEngine } from "@jalpp/stockfishts";
 import {
   isVeryGoodMove,
   evaluationToWinRate,

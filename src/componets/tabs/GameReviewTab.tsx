@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { GameReviewTheme } from "@/libs/themes/helper";
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts";
 import { MoveStats, MoveQuality } from "@/libs/agine/helper";
 
 interface GameReviewTabProps {

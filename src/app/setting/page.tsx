@@ -21,7 +21,7 @@ import { SignIn } from "@clerk/nextjs";
 import { useSettings } from "@/context/SettingContext";
 import { useTheme as useAppTheme, ThemeType } from "@/context/ThemeContext";
 import { BOARD_THEMES, PIECE_STYLE_TYPES, is3DSet } from "@/libs/setting/helper";
-import { EngineName } from "@/stockfish/engine/engine";
+import { EngineName } from "@jalpp/stockfishts"
 import IntegrationSettings from "@/componets/tabs/IntegrationSetting";
 import ModelSetting from "@/componets/tabs/ModelSetting";
 import LightModeIcon from "@mui/icons-material/LightMode";

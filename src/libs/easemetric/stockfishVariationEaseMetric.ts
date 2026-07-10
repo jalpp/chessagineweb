@@ -1,4 +1,4 @@
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts";
 import { MaiaEvaluation } from "../nets/types";
 import { StockfishEaseMetricCalculator } from "./stockfishEaseMetric";
 

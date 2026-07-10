@@ -37,23 +37,15 @@ import {
   Replay as ReplayIcon,
   Remove as TieIcon,
   Tune as TuneIcon,
-  TrendingDown,
   TrendingUp,
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 
 import { useEngine } from "@/stockfish/hooks/useEngine";
 import { useSettings } from "@/context/SettingContext";
-import { EngineName } from "@/stockfish/engine/engine";
+import { EngineName } from "@jalpp/stockfishts";
 import useBatchReview from "@/hooks/useBatchReview";
 import TutorSegmentBar from "./TutorSegmentBar";
-import { formatThemeName } from "./BatchThemeAnalysis";
-import {
-  THEME_KEYS,
-  averageThemeProfiles,
-  fetchGameThemeReview,
-  getUserThemeProfile,
-} from "@/libs/batchreview/themes";
 import { ThemeScore } from "@/libs/themes/helper";
 import {
   GameSummary,

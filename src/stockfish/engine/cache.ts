@@ -1,5 +1,5 @@
 import { openDB, IDBPDatabase } from "idb";
-import { PositionEval } from "./engine";
+import { PositionEval } from "@jalpp/stockfishts";
 
 const MEM_MAX = 150;
 const IDB_MAX = 1500;

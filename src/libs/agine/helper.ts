@@ -1,4 +1,4 @@
-import { PositionEval, LineEval } from "@/stockfish/engine/engine";
+import { PositionEval, LineEval } from "@jalpp/stockfishts";
 import { MasterGames } from "../openingdatabase/helper";
 import { Moves } from "../openingdatabase/helper";
 import { Move } from "chess.js";

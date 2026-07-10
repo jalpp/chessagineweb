@@ -18,11 +18,8 @@ import {
   MenuItem,
 } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
-import { LineEval, PositionEval } from "@/stockfish/engine/engine";
-import { UciEngine } from "@/stockfish/engine/UciEngine";
+import { LineEval, PositionEval, UciEngine, EngineName } from "@jalpp/stockfishts";
 import Slider from "../Slider";
-import { EngineName } from "@/stockfish/engine/engine";
-import { usePersistedSettings } from "@/hooks/usePersistedStorage";
 import { useSettings } from "@/context/SettingContext";
 
 export interface StockfishAnalysisProps {

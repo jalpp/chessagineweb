@@ -16,7 +16,7 @@ import { User, Clock, Calendar, Trophy, Info } from "lucide-react";
 import GameReviewTab from "@/componets/tabs/GameReviewTab";
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { GameReviewTheme } from "@/libs/themes/helper";
-import { PositionEval } from "@/stockfish/engine/engine";
+import { PositionEval } from "@jalpp/stockfishts";
 
 export interface GameInfoTabProp {
   moves: string[];

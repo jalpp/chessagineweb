@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { EngineName, parseEngineName } from '../engine/engine';
-import { Stockfish11 } from '../engine/Stockfish11';
-import { Stockfish16 } from '../engine/Stockfish16';
-import { Stockfish17 } from '../engine/Stockfish17';
-import { UciEngine } from '../engine/UciEngine';
-import { Stockfish17Point } from '../engine/Stockfish17Point';
-import { Stockfish18 } from '../engine/Stockfish18';
+
+import {
+    EngineName,
+    parseEngineName,
+    StockfishSimpleEngine,
+    StockfishWasmEngine,
+    type UciEngine,
+} from '@jalpp/stockfishts';
+
+const ENGINE_PATHS: Record<EngineName, string> = {
+    [EngineName.Stockfish18]: '/static/engine/stockfish-18/stockfish-18-lite-single.js#/static/engine/stockfish-18/stockfish-18-lite-single.wasm',
+    [EngineName.Stockfish17Point]: '/static/engine/stockfish-17/stockfish-17.1-lite-single-03e3232.js#/static/engine/stockfish-17/stockfish-17.1-lite-single-03e3232.wasm',
+    [EngineName.Stockfish17]: '/static/engine/stockfish-17/stockfish-17-lite.js#/static/engine/stockfish-17/stockfish-17-lite.wasm',
+    [EngineName.Stockfish16]: '/static/engine/stockfish-16.1-lite.js#/static/engine/stockfish-16.1-lite.wasm',
+    [EngineName.Stockfish11]: '/static/engine/stockfish-11.js',
+};
 
 export const useEngine = (enabled: boolean, engineName: EngineName | undefined) => {
     const [engine, setEngine] = useState<UciEngine>();
@@ -16,6 +25,7 @@ export const useEngine = (enabled: boolean, engineName: EngineName | undefined) 
 
         const engine = pickEngine(normalizedEngine);
         console.log('Initializing engine');
+
         void engine.init().then(() => {
             console.log('Engine initialized');
             setEngine(engine);
@@ -25,22 +35,17 @@ export const useEngine = (enabled: boolean, engineName: EngineName | undefined) 
             engine.shutdown();
             setEngine(undefined);
         };
-    }, [engineName]);
+    }, [enabled, normalizedEngine]);
 
     return engine;
 };
 
 const pickEngine = (engine: EngineName): UciEngine => {
-    switch (engine) {
-        case EngineName.Stockfish18:
-            return new Stockfish18();
-        case EngineName.Stockfish17Point:
-            return new Stockfish17Point();
-        case EngineName.Stockfish17:
-            return new Stockfish17();
-        case EngineName.Stockfish16:
-            return new Stockfish16();
-        case EngineName.Stockfish11:
-            return new Stockfish11();
+    const path = ENGINE_PATHS[engine];
+
+    if (engine === EngineName.Stockfish11) {
+        return new StockfishSimpleEngine(path, engine);
     }
+
+    return new StockfishWasmEngine(path, engine);
 };
