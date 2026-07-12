@@ -19,7 +19,7 @@
     "@clerk/nextjs": "^6.39.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@jalpp/stockfishts": "^0.1.0",
+    "@jalpp/stockfishts": "^1.0.1",
     "@mastra/ai-sdk": "^1.4.1",
     "@mastra/core": "^1.32.1",
     "@mastra/mcp": "^1.7.0",
