@@ -1,4 +1,4 @@
-import { PositionEval, LineEval } from "@jalpp/stockfishts";
+import type { ChessDbMove, PositionEval, LineEval } from "@jalpp/stockfishts";
 import { MasterGames } from "../openingdatabase/helper";
 import { Moves } from "../openingdatabase/helper";
 import { Move } from "chess.js";
@@ -34,15 +34,7 @@ export interface AgineState {
   analysisTab: number;
 }
 
-export interface CandidateMove {
-  uci: string;
-  san: string;
-  score: string;
-  winrate: string;
-  rank: string;
-  note: string;
-  rawEval?: number;
-}
+export interface CandidateMove extends ChessDbMove {}
 
 export interface TreeMoveNode {
   root: CandidateMove;

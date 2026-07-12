@@ -1,4 +1,4 @@
-import { explorerCache } from "./posiraMemCache";
+import { explorerCache } from "@/libs/cache/posiraMemCache";
 
 interface Opening {
   eco: string;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Color } from 'chess.js';
 import { ThemeScore, normalizeThemeScores } from '@/libs/themes/helper';
-import { getThemeScoreCache, setThemeScoreCache } from '@/libs/themes/cache';
+import { getThemeScoreCache, setThemeScoreCache } from '@/libs/cache/themeCache';
 
 interface UseThemeScoreResult {
     scores: ThemeScore | null;

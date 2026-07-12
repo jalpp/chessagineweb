@@ -18,7 +18,7 @@ import {
   normalizeThemeScores,
   ThemeScore,
 } from "@/libs/themes/helper";
-import { getThemeScoreCache, setThemeScoreCache } from "@/libs/themes/cache";
+import { getThemeScoreCache, setThemeScoreCache } from "@/libs/cache/themeCache";
 
 /** All ThemeScore keys, used for validation and zeroed accumulators. */
 export const THEME_KEYS: (keyof ThemeScore)[] = [

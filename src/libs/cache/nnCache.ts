@@ -1,11 +1,9 @@
-
 import { openDB, IDBPDatabase } from "idb";
 
 const MEM_MAX = 200;
 const IDB_MAX = 2000;
 const DB_NAME = "nn-cache-v1";
-const STORE   = "responses";
-
+const STORE = "responses";
 
 const mem = new Map<string, { value: unknown; ts: number }>();
 
@@ -13,7 +11,8 @@ function memGet(key: string): unknown | undefined {
   const e = mem.get(key);
   if (!e) return undefined;
   e.ts = Date.now();
-  mem.delete(key); mem.set(key, e);
+  mem.delete(key);
+  mem.set(key, e);
   return e.value;
 }
 
@@ -22,7 +21,6 @@ function memSet(key: string, value: unknown): void {
   mem.set(key, { value, ts: Date.now() });
   if (mem.size > MEM_MAX) mem.delete(mem.keys().next().value!);
 }
-
 
 interface IDBEntry { key: string; value: unknown; ts: number }
 let _db: Promise<IDBPDatabase> | null = null;
@@ -60,12 +58,10 @@ async function idbSet(key: string, value: unknown): Promise<void> {
       while (cur && n < count - IDB_MAX) { await cur.delete(); cur = await cur.continue(); n++; }
       await tx.done;
     }
-  } catch {  }
+  } catch { }
 }
 
-
 const pending = new Map<string, Promise<unknown>>();
-
 
 export function makeCacheKey(endpoint: string, fen: string): string {
   return `${endpoint}:${fen}`;

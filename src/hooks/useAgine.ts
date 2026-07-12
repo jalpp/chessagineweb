@@ -1,4 +1,4 @@
-import { useEngine } from "@/stockfish/hooks/useEngine";
+import { useEngine } from "@/hooks/useEngine";
 import { EngineName, PositionEval, LineEval } from "@jalpp/stockfishts";
 import {
   MasterGames,
@@ -24,7 +24,7 @@ import { ModelType } from "@/libs/nets/types";
 import {
   getStockfishCacheKey,
   cachedStockfish,
-} from "@/stockfish/engine/cache";
+} from "@/libs/cache/stockfishCache";
 import { useSettings } from "@/context/SettingContext";
 
 export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true, enabledModels?: ModelType[], analysisMode: "full" | "play" = "full") {

@@ -10,8 +10,7 @@ import {
   getMoveBasicClassification,
 } from "@/libs/game/gamereview";
 import { MoveAnalysis, CandidateMove } from "@/libs/agine/helper";
-import { getChessDbCache, setChessDbCache } from "@/stockfish/engine/chessdbCache";
-import { validateFen } from "chess.js";
+import { fetchChessDBFast, parallelLimit } from "@/libs/batchreview/chessdb";
 
 /**
  * Some of move classification logic is taken from ChessKit devs
@@ -27,63 +26,6 @@ import { validateFen } from "chess.js";
 // ---------------------------------------------------------------------------
 function clampEvalCp(cp: number): number {
   return Math.max(-1100, Math.min(1100, cp));
-}
-
-// ---------------------------------------------------------------------------
-// Standalone ChessDB fetch (no hook state, safe to call concurrently)
-// ---------------------------------------------------------------------------
-async function fetchChessDBFast(fen: string): Promise<CandidateMove[]> {
-  if (!fen.trim() || !validateFen(fen)) return [];
-  try {
-    const cached = await getChessDbCache(fen);
-    if (cached) return cached as CandidateMove[];
-
-    const res = await fetch(
-      `https://www.chessdb.cn/cdb.php?action=queryall&board=${encodeURIComponent(fen)}&json=1`
-    );
-    if (!res.ok) return [];
-
-    const json = await res.json();
-    if (json.status !== "ok" || !Array.isArray(json.moves) || json.moves.length === 0)
-      return [];
-
-    const moves: CandidateMove[] = json.moves.map((m: CandidateMove) => {
-      const scoreNum = Number(m.score);
-      return {
-        uci: m.uci || "N/A",
-        san: m.san || "N/A",
-        score: isNaN(scoreNum) ? "N/A" : (scoreNum / 100).toFixed(2),
-        winrate: m.winrate || "N/A",
-        rank: m.rank,
-        note: m.note,
-        rawEval: scoreNum,
-      };
-    });
-
-    await setChessDbCache(fen, moves);
-    return moves;
-  } catch {
-    return [];
-  }
-}
-
-/** Run up to `concurrency` async tasks at a time, preserving result order */
-async function parallelLimit<T>(
-  tasks: (() => Promise<T>)[],
-  concurrency: number
-): Promise<T[]> {
-  const results: T[] = new Array(tasks.length);
-  let idx = 0;
-  async function worker() {
-    while (idx < tasks.length) {
-      const i = idx++;
-      results[i] = await tasks[i]();
-    }
-  }
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, tasks.length) }, worker)
-  );
-  return results;
 }
 
 // ---------------------------------------------------------------------------

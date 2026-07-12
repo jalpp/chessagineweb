@@ -1,4 +1,5 @@
 import { openDB } from "idb";
+import type { ChessDbMove } from "@jalpp/stockfishts";
 
 const DB_NAME = "chessDB";
 const STORE_NAME = "positions";
@@ -14,12 +15,12 @@ async function getDb() {
   });
 }
 
-export async function getChessDbCache(fen: string) {
+export async function getChessDbCache(fen: string): Promise<ChessDbMove[] | undefined> {
   const db = await getDb();
-  return db.get(STORE_NAME, fen);
+  return db.get(STORE_NAME, fen) as Promise<ChessDbMove[] | undefined>;
 }
 
-export async function setChessDbCache(fen: string, data: any) {
+export async function setChessDbCache(fen: string, data: ChessDbMove[]) {
   const db = await getDb();
   return db.put(STORE_NAME, data, fen);
 }

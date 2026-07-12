@@ -1,4 +1,4 @@
-import { PositionEval } from "@jalpp/stockfishts";
+import type { PositionEval } from "@jalpp/stockfishts";
 
 interface CachedEntry {
   fen: string;
