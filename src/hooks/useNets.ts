@@ -11,7 +11,7 @@ import {
   NNData,
   BatchEntry,
 } from "@/libs/nets/types";
-import { cachedFetch, makeCacheKey } from "@/libs/nets/nnCache";
+import { cachedFetch, makeCacheKey } from "@/libs/cache/nnCache";
 
 const ALL_MODELS: ModelType[] = ["bigLeela", "elitemaia", "maia3"];
 

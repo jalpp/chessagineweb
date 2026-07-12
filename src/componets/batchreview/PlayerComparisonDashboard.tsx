@@ -41,7 +41,7 @@ import {
 } from "@mui/icons-material";
 import { RadarChart } from "@mui/x-charts";
 
-import { useEngine } from "@/stockfish/hooks/useEngine";
+import { useEngine } from "@/hooks/useEngine";
 import { useSettings } from "@/context/SettingContext";
 import { EngineName } from "@jalpp/stockfishts";
 import useBatchReview from "@/hooks/useBatchReview";

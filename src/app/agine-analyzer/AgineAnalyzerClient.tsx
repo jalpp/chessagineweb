@@ -58,7 +58,7 @@ import { Chess } from "chess.js";
 
 import { usePageReady } from "@/hooks/usePageReady";
 import { useSettings } from "@/context/SettingContext";
-import { useEngine } from "@/stockfish/hooks/useEngine";
+import { useEngine } from "@/hooks/useEngine";
 import { EngineName } from "@jalpp/stockfishts";
 import useBatchReview from "@/hooks/useBatchReview";
 

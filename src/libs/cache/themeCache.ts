@@ -19,7 +19,7 @@ export async function getThemeScoreCache(key: string) {
   return db.get(STORE_NAME, key);
 }
 
-export async function setThemeScoreCache(key: string, value: any) {
+export async function setThemeScoreCache(key: string, value: unknown) {
   const db = await getDb();
   return db.put(STORE_NAME, value, key);
 }

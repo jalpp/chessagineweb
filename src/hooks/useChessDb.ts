@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { CandidateMove } from "@/libs/agine/helper";
+import { getChessDbCache, setChessDbCache } from "@/libs/cache/chessdbCache";
 import { validateFen } from "chess.js";
-import { getChessDbCache, setChessDbCache } from "@/stockfish/engine/chessdbCache";
 import { ChessDbApi } from "@jalpp/stockfishts";
 
 const chessDbApi = new ChessDbApi();

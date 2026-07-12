@@ -4,8 +4,7 @@ import { PositionEval } from "@jalpp/stockfishts";
 const MEM_MAX = 150;
 const IDB_MAX = 1500;
 const DB_NAME = "sf-cache-v1";
-const STORE   = "evals";
-
+const STORE = "evals";
 
 const mem = new Map<string, { value: unknown; ts: number }>();
 
@@ -13,7 +12,8 @@ function memGet(key: string): unknown | undefined {
   const e = mem.get(key);
   if (!e) return undefined;
   e.ts = Date.now();
-  mem.delete(key); mem.set(key, e);
+  mem.delete(key);
+  mem.set(key, e);
   return e.value;
 }
 
@@ -22,7 +22,6 @@ function memSet(key: string, value: unknown): void {
   mem.set(key, { value, ts: Date.now() });
   if (mem.size > MEM_MAX) mem.delete(mem.keys().next().value!);
 }
-
 
 interface IDBEntry { key: string; value: unknown; ts: number }
 let _db: Promise<IDBPDatabase> | null = null;
@@ -63,9 +62,7 @@ async function idbSet(key: string, value: unknown): Promise<void> {
   } catch { }
 }
 
-
 const pending = new Map<string, Promise<unknown>>();
-
 
 export function getStockfishCacheKey(fen: string, depth: number, lines: number): string {
   return `sf:${fen}|d=${depth}|pv=${lines}`;

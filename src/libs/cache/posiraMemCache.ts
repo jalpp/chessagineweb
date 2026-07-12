@@ -1,8 +1,7 @@
-import { MasterGames } from "./helper";
-import { LichessData } from "./lichessRatingOpening";
+import type { MasterGames } from "@/libs/openingdatabase/helper";
+import type { LichessData } from "@/libs/openingdatabase/lichessRatingOpening";
 
 const MAX_ENTRIES = 2000;
-
 
 function makeMemCache<V>() {
   const map = new Map<string, V>();
@@ -14,7 +13,6 @@ function makeMemCache<V>() {
 
     set(key: string, value: V): void {
       if (map.size >= MAX_ENTRIES) {
-        // Evict the oldest entry (Maps preserve insertion order)
         map.delete(map.keys().next().value!);
       }
       map.set(key, value);
@@ -34,8 +32,5 @@ function makeMemCache<V>() {
   };
 }
 
-
-export const explorerCache = makeMemCache<Promise<unknown>>();
-
-
-export const lichessRatingCache = makeMemCache<Promise<unknown>>();
+export const explorerCache = makeMemCache<Promise<MasterGames | null>>();
+export const lichessRatingCache = makeMemCache<Promise<LichessData | null>>();

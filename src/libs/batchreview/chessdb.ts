@@ -6,7 +6,7 @@
 
 import { validateFen } from "chess.js";
 import type { CandidateMove } from "@/libs/agine/helper";
-import { getChessDbCache, setChessDbCache } from "@/stockfish/engine/chessdbCache";
+import { getChessDbCache, setChessDbCache } from "@/libs/cache/chessdbCache";
 import { ChessDbApi } from "@jalpp/stockfishts";
 
 const chessDbApi = new ChessDbApi();

@@ -1,5 +1,5 @@
 import { SanMaiaEvaluation } from "../nets/types";
-import { lichessRatingCache } from "./posiraMemCache";
+import { lichessRatingCache } from "@/libs/cache/posiraMemCache";
 
 // Posira rating brackets that map from Maia model ratings
 export interface LichessMove {
