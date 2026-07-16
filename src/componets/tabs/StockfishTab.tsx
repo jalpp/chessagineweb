@@ -33,6 +33,8 @@ export interface StockfishAnalysisProps {
   analyzeWithStockfish: () => void;
   formatEvaluation: (line: LineEval) => string;
   formatPrincipalVariation: (pv: string[], fen: string) => string;
+  /** Called with the UCI of a line's first move when the person clicks that line to play it on the board. */
+  onPlayMove?: (uci: string) => void;
 }
 
 // Engine display names mapping
@@ -63,6 +65,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
   analyzeWithStockfish,
   formatEvaluation,
   formatPrincipalVariation,
+  onPlayMove,
 }) => {
   const [engineEnabled, setEngineEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -486,6 +489,11 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
         {stockfishAnalysisResult?.lines?.map((line, index) => (
           <Paper
             key={`line-${index}-${line.depth}-${line.cp || line.mate}`}
+            onClick={
+              onPlayMove && line.pv?.[0]
+                ? () => onPlayMove(line.pv[0])
+                : undefined
+            }
             sx={{
               p: 2,
 
@@ -494,10 +502,14 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                 index < stockfishAnalysisResult.lines.length - 1
                   ? "1px solid rgba(255,255,255,0.1)"
                   : "none",
-              cursor: "pointer",
+              cursor: onPlayMove && line.pv?.[0] ? "pointer" : "default",
               transition: "all 0.3s ease",
               opacity: isTransitioning ? 0.5 : 1,
               filter: "none",
+              "&:hover":
+                onPlayMove && line.pv?.[0]
+                  ? { bgcolor: "action.hover" }
+                  : undefined,
             }}
           >
             <Stack direction="row" alignItems="center" spacing={2}>

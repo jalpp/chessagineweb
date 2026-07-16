@@ -48,7 +48,6 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
-  Menu,
   X,
   User2,
 } from "lucide-react";
@@ -694,6 +693,142 @@ export default function PuzzlePage() {
                 openingLoading={openingLoading}
               />
             </Box>
+
+            {/* Quick Puzzle Controls - directly visible below the puzzle on
+                mobile so solving/navigating doesn't require opening the
+                drawer first. Advanced theme/rating filters remain in the
+                drawer (opened via the FAB) since they're changed far less
+                often than these controls. */}
+            {puzzleData && (
+              <Card>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Stack spacing={1.5}>
+                    {(puzzleComplete ||
+                      (puzzleFailed && !showingSolution) ||
+                      showHint) && (
+                      <Stack spacing={1}>
+                        {puzzleComplete && (
+                          <Alert severity="success" sx={{ py: 0.5 }}>
+                            🎉 Solved! {hintUsed ? "(with hint)" : "Perfect!"}
+                          </Alert>
+                        )}
+                        {puzzleFailed && !showingSolution && (
+                          <Alert severity="error" sx={{ py: 0.5 }}>
+                            ❌ Wrong move! Try again or view solution
+                          </Alert>
+                        )}
+                        {showHint && (
+                          <Alert severity="info" sx={{ py: 0.5 }}>
+                            💡 Highlighted squares show the best move!
+                          </Alert>
+                        )}
+                      </Stack>
+                    )}
+
+                    {showingSolution ? (
+                      <Stack spacing={1}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Solution Navigation ({solutionViewIndex}/
+                          {solutionMoves.length})
+                        </Typography>
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            variant="outlined"
+                            startIcon={<SkipBackIcon size={18} />}
+                            onClick={() => navigateSolution("prev")}
+                            disabled={solutionViewIndex === 0}
+                            fullWidth
+                            size="small"
+                            color="info"
+                          >
+                            Prev
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            startIcon={<SkipNextIcon size={18} />}
+                            onClick={() => navigateSolution("next")}
+                            disabled={solutionViewIndex >= solutionMoves.length}
+                            fullWidth
+                            size="small"
+                            color="info"
+                          >
+                            Next
+                          </Button>
+                          <Button
+                            variant="contained"
+                            onClick={exitSolutionView}
+                            fullWidth
+                            size="small"
+                            color="warning"
+                          >
+                            Exit
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    ) : (
+                      <Stack spacing={1}>
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            variant="outlined"
+                            startIcon={<Lightbulb size={18} />}
+                            onClick={showHintMove}
+                            disabled={puzzleComplete || showHint}
+                            fullWidth
+                            size="small"
+                            color="info"
+                          >
+                            Hint
+                          </Button>
+                          {puzzleFailed && (
+                            <Button
+                              variant="outlined"
+                              startIcon={<Eye size={18} />}
+                              onClick={showSolution}
+                              fullWidth
+                              size="small"
+                              color="secondary"
+                            >
+                              Solution
+                            </Button>
+                          )}
+                          <Button
+                            variant="outlined"
+                            startIcon={<Refresh />}
+                            onClick={resetPuzzle}
+                            fullWidth
+                            size="small"
+                            color="warning"
+                          >
+                            Reset
+                          </Button>
+                        </Stack>
+                        <Button
+                          variant="contained"
+                          startIcon={<SkipNext />}
+                          onClick={() =>
+                            fetchPuzzle(
+                              selectedThemes,
+                              userPuzzleRating,
+                              userPuzzleRating + 500,
+                            )
+                          }
+                          disabled={loading}
+                          fullWidth
+                          size="medium"
+                          color="success"
+                        >
+                          Next Puzzle
+                        </Button>
+                      </Stack>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
           </Stack>
         ) : (
           /* Desktop Layout — left panel + right board, matching position page */
@@ -923,7 +1058,9 @@ export default function PuzzlePage() {
           </Box>
         )}
 
-        {/* Mobile FAB for Menu - Unchanged */}
+        {/* Mobile FAB - opens theme/difficulty settings drawer. Solving
+            controls (hint/solution/reset/next) live inline below the
+            board, so this FAB is only needed for less-frequent settings. */}
         {isMobile && (
           <Fab
             color="primary"
@@ -935,11 +1072,11 @@ export default function PuzzlePage() {
             }}
             onClick={() => setBottomDrawerOpen(true)}
           >
-            <Menu />
+            <Settings />
           </Fab>
         )}
 
-        {/* Mobile Bottom Drawer - Unchanged */}
+        {/* Mobile Bottom Drawer - theme/difficulty settings */}
         {isMobile && (
           <Drawer
             anchor="bottom"
@@ -960,132 +1097,17 @@ export default function PuzzlePage() {
                 alignItems="center"
                 sx={{ mb: 2 }}
               >
-                <Typography variant="h6">Puzzle Controls</Typography>
+                <Typography variant="h6">Puzzle Settings</Typography>
                 <IconButton onClick={() => setBottomDrawerOpen(false)}>
                   <X />
                 </IconButton>
               </Stack>
 
               <Stack spacing={2}>
-                {/* Quick Actions */}
-                {showingSolution ? (
-                  <>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Solution Navigation ({solutionViewIndex}/
-                      {solutionMoves.length})
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={2}
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <Chip
-                        label={`Your Rating: ${Math.round(userPuzzleRating)}`}
-                        color="secondary"
-                        icon={<User2 />}
-                        sx={{ fontSize: "1rem", py: 2, height: "auto" }}
-                      />
-                      {puzzleData && (
-                        <Chip
-                          label={`Puzzle Rating: ${puzzleData.rating}`}
-                          color="primary"
-                          icon={<Star />}
-                          sx={{ fontSize: "1rem", py: 2, height: "auto" }}
-                        />
-                      )}
-                    </Stack>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        variant="outlined"
-                        startIcon={<SkipBackIcon size={20} />}
-                        onClick={() => navigateSolution("prev")}
-                        disabled={solutionViewIndex === 0}
-                        fullWidth
-                        size="large"
-                        color="info"
-                      >
-                        Prev
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        startIcon={<SkipNextIcon size={20} />}
-                        onClick={() => navigateSolution("next")}
-                        disabled={solutionViewIndex >= solutionMoves.length}
-                        fullWidth
-                        size="large"
-                        color="info"
-                      >
-                        Next
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={exitSolutionView}
-                        fullWidth
-                        size="large"
-                        color="warning"
-                      >
-                        Exit
-                      </Button>
-                    </Stack>
-                  </>
-                ) : (
-                  <>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Lightbulb size={20} />}
-                        onClick={showHintMove}
-                        disabled={puzzleComplete || showHint}
-                        fullWidth
-                        size="large"
-                        color="info"
-                      >
-                        Hint
-                      </Button>
-                      {puzzleFailed && (
-                        <Button
-                          variant="outlined"
-                          startIcon={<Eye size={20} />}
-                          onClick={showSolution}
-                          fullWidth
-                          size="large"
-                          color="secondary"
-                        >
-                          Solution
-                        </Button>
-                      )}
-                      <Button
-                        variant="outlined"
-                        startIcon={<Refresh />}
-                        onClick={resetPuzzle}
-                        fullWidth
-                        size="large"
-                        color="warning"
-                      >
-                        Reset
-                      </Button>
-                    </Stack>
-                    <Button
-                      variant="contained"
-                      startIcon={<SkipNext />}
-                      onClick={() => {
-                        fetchPuzzle(
-                          selectedThemes,
-                          userPuzzleRating,
-                          userPuzzleRating + 500,
-                        );
-                        setBottomDrawerOpen(false);
-                      }}
-                      disabled={loading}
-                      fullWidth
-                      size="large"
-                      color="success"
-                    >
-                      Next Puzzle
-                    </Button>
-                  </>
-                )}
+                {/* Solving/navigation controls now live directly below the
+                    puzzle board (see mobile layout above) so they're
+                    reachable without opening this drawer. This drawer is
+                    for theme filters and difficulty settings. */}
 
                 {/* Theme Selection - Collapsible */}
                 <Card>
@@ -1166,19 +1188,12 @@ export default function PuzzlePage() {
                   </CardContent>
                 </Card>
 
-                {/* Puzzle status for mobile */}
-                {puzzleData && (
-                  <Stack spacing={1}>
-                    {puzzleData.themes.length > 0 && (
-                      <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
-                        Themes: {puzzleData.themes.slice(0, 3).join(", ")}
-                        {puzzleData.themes.length > 3 && ` +${puzzleData.themes.length - 3} more`}
-                      </Alert>
-                    )}
-                    {puzzleComplete && <Alert severity="success">🎉 Solved! {hintUsed ? "(with hint)" : "Perfect!"}</Alert>}
-                    {puzzleFailed && !showingSolution && <Alert severity="error">❌ Wrong move! Try again or view solution</Alert>}
-                    {showHint && <Alert severity="info">💡 Highlighted squares show the best move!</Alert>}
-                  </Stack>
+                {/* Active themes summary for this puzzle */}
+                {puzzleData && puzzleData.themes.length > 0 && (
+                  <Alert severity="info" sx={{ fontSize: "0.875rem" }}>
+                    Themes: {puzzleData.themes.slice(0, 3).join(", ")}
+                    {puzzleData.themes.length > 3 && ` +${puzzleData.themes.length - 3} more`}
+                  </Alert>
                 )}
               </Stack>
             </Box>

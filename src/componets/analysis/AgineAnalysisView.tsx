@@ -7,6 +7,8 @@ import {
   Typography,
   Divider,
   Chip,
+  Button,
+  LinearProgress,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -17,6 +19,7 @@ import {
   BarChart as ThemeIcon,
   SportsEsports as ReviewIcon,
   PersonSearch as HumanEvalIcon,
+  Queue as QueueIcon,
 } from "@mui/icons-material";
 
 import StockfishAnalysisTab from "../tabs/StockfishTab";
@@ -58,6 +61,13 @@ interface BaseAnalysisViewProps {
   scores: ThemeScore | null;
   ThemeScoreloading: boolean;
   ThemeScoreerror: string | null;
+  /** Called with a move's UCI when the person clicks a suggested move (Stockfish, ChessDB, or a neural net) to play it on the board. */
+  onPlayMove?: (uci: string) => void;
+  /** Queues every position in the current game (main line + variations) for background ChessDB analysis. Only wired up on the game page. */
+  onQueueAllPositions?: () => void;
+  queueAllRunning?: boolean;
+  queueAllProgress?: { done: number; total: number } | null;
+  queueAllResult?: { total: number; queued: number; failed: number } | null;
 
 }
 
@@ -159,6 +169,7 @@ function AgineAnalysisView({
   scores, ThemeScoreerror, ThemeScoreloading,
   activeAnalysisTab, fen, setActiveAnalysisTab,
   autoAnalysis = true,
+  onPlayMove, onQueueAllPositions, queueAllRunning, queueAllProgress, queueAllResult,
 
 }: AgineAnalysisViewProps) {
 
@@ -198,6 +209,7 @@ function AgineAnalysisView({
             analyzeWithStockfish={analyzeWithStockfish} formatEvaluation={formatEvaluation}
             formatPrincipalVariation={formatPrincipalVariation}
             setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
+            onPlayMove={onPlayMove}
           />
         ) : (
           <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
@@ -234,7 +246,7 @@ function AgineAnalysisView({
             <NetResults evaluations={sanEvaluations} ucievaluations={evaluations}
               isMaiaLoading={isLoading} fen={fen} engine={engine}
               stockfishAnalysisResult={stockfishAnalysisResult} chessDbLoading={loading}
-              chessDbMoves={chessdbdata} maiaerror={Maiaerror} />
+              chessDbMoves={chessdbdata} maiaerror={Maiaerror} onPlayMove={onPlayMove} />
           </>
         )}
       </Section>
@@ -259,8 +271,39 @@ function AgineAnalysisView({
 
       <Section id={6} title="Chess Database" icon={<DbIcon sx={{ fontSize: 14 }} />}
         activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+        {onQueueAllPositions && (
+          <Box sx={{ mb: 1.5 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              fullWidth
+              startIcon={<QueueIcon sx={{ fontSize: 16 }} />}
+              onClick={onQueueAllPositions}
+              disabled={queueAllRunning}
+              sx={{ textTransform: "none", fontSize: "11px" }}
+            >
+              {queueAllRunning
+                ? `Queueing all positions… (${queueAllProgress?.done ?? 0}/${queueAllProgress?.total ?? 0})`
+                : "Queue All Game Positions to ChessDB"}
+            </Button>
+            {queueAllRunning && queueAllProgress && queueAllProgress.total > 0 && (
+              <LinearProgress
+                variant="determinate"
+                value={(queueAllProgress.done / queueAllProgress.total) * 100}
+                sx={{ mt: 0.75, borderRadius: 1 }}
+              />
+            )}
+            {!queueAllRunning && queueAllResult && (
+              <Typography sx={{ fontSize: "10px", color: "text.secondary", mt: 0.5 }}>
+                Queued {queueAllResult.queued}/{queueAllResult.total} positions
+                {queueAllResult.failed > 0 ? ` (${queueAllResult.failed} failed)` : ""}.
+              </Typography>
+            )}
+          </Box>
+        )}
         <ChessDBDisplay data={chessdbdata} queueing={queueing} error={error}
-          loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis} />
+          loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis}
+          onPlayMove={onPlayMove} />
       </Section>
 
     </Box>

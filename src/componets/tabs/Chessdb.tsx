@@ -36,6 +36,8 @@ export interface ChessDBDisplayProps {
   queueing?: boolean;
   onRefresh?: () => void;
   onRequestAnalysis?: () => void;
+  /** Called with a move's UCI when the person clicks it to play it on the board. */
+  onPlayMove?: (uci: string) => void;
 }
 
 
@@ -45,6 +47,7 @@ export function ChessDBDisplay({
   queueing = false,
   onRefresh,
   onRequestAnalysis,
+  onPlayMove,
 }: ChessDBDisplayProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -525,14 +528,16 @@ export function ChessDBDisplay({
         {data.map((move, index) => (
           <Paper
             key={`${move.uci}-${index}`}
+            onClick={onPlayMove ? () => onPlayMove(move.uci) : undefined}
             sx={{
               p: isMobile ? 1.5 : 2,
               borderRadius: 0,
               borderLeft:
                 index === 0 ? "3px solid #9c27b0" : "3px solid transparent",
-              cursor: "pointer",
+              cursor: onPlayMove ? "pointer" : "default",
               transition: "background-color 0.2s ease",
               filter: "none",
+              "&:hover": onPlayMove ? { bgcolor: "action.hover" } : undefined,
             }}
           >
             {isMobile ? (

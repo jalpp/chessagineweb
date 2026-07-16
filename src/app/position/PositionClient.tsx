@@ -27,6 +27,7 @@ import { useSessionStorage } from "usehooks-ts";
 import {
   VariationTree, makeTree, addMove, findNode, MoveNode,
 } from "@/lib/variationTree";
+import { applyUciMove } from "@/lib/moveUtils";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,15 @@ export default function PositionPage() {
 
   
 
+  // Play a move suggested by Stockfish, ChessDB, or a neural net (clicking
+  // one of those rows applies its move to the board, same as a drag/drop).
+  const handlePlayMove = useCallback((uci: string) => {
+    const newFen = applyUciMove(fen, uci);
+    if (!newFen) return;
+    setGame(new Chess(newFen));
+    setFen(newFen);
+  }, [fen]);
+
   const resetPosition = useCallback(() => {
     const chess = new Chess();
     setStartFen(chess.fen());
@@ -210,6 +220,7 @@ export default function PositionPage() {
         ThemeScoreerror={themeScoreError}
         ThemeScoreloading={themeScoreLoading}
         autoAnalysis={autoAnalysis}
+        onPlayMove={handlePlayMove}
       />
     </Box>
   );
