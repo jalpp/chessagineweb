@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -21,11 +21,14 @@ import {
   Storage,
   Refresh,
   Queue,
+  Timeline as PvIcon,
 } from "@mui/icons-material";
 
 import { usePersistedSettings } from "@/hooks/usePersistedStorage";
 import { CandidateMove } from "@/libs/agine/helper";
 import { useSettings } from "@/context/SettingContext";
+import type { ChessDbPvResult } from "@jalpp/stockfishts";
+import { formatChessDbPv } from "@/libs/chessdb/pv";
 
 export interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
@@ -38,6 +41,14 @@ export interface ChessDBDisplayProps {
   onRequestAnalysis?: () => void;
   /** Called with a move's UCI when the person clicks it to play it on the board. */
   onPlayMove?: (uci: string) => void;
+  /** The FEN currently being displayed — used to render the queried PV in SAN. */
+  fen?: string;
+  /** Result of the most recent `queryPv` call, if any. */
+  pvResult?: ChessDbPvResult | null;
+  pvLoading?: boolean;
+  pvError?: string | null;
+  /** Triggers a `queryPv` request for the current position. */
+  onRequestPv?: () => void;
 }
 
 
@@ -48,6 +59,11 @@ export function ChessDBDisplay({
   onRefresh,
   onRequestAnalysis,
   onPlayMove,
+  fen = "",
+  pvResult,
+  pvLoading = false,
+  pvError,
+  onRequestPv,
 }: ChessDBDisplayProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -85,6 +101,101 @@ export function ChessDBDisplay({
     if (rate <= 40) return "#f44336";
     return "#ff9800";
   };
+
+  const formattedPv = useMemo(
+    () => (pvResult ? formatChessDbPv(fen, pvResult) : null),
+    [pvResult, fen],
+  );
+
+  const pvSection = onRequestPv ? (
+    <Paper
+      sx={{
+        p: isMobile ? 1.5 : 2,
+        borderRadius: 2,
+        mb: 2,
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={1}
+        flexWrap="wrap"
+      >
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <PvIcon fontSize="small" />
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: 600, fontSize: isMobile ? "0.8rem" : "0.875rem" }}
+          >
+            Principal Variation
+          </Typography>
+        </Stack>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={pvLoading ? <CircularProgress size={14} /> : <PvIcon fontSize="small" />}
+          onClick={onRequestPv}
+          disabled={pvLoading}
+        >
+          {pvLoading ? "Querying…" : "Query PV"}
+        </Button>
+      </Stack>
+
+      {pvError && (
+        <Typography
+          variant="caption"
+          sx={{ display: "block", mt: 1, color: "text.secondary" }}
+        >
+          {pvError === "unknown"
+            ? "Position not known to ChessDB yet — request analysis above, then try again."
+            : `Failed to query PV: ${pvError}`}
+        </Typography>
+      )}
+
+      {formattedPv && !pvError && (
+        <Box sx={{ mt: 1.5 }}>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }} flexWrap="wrap">
+            <Chip
+              label={`Depth ${formattedPv.depth}`}
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+            <Chip
+              label={`Eval ${formattedPv.scoreFormatted}`}
+              size="small"
+              sx={{ fontWeight: 600, bgcolor: getScoreColor((formattedPv.scoreCp / 100).toFixed(2)), color: "#fff" }}
+            />
+          </Stack>
+          {formattedPv.sanMoves.length > 0 ? (
+            <Typography
+              variant="body2"
+              onClick={
+                onPlayMove && formattedPv.uciMoves[0]
+                  ? () => onPlayMove(formattedPv.uciMoves[0])
+                  : undefined
+              }
+              sx={{
+                fontFamily: "monospace",
+                fontSize: isMobile ? "0.8rem" : "0.875rem",
+                cursor: onPlayMove && formattedPv.uciMoves[0] ? "pointer" : "default",
+                p: onPlayMove ? 0.5 : 0,
+                borderRadius: 1,
+                "&:hover": onPlayMove ? { bgcolor: "action.hover" } : undefined,
+              }}
+              title={onPlayMove ? "Click to play the first move on the board" : undefined}
+            >
+              {formattedPv.sanMoves.join(" ")}
+            </Typography>
+          ) : (
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              No line available for this position.
+            </Typography>
+          )}
+        </Box>
+      )}
+    </Paper>
+  ) : null;
 
   if (!chessDBEnabled) {
     return (
@@ -233,6 +344,8 @@ export function ChessDBDisplay({
           </Stack>
         </Paper>
 
+        {pvSection}
+
         {/* Loading State */}
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
           <Stack alignItems="center" spacing={2}>
@@ -344,6 +457,8 @@ export function ChessDBDisplay({
             </IconButton>
           </Stack>
         </Paper>
+
+        {pvSection}
 
         <Paper
           sx={{
@@ -522,6 +637,8 @@ export function ChessDBDisplay({
           </Stack>
         )}
       </Paper>
+
+      {pvSection}
 
       {/* Moves List */}
       <Stack spacing={0}>

@@ -363,6 +363,7 @@ export default function GamePage() {
     analyzeWithStockfish, formatEvaluation, formatPrincipalVariation,
     chessdbdata, loading, queueing, error, refetch, requestAnalysis,
     setRootCurrentMove, scores, themeScoreError, themeScoreLoading,
+    pvResult, pvLoading, pvError, requestPv,
   } = useAgine(fen, "game", autoAnalysis);
 
   const {
@@ -929,6 +930,10 @@ export default function GamePage() {
             queueAllRunning={queueAllRunning}
             queueAllProgress={queueAllProgress}
             queueAllResult={queueAllResult}
+            pvResult={pvResult}
+            pvLoading={pvLoading}
+            pvError={pvError}
+            requestPv={requestPv}
           />
           {chapters.length > 0 && (
             <ResizableChapterSelector

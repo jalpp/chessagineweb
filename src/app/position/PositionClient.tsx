@@ -77,7 +77,7 @@ export default function PositionPage() {
     setEngineLines, engine, fetchOpeningData, analyzeWithStockfish,
     formatEvaluation, formatPrincipalVariation, chessdbdata, loading,
     queueing, error, refetch, requestAnalysis, scores, themeScoreLoading,
-    themeScoreError,
+    themeScoreError, pvResult, pvLoading, pvError, requestPv,
   } = useAgine(fen, "position", autoAnalysis);
 
   const {
@@ -221,6 +221,10 @@ export default function PositionPage() {
         ThemeScoreloading={themeScoreLoading}
         autoAnalysis={autoAnalysis}
         onPlayMove={handlePlayMove}
+        pvResult={pvResult}
+        pvLoading={pvLoading}
+        pvError={pvError}
+        requestPv={requestPv}
       />
     </Box>
   );

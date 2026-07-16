@@ -27,6 +27,7 @@ import GameInfoTab from "../tabs/GameInfoTab";
 import OpeningExplorer from "../tabs/OpeningTab";
 import ChessDBDisplay from "../tabs/Chessdb";
 import { PositionEval, LineEval } from "@jalpp/stockfishts";
+import type { ChessDbPvResult } from "@jalpp/stockfishts";
 import { MasterGames } from "@/libs/openingdatabase/helper";
 import { CandidateMove, MoveAnalysis } from "@/libs/agine/helper";
 import { UciEngine } from "@jalpp/stockfishts";
@@ -58,6 +59,10 @@ interface BaseAnalysisViewProps {
   loading: boolean;
   refetch: () => void;
   requestAnalysis: () => void;
+  pvResult?: ChessDbPvResult | null;
+  pvLoading?: boolean;
+  pvError?: string | null;
+  requestPv?: () => void;
   scores: ThemeScore | null;
   ThemeScoreloading: boolean;
   ThemeScoreerror: string | null;
@@ -163,6 +168,7 @@ function AgineAnalysisView({
   setEngineDepth, setEngineLines,
   openingLoading, openingData, lichessOpeningData, lichessOpeningLoading,
   chessdbdata, queueing, error, loading, refetch, requestAnalysis,
+  pvResult, pvLoading, pvError, requestPv,
   isGameReviewMode = false, moves, currentMoveIndex, goToMove, comment, clock,
   gameInfo, gameReviewTheme, generateGameReview, gameReviewLoading,
   gameReviewProgress, gameReview, evaluations, Maiaerror, isLoading,
@@ -303,7 +309,8 @@ function AgineAnalysisView({
         )}
         <ChessDBDisplay data={chessdbdata} queueing={queueing} error={error}
           loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis}
-          onPlayMove={onPlayMove} />
+          onPlayMove={onPlayMove} fen={fen}
+          pvResult={pvResult} pvLoading={pvLoading} pvError={pvError} onRequestPv={requestPv} />
       </Section>
 
     </Box>
