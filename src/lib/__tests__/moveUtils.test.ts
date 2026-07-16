@@ -1,4 +1,10 @@
-import { applyUciMove, applySanMove, sanToUci } from "../moveUtils";
+import {
+  applyUciMove,
+  applySanMove,
+  sanToUci,
+  buildMoveChain,
+  pvMoveLabel,
+} from "../moveUtils";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -92,5 +98,72 @@ describe("sanToUci", () => {
     const fenAfter = applyUciMove(START_FEN, uci as string);
     const fenAfterSan = applySanMove(START_FEN, "Nf3");
     expect(fenAfter).toBe(fenAfterSan);
+  });
+});
+
+describe("buildMoveChain", () => {
+  it("applies a PV of several moves and returns a step per move", () => {
+    const chain = buildMoveChain(START_FEN, ["e2e4", "e7e5", "g1f3"]);
+    expect(chain).toHaveLength(3);
+    expect(chain.map((s) => s.san)).toEqual(["e4", "e5", "Nf3"]);
+    expect(chain.map((s) => s.uci)).toEqual(["e2e4", "e7e5", "g1f3"]);
+  });
+
+  it("each step's fen reflects the position after that move (not just the last move)", () => {
+    const chain = buildMoveChain(START_FEN, ["e2e4", "e7e5"]);
+    expect(chain[0].fen).toBe(applyUciMove(START_FEN, "e2e4"));
+    expect(chain[1].fen).toBe(applySanMove(chain[0].fen, "e5"));
+  });
+
+  it("stops at the first illegal move, keeping the legal prefix", () => {
+    const chain = buildMoveChain(START_FEN, ["e2e4", "e2e4", "g1f3"]);
+    expect(chain.map((s) => s.san)).toEqual(["e4"]);
+  });
+
+  it("stops at the first malformed UCI token", () => {
+    const chain = buildMoveChain(START_FEN, ["e2e4", "zz", "g1f3"]);
+    expect(chain.map((s) => s.san)).toEqual(["e4"]);
+  });
+
+  it("returns an empty array for an empty PV", () => {
+    expect(buildMoveChain(START_FEN, [])).toEqual([]);
+  });
+
+  it("returns an empty array for an invalid starting FEN", () => {
+    expect(buildMoveChain("not-a-fen", ["e2e4"])).toEqual([]);
+  });
+
+  it("handles promotion moves within the chain", () => {
+    const fen = "8/P7/8/8/8/8/8/k6K w - - 0 1";
+    const chain = buildMoveChain(fen, ["a7a8q"]);
+    expect(chain).toHaveLength(1);
+    expect(chain[0].san).toBe("a8=Q+");
+    expect(chain[0].uci).toBe("a7a8q");
+  });
+});
+
+describe("pvMoveLabel", () => {
+  it("labels a white move with just the move number", () => {
+    expect(pvMoveLabel(START_FEN, true)).toBe("1.");
+  });
+
+  it("omits the label for a black move that isn't first", () => {
+    const afterE4 = applyUciMove(START_FEN, "e2e4") as string;
+    expect(pvMoveLabel(afterE4, false)).toBeNull();
+  });
+
+  it("labels a black move with ellipsis when it's the first move shown", () => {
+    const afterE4 = applyUciMove(START_FEN, "e2e4") as string;
+    expect(pvMoveLabel(afterE4, true)).toBe("1...");
+  });
+
+  it("uses the fullmove number embedded in the FEN, not always 1", () => {
+    const midGameFen = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 4 3";
+    expect(pvMoveLabel(midGameFen, true)).toBe("3.");
+  });
+
+  it("returns null for an empty or malformed FEN", () => {
+    expect(pvMoveLabel("", true)).toBeNull();
+    expect(pvMoveLabel("garbage", true)).toBeNull();
   });
 });

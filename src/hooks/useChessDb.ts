@@ -11,9 +11,6 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [queueing, setQueueing] = useState<boolean>(false);
-
-  // Principal variation (depth + line) queried on demand via ChessDB's
-  // `querypv` action, kept separate from the `queryAll` candidate-move list.
   const [pvResult, setPvResult] = useState<ChessDbPvResult | null>(null);
   const [pvLoading, setPvLoading] = useState<boolean>(false);
   const [pvError, setPvError] = useState<string | null>(null);
@@ -117,12 +114,17 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
     fetchChessDBData(fen);
   }, [fen, fetchChessDBData]);
 
-  // The PV is queried on demand (it's a separate ChessDB request from
-  // queryAll), so just clear any stale result/error when the position changes.
+
   useEffect(() => {
     setPvResult(null);
     setPvError(null);
-  }, [fen]);
+
+    if (gameReviewMode) {
+      return;
+    }
+
+    queryPv(fen);
+  }, [fen, gameReviewMode, queryPv]);
 
   const refetch = useCallback(() => {
     fetchChessDBData(fen);

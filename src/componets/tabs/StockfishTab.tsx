@@ -21,6 +21,7 @@ import { Settings as SettingsIcon } from "@mui/icons-material";
 import { LineEval, PositionEval, UciEngine, EngineName } from "@jalpp/stockfishts";
 import Slider from "../Slider";
 import { useSettings } from "@/context/SettingContext";
+import PvLineViewer from "../analysis/PvLineViewer";
 
 export interface StockfishAnalysisProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -33,8 +34,12 @@ export interface StockfishAnalysisProps {
   analyzeWithStockfish: () => void;
   formatEvaluation: (line: LineEval) => string;
   formatPrincipalVariation: (pv: string[], fen: string) => string;
-  /** Called with the UCI of a line's first move when the person clicks that line to play it on the board. */
-  onPlayMove?: (uci: string) => void;
+  /**
+   * Called with the move prefix (in UCI, inclusive) when the person clicks
+   * a move within a line's PV, so the whole sequence up to that move can be
+   * appended onto the main board.
+   */
+  onAppendMoves?: (uciMoves: string[]) => void;
 }
 
 // Engine display names mapping
@@ -65,7 +70,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
   analyzeWithStockfish,
   formatEvaluation,
   formatPrincipalVariation,
-  onPlayMove,
+  onAppendMoves,
 }) => {
   const [engineEnabled, setEngineEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -489,11 +494,6 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
         {stockfishAnalysisResult?.lines?.map((line, index) => (
           <Paper
             key={`line-${index}-${line.depth}-${line.cp || line.mate}`}
-            onClick={
-              onPlayMove && line.pv?.[0]
-                ? () => onPlayMove(line.pv[0])
-                : undefined
-            }
             sx={{
               p: 2,
 
@@ -502,14 +502,9 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                 index < stockfishAnalysisResult.lines.length - 1
                   ? "1px solid rgba(255,255,255,0.1)"
                   : "none",
-              cursor: onPlayMove && line.pv?.[0] ? "pointer" : "default",
               transition: "all 0.3s ease",
               opacity: isTransitioning ? 0.5 : 1,
               filter: "none",
-              "&:hover":
-                onPlayMove && line.pv?.[0]
-                  ? { bgcolor: "action.hover" }
-                  : undefined,
             }}
           >
             <Stack direction="row" alignItems="center" spacing={2}>
@@ -546,21 +541,16 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                     : "50.0%"}
               </Typography>
 
-              {/* Principal Variation */}
-              <Typography
-                variant="body2"
-                sx={{
-                  fontFamily: "monospace",
-                  flex: 1,
-                  fontSize: "0.85rem",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  transition: "color 0.3s ease",
-                }}
-              >
-                {formatPrincipalVariation(line.pv, line.fen)}
-              </Typography>
+              {/* Principal Variation — scrollable, hover for a mini-board
+                  preview of each move, click a move to append the line up
+                  to it onto the main board. */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <PvLineViewer
+                  fen={line.fen}
+                  uciMoves={line.pv}
+                  onAppendMoves={onAppendMoves}
+                />
+              </Box>
 
               {/* Loading indicator for incomplete lines */}
               {(stockfishLoading || isTransitioning) &&

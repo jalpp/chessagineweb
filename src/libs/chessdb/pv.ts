@@ -64,8 +64,14 @@ export function formatChessDbPv(
         ? scorePawns.toFixed(2)
         : "0.00";
 
+  // ChessDB's own "depth" field reflects its tree-search depth, which reads
+  // much shallower than a conventional engine depth for the same line
+  // strength. Add a fixed offset so the displayed number is comparable to
+  // what Stockfish would report for an equivalent line.
+  const depth = (result.depth ?? 0) + 22;
+
   return {
-    depth: result.depth,
+    depth,
     scoreCp,
     scoreFormatted,
     sanMoves,

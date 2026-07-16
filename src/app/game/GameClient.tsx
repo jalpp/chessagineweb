@@ -57,7 +57,7 @@ import EvalGraph from "@/componets/tabs/EvalGraph";
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { GameReviewTheme, ThemeScore, getThemeLabelColor } from "@/libs/themes/helper";
 import { BarChart, LineChart, RadarChart } from "@mui/x-charts";
-import { applyUciMove } from "@/lib/moveUtils";
+import { applyUciMove, buildMoveChain } from "@/lib/moveUtils";
 import { collectAllFens, queueAllPositions, QueueAllResult } from "@/libs/chessdb/queueAll";
 import { ChessDbApi } from "@jalpp/stockfishts";
 
@@ -452,6 +452,35 @@ export default function GamePage() {
     setGame(new Chess(newFen));
     setFen(newFen);
   }, [fen]);
+
+  // Append a whole move sequence (e.g. clicking the 3rd move of a
+  // Stockfish/ChessDB PV) onto the game as a chain of tree nodes from the
+  // current position, in one step.
+  const handlePlayMoveSequence = useCallback((uciMoves: string[]) => {
+    const chain = buildMoveChain(fen, uciMoves);
+    if (chain.length === 0) return;
+
+    let currentTree = tree;
+    let cursor = tree.cursor;
+    for (const step of chain) {
+      const result = addMove(currentTree, cursor, step.san, step.uci, step.fen);
+      currentTree = result.newTree;
+      cursor = result.newCursorId;
+    }
+
+    const finalNode = findNode(currentTree.root, cursor);
+    const finalFen = chain[chain.length - 1].fen;
+    setTree({ ...currentTree, cursor });
+    setGame(new Chess(finalFen));
+    setFen(finalFen);
+    setPrevFen(finalFen);
+    const idx = finalNode?.ply ?? 0;
+    setCurrentMoveIndex(idx);
+    setRootCurrentMove(idx);
+    setComment("");
+    setClock("");
+    setStockfishAnalysisResult(null);
+  }, [fen, tree, setRootCurrentMove, setStockfishAnalysisResult]);
 
   // Queue every position in the loaded game (main line + variations) for
   // background ChessDB analysis in one click.
@@ -926,6 +955,7 @@ export default function GamePage() {
             scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
             autoAnalysis={autoAnalysis}
             onPlayMove={handlePlayMove}
+            onAppendMoves={handlePlayMoveSequence}
             onQueueAllPositions={handleQueueAllPositions}
             queueAllRunning={queueAllRunning}
             queueAllProgress={queueAllProgress}

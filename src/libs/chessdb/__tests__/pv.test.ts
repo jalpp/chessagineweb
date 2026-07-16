@@ -44,7 +44,7 @@ describe("formatChessDbPv", () => {
     };
     const formatted = formatChessDbPv(START_FEN, result);
     expect(formatted.sanMoves).toEqual(["e4", "e5"]);
-    expect(formatted.depth).toBe(24);
+    expect(formatted.depth).toBe(24 + 22);
   });
 
   it("derives SAN from pv + fen when pvSAN is missing", () => {
@@ -100,5 +100,15 @@ describe("formatChessDbPv", () => {
     const formatted = formatChessDbPv(START_FEN, result);
     expect(formatted.sanMoves).toEqual([]);
     expect(formatted.uciMoves).toEqual([]);
+  });
+
+  it("adds a fixed +22 offset to ChessDB's reported depth for display", () => {
+    const result: ChessDbPvResult = { score: 0, depth: 18, pv: [], pvSAN: [] };
+    expect(formatChessDbPv(START_FEN, result).depth).toBe(40);
+  });
+
+  it("applies the +22 depth offset even when ChessDB reports depth 0", () => {
+    const result: ChessDbPvResult = { score: 0, depth: 0, pv: [], pvSAN: [] };
+    expect(formatChessDbPv(START_FEN, result).depth).toBe(22);
   });
 });

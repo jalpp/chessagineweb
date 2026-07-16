@@ -68,6 +68,8 @@ interface BaseAnalysisViewProps {
   ThemeScoreerror: string | null;
   /** Called with a move's UCI when the person clicks a suggested move (Stockfish, ChessDB, or a neural net) to play it on the board. */
   onPlayMove?: (uci: string) => void;
+  /** Called with a full move prefix (in UCI) when the person clicks a move within a displayed PV (Stockfish line or ChessDB PV), so the whole sequence can be appended onto the main board. */
+  onAppendMoves?: (uciMoves: string[]) => void;
   /** Queues every position in the current game (main line + variations) for background ChessDB analysis. Only wired up on the game page. */
   onQueueAllPositions?: () => void;
   queueAllRunning?: boolean;
@@ -175,7 +177,7 @@ function AgineAnalysisView({
   scores, ThemeScoreerror, ThemeScoreloading,
   activeAnalysisTab, fen, setActiveAnalysisTab,
   autoAnalysis = true,
-  onPlayMove, onQueueAllPositions, queueAllRunning, queueAllProgress, queueAllResult,
+  onPlayMove, onAppendMoves, onQueueAllPositions, queueAllRunning, queueAllProgress, queueAllResult,
 
 }: AgineAnalysisViewProps) {
 
@@ -215,7 +217,7 @@ function AgineAnalysisView({
             analyzeWithStockfish={analyzeWithStockfish} formatEvaluation={formatEvaluation}
             formatPrincipalVariation={formatPrincipalVariation}
             setEngineDepth={setEngineDepth} setEngineLines={setEngineLines}
-            onPlayMove={onPlayMove}
+            onAppendMoves={onAppendMoves}
           />
         ) : (
           <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
@@ -309,7 +311,7 @@ function AgineAnalysisView({
         )}
         <ChessDBDisplay data={chessdbdata} queueing={queueing} error={error}
           loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis}
-          onPlayMove={onPlayMove} fen={fen}
+          onPlayMove={onPlayMove} onAppendMoves={onAppendMoves} fen={fen}
           pvResult={pvResult} pvLoading={pvLoading} pvError={pvError} onRequestPv={requestPv} />
       </Section>
 

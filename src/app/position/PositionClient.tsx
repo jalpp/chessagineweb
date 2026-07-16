@@ -27,7 +27,7 @@ import { useSessionStorage } from "usehooks-ts";
 import {
   VariationTree, makeTree, addMove, findNode, MoveNode,
 } from "@/lib/variationTree";
-import { applyUciMove } from "@/lib/moveUtils";
+import { applyUciMove, buildMoveChain } from "@/lib/moveUtils";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -145,6 +145,30 @@ export default function PositionPage() {
     setFen(newFen);
   }, [fen]);
 
+  // Append a whole move sequence (e.g. clicking the 3rd move of a
+  // Stockfish/ChessDB PV) onto the board as a chain of tree nodes from the
+  // current position, in one step — used instead of the fen-watching effect
+  // above since that only handles a single move at a time.
+  const handlePlayMoveSequence = useCallback((uciMoves: string[]) => {
+    const chain = buildMoveChain(fen, uciMoves);
+    if (chain.length === 0) return;
+
+    let currentTree = tree;
+    let cursor = tree.cursor;
+    for (const step of chain) {
+      const result = addMove(currentTree, cursor, step.san, step.uci, step.fen);
+      currentTree = result.newTree;
+      cursor = result.newCursorId;
+    }
+
+    const finalFen = chain[chain.length - 1].fen;
+    setTree({ ...currentTree, cursor });
+    setGame(new Chess(finalFen));
+    setFen(finalFen);
+    setPrevFen(finalFen);
+    setStockfishAnalysisResult(null);
+  }, [fen, tree, setStockfishAnalysisResult]);
+
   const resetPosition = useCallback(() => {
     const chess = new Chess();
     setStartFen(chess.fen());
@@ -221,6 +245,7 @@ export default function PositionPage() {
         ThemeScoreloading={themeScoreLoading}
         autoAnalysis={autoAnalysis}
         onPlayMove={handlePlayMove}
+        onAppendMoves={handlePlayMoveSequence}
         pvResult={pvResult}
         pvLoading={pvLoading}
         pvError={pvError}

@@ -29,6 +29,7 @@ import { CandidateMove } from "@/libs/agine/helper";
 import { useSettings } from "@/context/SettingContext";
 import type { ChessDbPvResult } from "@jalpp/stockfishts";
 import { formatChessDbPv } from "@/libs/chessdb/pv";
+import PvLineViewer from "../analysis/PvLineViewer";
 
 export interface ChessDBDisplayProps {
   data: CandidateMove[] | null;
@@ -41,13 +42,19 @@ export interface ChessDBDisplayProps {
   onRequestAnalysis?: () => void;
   /** Called with a move's UCI when the person clicks it to play it on the board. */
   onPlayMove?: (uci: string) => void;
+  /**
+   * Called with the move prefix (in UCI, inclusive) when the person clicks
+   * a move within the queried PV, so the whole sequence up to that move can
+   * be appended onto the main board.
+   */
+  onAppendMoves?: (uciMoves: string[]) => void;
   /** The FEN currently being displayed — used to render the queried PV in SAN. */
   fen?: string;
-  /** Result of the most recent `queryPv` call, if any. */
+  /** Result of the most recent `queryPv` call, if any. PV is fetched automatically as the position changes. */
   pvResult?: ChessDbPvResult | null;
   pvLoading?: boolean;
   pvError?: string | null;
-  /** Triggers a `queryPv` request for the current position. */
+  /** Re-runs `queryPv` for the current position (e.g. a manual refresh). */
   onRequestPv?: () => void;
 }
 
@@ -59,6 +66,7 @@ export function ChessDBDisplay({
   onRefresh,
   onRequestAnalysis,
   onPlayMove,
+  onAppendMoves,
   fen = "",
   pvResult,
   pvLoading = false,
@@ -131,16 +139,24 @@ export function ChessDBDisplay({
             Principal Variation
           </Typography>
         </Stack>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={pvLoading ? <CircularProgress size={14} /> : <PvIcon fontSize="small" />}
+        <IconButton
           onClick={onRequestPv}
           disabled={pvLoading}
+          size="small"
+          title="Refresh PV"
         >
-          {pvLoading ? "Querying…" : "Query PV"}
-        </Button>
+          {pvLoading ? <CircularProgress size={16} /> : <PvIcon fontSize="small" />}
+        </IconButton>
       </Stack>
+
+      {pvLoading && !formattedPv && (
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
+          <CircularProgress size={14} />
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            Fetching PV…
+          </Typography>
+        </Stack>
+      )}
 
       {pvError && (
         <Typography
@@ -148,8 +164,8 @@ export function ChessDBDisplay({
           sx={{ display: "block", mt: 1, color: "text.secondary" }}
         >
           {pvError === "unknown"
-            ? "Position not known to ChessDB yet — request analysis above, then try again."
-            : `Failed to query PV: ${pvError}`}
+            ? "Position not known to ChessDB yet — request analysis above, then it'll appear here automatically."
+            : `Failed to fetch PV: ${pvError}`}
         </Typography>
       )}
 
@@ -167,26 +183,12 @@ export function ChessDBDisplay({
               sx={{ fontWeight: 600, bgcolor: getScoreColor((formattedPv.scoreCp / 100).toFixed(2)), color: "#fff" }}
             />
           </Stack>
-          {formattedPv.sanMoves.length > 0 ? (
-            <Typography
-              variant="body2"
-              onClick={
-                onPlayMove && formattedPv.uciMoves[0]
-                  ? () => onPlayMove(formattedPv.uciMoves[0])
-                  : undefined
-              }
-              sx={{
-                fontFamily: "monospace",
-                fontSize: isMobile ? "0.8rem" : "0.875rem",
-                cursor: onPlayMove && formattedPv.uciMoves[0] ? "pointer" : "default",
-                p: onPlayMove ? 0.5 : 0,
-                borderRadius: 1,
-                "&:hover": onPlayMove ? { bgcolor: "action.hover" } : undefined,
-              }}
-              title={onPlayMove ? "Click to play the first move on the board" : undefined}
-            >
-              {formattedPv.sanMoves.join(" ")}
-            </Typography>
+          {formattedPv.uciMoves.length > 0 ? (
+            <PvLineViewer
+              fen={fen}
+              uciMoves={formattedPv.uciMoves}
+              onAppendMoves={onAppendMoves}
+            />
           ) : (
             <Typography variant="caption" sx={{ color: "text.secondary" }}>
               No line available for this position.
