@@ -16,6 +16,8 @@ import {
   FormControl,
   Select,
   MenuItem,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { LineEval, PositionEval, UciEngine, EngineName } from "@jalpp/stockfishts";
@@ -78,6 +80,8 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
   const { saveSettings, enginePicked: enginePickedRaw } = useSettings();
   const enginePicked = enginePickedRaw as EngineName;
   const setEnginePicked = (v: EngineName) => saveSettings({ engine_picked: v });
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Handle settings changes with smooth transitions
   const handleDepthChange = (newDepth: number) => {
@@ -628,9 +632,10 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
       <Dialog
         open={settingsOpen}
         onClose={handleSettingsClose}
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            minWidth: 450,
+            minWidth: isMobile ? "auto" : 450,
           },
         }}
       >

@@ -31,6 +31,7 @@ export interface PersistedSettings {
   analysis_show_theme: boolean;
   analysis_show_human_eval: boolean;
   analysis_show_opening: boolean;
+  human_eval_bar_rating: number;
 }
 
 // ── Safe LocalStorage Wrapper (fixes invalid JSON issues) ───────────────────
@@ -93,6 +94,7 @@ export function usePersistedSettings() {
   const [analysisShowTheme,      setAnalysisShowTheme]      = useSafeLocalStorage("analysis_ui_show_theme", true);
   const [analysisShowHumanEval,  setAnalysisShowHumanEval]  = useSafeLocalStorage("analysis_ui_show_human_eval", true);
   const [analysisShowOpening,    setAnalysisShowOpening]    = useSafeLocalStorage("analysis_ui_show_opening", true);
+  const [humanEvalBarRating,     setHumanEvalBarRating]     = useSafeLocalStorage("human_eval_bar_ui_rating", 2600);
 
   const debouncedPost = useRef(
     debounce((body: PersistedSettings) => {
@@ -141,6 +143,7 @@ export function usePersistedSettings() {
         setAnalysisShowTheme(d.analysis_show_theme);
         setAnalysisShowHumanEval(d.analysis_show_human_eval);
         setAnalysisShowOpening(d.analysis_show_opening);
+        setHumanEvalBarRating(d.human_eval_bar_rating);
       })
       .catch(() => {});
   }, [isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -175,6 +178,7 @@ export function usePersistedSettings() {
       if (patch.analysis_show_theme         !== undefined) setAnalysisShowTheme(patch.analysis_show_theme);
       if (patch.analysis_show_human_eval    !== undefined) setAnalysisShowHumanEval(patch.analysis_show_human_eval);
       if (patch.analysis_show_opening       !== undefined) setAnalysisShowOpening(patch.analysis_show_opening);
+      if (patch.human_eval_bar_rating       !== undefined) setHumanEvalBarRating(patch.human_eval_bar_rating);
 
       if (!isSignedIn) return;
 
@@ -205,6 +209,7 @@ export function usePersistedSettings() {
         analysis_show_theme:          patch.analysis_show_theme         ?? analysisShowTheme,
         analysis_show_human_eval:     patch.analysis_show_human_eval    ?? analysisShowHumanEval,
         analysis_show_opening:        patch.analysis_show_opening       ?? analysisShowOpening,
+        human_eval_bar_rating:        patch.human_eval_bar_rating       ?? humanEvalBarRating,
       };
 
       debouncedPost(full);
@@ -216,7 +221,7 @@ export function usePersistedSettings() {
       boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme, pgnViewMode,
       chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
       analysisShowStockfish, analysisShowChessdb, analysisShowNets,
-      analysisShowTheme, analysisShowHumanEval, analysisShowOpening,
+      analysisShowTheme, analysisShowHumanEval, analysisShowOpening, humanEvalBarRating,
     ]
   );
 
@@ -226,7 +231,7 @@ export function usePersistedSettings() {
     boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme,
     pgnViewMode, chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
     analysisShowStockfish, analysisShowChessdb, analysisShowNets,
-    analysisShowTheme, analysisShowHumanEval, analysisShowOpening,
+    analysisShowTheme, analysisShowHumanEval, analysisShowOpening, humanEvalBarRating,
     saveSettings,
   };
 }

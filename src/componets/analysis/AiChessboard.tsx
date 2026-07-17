@@ -3,6 +3,7 @@ import {
   Stack, Button, TextField, Paper, Switch, Slider, Box, Divider,
   Typography, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, Chip, FormControl, InputLabel, Select, MenuItem,
+  useTheme, useMediaQuery,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -27,7 +28,8 @@ import {
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
 import { HumanEvalBar } from "./HumanEvalBar";
-import { MaiaEngineAnalysis, SanMaiaEvaluation } from "@/libs/nets/types";
+import { MaiaEngineAnalysis, SanMaiaEvaluation, MAIA3_RATING_VALUES } from "@/libs/nets/types";
+import { maiaModelKey, clampToNearestMaiaRating } from "@/libs/nets/humanEvalBar";
 import { useSettings } from "@/context/SettingContext";
 
 export type BoardOrientation = "white" | "black";
@@ -100,6 +102,7 @@ export default function AiChessboardPanel({
     boardShowEvalBar: showEvalBar, boardShowFen: showFen,
     boardShowHanging: showHangingPieces,
     boardShowSemiProtected: showSemiProtectedPieces,
+    humanEvalBarRating,
   } = useSettings();
 
   const setIsFlipped = (v: boolean) => saveSettings({ board_ui_flipped: v });
@@ -111,6 +114,11 @@ export default function AiChessboardPanel({
   const setShowFen = (v: boolean) => saveSettings({ board_ui_show_fen: v });
   const setShowHangingPieces = (v: boolean) => saveSettings({ board_ui_show_hanging_piece: v });
   const setShowSemiProtectedPieces = (v: boolean) => saveSettings({ board_ui_show_semiprotected: v });
+  const setHumanEvalBarRating = (v: number) => saveSettings({ human_eval_bar_rating: v });
+  const evalBarRating = clampToNearestMaiaRating(humanEvalBarRating ?? 2600);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [customFen, setCustomFen] = useState("");
@@ -500,13 +508,18 @@ export default function AiChessboardPanel({
   // ── Responsive board size ──────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
   const [boardPx, setBoardPx] = useState(Math.floor(boardSize / 8) * 8);
+  const evalBarsShown = showEvalBar && !puzzleMode && !playMode;
+  // Two 20px bars (human eval + Stockfish) plus their gaps, reserved out of
+  // the container width so the board shrinks to leave room for them instead
+  // of the row overflowing its container (the mobile "bar doesn't fit" bug).
+  const evalBarOverheadPx = evalBarsShown ? 40 : 0;
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const obs = new ResizeObserver(([entry]) => {
       const overhead = gameInfo ? 140 : 80;
-      const available = Math.min(entry.contentRect.width, entry.contentRect.height - overhead);
+      const available = Math.min(entry.contentRect.width - evalBarOverheadPx, entry.contentRect.height - overhead);
       // Round DOWN to nearest multiple of 8 so the 8×8 CSS grid columns divide
       // evenly into whole pixels — prevents sub-pixel rounding gaps (white lines)
       // that appear between rows/columns on Safari and high-DPI displays.
@@ -515,7 +528,7 @@ export default function AiChessboardPanel({
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [boardSize, gameInfo]);
+  }, [boardSize, gameInfo, evalBarOverheadPx]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -536,12 +549,15 @@ export default function AiChessboardPanel({
 
       {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><TopPlayerBar /></Box>}
 
-      {/* Board + eval bar */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + (showEvalBar && !puzzleMode && !playMode ? 40 : 0) }}>
-        {showEvalBar && !puzzleMode && !playMode && (
-          <HumanEvalBar evaluation={evaluations?.maia3?.["maia_kdd_2600"]} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
+      {/* Board + eval bars. On mobile the human eval bar moves to the right
+          of the board (SF stays left) instead of stacking both bars on the
+          left, since two 20px bars plus gaps can otherwise crowd a narrow
+          screen more on one side than the layout has room for. */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + evalBarOverheadPx }}>
+        {evalBarsShown && !isMobile && (
+          <HumanEvalBar evaluation={evaluations?.maia3?.[maiaModelKey(evalBarRating)]} fen={fen} rating={evalBarRating} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
         )}
-        {showEvalBar && !puzzleMode && !playMode && (
+        {evalBarsShown && (
           <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
         )}
         <Chessboard
@@ -562,6 +578,9 @@ export default function AiChessboardPanel({
             id: "ai-chessboard",
           }}
         />
+        {evalBarsShown && isMobile && (
+          <HumanEvalBar evaluation={evaluations?.maia3?.[maiaModelKey(evalBarRating)]} fen={fen} rating={evalBarRating} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
+        )}
       </Box>
 
       {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><BottomPlayerBar /></Box>}
@@ -625,7 +644,8 @@ export default function AiChessboardPanel({
 
       {/* Settings dialog */}
       <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)}
-        PaperProps={{ sx: { minWidth: 420, maxHeight: "90vh" } }}>
+        fullScreen={isMobile}
+        PaperProps={{ sx: { minWidth: isMobile ? "auto" : 420, maxHeight: "90vh" } }}>
         <DialogTitle>Board Settings</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ pt: 1 }}>
@@ -663,6 +683,28 @@ export default function AiChessboardPanel({
                 ))}
               </Stack>
             </Box>
+            {showEvalBar && !puzzleMode && !playMode && (
+              <Box>
+                <Box display="flex" justifyContent="space-between" mb={1}>
+                  <Typography variant="body2">Human Eval Bar Model (Maia)</Typography>
+                  <Typography variant="body2" fontWeight={700}>{evalBarRating} Elo</Typography>
+                </Box>
+                <Slider
+                  value={MAIA3_RATING_VALUES.indexOf(evalBarRating as typeof MAIA3_RATING_VALUES[number])}
+                  min={0}
+                  max={MAIA3_RATING_VALUES.length - 1}
+                  step={1}
+                  onChange={(_, idx) => setHumanEvalBarRating(MAIA3_RATING_VALUES[idx as number])}
+                  marks={[
+                    { value: 0, label: "600" },
+                    { value: 5, label: "1100" },
+                    { value: 10, label: "1600" },
+                    { value: 15, label: "2100" },
+                    { value: 20, label: "2600" },
+                  ]}
+                />
+              </Box>
+            )}
             {!puzzleMode && !playMode && (
               <Box>
                 <Typography variant="body2" sx={{ mb: 1.5 }}>Piece Highlights</Typography>

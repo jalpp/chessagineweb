@@ -1,44 +1,11 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import {
   Box, Card, CardContent, Typography,
   Chip, CircularProgress, Alert, Divider,
 } from "@mui/material";
 import { Psychology as BrainIcon } from "@mui/icons-material";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface BatchEntry {
-  rating: number;
-  analysis: {
-    HumanEstimateEval?: string;
-    LeelaZeroEstimateEval?: string;
-  };
-}
-
-interface RatingEval {
-  rating: number;
-  humanEval: string;
-  lc0Eval: string;
-}
-
-// ── API ───────────────────────────────────────────────────────────────────────
-
-async function fetchBatch(fen: string, signal?: AbortSignal): Promise<RatingEval[]> {
-  const res = await fetch("/api/nn", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endpoint: "batch-maia3", fen }),
-    signal,
-  });
-  if (!res.ok) throw new Error(`batch-maia3 failed: ${res.status}`);
-  const json = await res.json();
-  return (json.results ?? []).map((entry: BatchEntry) => ({
-    rating: entry.rating,
-    humanEval: entry.analysis.HumanEstimateEval ?? "—",
-    lc0Eval: entry.analysis.LeelaZeroEstimateEval ?? "—",
-  }));
-}
+import { useMaiaBatchEval } from "@/hooks/useMaiaBatchEval";
 
 // ── Eval bar ──────────────────────────────────────────────────────────────────
 
@@ -119,28 +86,7 @@ const CARD_HEADER = (
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export const ObjectiveHumanEval: React.FC<{ fen: string }> = ({ fen }) => {
-  const [results, setResults] = useState<RatingEval[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (!fen) return;
-    abortRef.current?.abort();
-    const abort = new AbortController();
-    abortRef.current = abort;
-
-    setIsLoading(true);
-    setError(null);
-    setResults([]);
-
-    fetchBatch(fen, abort.signal)
-      .then((r) => { if (!abort.signal.aborted) setResults(r); })
-      .catch((e) => { if (!abort.signal.aborted) setError(e instanceof Error ? e : new Error("Unknown error")); })
-      .finally(() => { if (!abort.signal.aborted) setIsLoading(false); });
-
-    return () => abort.abort();
-  }, [fen]);
+  const { results, isLoading, error } = useMaiaBatchEval(fen);
 
   if (isLoading) {
     return (

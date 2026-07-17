@@ -1,17 +1,23 @@
+"use client";
+import { useState } from "react";
 import { Box, Typography, Tooltip } from "@mui/material";
 import type { MaiaEvaluation } from "@/libs/nets/types";
 import { getWhiteWinProbability } from "@/libs/nets/types";
+import { estimateWdlFromWinProbability, findRatingEval } from "@/libs/nets/humanEvalBar";
+import { useMaiaBatchEval } from "@/hooks/useMaiaBatchEval";
 import { BoardOrientation } from "./AiChessboard";
 
 interface HumanEvalBarProps {
-  /** Maia evaluation for the position (e.g. evaluations.maia3?.["maia_kdd_2600"]). */
+  /** Maia evaluation for the position at the chosen rating (e.g. evaluations.maia3?.["maia_kdd_2600"]). */
   evaluation?: MaiaEvaluation | null;
+  /** FEN of the position — used to fetch WDL/HEE/LCE detail on hover. */
+  fen: string;
+  /** Which Maia rating level (600-2600) this bar represents. */
+  rating: number;
   boardOrientation?: BoardOrientation;
   height?: number;
   /** When true, renders the bar as greyed-out (analysis not available for this position) */
   disabled?: boolean;
-  /** Rating level shown in the tooltip, e.g. "2600". */
-  ratingLabel?: string;
 }
 
 // Reserved space (within the total `height` budget) for the "M" label
@@ -20,18 +26,27 @@ const LABEL_HEIGHT = 14;
 
 export const HumanEvalBar: React.FC<HumanEvalBarProps> = ({
   evaluation,
+  fen,
+  rating,
   boardOrientation,
   height = 400,
   disabled = false,
-  ratingLabel = "2600",
 }) => {
   const isFlipped = boardOrientation === "black";
   const barHeight = Math.max(0, height - LABEL_HEIGHT);
+
+  const [isHovering, setIsHovering] = useState(false);
+  // Only fetch the (heavier, 21-rating) batch detail while the bar is
+  // actually hovered — the bar itself renders from `evaluation`, which is
+  // already available with no extra request.
+  const { results: batchResults } = useMaiaBatchEval(fen, isHovering);
+  const ratingDetail = findRatingEval(batchResults, rating);
 
   const whiteWinProbability = getWhiteWinProbability(evaluation?.value);
   const whitePercentage = whiteWinProbability * 100;
   const displayWhitePercentage = isFlipped ? 100 - whitePercentage : whitePercentage;
   const evalText = `${Math.round(whitePercentage)}%`;
+  const wdl = estimateWdlFromWinProbability(whiteWinProbability);
 
   const label = (
     <Typography
@@ -42,6 +57,23 @@ export const HumanEvalBar: React.FC<HumanEvalBarProps> = ({
     </Typography>
   );
 
+  const tooltipContent = (
+    <Box sx={{ textAlign: "center", py: 0.25 }}>
+      <Typography variant="caption" sx={{ display: "block", fontSize: "10px" }}>
+        WDL {wdl.win}% / {wdl.draw}% / {wdl.loss}%
+      </Typography>
+      <Typography variant="body2" sx={{ display: "block", fontWeight: "bold", fontSize: "11px", my: "2px" }}>
+        HEE {ratingDetail?.humanEval ?? "—"}
+      </Typography>
+      <Typography variant="caption" sx={{ display: "block", fontSize: "10px" }}>
+        LCE {ratingDetail?.lc0Eval ?? "—"}
+      </Typography>
+      <Typography variant="caption" sx={{ display: "block", fontSize: "9px", color: "text.disabled", mt: "2px" }}>
+        Maia {rating}
+      </Typography>
+    </Box>
+  );
+
   if (disabled || !evaluation) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
@@ -49,7 +81,7 @@ export const HumanEvalBar: React.FC<HumanEvalBarProps> = ({
           title={
             disabled
               ? "Auto-analysis is off — enable it to see the Maia human eval"
-              : `Maia ${ratingLabel} human eval not available for this position`
+              : `Maia ${rating} human eval not available for this position`
           }
           placement="right"
         >
@@ -102,39 +134,51 @@ export const HumanEvalBar: React.FC<HumanEvalBarProps> = ({
         />
 
         <Tooltip
-          title={`Maia ${ratingLabel} — White win probability: ${whitePercentage.toFixed(1)}%`}
+          title={tooltipContent}
           placement="right"
+          onOpen={() => setIsHovering(true)}
+          onClose={() => setIsHovering(false)}
         >
           <Box
             sx={{
               position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%) rotate(-90deg)",
-              transformOrigin: "center",
-              zIndex: 2,
-              pointerEvents: "none",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
             }}
           >
             <Box
               sx={{
-                bgcolor: "rgba(0,0,0,0.72)",
-                borderRadius: "3px",
-                px: 0.5,
-                py: "1px",
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%) rotate(-90deg)",
+                transformOrigin: "center",
+                zIndex: 2,
+                pointerEvents: "none",
               }}
             >
-              <Typography
-                variant="caption"
+              <Box
                 sx={{
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  color: "#fff",
-                  whiteSpace: "nowrap",
+                  bgcolor: "rgba(0,0,0,0.72)",
+                  borderRadius: "3px",
+                  px: 0.5,
+                  py: "1px",
                 }}
               >
-                {evalText}
-              </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {evalText}
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Tooltip>
