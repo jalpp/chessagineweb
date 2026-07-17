@@ -1,83 +1,58 @@
 import { Box, Typography, Tooltip } from "@mui/material";
-import { LineEval } from "@jalpp/stockfishts";
+import type { MaiaEvaluation } from "@/libs/nets/types";
+import { getWhiteWinProbability } from "@/libs/nets/types";
 import { BoardOrientation } from "./AiChessboard";
 
-interface EvalBarProps {
-  lineEval?: LineEval;
+interface HumanEvalBarProps {
+  /** Maia evaluation for the position (e.g. evaluations.maia3?.["maia_kdd_2600"]). */
+  evaluation?: MaiaEvaluation | null;
   boardOrientation?: BoardOrientation;
   height?: number;
   /** When true, renders the bar as greyed-out (analysis not available for this position) */
   disabled?: boolean;
+  /** Rating level shown in the tooltip, e.g. "2600". */
+  ratingLabel?: string;
 }
 
-// Reserved space (within the total `height` budget) for the "SF" label
-// beneath the bar, so the bar + label column still fits the height the
-// caller allotted for it (matching the chessboard's height).
+// Reserved space (within the total `height` budget) for the "M" label
+// beneath the bar, mirroring EvalBar's "SF" label.
 const LABEL_HEIGHT = 14;
 
-export const EvalBar: React.FC<EvalBarProps> = ({
-  lineEval,
+export const HumanEvalBar: React.FC<HumanEvalBarProps> = ({
+  evaluation,
   boardOrientation,
   height = 400,
   disabled = false,
+  ratingLabel = "2600",
 }) => {
-  
-  const getEvalPercentage = (): number => {
-    if (!lineEval) return 50;
-
-    if (lineEval.mate !== undefined) {
-     
-      return lineEval.mate > 0 ? 100 : 0;
-    }
-
-    if (lineEval.cp !== undefined) {
-      const evalInPawns = Math.max(-10, Math.min(10, lineEval.cp / 100));
-      return 50 + evalInPawns * 5;
-    }
-
-    return 50;
-  };
-
-  const getEvalText = (): string => {
-    if (!lineEval) return "0.00";
-
-    if (lineEval.mate !== undefined) {
-      return lineEval.mate > 0
-        ? `M${lineEval.mate}`
-        : `M${Math.abs(lineEval.mate)}`;
-    }
-
-    if (lineEval.cp !== undefined) {
-      const evalInPawns = lineEval.cp / 100;
-      return evalInPawns >= 0
-        ? `+${evalInPawns.toFixed(2)}`
-        : evalInPawns.toFixed(2);
-    }
-
-    return "0.00";
-  };
-
   const isFlipped = boardOrientation === "black";
-  const evalPercentage = getEvalPercentage();
-  const whitePercentage = isFlipped ? 100 - evalPercentage : evalPercentage;
   const barHeight = Math.max(0, height - LABEL_HEIGHT);
 
-  const bestMove = lineEval?.pv?.[0] ?? "N/A";
-  const evalText = getEvalText();
+  const whiteWinProbability = getWhiteWinProbability(evaluation?.value);
+  const whitePercentage = whiteWinProbability * 100;
+  const displayWhitePercentage = isFlipped ? 100 - whitePercentage : whitePercentage;
+  const evalText = `${Math.round(whitePercentage)}%`;
 
   const label = (
     <Typography
       variant="caption"
-      sx={{ fontSize: "9px", fontWeight: 700, color: disabled ? "text.disabled" : "text.secondary" }}
+      sx={{ fontSize: "9px", fontWeight: 700, color: disabled || !evaluation ? "text.disabled" : "text.secondary" }}
     >
-      SF
+      M
     </Typography>
   );
 
-  if (disabled) {
+  if (disabled || !evaluation) {
     return (
       <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
-        <Tooltip title="Auto-analysis is off — enable it to see engine evaluation" placement="right">
+        <Tooltip
+          title={
+            disabled
+              ? "Auto-analysis is off — enable it to see the Maia human eval"
+              : `Maia ${ratingLabel} human eval not available for this position`
+          }
+          placement="right"
+        >
           <Box
             sx={{
               width: 20,
@@ -115,23 +90,19 @@ export const EvalBar: React.FC<EvalBarProps> = ({
           backgroundColor: "#000",
         }}
       >
-    
         <Box
           sx={{
             position: "absolute",
             ...(isFlipped
-              ? { top: 0, left: 0, right: 0, height: `${100 - whitePercentage}%` }
-              : { bottom: 0, left: 0, right: 0, height: `${whitePercentage}%` }),
+              ? { top: 0, left: 0, right: 0, height: `${100 - displayWhitePercentage}%` }
+              : { bottom: 0, left: 0, right: 0, height: `${displayWhitePercentage}%` }),
             backgroundColor: "#fff",
             transition: "height 0.3s ease-in-out",
           }}
         />
 
-       
         <Tooltip
-          title={`Depth: ${lineEval?.depth || 0} | Best move: ${bestMove}${
-            lineEval?.nps ? ` | NPS: ${lineEval.nps.toLocaleString()}` : ""
-          }`}
+          title={`Maia ${ratingLabel} — White win probability: ${whitePercentage.toFixed(1)}%`}
           placement="right"
         >
           <Box
@@ -167,31 +138,10 @@ export const EvalBar: React.FC<EvalBarProps> = ({
             </Box>
           </Box>
         </Tooltip>
-
-        
-        {lineEval?.resultPercentages && (
-          <Tooltip
-            title={`Win: ${lineEval.resultPercentages.win}% | Draw: ${lineEval.resultPercentages.draw}% | Loss: ${lineEval.resultPercentages.loss}%`}
-            placement="left"
-          >
-            <Box
-              sx={{
-                position: "absolute",
-                left: -8,
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                border: "1px solid white",
-                cursor: "pointer",
-                zIndex: 2,
-              }}
-            />
-          </Tooltip>
-        )}
       </Box>
       {label}
     </Box>
   );
 };
+
+export default HumanEvalBar;

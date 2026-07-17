@@ -25,6 +25,12 @@ export interface PersistedSettings {
   chessdb_show_winrates: boolean;
   puzzle_level: number;
   user_puzzle_rating: number;
+  analysis_show_stockfish: boolean;
+  analysis_show_chessdb: boolean;
+  analysis_show_nets: boolean;
+  analysis_show_theme: boolean;
+  analysis_show_human_eval: boolean;
+  analysis_show_opening: boolean;
 }
 
 // ── Safe LocalStorage Wrapper (fixes invalid JSON issues) ───────────────────
@@ -81,6 +87,12 @@ export function usePersistedSettings() {
   const [chessdbShowWinrates,    setChessdbShowWinrates]    = useSafeLocalStorage("chessdb_ui_show_winrate", true);
   const [puzzleLevel,            setPuzzleLevel]            = useSafeLocalStorage("puzzleLevel", 1500);
   const [userPuzzleRating,       setUserPuzzleRating]       = useSafeLocalStorage("agine_user_puzzle_rating", 1500);
+  const [analysisShowStockfish,  setAnalysisShowStockfish]  = useSafeLocalStorage("analysis_ui_show_stockfish", true);
+  const [analysisShowChessdb,    setAnalysisShowChessdb]    = useSafeLocalStorage("analysis_ui_show_chessdb", true);
+  const [analysisShowNets,       setAnalysisShowNets]       = useSafeLocalStorage("analysis_ui_show_nets", true);
+  const [analysisShowTheme,      setAnalysisShowTheme]      = useSafeLocalStorage("analysis_ui_show_theme", true);
+  const [analysisShowHumanEval,  setAnalysisShowHumanEval]  = useSafeLocalStorage("analysis_ui_show_human_eval", true);
+  const [analysisShowOpening,    setAnalysisShowOpening]    = useSafeLocalStorage("analysis_ui_show_opening", true);
 
   const debouncedPost = useRef(
     debounce((body: PersistedSettings) => {
@@ -123,6 +135,12 @@ export function usePersistedSettings() {
         setChessdbShowWinrates(d.chessdb_show_winrates);
         setPuzzleLevel(d.puzzle_level);
         setUserPuzzleRating(d.user_puzzle_rating);
+        setAnalysisShowStockfish(d.analysis_show_stockfish);
+        setAnalysisShowChessdb(d.analysis_show_chessdb);
+        setAnalysisShowNets(d.analysis_show_nets);
+        setAnalysisShowTheme(d.analysis_show_theme);
+        setAnalysisShowHumanEval(d.analysis_show_human_eval);
+        setAnalysisShowOpening(d.analysis_show_opening);
       })
       .catch(() => {});
   }, [isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -151,6 +169,12 @@ export function usePersistedSettings() {
       if (patch.chessdb_show_winrates       !== undefined) setChessdbShowWinrates(patch.chessdb_show_winrates);
       if (patch.puzzle_level                !== undefined) setPuzzleLevel(patch.puzzle_level);
       if (patch.user_puzzle_rating          !== undefined) setUserPuzzleRating(patch.user_puzzle_rating);
+      if (patch.analysis_show_stockfish     !== undefined) setAnalysisShowStockfish(patch.analysis_show_stockfish);
+      if (patch.analysis_show_chessdb       !== undefined) setAnalysisShowChessdb(patch.analysis_show_chessdb);
+      if (patch.analysis_show_nets          !== undefined) setAnalysisShowNets(patch.analysis_show_nets);
+      if (patch.analysis_show_theme         !== undefined) setAnalysisShowTheme(patch.analysis_show_theme);
+      if (patch.analysis_show_human_eval    !== undefined) setAnalysisShowHumanEval(patch.analysis_show_human_eval);
+      if (patch.analysis_show_opening       !== undefined) setAnalysisShowOpening(patch.analysis_show_opening);
 
       if (!isSignedIn) return;
 
@@ -175,6 +199,12 @@ export function usePersistedSettings() {
         chessdb_show_winrates:        patch.chessdb_show_winrates       ?? chessdbShowWinrates,
         puzzle_level:                 patch.puzzle_level                ?? puzzleLevel,
         user_puzzle_rating:           patch.user_puzzle_rating          ?? userPuzzleRating,
+        analysis_show_stockfish:      patch.analysis_show_stockfish     ?? analysisShowStockfish,
+        analysis_show_chessdb:        patch.analysis_show_chessdb       ?? analysisShowChessdb,
+        analysis_show_nets:           patch.analysis_show_nets          ?? analysisShowNets,
+        analysis_show_theme:          patch.analysis_show_theme         ?? analysisShowTheme,
+        analysis_show_human_eval:     patch.analysis_show_human_eval    ?? analysisShowHumanEval,
+        analysis_show_opening:        patch.analysis_show_opening       ?? analysisShowOpening,
       };
 
       debouncedPost(full);
@@ -184,7 +214,9 @@ export function usePersistedSettings() {
       isSignedIn, selectedModel, boardFlipped, boardSize, boardPieceType, boardShowCoords,
       boardTheme, boardAnimDuration, boardShowEvalBar, boardShowFen, boardShowHanging,
       boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme, pgnViewMode,
-      chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating
+      chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
+      analysisShowStockfish, analysisShowChessdb, analysisShowNets,
+      analysisShowTheme, analysisShowHumanEval, analysisShowOpening,
     ]
   );
 
@@ -193,6 +225,8 @@ export function usePersistedSettings() {
     boardTheme, boardAnimDuration, boardShowEvalBar, boardShowFen, boardShowHanging,
     boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme,
     pgnViewMode, chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
+    analysisShowStockfish, analysisShowChessdb, analysisShowNets,
+    analysisShowTheme, analysisShowHumanEval, analysisShowOpening,
     saveSettings,
   };
 }

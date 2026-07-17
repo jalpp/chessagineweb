@@ -26,6 +26,7 @@ import {
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
 import { EvalBar } from "./EvalBar";
+import { HumanEvalBar } from "./HumanEvalBar";
 import { MaiaEngineAnalysis, SanMaiaEvaluation } from "@/libs/nets/types";
 import { useSettings } from "@/context/SettingContext";
 
@@ -536,7 +537,10 @@ export default function AiChessboardPanel({
       {gameInfo && <Box sx={{ width: "100%", maxWidth: boardPx + 40 }}><TopPlayerBar /></Box>}
 
       {/* Board + eval bar */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + (showEvalBar && !puzzleMode && !playMode ? 20 : 0) }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: boardPx + (showEvalBar && !puzzleMode && !playMode ? 40 : 0) }}>
+        {showEvalBar && !puzzleMode && !playMode && (
+          <HumanEvalBar evaluation={evaluations?.maia3?.["maia_kdd_2600"]} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
+        )}
         {showEvalBar && !puzzleMode && !playMode && (
           <EvalBar lineEval={stockfishAnalysisResult?.lines[0]} boardOrientation={getBoardOrientation()} height={boardPx} disabled={!autoAnalysis} />
         )}
