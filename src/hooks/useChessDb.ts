@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { CandidateMove } from "@/libs/agine/helper";
 import { getChessDbCache, setChessDbCache } from "@/libs/cache/chessdbCache";
 import { validateFen } from "chess.js";
-import { ChessDbApi } from "@jalpp/stockfishts";
+import { ChessDbApi, type ChessDbPvResult } from "@jalpp/stockfishts";
 
 const chessDbApi = new ChessDbApi();
 
@@ -11,6 +11,9 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [queueing, setQueueing] = useState<boolean>(false);
+  const [pvResult, setPvResult] = useState<ChessDbPvResult | null>(null);
+  const [pvLoading, setPvLoading] = useState<boolean>(false);
+  const [pvError, setPvError] = useState<string | null>(null);
 
   const queueAnalysis = useCallback(async (fenString: string) => {
     if (!fenString.trim() || !validateFen(fenString)) {
@@ -78,6 +81,31 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
     }
   }, [queueAnalysis]);
 
+  const queryPv = useCallback(async (fenString: string) => {
+    if (!fenString.trim() || !validateFen(fenString)) {
+      setPvError("Invalid FEN provided");
+      return;
+    }
+
+    setPvLoading(true);
+    setPvError(null);
+    try {
+      const result = await chessDbApi.queryPv(fenString);
+      if (!result.success) {
+        setPvResult(null);
+        setPvError(result.error);
+        return;
+      }
+      setPvResult(result.data);
+    } catch (err) {
+      console.error("Failed to query PV:", err);
+      setPvResult(null);
+      setPvError(err instanceof Error ? err.message : "Failed to query PV");
+    } finally {
+      setPvLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (gameReviewMode) {
       return;
@@ -85,6 +113,18 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
 
     fetchChessDBData(fen);
   }, [fen, fetchChessDBData]);
+
+
+  useEffect(() => {
+    setPvResult(null);
+    setPvError(null);
+
+    if (gameReviewMode) {
+      return;
+    }
+
+    queryPv(fen);
+  }, [fen, gameReviewMode, queryPv]);
 
   const refetch = useCallback(() => {
     fetchChessDBData(fen);
@@ -94,6 +134,10 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
     queueAnalysis(fen);
   }, [fen, queueAnalysis]);
 
+  const requestPv = useCallback(() => {
+    queryPv(fen);
+  }, [fen, queryPv]);
+
   return {
     data,
     loading,
@@ -102,5 +146,9 @@ export function useChessDB(fen: string, gameReviewMode?: boolean) {
     fetchChessDBData,
     refetch,
     requestAnalysis,
+    pvResult,
+    pvLoading,
+    pvError,
+    requestPv,
   };
 }

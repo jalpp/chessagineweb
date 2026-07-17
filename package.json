@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf .next",
+    "test": "jest"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.35",
@@ -67,13 +68,17 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.16",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.6.1",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.2",
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.1.6",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.9.3"
   }
 }

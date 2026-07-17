@@ -34,6 +34,7 @@ import { StockfishEaseMetricCalculator } from "@/libs/easemetric/stockfishEaseMe
 import { UciEngine } from "@jalpp/stockfishts";
 import { Chess } from "chess.js";
 import { MAIA3_MODELS, MAIA3_RATING_VALUES, getValueColor, formatModelName, formatValue, getEMColor } from "@/libs/nets/types";
+import { sanToUci } from "@/lib/moveUtils";
 
 export interface MaiaResultsProps {
   evaluations: {
@@ -53,6 +54,8 @@ export interface MaiaResultsProps {
   stockfishAnalysisResult: PositionEval | null;
   maiaerror: Error | null;
   fen: string;
+  /** Called with a move's UCI when the person clicks it to play it on the board. */
+  onPlayMove?: (uci: string) => void;
 }
 
 
@@ -93,8 +96,12 @@ const formatPrincipalVariation = (
   return moves.join(" ");
 };
 
-const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({
+const MovesList: React.FC<{
+  policy: { [key: string]: number };
+  onMoveClick?: (san: string) => void;
+}> = ({
   policy,
+  onMoveClick,
 }) => {
   const topMoves = Object.entries(policy)
     .sort(([, a], [, b]) => b - a)
@@ -103,7 +110,19 @@ const MovesList: React.FC<{ policy: { [key: string]: number } }> = ({
   return (
     <Box display="flex" flexDirection="column" gap={1.5}>
       {topMoves.map(([move, probability], index) => (
-        <Box key={move} display="flex" alignItems="center" gap={2}>
+        <Box
+          key={move}
+          display="flex"
+          alignItems="center"
+          gap={2}
+          onClick={onMoveClick ? () => onMoveClick(move) : undefined}
+          sx={{
+            cursor: onMoveClick ? "pointer" : "default",
+            borderRadius: 1,
+            px: onMoveClick ? 0.5 : 0,
+            "&:hover": onMoveClick ? { bgcolor: "action.hover" } : undefined,
+          }}
+        >
           <Chip
             label={index + 1}
             size="small"
@@ -155,6 +174,7 @@ const EvaluationDisplay: React.FC<{
   engine?: UciEngine | null;
   fen: string;
   showQuadrantAnalysis?: boolean;
+  onPlayMove?: (uci: string) => void;
 }> = ({
   ucievaluation,
   evaluation,
@@ -164,6 +184,7 @@ const EvaluationDisplay: React.FC<{
   stockfishAnalysisResult,
   engine,
   fen,
+  onPlayMove,
 }) => {
   const [viewMode, setViewMode] = useState<"evaluation" | "quadrant" | "ease">("evaluation");
   const [improbableThreshold, setImprobableThreshold] = useState(0.05);
@@ -256,7 +277,17 @@ const EvaluationDisplay: React.FC<{
             <Typography variant="subtitle2" sx={{ mb: 2 }}>
               Top Moves
             </Typography>
-            <MovesList policy={evaluation.policy} />
+            <MovesList
+              policy={evaluation.policy}
+              onMoveClick={
+                onPlayMove
+                  ? (san) => {
+                      const uci = sanToUci(fen, san);
+                      if (uci) onPlayMove(uci);
+                    }
+                  : undefined
+              }
+            />
           </Box>
 
         </>
@@ -491,6 +522,7 @@ interface Maia3DisplayProps {
   fen: string;
   selectedModel: number;
   onModelChange: (idx: number) => void;
+  onPlayMove?: (uci: string) => void;
 }
 
 const Maia3Display: React.FC<Maia3DisplayProps> = ({
@@ -501,6 +533,7 @@ const Maia3Display: React.FC<Maia3DisplayProps> = ({
   fen,
   selectedModel,
   onModelChange,
+  onPlayMove,
 }) => {
   const currentModelKey = MAIA3_MODELS[selectedModel];
   const currentEval = evaluations[currentModelKey];
@@ -656,6 +689,7 @@ const Maia3Display: React.FC<Maia3DisplayProps> = ({
           candidateMoves={chessDbMoves}
           engine={engine}
           fen={fen}
+          onPlayMove={onPlayMove}
         />
       )}
     </Box>
@@ -671,6 +705,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
   maiaerror,
   engine,
   fen,
+  onPlayMove,
 }) => {
   const [selectedMaia3Model, setSelectedMaia3Model] = useState(10); // default 1600
   const [selectedTab, setSelectedTab] = useState<ModelType>("maia3");
@@ -748,6 +783,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
               ucievaluation={ucievaluations.bigLeela}
               engine={engine}
               fen={fen}
+              onPlayMove={onPlayMove}
             />
           )}
 
@@ -763,6 +799,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
               ucievaluation={ucievaluations.elitemaia}
               engine={engine}
               fen={fen}
+              onPlayMove={onPlayMove}
             />
           )}
 
@@ -776,6 +813,7 @@ export const NetResults: React.FC<MaiaResultsProps> = ({
             fen={fen}
             selectedModel={selectedMaia3Model}
             onModelChange={setSelectedMaia3Model}
+            onPlayMove={onPlayMove}
           />
         )}
       </CardContent>

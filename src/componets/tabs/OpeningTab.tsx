@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import { Settings as SettingsIcon, TrendingUp } from "@mui/icons-material";
 import { MasterGames, Moves } from "../../libs/openingdatabase/helper";
+import { RESULT_BAR_COLORS } from "../../libs/openingdatabase/resultBarColors";
 
 type ExplorerType = 'master' | 'lichess';
 
@@ -29,6 +30,8 @@ interface OpeningExplorerProps {
   lichessOpeningData?: MasterGames | null;
   lichessOpeningLoading?: boolean;
   openingData?: MasterGames | null;
+  /** Called with a move's UCI when the person clicks it to play it on the board. */
+  onPlayMove?: (uci: string) => void;
 }
 
 export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
@@ -36,6 +39,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
   openingData,
   lichessOpeningData,
   lichessOpeningLoading,
+  onPlayMove,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -339,7 +343,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
         <Box
           sx={{
             width: `${whitePercent}%`,
-            backgroundColor: '#f0f0f0',
+            backgroundColor: RESULT_BAR_COLORS.white.background,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -347,7 +351,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           }}
         >
           {whitePercent > 20 && (
-            <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: isMobile ? '0.6rem' : '0.7rem' }}>
+            <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.white.text, fontWeight: 'bold', fontSize: isMobile ? '0.6rem' : '0.7rem' }}>
               {whitePercent.toFixed(0)}%
             </Typography>
           )}
@@ -355,7 +359,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
         <Box
           sx={{
             width: `${drawPercent}%`,
-            backgroundColor: '#888',
+            backgroundColor: RESULT_BAR_COLORS.draw.background,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -363,7 +367,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           }}
         >
           {drawPercent > 20 && (
-            <Typography variant="caption" sx={{  fontWeight: 'bold', fontSize: isMobile ? '0.6rem' : '0.7rem' }}>
+            <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.draw.text, fontWeight: 'bold', fontSize: isMobile ? '0.6rem' : '0.7rem' }}>
               {drawPercent.toFixed(0)}%
             </Typography>
           )}
@@ -371,7 +375,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
         <Box
           sx={{
             width: `${blackPercent}%`,
-            backgroundColor: '#000',
+            backgroundColor: RESULT_BAR_COLORS.black.background,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -379,7 +383,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           }}
         >
           {blackPercent > 20 && (
-            <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: isMobile ? '0.6rem' : '0.7rem' }}>
+            <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.black.text, fontWeight: 'bold', fontSize: isMobile ? '0.6rem' : '0.7rem' }}>
               {blackPercent.toFixed(0)}%
             </Typography>
           )}
@@ -497,13 +501,15 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           return (
             <Paper
               key={`${move.uci}-${index}`}
+              onClick={onPlayMove ? () => onPlayMove(move.uci) : undefined}
               sx={{
                 p: isMobile ? 1.5 : 2,
               
                 borderRadius: 0,
                 borderBottom: index < currentData.moves.slice(0, maxMoves).length - 1 ? "1px solid rgba(255,255,255,0.1)" : "none",
-                cursor: "pointer",
+                cursor: onPlayMove ? "pointer" : "default",
                 filter: "none",
+                "&:hover": onPlayMove ? { bgcolor: "action.hover" } : undefined,
               }}
             >
               {isMobile ? (
@@ -648,39 +654,39 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
                 <Box
                   sx={{
                     width: `${whiteWinRate}%`,
-                    backgroundColor: '#f0f0f0',
+                    backgroundColor: RESULT_BAR_COLORS.white.background,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Typography variant="caption" sx={{  fontWeight: 'bold', fontSize: '0.6rem' }}>
+                  <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.white.text, fontWeight: 'bold', fontSize: '0.6rem' }}>
                     {whiteWinRate}%
                   </Typography>
                 </Box>
                 <Box
                   sx={{
                     width: `${drawRate}%`,
-                    backgroundColor: '#888',
+                    backgroundColor: RESULT_BAR_COLORS.draw.background,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.6rem' }}>
+                  <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.draw.text, fontWeight: 'bold', fontSize: '0.6rem' }}>
                     {drawRate}%
                   </Typography>
                 </Box>
                 <Box
                   sx={{
                     width: `${blackWinRate}%`,
-                    backgroundColor: '#000',
+                    backgroundColor: RESULT_BAR_COLORS.black.background,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Typography variant="caption" sx={{ fontWeight: 'bold', fontSize: '0.6rem' }}>
+                  <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.black.text, fontWeight: 'bold', fontSize: '0.6rem' }}>
                     {blackWinRate}%
                   </Typography>
                 </Box>
@@ -727,39 +733,39 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
                   <Box
                     sx={{
                       width: `${whiteWinRate}%`,
-                      backgroundColor: '#f0f0f0',
+                      backgroundColor: RESULT_BAR_COLORS.white.background,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: '#333', fontWeight: 'bold', fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.white.text, fontWeight: 'bold', fontSize: '0.7rem' }}>
                       {whiteWinRate}%
                     </Typography>
                   </Box>
                   <Box
                     sx={{
                       width: `${drawRate}%`,
-                      backgroundColor: '#888',
+                      backgroundColor: RESULT_BAR_COLORS.draw.background,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Typography variant="caption" sx={{  fontWeight: 'bold', fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.draw.text, fontWeight: 'bold', fontSize: '0.7rem' }}>
                       {drawRate}%
                     </Typography>
                   </Box>
                   <Box
                     sx={{
                       width: `${blackWinRate}%`,
-                      backgroundColor: '#000',
+                      backgroundColor: RESULT_BAR_COLORS.black.background,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ color: RESULT_BAR_COLORS.black.text, fontWeight: 'bold', fontSize: '0.7rem' }}>
                       {blackWinRate}%
                     </Typography>
                   </Box>

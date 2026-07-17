@@ -58,7 +58,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
       .forEach((k) => sessionStorage.removeItem(k));
   }, [engine]);
 
-  const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis } = useChessDB(analysisMode === "full" ? fen : "");
+  const { data: chessdbdata, loading, error, queueing, refetch, requestAnalysis, pvResult, pvLoading, pvError, requestPv } = useChessDB(analysisMode === "full" ? fen : "");
   const validGameReviewDepth = engineDepth > 15 || engineDepth < 12 ? 15 : engineDepth;
   const {
     gameReview,
@@ -259,6 +259,10 @@ useEffect(() => {
     queueing,
     refetch,
     requestAnalysis,
+    pvResult,
+    pvLoading,
+    pvError,
+    requestPv,
 
     // Nets
     sanEvaluations,

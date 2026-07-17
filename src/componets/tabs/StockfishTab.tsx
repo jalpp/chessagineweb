@@ -16,11 +16,14 @@ import {
   FormControl,
   Select,
   MenuItem,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { LineEval, PositionEval, UciEngine, EngineName } from "@jalpp/stockfishts";
 import Slider from "../Slider";
 import { useSettings } from "@/context/SettingContext";
+import PvLineViewer from "../analysis/PvLineViewer";
 
 export interface StockfishAnalysisProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -33,6 +36,12 @@ export interface StockfishAnalysisProps {
   analyzeWithStockfish: () => void;
   formatEvaluation: (line: LineEval) => string;
   formatPrincipalVariation: (pv: string[], fen: string) => string;
+  /**
+   * Called with the move prefix (in UCI, inclusive) when the person clicks
+   * a move within a line's PV, so the whole sequence up to that move can be
+   * appended onto the main board.
+   */
+  onAppendMoves?: (uciMoves: string[]) => void;
 }
 
 // Engine display names mapping
@@ -63,6 +72,7 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
   analyzeWithStockfish,
   formatEvaluation,
   formatPrincipalVariation,
+  onAppendMoves,
 }) => {
   const [engineEnabled, setEngineEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -70,6 +80,8 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
   const { saveSettings, enginePicked: enginePickedRaw } = useSettings();
   const enginePicked = enginePickedRaw as EngineName;
   const setEnginePicked = (v: EngineName) => saveSettings({ engine_picked: v });
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Handle settings changes with smooth transitions
   const handleDepthChange = (newDepth: number) => {
@@ -494,7 +506,6 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                 index < stockfishAnalysisResult.lines.length - 1
                   ? "1px solid rgba(255,255,255,0.1)"
                   : "none",
-              cursor: "pointer",
               transition: "all 0.3s ease",
               opacity: isTransitioning ? 0.5 : 1,
               filter: "none",
@@ -534,21 +545,16 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
                     : "50.0%"}
               </Typography>
 
-              {/* Principal Variation */}
-              <Typography
-                variant="body2"
-                sx={{
-                  fontFamily: "monospace",
-                  flex: 1,
-                  fontSize: "0.85rem",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  transition: "color 0.3s ease",
-                }}
-              >
-                {formatPrincipalVariation(line.pv, line.fen)}
-              </Typography>
+              {/* Principal Variation — scrollable, hover for a mini-board
+                  preview of each move, click a move to append the line up
+                  to it onto the main board. */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <PvLineViewer
+                  fen={line.fen}
+                  uciMoves={line.pv}
+                  onAppendMoves={onAppendMoves}
+                />
+              </Box>
 
               {/* Loading indicator for incomplete lines */}
               {(stockfishLoading || isTransitioning) &&
@@ -626,9 +632,10 @@ export const StockfishAnalysisTab: React.FC<StockfishAnalysisProps> = ({
       <Dialog
         open={settingsOpen}
         onClose={handleSettingsClose}
+        fullScreen={isMobile}
         PaperProps={{
           sx: {
-            minWidth: 450,
+            minWidth: isMobile ? "auto" : 450,
           },
         }}
       >

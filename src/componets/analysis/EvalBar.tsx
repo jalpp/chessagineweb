@@ -10,6 +10,11 @@ interface EvalBarProps {
   disabled?: boolean;
 }
 
+// Reserved space (within the total `height` budget) for the "SF" label
+// beneath the bar, so the bar + label column still fits the height the
+// caller allotted for it (matching the chessboard's height).
+const LABEL_HEIGHT = 14;
+
 export const EvalBar: React.FC<EvalBarProps> = ({
   lineEval,
   boardOrientation,
@@ -55,122 +60,138 @@ export const EvalBar: React.FC<EvalBarProps> = ({
   const isFlipped = boardOrientation === "black";
   const evalPercentage = getEvalPercentage();
   const whitePercentage = isFlipped ? 100 - evalPercentage : evalPercentage;
+  const barHeight = Math.max(0, height - LABEL_HEIGHT);
 
   const bestMove = lineEval?.pv?.[0] ?? "N/A";
   const evalText = getEvalText();
 
+  const label = (
+    <Typography
+      variant="caption"
+      sx={{ fontSize: "9px", fontWeight: 700, color: disabled ? "text.disabled" : "text.secondary" }}
+    >
+      SF
+    </Typography>
+  );
+
   if (disabled) {
     return (
-      <Tooltip title="Auto-analysis is off — enable it to see engine evaluation" placement="right">
-        <Box
-          sx={{
-            width: 20,
-            height,
-            position: "relative",
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 1,
-            overflow: "hidden",
-            backgroundColor: "action.disabledBackground",
-            opacity: 0.45,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Box sx={{ width: "100%", height: "50%", backgroundColor: "text.disabled" }} />
-        </Box>
-      </Tooltip>
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
+        <Tooltip title="Auto-analysis is off — enable it to see engine evaluation" placement="right">
+          <Box
+            sx={{
+              width: 20,
+              height: barHeight,
+              position: "relative",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 1,
+              overflow: "hidden",
+              backgroundColor: "action.disabledBackground",
+              opacity: 0.45,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Box sx={{ width: "100%", height: "50%", backgroundColor: "text.disabled" }} />
+          </Box>
+        </Tooltip>
+        {label}
+      </Box>
     );
   }
 
   return (
-    <Box
-      sx={{
-        width: 20,
-        height,
-        position: "relative",
-        border: "1px solid #ccc",
-        borderRadius: 1,
-        overflow: "hidden",
-        backgroundColor: "#000",
-      }}
-    >
-  
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
       <Box
         sx={{
-          position: "absolute",
-          ...(isFlipped
-            ? { top: 0, left: 0, right: 0, height: `${100 - whitePercentage}%` }
-            : { bottom: 0, left: 0, right: 0, height: `${whitePercentage}%` }),
-          backgroundColor: "#fff",
-          transition: "height 0.3s ease-in-out",
+          width: 20,
+          height: barHeight,
+          position: "relative",
+          border: "1px solid #ccc",
+          borderRadius: 1,
+          overflow: "hidden",
+          backgroundColor: "#000",
         }}
-      />
-
-     
-      <Tooltip
-        title={`Depth: ${lineEval?.depth || 0} | Best move: ${bestMove}${
-          lineEval?.nps ? ` | NPS: ${lineEval.nps.toLocaleString()}` : ""
-        }`}
-        placement="right"
       >
+    
         <Box
           sx={{
             position: "absolute",
-            top: isFlipped
-              ? (whitePercentage < 50 ? 8 : "auto")
-              : (whitePercentage > 50 ? 8 : "auto"),
-            bottom: isFlipped
-              ? (whitePercentage >= 50 ? 8 : "auto")
-              : (whitePercentage <= 50 ? 8 : "auto"),
-            left: "50%",
-            transform: "translateX(-50%) rotate(-90deg)",
-            transformOrigin: "center",
-            minWidth: "60px",
-            textAlign: "center",
-            zIndex: 2,
+            ...(isFlipped
+              ? { top: 0, left: 0, right: 0, height: `${100 - whitePercentage}%` }
+              : { bottom: 0, left: 0, right: 0, height: `${whitePercentage}%` }),
+            backgroundColor: "#fff",
+            transition: "height 0.3s ease-in-out",
           }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              fontSize: "10px",
-              fontWeight: "bold",
-              color: whitePercentage > 75 || whitePercentage < 25 ? "#fff" : "#000",
-              textShadow:
-                whitePercentage > 75 || whitePercentage < 25
-                  ? "1px 1px 2px rgba(0,0,0,0.7)"
-                  : "none",
-            }}
-          >
-            {evalText}
-          </Typography>
-        </Box>
-      </Tooltip>
+        />
 
-      
-      {lineEval?.resultPercentages && (
+       
         <Tooltip
-          title={`Win: ${lineEval.resultPercentages.win}% | Draw: ${lineEval.resultPercentages.draw}% | Loss: ${lineEval.resultPercentages.loss}%`}
-          placement="left"
+          title={`Depth: ${lineEval?.depth || 0} | Best move: ${bestMove}${
+            lineEval?.nps ? ` | NPS: ${lineEval.nps.toLocaleString()}` : ""
+          }`}
+          placement="right"
         >
           <Box
             sx={{
               position: "absolute",
-              left: -8,
               top: "50%",
-              transform: "translateY(-50%)",
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              border: "1px solid white",
-              cursor: "pointer",
+              left: "50%",
+              transform: "translate(-50%, -50%) rotate(-90deg)",
+              transformOrigin: "center",
               zIndex: 2,
+              pointerEvents: "none",
             }}
-          />
+          >
+            <Box
+              sx={{
+                bgcolor: "rgba(0,0,0,0.72)",
+                borderRadius: "3px",
+                px: 0.5,
+                py: "1px",
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  color: "#fff",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {evalText}
+              </Typography>
+            </Box>
+          </Box>
         </Tooltip>
-      )}
+
+        
+        {lineEval?.resultPercentages && (
+          <Tooltip
+            title={`Win: ${lineEval.resultPercentages.win}% | Draw: ${lineEval.resultPercentages.draw}% | Loss: ${lineEval.resultPercentages.loss}%`}
+            placement="left"
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                left: -8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                border: "1px solid white",
+                cursor: "pointer",
+                zIndex: 2,
+              }}
+            />
+          </Tooltip>
+        )}
+      </Box>
+      {label}
     </Box>
   );
 };

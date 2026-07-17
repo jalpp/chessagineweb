@@ -57,6 +57,9 @@ import EvalGraph from "@/componets/tabs/EvalGraph";
 import { MoveAnalysis } from "@/libs/agine/helper";
 import { GameReviewTheme, ThemeScore, getThemeLabelColor } from "@/libs/themes/helper";
 import { BarChart, LineChart, RadarChart } from "@mui/x-charts";
+import { applyUciMove, buildMoveChain } from "@/lib/moveUtils";
+import { collectAllFens, queueAllPositions, QueueAllResult } from "@/libs/chessdb/queueAll";
+import { ChessDbApi } from "@jalpp/stockfishts";
 
 
 // ── GameReviewRightPanel ──────────────────────────────────────────────────────
@@ -342,6 +345,13 @@ export default function GamePage() {
   const [tree, setTree] = useState<VariationTree>(() => makeTree());
   const [prevFen, setPrevFen] = useState(new Chess().fen());
 
+  // "Queue all positions" — batch-queues every FEN in the loaded game
+  // (main line + variations) for background ChessDB analysis.
+  const chessDbApiRef = useRef<ChessDbApi | null>(null);
+  const [queueAllRunning, setQueueAllRunning] = useState(false);
+  const [queueAllProgress, setQueueAllProgress] = useState<{ done: number; total: number } | null>(null);
+  const [queueAllResult, setQueueAllResult] = useState<QueueAllResult | null>(null);
+
   // Engine / AI hooks
   const {
     stockfishAnalysisResult, setStockfishAnalysisResult,
@@ -353,6 +363,7 @@ export default function GamePage() {
     analyzeWithStockfish, formatEvaluation, formatPrincipalVariation,
     chessdbdata, loading, queueing, error, refetch, requestAnalysis,
     setRootCurrentMove, scores, themeScoreError, themeScoreLoading,
+    pvResult, pvLoading, pvError, requestPv,
   } = useAgine(fen, "game", autoAnalysis);
 
   const {
@@ -431,6 +442,68 @@ export default function GamePage() {
     setClock(nodeClk || fallbackClock);
     setStockfishAnalysisResult(null);
   }, [tree, parsedMovesWithComments, setRootCurrentMove, setStockfishAnalysisResult]);
+
+  // Play a move suggested by Stockfish, ChessDB, or a neural net (clicking
+  // one of those rows applies its move to the board as a new variation,
+  // same as a drag/drop move).
+  const handlePlayMove = useCallback((uci: string) => {
+    const newFen = applyUciMove(fen, uci);
+    if (!newFen) return;
+    setGame(new Chess(newFen));
+    setFen(newFen);
+  }, [fen]);
+
+  // Append a whole move sequence (e.g. clicking the 3rd move of a
+  // Stockfish/ChessDB PV) onto the game as a chain of tree nodes from the
+  // current position, in one step.
+  const handlePlayMoveSequence = useCallback((uciMoves: string[]) => {
+    const chain = buildMoveChain(fen, uciMoves);
+    if (chain.length === 0) return;
+
+    let currentTree = tree;
+    let cursor = tree.cursor;
+    for (const step of chain) {
+      const result = addMove(currentTree, cursor, step.san, step.uci, step.fen);
+      currentTree = result.newTree;
+      cursor = result.newCursorId;
+    }
+
+    const finalNode = findNode(currentTree.root, cursor);
+    const finalFen = chain[chain.length - 1].fen;
+    setTree({ ...currentTree, cursor });
+    setGame(new Chess(finalFen));
+    setFen(finalFen);
+    setPrevFen(finalFen);
+    const idx = finalNode?.ply ?? 0;
+    setCurrentMoveIndex(idx);
+    setRootCurrentMove(idx);
+    setComment("");
+    setClock("");
+    setStockfishAnalysisResult(null);
+  }, [fen, tree, setRootCurrentMove, setStockfishAnalysisResult]);
+
+  // Queue every position in the loaded game (main line + variations) for
+  // background ChessDB analysis in one click.
+  const handleQueueAllPositions = useCallback(async () => {
+    if (queueAllRunning) return;
+    const fens = collectAllFens(tree.root);
+    if (fens.length === 0) return;
+    if (!chessDbApiRef.current) chessDbApiRef.current = new ChessDbApi();
+    const api = chessDbApiRef.current;
+    setQueueAllRunning(true);
+    setQueueAllResult(null);
+    setQueueAllProgress({ done: 0, total: fens.length });
+    try {
+      const result = await queueAllPositions(
+        fens,
+        (fenToQueue) => api.queue(fenToQueue),
+        (done, total) => setQueueAllProgress({ done, total }),
+      );
+      setQueueAllResult(result);
+    } finally {
+      setQueueAllRunning(false);
+    }
+  }, [tree, queueAllRunning]);
 
   const handleTreePrevious = useCallback(() => {
     const cur = findNode(tree.root, tree.cursor);
@@ -881,6 +954,16 @@ export default function GamePage() {
             currentMove={moves[currentMoveIndex]} Customfen={customPlayFen}
             scores={scores} ThemeScoreerror={themeScoreError} ThemeScoreloading={themeScoreLoading}
             autoAnalysis={autoAnalysis}
+            onPlayMove={handlePlayMove}
+            onAppendMoves={handlePlayMoveSequence}
+            onQueueAllPositions={handleQueueAllPositions}
+            queueAllRunning={queueAllRunning}
+            queueAllProgress={queueAllProgress}
+            queueAllResult={queueAllResult}
+            pvResult={pvResult}
+            pvLoading={pvLoading}
+            pvError={pvError}
+            requestPv={requestPv}
           />
           {chapters.length > 0 && (
             <ResizableChapterSelector

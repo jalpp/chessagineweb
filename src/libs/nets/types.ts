@@ -184,3 +184,19 @@ export interface UseMaiaEngineResult {
   /** Manual analysis trigger for custom positions or game review mode */
   analyzePositionNet?: (customFen?: string) => Promise<MaiaEngineAnalysis | undefined>;
 }
+
+/**
+ * Clamp a Maia "value" into a valid White-perspective win probability
+ * (0-1). Like Stockfish's `cp` elsewhere in this app (see EvalBar, which
+ * reads `lineEval.cp` directly with no side-to-move adjustment), Maia's
+ * `value` is already normalized to White's perspective by the API layer —
+ * it is NOT the side-to-move's win probability, so no FEN-based flip is
+ * applied here. Returns 0.5 (even) when `value` is missing/invalid, so the
+ * bar renders centered rather than crashing.
+ */
+export function getWhiteWinProbability(
+  value: number | undefined | null,
+): number {
+  if (value === undefined || value === null || Number.isNaN(value)) return 0.5;
+  return Math.max(0, Math.min(1, value));
+}
