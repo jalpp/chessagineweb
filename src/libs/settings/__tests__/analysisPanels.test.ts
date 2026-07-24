@@ -4,9 +4,10 @@ import {
 } from "../analysisPanels";
 
 describe("ANALYSIS_PANEL_KEYS", () => {
-  it("covers all six analysis panels, not just Stockfish/ChessDB/Neural Nets", () => {
+  it("covers all seven analysis panels, not just Stockfish/ChessDB/Neural Nets", () => {
     expect(ANALYSIS_PANEL_KEYS).toEqual([
       "analysis_show_stockfish",
+      "analysis_show_lc0",
       "analysis_show_theme",
       "analysis_show_nets",
       "analysis_show_human_eval",

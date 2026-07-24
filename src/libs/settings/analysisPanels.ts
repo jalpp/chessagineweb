@@ -6,6 +6,7 @@
  */
 export const ANALYSIS_PANEL_KEYS = [
   "analysis_show_stockfish",
+  "analysis_show_lc0",
   "analysis_show_theme",
   "analysis_show_nets",
   "analysis_show_human_eval",

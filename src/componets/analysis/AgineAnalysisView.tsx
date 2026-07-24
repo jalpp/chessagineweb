@@ -29,9 +29,12 @@ import {
   PersonSearch as HumanEvalIcon,
   Queue as QueueIcon,
   Settings as SettingsIcon,
+  Memory as Lc0Icon,
 } from "@mui/icons-material";
 
 import StockfishAnalysisTab from "../tabs/StockfishTab";
+import Lc0AnalysisTab from "../tabs/Lc0Tab";
+import { useLc0Panel, formatEvaluation as formatLc0Evaluation, formatPrincipalVariation as formatLc0Pv } from "@/hooks/useLc0Panel";
 import GameInfoTab from "../tabs/GameInfoTab";
 import OpeningExplorer from "../tabs/OpeningTab";
 import ChessDBDisplay from "../tabs/Chessdb";
@@ -196,7 +199,7 @@ function AgineAnalysisView({
   const {
     saveSettings,
     analysisShowStockfish, analysisShowChessdb, analysisShowNets,
-    analysisShowTheme, analysisShowHumanEval, analysisShowOpening,
+    analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0,
   } = useSettings();
   const showStockfish = analysisShowStockfish ?? true;
   const showChessdb = analysisShowChessdb ?? true;
@@ -204,9 +207,18 @@ function AgineAnalysisView({
   const showTheme = analysisShowTheme ?? true;
   const showHumanEval = analysisShowHumanEval ?? true;
   const showOpening = analysisShowOpening ?? true;
+  const showLc0 = analysisShowLc0 ?? true;
+
+  const {
+    result: lc0AnalysisResult, loading: lc0Loading, depth: lc0Depth, setDepth: setLc0Depth,
+    lines: lc0Lines, setLines: setLc0Lines, engine: lc0Engine, analyze: analyzeWithLc0,
+    nodesVisited: lc0NodesVisited,
+    provider: lc0Provider, gpuAdapterAvailable: lc0GpuAdapterAvailable, engineError: lc0EngineError,
+  } = useLc0Panel(fen, autoAnalysis, showLc0);
 
   const panelToggles: Array<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = [
     { label: "Stockfish", checked: showStockfish, onChange: (v) => saveSettings({ analysis_show_stockfish: v }) },
+    { label: "lc0", checked: showLc0, onChange: (v) => saveSettings({ analysis_show_lc0: v }) },
     { label: "Theme Analysis", checked: showTheme, onChange: (v) => saveSettings({ analysis_show_theme: v }) },
     { label: "Neural Nets", checked: showNets, onChange: (v) => saveSettings({ analysis_show_nets: v }) },
     { label: "Human Eval", checked: showHumanEval, onChange: (v) => saveSettings({ analysis_show_human_eval: v }) },
@@ -221,6 +233,10 @@ function AgineAnalysisView({
   const stockfishBadge = stockfishAnalysisResult?.lines?.[0]
     ? formatEvaluation(stockfishAnalysisResult.lines[0])
     : stockfishLoading ? "…" : undefined;
+
+  const lc0Badge = lc0AnalysisResult?.lines?.[0]
+    ? formatLc0Evaluation(lc0AnalysisResult.lines[0])
+    : lc0Loading ? "…" : undefined;
 
   const reviewBadge =
     isGameReviewMode && gameReview && currentMoveIndex !== undefined && gameReview[currentMoveIndex]
@@ -307,6 +323,27 @@ function AgineAnalysisView({
           ) : (
             <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
               Engine analysis is paused. Enable Auto-Analysis to activate Stockfish.
+            </Typography>
+          )}
+        </Section>
+      )}
+
+      {showLc0 && (
+        <Section id={3} title="lc0" icon={<Lc0Icon sx={{ fontSize: 14 }} />}
+          badge={autoAnalysis ? lc0Badge : "OFF"} activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+          {autoAnalysis ? (
+            <Lc0AnalysisTab
+              lc0AnalysisResult={lc0AnalysisResult} lc0Loading={lc0Loading}
+              lc0Depth={lc0Depth} lc0Lines={lc0Lines} engine={lc0Engine}
+              analyzeWithLc0={analyzeWithLc0} formatEvaluation={formatLc0Evaluation}
+              formatPrincipalVariation={formatLc0Pv} nodesVisited={lc0NodesVisited}
+              provider={lc0Provider} gpuAdapterAvailable={lc0GpuAdapterAvailable} engineError={lc0EngineError}
+              setLc0Depth={setLc0Depth} setLc0Lines={setLc0Lines}
+              onAppendMoves={onAppendMoves}
+            />
+          ) : (
+            <Typography sx={{ color: "text.disabled", fontSize: "11px", py: 0.5 }}>
+              Engine analysis is paused. Enable Auto-Analysis to activate lc0.
             </Typography>
           )}
         </Section>
