@@ -22,11 +22,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(position|play|puzzle|game|humaneval|lc0-test)",
+        source: "/(position|play|puzzle|game|humaneval)",
         headers: [...ENGINE_HEADERS, NO_STORE],
       },
       {
-        source: "/(position|play|puzzle|game|humaneval|lc0-test)/:path*",
+        source: "/(position|play|puzzle|game|humaneval)/:path*",
         headers: [...ENGINE_HEADERS, NO_STORE],
       },
 
@@ -43,7 +43,7 @@ const nextConfig = {
       },
 
       {
-        source: "/((?!position|play|puzzle|game|humaneval|lc0-test|static).*)",
+        source: "/((?!position|play|puzzle|game|humaneval|static).*)",
         headers: [
           {
             key: "Cross-Origin-Opener-Policy",
