@@ -212,6 +212,8 @@ function AgineAnalysisView({
   const {
     result: lc0AnalysisResult, loading: lc0Loading, depth: lc0Depth, setDepth: setLc0Depth,
     lines: lc0Lines, setLines: setLc0Lines, engine: lc0Engine, analyze: analyzeWithLc0,
+    nodesVisited: lc0NodesVisited,
+    provider: lc0Provider, gpuAdapterAvailable: lc0GpuAdapterAvailable, engineError: lc0EngineError,
   } = useLc0Panel(fen, autoAnalysis, showLc0);
 
   const panelToggles: Array<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = [
@@ -334,7 +336,8 @@ function AgineAnalysisView({
               lc0AnalysisResult={lc0AnalysisResult} lc0Loading={lc0Loading}
               lc0Depth={lc0Depth} lc0Lines={lc0Lines} engine={lc0Engine}
               analyzeWithLc0={analyzeWithLc0} formatEvaluation={formatLc0Evaluation}
-              formatPrincipalVariation={formatLc0Pv}
+              formatPrincipalVariation={formatLc0Pv} nodesVisited={lc0NodesVisited}
+              provider={lc0Provider} gpuAdapterAvailable={lc0GpuAdapterAvailable} engineError={lc0EngineError}
               setLc0Depth={setLc0Depth} setLc0Lines={setLc0Lines}
               onAppendMoves={onAppendMoves}
             />

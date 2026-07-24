@@ -4,7 +4,35 @@ import { useEffect, useState } from 'react';
 
 import { CustomUciEngine, type UciEngine } from '@jalpp/stockfishts';
 
-import { Lc0EngineWorker, type Lc0EngineWorkerOptions } from '@/libs/engine/lc0Worker';
+import { Lc0EngineWorker, type Lc0EngineWorkerOptions, type Lc0Provider } from '@/libs/engine/lc0Worker';
+
+const CROSS_ORIGIN_ISOLATION_ERROR =
+    "This page isn't cross-origin isolated, so lc0 (which needs SharedArrayBuffer for " +
+    "its wasm threads) can't run here. A page reload usually fixes this -- if it " +
+    "open the page in a real, separate browser " +
+    "tab instead.";
+
+
+const RELOAD_ATTEMPTED_KEY = 'lc0_coi_reload_attempted';
+
+function tryRecoverCrossOriginIsolation(): 'reloading' | 'already-tried' {
+    if (typeof window === 'undefined') return 'already-tried';
+    const path = window.location.pathname;
+    let alreadyTried = false;
+    try {
+        alreadyTried = window.sessionStorage.getItem(RELOAD_ATTEMPTED_KEY) === path;
+    } catch {
+        return 'already-tried';
+    }
+    if (alreadyTried) return 'already-tried';
+    try {
+        window.sessionStorage.setItem(RELOAD_ATTEMPTED_KEY, path);
+    } catch {
+        return 'already-tried';
+    }
+    window.location.reload();
+    return 'reloading';
+}
 
 /**
  * Runs lc0 (via the static wasm bridge worker under public/static/engine/lc0/)
@@ -16,25 +44,60 @@ import { Lc0EngineWorker, type Lc0EngineWorkerOptions } from '@/libs/engine/lc0W
  * Requires the page to be cross-origin isolated (COOP/COEP -- see
  * next.config.ts) since lc0.wasm uses SharedArrayBuffer for its pthread pool.
  */
-export const useLc0Engine = (enabled: boolean, options?: Lc0EngineWorkerOptions) => {
+export const useLc0Engine = (
+    enabled: boolean,
+    options?: Lc0EngineWorkerOptions,
+    onNodes?: (nodes: number) => void,
+    onProvider?: (provider: Lc0Provider, gpuAdapterAvailable: boolean) => void,
+) => {
     const [engine, setEngine] = useState<UciEngine>();
+    const [error, setError] = useState<string>();
 
     useEffect(() => {
         if (!enabled) return;
 
+        setError(undefined);
+
+        if (typeof window !== 'undefined' && window.crossOriginIsolated === false) {
+            if (tryRecoverCrossOriginIsolation() === 'reloading') return;
+            setError(CROSS_ORIGIN_ISOLATION_ERROR);
+            return;
+        }
+
+        // Isolation is fine (or this reload attempt fixed it) -- clear the
+        // guard so a future genuine loss of isolation gets one fresh retry.
+        if (typeof window !== 'undefined') {
+            try {
+                window.sessionStorage.removeItem(RELOAD_ATTEMPTED_KEY);
+            } catch {
+                // ignore -- see tryRecoverCrossOriginIsolation
+            }
+        }
+
+        let cancelled = false;
         const worker = new Lc0EngineWorker(options);
+        if (onNodes) worker.onNodes = onNodes;
+        if (onProvider) worker.onProvider = onProvider;
         const lc0Engine = new CustomUciEngine(worker, 'lc0', { checkWasmSupport: true });
 
-        void lc0Engine.init().then(() => {
-            setEngine(lc0Engine);
-        });
+        lc0Engine
+            .init()
+            .then(() => {
+                if (!cancelled) setEngine(lc0Engine);
+            })
+            .catch((err: unknown) => {
+                if (!cancelled) {
+                    setError(err instanceof Error ? err.message : String(err));
+                }
+            });
 
         return () => {
+            cancelled = true;
             lc0Engine.shutdown();
             setEngine(undefined);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [enabled]);
 
-    return engine;
+    return { engine, error };
 };

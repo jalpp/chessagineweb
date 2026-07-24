@@ -27,6 +27,8 @@ export interface Lc0EngineWorkerOptions {
  * and performs that handshake internally, queuing any `uci()` calls made
  * before the handshake completes.
  */
+export type Lc0Provider = "webgpu" | "wasm";
+
 export class Lc0EngineWorker implements EngineWorker {
   private readonly worker: Worker;
   private readonly commandQueue: string[] = [];
@@ -34,6 +36,16 @@ export class Lc0EngineWorker implements EngineWorker {
 
   listen: (data: string) => void = () => {};
   onError: (err: unknown) => void = () => {};
+  /** Called with the running node count parsed out of each "info ..." line. */
+  onNodes: (nodes: number) => void = () => {};
+  /**
+   * Called once the engine has resolved which onnxruntime-web execution
+   * provider it actually initialized with -- "webgpu" only if a GPU adapter
+   * was detected AND session creation with it succeeded; "wasm" (CPU)
+   * otherwise, including as an automatic fallback if WebGPU init failed for
+   * a reason adapter detection alone couldn't catch.
+   */
+  onProvider: (provider: Lc0Provider, gpuAdapterAvailable: boolean) => void = () => {};
 
   constructor(options: Lc0EngineWorkerOptions = {}) {
     const netPath = options.netPath ?? LC0_DEFAULT_NET;
@@ -63,7 +75,14 @@ export class Lc0EngineWorker implements EngineWorker {
         return;
       }
       if (data?.type === "stdout") {
-        this.listen(stripAnsi(data.text));
+        const text = stripAnsi(data.text);
+        const nodesMatch = /\bnodes (\d+)\b/.exec(text);
+        if (nodesMatch) this.onNodes(Number(nodesMatch[1]));
+        this.listen(text);
+        return;
+      }
+      if (data?.type === "provider") {
+        this.onProvider(data.provider, data.gpuAdapterAvailable);
         return;
       }
       if (data?.type === "stderr") {

@@ -13,12 +13,14 @@ import {
   DialogActions,
   Button,
   Chip,
+  Tooltip,
 } from "@mui/material";
-import { Settings as SettingsIcon } from "@mui/icons-material";
+import { Settings as SettingsIcon, Memory as CpuIcon, Bolt as GpuIcon } from "@mui/icons-material";
 import { LineEval, PositionEval, UciEngine } from "@jalpp/stockfishts";
 import Slider from "../Slider";
 import PvLineViewer from "../analysis/PvLineViewer";
 import { LC0_DEPTH, LC0_LINES } from "@/hooks/useLc0Panel";
+import type { Lc0Provider } from "@/libs/engine/lc0Worker";
 
 export interface Lc0AnalysisProps {
   lc0AnalysisResult: PositionEval | null;
@@ -29,6 +31,13 @@ export interface Lc0AnalysisProps {
   setLc0Lines: (lines: number) => void;
   engine: UciEngine | undefined;
   analyzeWithLc0: () => void;
+  /** Nodes visited so far in the current search (resets to 0 at the start of each analysis). */
+  nodesVisited?: number;
+  /** Which onnxruntime-web execution provider the engine actually initialized with. */
+  provider?: Lc0Provider;
+  gpuAdapterAvailable?: boolean;
+  /** Set if the engine failed to start (e.g. a cross-origin isolation problem). */
+  engineError?: string;
   formatEvaluation: (line: LineEval) => string;
   formatPrincipalVariation: (pv: string[], fen: string) => string;
   /**
@@ -37,6 +46,10 @@ export interface Lc0AnalysisProps {
    * appended onto the main board.
    */
   onAppendMoves?: (uciMoves: string[]) => void;
+}
+
+function formatNodes(nodes: number): string {
+  return nodes.toLocaleString();
 }
 
 function winPercent(line: LineEval): string {
@@ -60,6 +73,10 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
   lc0Lines,
   setLc0Lines,
   analyzeWithLc0,
+  nodesVisited = 0,
+  provider,
+  gpuAdapterAvailable,
+  engineError,
   formatEvaluation,
   onAppendMoves,
 }) => {
@@ -173,6 +190,25 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
     );
   }
 
+  if (engineError) {
+    return (
+      <Box>
+        <Paper sx={{ p: 2, borderRadius: 2, mb: 2, transition: "all 0.3s ease" }}>
+          {header(true)}
+        </Paper>
+        <Paper sx={{ p: 2, borderRadius: 2 }}>
+          <Typography variant="body2" sx={{ color: "error.main", fontWeight: 600, mb: 1 }}>
+            lc0 couldn&apos;t start
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {engineError}
+          </Typography>
+        </Paper>
+        {settingsDialog}
+      </Box>
+    );
+  }
+
   if (
     isTransitioning ||
     !lc0AnalysisResult ||
@@ -208,6 +244,29 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
           <Typography variant="caption">for</Typography>
           <Chip label={`${lc0Lines}`} size="small" sx={{ fontSize: "0.7rem", fontWeight: 600 }} />
           <Typography variant="caption">lines.</Typography>
+          {provider && (
+            <Tooltip
+              title={
+                provider === "webgpu"
+                  ? "Running on your GPU via WebGPU."
+                  : gpuAdapterAvailable === false
+                    ? "No WebGPU-capable GPU detected in this browser -- running on CPU (wasm)."
+                    : "WebGPU didn't initialize -- running on CPU (wasm) instead."
+              }
+            >
+              <Chip
+                icon={provider === "webgpu" ? <GpuIcon sx={{ fontSize: 14 }} /> : <CpuIcon sx={{ fontSize: 14 }} />}
+                label={provider === "webgpu" ? "GPU" : "CPU"}
+                size="small"
+                color={provider === "webgpu" ? "success" : "default"}
+                sx={{ fontSize: "0.7rem", fontWeight: 600 }}
+              />
+            </Tooltip>
+          )}
+          <Box sx={{ flexGrow: 1 }} />
+          <Typography variant="caption" sx={{ fontFamily: "monospace", color: "text.secondary" }}>
+            {formatNodes(nodesVisited)} nodes
+          </Typography>
         </Stack>
         <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
           <Typography variant="caption" sx={{ minWidth: "60px" }}>Eval</Typography>
