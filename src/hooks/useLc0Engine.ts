@@ -7,8 +7,8 @@ import { CustomUciEngine, type UciEngine } from '@jalpp/stockfishts';
 import { Lc0EngineWorker, type Lc0EngineWorkerOptions, type Lc0Provider } from '@/libs/engine/lc0Worker';
 
 const CROSS_ORIGIN_ISOLATION_ERROR =
-    "This page isn't cross-origin isolated, so lc0 (which needs SharedArrayBuffer for " +
-    "its wasm threads) can't run here. A page reload usually fixes this -- if it " +
+    "A error has occured with lc0.js. " +
+    "A page reload usually fixes this, if it " +
     "open the page in a real, separate browser " +
     "tab instead.";
 
