@@ -1,7 +1,8 @@
 import type { EngineWorker } from "@jalpp/stockfishts";
+import { getLc0Net, LC0_DEFAULT_NET_ID } from "./lc0Nets";
 
 const WORKER_PATH = "/static/engine/lc0/lc0-bridge.worker.mjs";
-export const LC0_DEFAULT_NET = "/static/engine/lc0/net/t1-256x10-distilled-swa-2432500.pb";
+export const LC0_DEFAULT_NET = getLc0Net(LC0_DEFAULT_NET_ID).path;
 
 // lc0's banner/log lines include ANSI color escape codes.
 // eslint-disable-next-line no-control-regex

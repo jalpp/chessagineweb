@@ -53,6 +53,8 @@ export const useLc0Engine = (
     const [engine, setEngine] = useState<UciEngine>();
     const [error, setError] = useState<string>();
 
+    const netPath = options?.netPath;
+
     useEffect(() => {
         if (!enabled) return;
 
@@ -96,8 +98,8 @@ export const useLc0Engine = (
             lc0Engine.shutdown();
             setEngine(undefined);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enabled]);
+   
+    }, [enabled, netPath]);
 
     return { engine, error };
 };
