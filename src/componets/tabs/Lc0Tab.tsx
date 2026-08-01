@@ -14,13 +14,20 @@ import {
   Button,
   Chip,
   Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  ListSubheader,
 } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
 import { Settings as SettingsIcon, Memory as CpuIcon, Bolt as GpuIcon } from "@mui/icons-material";
 import { LineEval, PositionEval, UciEngine } from "@jalpp/stockfishts";
 import Slider from "../Slider";
 import PvLineViewer from "../analysis/PvLineViewer";
 import { LC0_DEPTH, LC0_LINES } from "@/hooks/useLc0Panel";
 import type { Lc0Provider } from "@/libs/engine/lc0Worker";
+import { LC0_NETS, getLc0Net } from "@/libs/engine/lc0Nets";
 
 export interface Lc0AnalysisProps {
   lc0AnalysisResult: PositionEval | null;
@@ -29,6 +36,9 @@ export interface Lc0AnalysisProps {
   setLc0Depth: (depth: number) => void;
   lc0Lines: number;
   setLc0Lines: (lines: number) => void;
+  /** Which net "personality" lc0 is currently running -- see src/libs/engine/lc0Nets.ts. */
+  lc0NetId: string;
+  setLc0NetId: (netId: string) => void;
   engine: UciEngine | undefined;
   analyzeWithLc0: () => void;
   /** Nodes visited so far in the current search (resets to 0 at the start of each analysis). */
@@ -72,6 +82,8 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
   setLc0Depth,
   lc0Lines,
   setLc0Lines,
+  lc0NetId,
+  setLc0NetId,
   analyzeWithLc0,
   nodesVisited = 0,
   provider,
@@ -104,6 +116,19 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
     }, 300);
   };
 
+  const handleNetChange = (event: SelectChangeEvent<string>) => {
+    setIsTransitioning(true);
+    setLc0NetId(event.target.value);
+    setSettingsOpen(false);
+    // Switching nets recreates the whole engine (new weights fetch + init),
+    // so this needs longer than the depth/lines transition window before
+    // it's safe to kick off analysis again.
+    setTimeout(() => {
+      if (engineEnabled) analyzeWithLc0();
+      setIsTransitioning(false);
+    }, 1200);
+  };
+
   const handleEngineToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
     setIsTransitioning(true);
     setEngineEnabled(event.target.checked);
@@ -124,6 +149,47 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
       <DialogTitle>lc0 Settings</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ pt: 1 }}>
+          <Box>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Net / Personality
+            </Typography>
+            <Typography variant="caption" sx={{ mb: 1, display: "block" }}>
+              Swap the base net lc0 plays with -- Maia nets play like a human
+              at a given rating, other nets have their own distinct style.
+            </Typography>
+            <FormControl fullWidth size="small" disabled={lc0Loading || isTransitioning}>
+              <InputLabel id="lc0-net-select-label">Net</InputLabel>
+              <Select
+                labelId="lc0-net-select-label"
+                label="Net"
+                value={lc0NetId}
+                onChange={handleNetChange}
+              >
+                <ListSubheader>Modern</ListSubheader>
+                {LC0_NETS.filter(n => n.era === "modern").map(net => (
+                  <MenuItem key={net.id} value={net.id}>
+                    <Stack>
+                      <Typography variant="body2">{net.name}</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {net.description}
+                      </Typography>
+                    </Stack>
+                  </MenuItem>
+                ))}
+                <ListSubheader>Classic / Human-style</ListSubheader>
+                {LC0_NETS.filter(n => n.era === "classic").map(net => (
+                  <MenuItem key={net.id} value={net.id}>
+                    <Stack>
+                      <Typography variant="body2">{net.name}</Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {net.description}
+                      </Typography>
+                    </Stack>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
           <Box>
             <Typography variant="body2" sx={{ mb: 1 }}>
               Analysis Depth: {lc0Depth}
@@ -238,7 +304,7 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
         {header(true)}
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            lc0 (T1-256x10 distilled)
+            lc0 ({getLc0Net(lc0NetId).name})
           </Typography>
           <Chip label={`${lc0Depth}`} size="small" sx={{ fontSize: "0.7rem", fontWeight: 600 }} />
           <Typography variant="caption">for</Typography>

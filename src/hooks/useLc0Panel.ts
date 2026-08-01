@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LineEval, PositionEval } from '@jalpp/stockfishts';
 import { Chess } from 'chess.js';
 
 import { useLc0Engine } from '@/hooks/useLc0Engine';
 import type { Lc0Provider } from '@/libs/engine/lc0Worker';
+import { getLc0Net, LC0_DEFAULT_NET_ID } from '@/libs/engine/lc0Nets';
 import { cachedStockfish } from '@/libs/cache/stockfishCache';
 import { ANALYSIS_DELAY, MAX_PV_MOVES } from '@/libs/setting/helper';
 
@@ -14,8 +15,8 @@ import { ANALYSIS_DELAY, MAX_PV_MOVES } from '@/libs/setting/helper';
 export const LC0_DEPTH = { Default: 4, Min: 4, Max: 7 } as const;
 export const LC0_LINES = { Default: 2, Min: 2, Max: 4 } as const;
 
-const getLc0CacheKey = (fen: string, depth: number, lines: number) =>
-    `lc0:${fen}|d=${depth}|pv=${lines}`;
+const getLc0CacheKey = (fen: string, depth: number, lines: number, netId: string) =>
+    `lc0:${netId}:${fen}|d=${depth}|pv=${lines}`;
 
 export function formatEvaluation(line: LineEval): string {
     if (line.mate !== undefined) return `M${line.mate}`;
@@ -45,15 +46,11 @@ export function formatPrincipalVariation(pv: string[], startFen: string): string
     return moves.join(' ');
 }
 
-/**
- * Drives lc0 analysis for a position, mirroring the Stockfish slice of
- * useAgine.ts (same PositionEval/LineEval shape, same auto-analysis-on-FEN-
- * change behavior) but self-contained -- lc0 doesn't need chessdb/opening/LLM
- * orchestration, so this doesn't route through useAgine.
- */
+
 export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean) {
     const [depth, setDepth] = useState<number>(LC0_DEPTH.Default);
     const [lines, setLines] = useState<number>(LC0_LINES.Default);
+    const [netId, setNetId] = useState<string>(LC0_DEFAULT_NET_ID);
     const [result, setResult] = useState<PositionEval | null>(null);
     const [loading, setLoading] = useState(false);
     const [nodesVisited, setNodesVisited] = useState(0);
@@ -65,7 +62,9 @@ export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean
         setGpuAdapterAvailable(hasAdapter);
     }, []);
 
-    const { engine, error: engineError } = useLc0Engine(enabled, undefined, setNodesVisited, onProvider);
+    const netPath = getLc0Net(netId).path;
+    const engineOptions = useMemo(() => ({ netPath }), [netPath]);
+    const { engine, error: engineError } = useLc0Engine(enabled, engineOptions, setNodesVisited, onProvider);
     const currentFenRef = useRef(fen);
 
     useEffect(() => {
@@ -75,7 +74,7 @@ export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean
     const analyze = useCallback(async () => {
         if (!engine || !fen || !engine.isReady()) return;
         const currentFen = currentFenRef.current;
-        const cacheKey = getLc0CacheKey(currentFen, depth, lines);
+        const cacheKey = getLc0CacheKey(currentFen, depth, lines, netId);
         setLoading(true);
         setNodesVisited(0);
         try {
@@ -100,7 +99,7 @@ export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean
                 setLoading(false);
             }
         }
-    }, [engine, fen, depth, lines]);
+    }, [engine, fen, depth, lines, netId]);
 
     useEffect(() => {
         if (!enabled || !autoAnalysis || !engine || !fen) return;
@@ -111,10 +110,11 @@ export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean
         }, ANALYSIS_DELAY);
         return () => clearTimeout(timeoutId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fen, engine, depth, lines, autoAnalysis, enabled]);
+    }, [fen, engine, depth, lines, netId, autoAnalysis, enabled]);
 
     return {
         engine, result, loading, depth, setDepth, lines, setLines, analyze,
+        netId, setNetId,
         nodesVisited, provider, gpuAdapterAvailable, engineError,
     };
 }
