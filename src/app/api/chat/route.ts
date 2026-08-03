@@ -17,6 +17,7 @@ import {
   BYO_OPENROUTER_MODELS,
   BYO_MODELS,
 } from "@/libs/agine/modelConstants";
+import { sanitizeTrailingAssistantMessage } from "@/libs/agine/sanitizeMessages";
 
 export const maxDuration = 200;
 
@@ -240,19 +241,7 @@ export async function POST(req: Request) {
   // Mastra's TrailingAssistantGuard only fires for structured-output calls
   // (known bug: https://github.com/mastra-ai/mastra/issues/13969), so we
   // apply the guard ourselves here for all models.
-  const sanitizedMessages = (() => {
-    const msgs = [...augmentedMessages];
-    let lastIdx = msgs.length - 1;
-    // Skip trailing system messages (though uncommon at the end)
-    while (lastIdx >= 0 && msgs[lastIdx].role === "system") lastIdx--;
-    if (lastIdx >= 0 && msgs[lastIdx].role === "assistant") {
-      msgs.push({
-        role: "user" as const,
-        content: "Continue.",
-      });
-    }
-    return msgs;
-  })();
+  const sanitizedMessages = sanitizeTrailingAssistantMessage(augmentedMessages);
 
   const agent = await createChessAgineAgent(
     { lichessToken, chessboardmagicToken },
