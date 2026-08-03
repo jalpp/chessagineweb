@@ -18,7 +18,7 @@ import {
 } from "@/libs/agine/modelConstants";
 import { basicSystemPrompt } from "./types";
 
-function createAgineCloudModel(requestContext: RequestContext) {
+export function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
   const modelName = raw.replace(/^\"|\"$/g, "");
 
@@ -98,7 +98,7 @@ const PINNED_MCP_TOOL_IDS = new Set([
 ]);
 
 
-function wrapToolsWithAuth(
+export function wrapToolsWithAuth(
   tools: Record<string, any>,
   tokens?: AgineTokens,
   isPaidTier?: boolean
@@ -141,13 +141,12 @@ function wrapToolsWithAuth(
   );
 }
 
-async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
- 
-  const mcpClient = getAgineMcpClient();
-
-  const mcpTools = await mcpClient.listTools();
-
-  const filteredMcpTools = Object.fromEntries(
+export function filterMcpTools(
+  mcpTools: Record<string, any>,
+  tokens?: AgineTokens,
+  isPaidTier?: boolean
+) {
+  return Object.fromEntries(
     Object.entries(mcpTools).filter(([id]) => {
       // Ignore render tools
       if (MCP_RENDER_TOOL_IDS.has(id)) return false;
@@ -168,6 +167,15 @@ async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
       return true;
     })
   );
+}
+
+async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
+ 
+  const mcpClient = getAgineMcpClient();
+
+  const mcpTools = await mcpClient.listTools();
+
+  const filteredMcpTools = filterMcpTools(mcpTools, tokens, isPaidTier);
 
  
   const wrappedTools = wrapToolsWithAuth(
@@ -210,7 +218,7 @@ async function buildToolSearchProcessor(tokens?: AgineTokens, isPaidTier?: boole
   });
 }
 
-async function buildPinnedTools() {
+function buildPinnedTools() {
   return {
     display_chessboard_for_fen: displayChessboardTool,
     load_chess_game: loadGameTool,
@@ -237,13 +245,18 @@ export async function createChessAgineAgent(
   });
 }
 
-// Default agent (no auth)
+// Default agent (no auth). tools/inputProcessors use Mastra's lazy
+// DynamicArgument form (the same pattern `model` already uses above)
+// instead of a top-level `await`, since top-level await can't be
+// represented in the CommonJS output our Jest unit-test project
+// needs — Next.js's own ESM-aware bundler tolerated it, but `tsc`/
+// ts-jest compiling this file for Jest cannot.
 export const chessAgine = new Agent({
   id: "chessagine-agent",
   name: "ChessAgine",
   instructions: ({ requestContext }) => buildInstructions(requestContext),
   model: ({ requestContext }) => createAgineCloudModel(requestContext),
-  tools: await buildPinnedTools(),
-  inputProcessors: [unicodeNormalizer, await buildToolSearchProcessor()],
+  tools: () => buildPinnedTools(),
+  inputProcessors: async () => [unicodeNormalizer, await buildToolSearchProcessor()],
   errorProcessors: [prefillErrorHandler],
 });
