@@ -213,6 +213,7 @@ function AgineAnalysisView({
     result: lc0AnalysisResult, loading: lc0Loading, depth: lc0Depth, setDepth: setLc0Depth,
     lines: lc0Lines, setLines: setLc0Lines, engine: lc0Engine, analyze: analyzeWithLc0,
     netId: lc0NetId, setNetId: setLc0NetId,
+    lightMode: lc0LightMode, setLightMode: setLc0LightMode,
     nodesVisited: lc0NodesVisited,
     provider: lc0Provider, gpuAdapterAvailable: lc0GpuAdapterAvailable, engineError: lc0EngineError,
   } = useLc0Panel(fen, autoAnalysis, showLc0);
@@ -337,6 +338,7 @@ function AgineAnalysisView({
               lc0AnalysisResult={lc0AnalysisResult} lc0Loading={lc0Loading}
               lc0Depth={lc0Depth} lc0Lines={lc0Lines} engine={lc0Engine}
               lc0NetId={lc0NetId} setLc0NetId={setLc0NetId}
+              lc0LightMode={lc0LightMode} setLc0LightMode={setLc0LightMode}
               analyzeWithLc0={analyzeWithLc0} formatEvaluation={formatLc0Evaluation}
               formatPrincipalVariation={formatLc0Pv} nodesVisited={lc0NodesVisited}
               provider={lc0Provider} gpuAdapterAvailable={lc0GpuAdapterAvailable} engineError={lc0EngineError}

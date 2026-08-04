@@ -126,6 +126,9 @@ export const LC0_NETS: Lc0NetDefinition[] = [
 
 export const LC0_DEFAULT_NET_ID = "t1-256-default";
 
+
+export const LC0_MOBILE_DEFAULT_NET_ID = "maia-2200";
+
 export function getLc0Net(id: string | undefined): Lc0NetDefinition {
   return LC0_NETS.find(n => n.id === id) ?? LC0_NETS.find(n => n.id === LC0_DEFAULT_NET_ID)!;
 }

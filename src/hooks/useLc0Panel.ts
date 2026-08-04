@@ -6,8 +6,8 @@ import { LineEval, PositionEval } from '@jalpp/stockfishts';
 import { Chess } from 'chess.js';
 
 import { useLc0Engine } from '@/hooks/useLc0Engine';
-import type { Lc0Provider } from '@/libs/engine/lc0Worker';
-import { getLc0Net, LC0_DEFAULT_NET_ID } from '@/libs/engine/lc0Nets';
+import { isLikelyMobileBrowser, LC0_LIGHT_ENGINE_OPTIONS, type Lc0Provider } from '@/libs/engine/lc0Worker';
+import { getLc0Net, LC0_DEFAULT_NET_ID, LC0_MOBILE_DEFAULT_NET_ID } from '@/libs/engine/lc0Nets';
 import { cachedStockfish } from '@/libs/cache/stockfishCache';
 import { ANALYSIS_DELAY, MAX_PV_MOVES } from '@/libs/setting/helper';
 
@@ -50,7 +50,9 @@ export function formatPrincipalVariation(pv: string[], startFen: string): string
 export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean) {
     const [depth, setDepth] = useState<number>(LC0_DEPTH.Default);
     const [lines, setLines] = useState<number>(LC0_LINES.Default);
-    const [netId, setNetId] = useState<string>(LC0_DEFAULT_NET_ID);
+    const isMobile = useState(() => isLikelyMobileBrowser())[0];
+    const [netId, setNetId] = useState<string>(() => (isMobile ? LC0_MOBILE_DEFAULT_NET_ID : LC0_DEFAULT_NET_ID));
+    const [lightMode, setLightMode] = useState<boolean>(isMobile);
     const [result, setResult] = useState<PositionEval | null>(null);
     const [loading, setLoading] = useState(false);
     const [nodesVisited, setNodesVisited] = useState(0);
@@ -63,7 +65,10 @@ export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean
     }, []);
 
     const netPath = getLc0Net(netId).path;
-    const engineOptions = useMemo(() => ({ netPath }), [netPath]);
+    const engineOptions = useMemo(
+        () => ({ netPath, ...(lightMode ? LC0_LIGHT_ENGINE_OPTIONS : {}) }),
+        [netPath, lightMode],
+    );
     const { engine, error: engineError } = useLc0Engine(enabled, engineOptions, setNodesVisited, onProvider);
     const currentFenRef = useRef(fen);
 
@@ -115,6 +120,7 @@ export function useLc0Panel(fen: string, autoAnalysis: boolean, enabled: boolean
     return {
         engine, result, loading, depth, setDepth, lines, setLines, analyze,
         netId, setNetId,
+        lightMode, setLightMode,
         nodesVisited, provider, gpuAdapterAvailable, engineError,
     };
 }

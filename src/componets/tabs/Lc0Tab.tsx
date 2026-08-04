@@ -39,6 +39,15 @@ export interface Lc0AnalysisProps {
   /** Which net "personality" lc0 is currently running -- see src/libs/engine/lc0Nets.ts. */
   lc0NetId: string;
   setLc0NetId: (netId: string) => void;
+  /**
+   * Light mode: skips WebGPU adapter probing (wasm-only execution) and
+   * caps onnxruntime-web's thread pool at 2. Auto-enabled on mobile, but
+   * a plain toggle otherwise -- useful for desktop people on a weaker
+   * laptop too. Toggling it reconstructs the engine (a brief pause,
+   * similar to switching nets).
+   */
+  lc0LightMode: boolean;
+  setLc0LightMode: (lightMode: boolean) => void;
   engine: UciEngine | undefined;
   analyzeWithLc0: () => void;
   /** Nodes visited so far in the current search (resets to 0 at the start of each analysis). */
@@ -84,6 +93,8 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
   setLc0Lines,
   lc0NetId,
   setLc0NetId,
+  lc0LightMode,
+  setLc0LightMode,
   analyzeWithLc0,
   nodesVisited = 0,
   provider,
@@ -120,9 +131,15 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
     setIsTransitioning(true);
     setLc0NetId(event.target.value);
     setSettingsOpen(false);
-    // Switching nets recreates the whole engine (new weights fetch + init),
-    // so this needs longer than the depth/lines transition window before
-    // it's safe to kick off analysis again.
+    setTimeout(() => {
+      if (engineEnabled) analyzeWithLc0();
+      setIsTransitioning(false);
+    }, 1200);
+  };
+
+  const handleLightModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsTransitioning(true);
+    setLc0LightMode(event.target.checked);
     setTimeout(() => {
       if (engineEnabled) analyzeWithLc0();
       setIsTransitioning(false);
@@ -149,6 +166,22 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
       <DialogTitle>lc0 Settings</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ pt: 1 }}>
+          <Box>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="body2">Light mode</Typography>
+                <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+                  Skips GPU probing and caps the engine to 2 CPU threads --
+                  turn this on if lc0 feels slow or makes your laptop's fan spin up.
+                </Typography>
+              </Box>
+              <Switch
+                checked={lc0LightMode}
+                onChange={handleLightModeChange}
+                disabled={lc0Loading || isTransitioning}
+              />
+            </Stack>
+          </Box>
           <Box>
             <Typography variant="body2" sx={{ mb: 1 }}>
               Net / Personality
@@ -327,6 +360,11 @@ export const Lc0AnalysisTab: React.FC<Lc0AnalysisProps> = ({
                 color={provider === "webgpu" ? "success" : "default"}
                 sx={{ fontSize: "0.7rem", fontWeight: 600 }}
               />
+            </Tooltip>
+          )}
+          {lc0LightMode && (
+            <Tooltip title="Light mode: wasm-only execution, capped to 2 threads.">
+              <Chip label="Light" size="small" variant="outlined" sx={{ fontSize: "0.7rem", fontWeight: 600 }} />
             </Tooltip>
           )}
           <Box sx={{ flexGrow: 1 }} />
