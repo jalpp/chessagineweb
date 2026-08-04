@@ -53,7 +53,18 @@ export const useLc0Engine = (
     const [engine, setEngine] = useState<UciEngine>();
     const [error, setError] = useState<string>();
 
-    const netPath = options?.netPath;
+    // Re-init whenever any option that affects how the worker is
+    // constructed changes -- not just netPath. Previously this only
+    // watched netPath, so flipping executionProviders/ortNumThreads (e.g.
+    // toggling light mode) silently had no effect until the net also
+    // happened to change.
+    const optionsKey = JSON.stringify({
+        netPath: options?.netPath,
+        lc0WasmPath: options?.lc0WasmPath,
+        ortWasmPaths: options?.ortWasmPaths,
+        executionProviders: options?.executionProviders,
+        ortNumThreads: options?.ortNumThreads,
+    });
 
     useEffect(() => {
         if (!enabled) return;
@@ -98,8 +109,8 @@ export const useLc0Engine = (
             lc0Engine.shutdown();
             setEngine(undefined);
         };
-   
-    }, [enabled, netPath]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enabled, optionsKey]);
 
     return { engine, error };
 };

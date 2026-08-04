@@ -30,6 +30,24 @@ export interface Lc0EngineWorkerOptions {
  */
 export type Lc0Provider = "webgpu" | "wasm";
 
+
+export function isLikelyMobileBrowser(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const uaDataMobile = (navigator as { userAgentData?: { mobile?: boolean } }).userAgentData?.mobile;
+    if (uaDataMobile !== undefined) return uaDataMobile;
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? '');
+}
+
+
+
+export const LC0_LIGHT_ENGINE_OPTIONS: Pick<Lc0EngineWorkerOptions, 'executionProviders' | 'ortNumThreads'> = {
+    executionProviders: ['wasm'],
+    ortNumThreads: 2,
+};
+
+/** @deprecated use {@link LC0_LIGHT_ENGINE_OPTIONS} -- kept as an alias since light mode is no longer mobile-exclusive. */
+export const LC0_MOBILE_ENGINE_OPTIONS = LC0_LIGHT_ENGINE_OPTIONS;
+
 export class Lc0EngineWorker implements EngineWorker {
   private readonly worker: Worker;
   private readonly commandQueue: string[] = [];
