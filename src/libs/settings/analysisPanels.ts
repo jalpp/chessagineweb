@@ -12,6 +12,7 @@ export const ANALYSIS_PANEL_KEYS = [
   "analysis_show_human_eval",
   "analysis_show_opening",
   "analysis_show_chessdb",
+  "analysis_show_chat",
 ] as const;
 
 export type AnalysisPanelKey = (typeof ANALYSIS_PANEL_KEYS)[number];

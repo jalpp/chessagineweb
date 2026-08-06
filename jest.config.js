@@ -19,6 +19,7 @@ module.exports = {
       testEnvironment: "jsdom",
       moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
+        "\\.css$": "<rootDir>/src/__tests__/chat/styleMock.js",
       },
       testMatch: ["**/__tests__/chat/**/*.test.tsx"],
       setupFilesAfterEnv: ["<rootDir>/src/__tests__/chat/jest.setup.ts"],

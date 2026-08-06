@@ -51,6 +51,8 @@ import { NetResults } from "../nets/NetResults";
 import { ObjectiveHumanEval } from "../humanevalbar/ObjectiveHumanEval";
 import { useSettings } from "@/context/SettingContext";
 import { buildAnalysisPanelVisibilityPatch } from "@/libs/settings/analysisPanels";
+import ChatIcon from "@mui/icons-material/Chat";
+import AnalysisChatPanel from "@/componets/chat/AnalysisChatPanel";
 
 interface BaseAnalysisViewProps {
   stockfishAnalysisResult: PositionEval | null;
@@ -89,6 +91,8 @@ interface BaseAnalysisViewProps {
   queueAllRunning?: boolean;
   queueAllProgress?: { done: number; total: number } | null;
   queueAllResult?: { total: number; queued: number; failed: number } | null;
+  /** Appends a chat message's text onto the currently selected move's PGN comment. Game page only. */
+  onInsertAnnotation?: (text: string) => void;
 
 }
 
@@ -186,12 +190,13 @@ function AgineAnalysisView({
   chessdbdata, queueing, error, loading, refetch, requestAnalysis,
   pvResult, pvLoading, pvError, requestPv,
   isGameReviewMode = false, moves, currentMoveIndex, goToMove, comment, clock,
-  gameInfo, gameReviewTheme, generateGameReview, gameReviewLoading,
+  gameInfo, gameReviewTheme, generateGameReview, gameReviewLoading, pgnText,
   gameReviewProgress, gameReview, evaluations, Maiaerror, isLoading,
   scores, ThemeScoreerror, ThemeScoreloading,
   activeAnalysisTab, fen, setActiveAnalysisTab,
   autoAnalysis = true,
   onPlayMove, onAppendMoves, onQueueAllPositions, queueAllRunning, queueAllProgress, queueAllResult,
+  onInsertAnnotation,
 
 }: AgineAnalysisViewProps) {
 
@@ -200,6 +205,7 @@ function AgineAnalysisView({
     saveSettings,
     analysisShowStockfish, analysisShowChessdb, analysisShowNets,
     analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0,
+    analysisShowChat,
   } = useSettings();
   const showStockfish = analysisShowStockfish ?? true;
   const showChessdb = analysisShowChessdb ?? true;
@@ -208,6 +214,7 @@ function AgineAnalysisView({
   const showHumanEval = analysisShowHumanEval ?? true;
   const showOpening = analysisShowOpening ?? true;
   const showLc0 = analysisShowLc0 ?? true;
+  const showChat = analysisShowChat ?? true;
 
   const {
     result: lc0AnalysisResult, loading: lc0Loading, depth: lc0Depth, setDepth: setLc0Depth,
@@ -226,6 +233,7 @@ function AgineAnalysisView({
     { label: "Human Eval", checked: showHumanEval, onChange: (v) => saveSettings({ analysis_show_human_eval: v }) },
     { label: "Opening Explorer", checked: showOpening, onChange: (v) => saveSettings({ analysis_show_opening: v }) },
     { label: "Chess Database", checked: showChessdb, onChange: (v) => saveSettings({ analysis_show_chessdb: v }) },
+    { label: "Chat", checked: showChat, onChange: (v) => saveSettings({ analysis_show_chat: v }) },
   ];
 
   const setAllPanels = (visible: boolean) => {
@@ -247,6 +255,32 @@ function AgineAnalysisView({
 
   const openingName =
     openingData?.opening?.name ?? lichessOpeningData?.opening?.name;
+
+  // ── Chat panel context ────────────────────────────────────────────────
+  // Pre-formats whatever engine/game-review state is already in scope
+  // here into plain text, so AnalysisChatPanel can hand it straight to
+  // the agent instead of the agent needing to call a tool to find out
+  // "what position/game is the user even looking at".
+  const gameReviewCurrent =
+    isGameReviewMode && gameReview && currentMoveIndex !== undefined
+      ? gameReview[currentMoveIndex]
+      : undefined;
+
+  const gameReviewQualityCounts =
+    isGameReviewMode && gameReview && gameReview.length > 0
+      ? gameReview.reduce<Partial<Record<string, number>>>((acc, m) => {
+          acc[m.quality] = (acc[m.quality] ?? 0) + 1;
+          return acc;
+        }, {})
+      : undefined;
+
+  const stockfishLinesForChat = stockfishAnalysisResult?.lines
+    ?.slice(0, 3)
+    .map((line, i) => `Line ${i + 1}: ${formatEvaluation(line)} - ${formatPrincipalVariation(line.pv, line.fen)}`);
+
+  const lc0LinesForChat = lc0AnalysisResult?.lines
+    ?.slice(0, 3)
+    .map((line, i) => `Line ${i + 1}: ${formatLc0Evaluation(line)} - ${formatLc0Pv(line.pv, line.fen)}`);
 
   return (
     <Box sx={{ py: 0.5 }}>
@@ -450,6 +484,26 @@ function AgineAnalysisView({
             loading={loading} onRefresh={refetch} onRequestAnalysis={requestAnalysis}
             onPlayMove={onPlayMove} onAppendMoves={onAppendMoves} fen={fen}
             pvResult={pvResult} pvLoading={pvLoading} pvError={pvError} onRequestPv={requestPv} />
+        </Section>
+      )}
+
+      {showChat && (
+        <Section id={8} title="Chat" icon={<ChatIcon sx={{ fontSize: 14 }} />}
+          activeTab={activeAnalysisTab} setActiveTab={setActiveAnalysisTab}>
+          <AnalysisChatPanel
+            mode={isGameReviewMode ? "game" : "position"}
+            fen={fen}
+            pgn={isGameReviewMode ? pgnText : undefined}
+            gameInfo={isGameReviewMode ? gameInfo : undefined}
+            moveHistorySan={isGameReviewMode ? moves?.slice(0, currentMoveIndex) : undefined}
+            currentPly={isGameReviewMode ? currentMoveIndex : undefined}
+            currentMoveSan={gameReviewCurrent?.sanNotation}
+            currentMoveQuality={gameReviewCurrent?.quality}
+            qualityCounts={gameReviewQualityCounts}
+            stockfishLines={stockfishLinesForChat}
+            lc0Lines={lc0LinesForChat}
+            onInsertAnnotation={isGameReviewMode ? onInsertAnnotation : undefined}
+          />
         </Section>
       )}
 

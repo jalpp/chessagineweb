@@ -32,6 +32,7 @@ export interface PersistedSettings {
   analysis_show_human_eval: boolean;
   analysis_show_opening: boolean;
   analysis_show_lc0: boolean;
+  analysis_show_chat: boolean;
   human_eval_bar_rating: number;
 }
 
@@ -96,6 +97,7 @@ export function usePersistedSettings() {
   const [analysisShowHumanEval,  setAnalysisShowHumanEval]  = useSafeLocalStorage("analysis_ui_show_human_eval", true);
   const [analysisShowOpening,    setAnalysisShowOpening]    = useSafeLocalStorage("analysis_ui_show_opening", true);
   const [analysisShowLc0,        setAnalysisShowLc0]        = useSafeLocalStorage("analysis_ui_show_lc0", true);
+  const [analysisShowChat,       setAnalysisShowChat]       = useSafeLocalStorage("analysis_ui_show_chat", true);
   const [humanEvalBarRating,     setHumanEvalBarRating]     = useSafeLocalStorage("human_eval_bar_ui_rating", 2600);
 
   const debouncedPost = useRef(
@@ -146,6 +148,7 @@ export function usePersistedSettings() {
         setAnalysisShowHumanEval(d.analysis_show_human_eval);
         setAnalysisShowOpening(d.analysis_show_opening);
         setAnalysisShowLc0(d.analysis_show_lc0);
+        setAnalysisShowChat(d.analysis_show_chat);
         setHumanEvalBarRating(d.human_eval_bar_rating);
       })
       .catch(() => {});
@@ -182,6 +185,7 @@ export function usePersistedSettings() {
       if (patch.analysis_show_human_eval    !== undefined) setAnalysisShowHumanEval(patch.analysis_show_human_eval);
       if (patch.analysis_show_opening       !== undefined) setAnalysisShowOpening(patch.analysis_show_opening);
       if (patch.analysis_show_lc0           !== undefined) setAnalysisShowLc0(patch.analysis_show_lc0);
+      if (patch.analysis_show_chat          !== undefined) setAnalysisShowChat(patch.analysis_show_chat);
       if (patch.human_eval_bar_rating       !== undefined) setHumanEvalBarRating(patch.human_eval_bar_rating);
 
       if (!isSignedIn) return;
@@ -214,6 +218,7 @@ export function usePersistedSettings() {
         analysis_show_human_eval:     patch.analysis_show_human_eval    ?? analysisShowHumanEval,
         analysis_show_opening:        patch.analysis_show_opening       ?? analysisShowOpening,
         analysis_show_lc0:            patch.analysis_show_lc0           ?? analysisShowLc0,
+        analysis_show_chat:           patch.analysis_show_chat          ?? analysisShowChat,
         human_eval_bar_rating:        patch.human_eval_bar_rating       ?? humanEvalBarRating,
       };
 
@@ -226,7 +231,8 @@ export function usePersistedSettings() {
       boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme, pgnViewMode,
       chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
       analysisShowStockfish, analysisShowChessdb, analysisShowNets,
-      analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0, humanEvalBarRating,
+      analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0,
+      analysisShowChat, humanEvalBarRating,
     ]
   );
 
@@ -236,7 +242,8 @@ export function usePersistedSettings() {
     boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme,
     pgnViewMode, chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
     analysisShowStockfish, analysisShowChessdb, analysisShowNets,
-    analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0, humanEvalBarRating,
+    analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0,
+    analysisShowChat, humanEvalBarRating,
     saveSettings,
   };
 }
