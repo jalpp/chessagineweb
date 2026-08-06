@@ -52,6 +52,7 @@ import {
   VariationTree, makeTree, movesToTree, addMove, findNode,
   treeToPGN, parseAnnotatedPGN,
   serializeTree, deserializeTree, isMainLine,
+  setComment as setNodeComment,
 } from "@/lib/variationTree";
 import EvalGraph from "@/componets/tabs/EvalGraph";
 import { MoveAnalysis } from "@/libs/agine/helper";
@@ -527,6 +528,24 @@ export default function GamePage() {
     handleNavigate(node.fen, node.id);
   }, [tree, handleNavigate]);
 
+  // Appends chat discussion about the currently selected move onto that
+  // move's PGN comment, so it round-trips through export/save like any
+  // other annotation (see AnalysisChatPanel's "Add to notation" action).
+  const annotateFromChat = useCallback((text: string) => {
+    setTree(prev => {
+      const node = findNode(prev.root, prev.cursor);
+      const existing = node?.comment?.trim();
+      const merged = existing ? `${existing}\n\n${text}` : text;
+      // The "current move" comment box (GameInfoTab) is a separate piece
+      // of state that's normally only refreshed by handleNavigate/goToMove
+      // when a move is clicked — without this it stays showing the old
+      // text until the user clicks away and back, making the annotation
+      // look like it didn't take even though the tree node updated fine.
+      setComment(merged);
+      return setNodeComment(prev, prev.cursor, merged);
+    });
+  }, [setComment]);
+
   const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
   // True when the cursor is inside a variation (not on the main line).
   // Used to suppress game-review arrows which only apply to the main line.
@@ -964,6 +983,7 @@ export default function GamePage() {
             pvLoading={pvLoading}
             pvError={pvError}
             requestPv={requestPv}
+            onInsertAnnotation={annotateFromChat}
           />
           {chapters.length > 0 && (
             <ResizableChapterSelector
