@@ -23,8 +23,6 @@ export const maxDuration = 200;
 
 const MAX_AGENT_STEPS = 15;
 const MAX_KNOWLEDGE_BYTES = 600 * 1024;
-// Generated client-side by buildAnalysisChatContext (see src/libs/agine/chatContext.ts),
-// which already caps at MAX_BOARD_CONTEXT_CHARS chars — this is just a hard backstop.
 const MAX_BOARD_CONTEXT_BYTES = 24 * 1024;
 
 export const dynamic = "force-dynamic";
@@ -34,7 +32,7 @@ export async function POST(req: Request) {
   const isAuthenticated = !!userId;
   const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
 
-  const { messages, apiSettings, knowledgeContext, boardContext, tokens } =
+  const { messages, apiSettings, knowledgeContext, boardContext, panelMode, tokens } =
     await req.json();
 
   apiSettings.provider = "agineCloud";
@@ -270,7 +268,8 @@ export async function POST(req: Request) {
 
   const agent = await createChessAgineAgent(
     { lichessToken, chessboardmagicToken },
-    isPaidTier
+    isPaidTier,
+    panelMode === true ? "panel" : "full"
   );
 
   try {

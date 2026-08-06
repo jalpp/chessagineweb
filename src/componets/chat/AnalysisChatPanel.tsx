@@ -18,6 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   Button,
+  Badge,
+  LinearProgress,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -26,12 +28,19 @@ import {
   Stop as StopIcon,
   NoteAdd as NoteAddIcon,
   Check as CheckIcon,
+  Psychology as BrainIcon,
+  Star as StarIcon,
 } from "@mui/icons-material";
 import { useAuth, useClerk } from "@clerk/nextjs";
 
 import { MarkdownText } from "@/components/markdown-text";
 import { ToolFallback } from "@/components/tool-fallback";
 import ModelSetting from "@/componets/tabs/ModelSetting";
+import KnowledgePanel from "@/componets/tabs/KnowledgePanel";
+import { KnowledgeProvider, useKnowledge } from "@/context/KnowledgeContext";
+import { useTheme } from "@/context/ThemeContext";
+import { chatThemeVars } from "@/libs/setting/helper";
+import { useTokenLimit } from "@/hooks/useTokenLimit";
 import { useAnalysisChatRuntime } from "@/hooks/useAnalysisChatRuntime";
 import {
   AnalysisChatContextInput,
@@ -50,12 +59,6 @@ export interface AnalysisChatPanelProps {
   currentMoveQuality?: string;
   currentMoveSan?: string;
   qualityCounts?: Partial<Record<string, number>>;
-  /**
-   * Appends a chat message's text onto the currently selected move's PGN
-   * comment. Only wired up on the game page — omit to hide the
-   * "Add to notation" action (e.g. on the position page, which has no
-   * move tree to annotate).
-   */
   onInsertAnnotation?: (text: string) => void;
 }
 
@@ -152,8 +155,15 @@ function Composer() {
 }
 
 function ChatThread({ onInsertAnnotation }: { onInsertAnnotation?: (text: string) => void }) {
+  const { currentTheme } = useTheme();
+  const vars = chatThemeVars[currentTheme];
+
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: 420, minHeight: 0 }}>
+    <Box
+      data-testid="chat-theme-root"
+      sx={{ display: "flex", flexDirection: "column", height: 420, minHeight: 0 }}
+      style={vars}
+    >
       <ThreadPrimitive.Root className="flex h-full min-h-0 flex-col">
         <ThreadPrimitive.Viewport className="flex-1 min-h-0 overflow-y-auto px-1 pt-1">
           <AuiIf condition={(s) => s.thread.isEmpty}>
@@ -191,14 +201,63 @@ function SignedOutGate() {
   );
 }
 
+/** Condensed version of the usage bar shown on the standalone chat page. */
+function UsageBar({ isPaidTier }: { isPaidTier: boolean }) {
+  const dailyUsage = useTokenLimit(isPaidTier);
+
+  if (!isPaidTier || dailyUsage.loading) return null;
+
+  const usagePct = dailyUsage.budgetUSD
+    ? Math.min(100, (dailyUsage.costUSD / dailyUsage.budgetUSD) * 100)
+    : 0;
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, mb: 0.5 }}>
+      <Tooltip
+        title={`Daily usage: $${dailyUsage.costUSD.toFixed(4)} / $${dailyUsage.budgetUSD?.toFixed(2)} — resets at midnight UTC`}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <LinearProgress
+            variant="determinate"
+            value={usagePct}
+            color={dailyUsage.limitHit ? "error" : dailyUsage.warning ? "warning" : "primary"}
+            sx={{ flex: 1, height: 5, borderRadius: 3 }}
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: "10px",
+              color: dailyUsage.limitHit ? "error.main" : dailyUsage.warning ? "warning.main" : "text.secondary",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {usagePct.toFixed(0)}% daily
+          </Typography>
+        </Box>
+      </Tooltip>
+      {dailyUsage.limitHit && (
+        <Typography sx={{ fontSize: "10px", color: "error.main" }}>
+          Daily limit reached — premium models fall back to the free model until midnight UTC.
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 function ChatRuntimeProvider({
   contextInput,
+  isPaidTier,
   onInsertAnnotation,
 }: {
   contextInput: AnalysisChatContextInput;
+  isPaidTier: boolean;
   onInsertAnnotation?: (text: string) => void;
 }) {
-  const runtime = useAnalysisChatRuntime(contextInput);
+  const { buildKnowledgeContext } = useKnowledge();
+  const runtime = useAnalysisChatRuntime(contextInput, {
+    isPaidTier,
+    getKnowledgeContext: buildKnowledgeContext,
+  });
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ChatThread onInsertAnnotation={onInsertAnnotation} />
@@ -206,7 +265,7 @@ function ChatRuntimeProvider({
   );
 }
 
-export default function AnalysisChatPanel({
+function AnalysisChatPanelInner({
   mode,
   fen,
   pgn,
@@ -220,8 +279,11 @@ export default function AnalysisChatPanel({
   qualityCounts,
   onInsertAnnotation,
 }: AnalysisChatPanelProps) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, has } = useAuth();
+  const isPaidTier = has?.({ plan: "paid_tier" }) ?? false;
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const { selectedIds } = useKnowledge();
 
   const contextInput: AnalysisChatContextInput = useMemo(
     () => ({
@@ -246,16 +308,46 @@ export default function AnalysisChatPanel({
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 0.5 }}>
-        <Tooltip title="Chat settings">
-          <IconButton size="small" sx={{ p: 0.4 }} onClick={() => setSettingsOpen(true)}>
-            <SettingsIcon sx={{ fontSize: 14 }} />
-          </IconButton>
-        </Tooltip>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5, gap: 0.5 }}>
+        {!isPaidTier ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0, flex: 1 }}>
+            <StarIcon sx={{ fontSize: 13, color: "info.main", flexShrink: 0 }} />
+            <Typography variant="caption" noWrap sx={{ fontSize: "10px", color: "text.secondary" }}>
+              Free plan — limited models.
+            </Typography>
+            <Button size="small" href="/pricing" sx={{ fontSize: "10px", minWidth: 0, p: 0.25 }}>
+              Upgrade
+            </Button>
+          </Box>
+        ) : (
+          <Box sx={{ flex: 1, minWidth: 0 }} />
+        )}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+          {isPaidTier && (
+            <Tooltip title="Chess Knowledge Cards">
+              <IconButton size="small" sx={{ p: 0.4 }} onClick={() => setKnowledgeOpen(true)}>
+                <Badge badgeContent={selectedIds.size} color="primary" max={99} invisible={selectedIds.size === 0}>
+                  <BrainIcon sx={{ fontSize: 14 }} />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Chat settings">
+            <IconButton size="small" sx={{ p: 0.4 }} onClick={() => setSettingsOpen(true)}>
+              <SettingsIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
+      <UsageBar isPaidTier={isPaidTier} />
+
       {isSignedIn ? (
-        <ChatRuntimeProvider contextInput={contextInput} onInsertAnnotation={onInsertAnnotation} />
+        <ChatRuntimeProvider
+          contextInput={contextInput}
+          isPaidTier={isPaidTier}
+          onInsertAnnotation={onInsertAnnotation}
+        />
       ) : (
         <SignedOutGate />
       )}
@@ -271,6 +363,18 @@ export default function AnalysisChatPanel({
           <ModelSetting />
         </DialogContent>
       </Dialog>
+
+      {isPaidTier && (
+        <KnowledgePanel open={knowledgeOpen} onClose={() => setKnowledgeOpen(false)} />
+      )}
     </Box>
+  );
+}
+
+export default function AnalysisChatPanel(props: AnalysisChatPanelProps) {
+  return (
+    <KnowledgeProvider>
+      <AnalysisChatPanelInner {...props} />
+    </KnowledgeProvider>
   );
 }

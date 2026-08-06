@@ -12,11 +12,21 @@ import {
 import { getAgineMcpClient, AgineTokens } from "../mcp/agineClient";
 import { displayChessboardTool, fetchChessPuzzle, loadGameTool } from "./tools";
 import {
+  ToolMode,
+  PINNED_MCP_TOOL_IDS,
+  filterMcpTools,
+  wrapToolsWithAuth,
+  shouldIncludeLocalTool,
+} from "./toolMode";
+import {
   BYO_ANTHROPIC_MODELS,
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
 } from "@/libs/agine/modelConstants";
 import { basicSystemPrompt } from "./types";
+
+export type { ToolMode } from "./toolMode";
+export { filterMcpTools, wrapToolsWithAuth } from "./toolMode";
 
 export function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
@@ -71,111 +81,13 @@ function buildInstructions(requestContext: RequestContext): string {
     .replace("[LANG]", lang);
 }
 
-const MCP_RENDER_TOOL_IDS = new Set([
-  "render_chess_board",
-  "render_pgn_viewer",
-]);
-
-const LICHESS_AUTH_TOOL_IDS = new Set([
-  "fetch-lichess-studies",
-  "fetch-lichess-study-pgn",
-]);
-
-const IGNORE_TOOL_IDS = new Set([
-  "get-lichess-username",
-  "fetch_chess_puzzle"
-]);
-
-const PINNED_MCP_TOOL_IDS = new Set([
-  "parse-pgn-into-move-fens",
-  "get-fen-map-lookup",
-  "parse-moves-for-boardstate",
-  "get-boardstate-for-fen",
-  "get-boardstate-for-move",
-  "is-legal-move",
-  "search_tools",
-  "load_tools",
-]);
-
-
-export function wrapToolsWithAuth(
-  tools: Record<string, any>,
-  tokens?: AgineTokens,
-  isPaidTier?: boolean
-) {
-  return Object.fromEntries(
-    Object.entries(tools).map(([id, tool]) => {
-      return [
-        id,
-        {
-          ...tool,
-
-          async execute(args: any, context: any) {
-            let newArgs = { ...args };
-
-  
-            if (LICHESS_AUTH_TOOL_IDS.has(id) && tokens?.lichessToken) {
-              newArgs = {
-                ...newArgs,
-                token: tokens.lichessToken, 
-              };
-            }
-
- 
-            if (
-              id.includes("chessboardmagic") &&
-              isPaidTier &&
-              tokens?.chessboardmagicToken
-            ) {
-              newArgs = {
-                ...newArgs,
-                token: tokens.chessboardmagicToken, 
-              };
-            }
-
-            return tool.execute(newArgs, context);
-          },
-        },
-      ];
-    })
-  );
-}
-
-export function filterMcpTools(
-  mcpTools: Record<string, any>,
-  tokens?: AgineTokens,
-  isPaidTier?: boolean
-) {
-  return Object.fromEntries(
-    Object.entries(mcpTools).filter(([id]) => {
-      // Ignore render tools
-      if (MCP_RENDER_TOOL_IDS.has(id)) return false;
-
-    
-      if (IGNORE_TOOL_IDS.has(id)) return false;
-
- 
-      if (LICHESS_AUTH_TOOL_IDS.has(id)) {
-        return !!tokens?.lichessToken;
-      }
-
-     
-      if (id.includes("chessboardmagic")) {
-        return !!(isPaidTier && tokens?.chessboardmagicToken);
-      }
-
-      return true;
-    })
-  );
-}
-
-async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
+async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean, toolMode: ToolMode = "full") {
  
   const mcpClient = getAgineMcpClient();
 
   const mcpTools = await mcpClient.listTools();
 
-  const filteredMcpTools = filterMcpTools(mcpTools, tokens, isPaidTier);
+  const filteredMcpTools = filterMcpTools(mcpTools, tokens, isPaidTier, toolMode);
 
  
   const wrappedTools = wrapToolsWithAuth(
@@ -186,8 +98,7 @@ async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean) {
 
   return {
     ...wrappedTools,
-    display_chessboard_for_fen: displayChessboardTool,
-    load_chess_game: loadGameTool,
+    ...buildLocalBoardTools(toolMode),
   };
 }
 
@@ -202,8 +113,19 @@ const unicodeNormalizer = new UnicodeNormalizer({
 
 const prefillErrorHandler = new PrefillErrorHandler();
 
-async function buildToolSearchProcessor(tokens?: AgineTokens, isPaidTier?: boolean) {
-  const tools = await buildTools(tokens, isPaidTier);
+/** Local board/game-loading UI tools, filtered out entirely for the embedded panel (see ToolMode above). */
+export function buildLocalBoardTools(toolMode: ToolMode = "full") {
+  const all: Record<string, any> = {
+    display_chessboard_for_fen: displayChessboardTool,
+    load_chess_game: loadGameTool,
+  };
+  return Object.fromEntries(
+    Object.entries(all).filter(([id]) => shouldIncludeLocalTool(id, toolMode)),
+  );
+}
+
+async function buildToolSearchProcessor(tokens?: AgineTokens, isPaidTier?: boolean, toolMode: ToolMode = "full") {
+  const tools = await buildTools(tokens, isPaidTier, toolMode);
 
   const searchableTools = Object.fromEntries(
     Object.entries(tools).filter(([id]) => !PINNED_MCP_TOOL_IDS.has(id)),
@@ -226,18 +148,28 @@ function buildPinnedTools() {
   };
 }
 
+const PANEL_MODE_INSTRUCTIONS = `
+
+## Embedded Analysis Panel Mode
+You are running inside the compact Chat panel on the game review / position analysis page, not the standalone chat page. The user already has a live board, move list, and (in game mode) a game-review panel open right next to you, and the current FEN/PGN/engine lines were already given to you above under "Live Board Context".
+- Do NOT call display_chessboard_for_fen or load_chess_game — there is nowhere for them to render here, and the board is already on screen.
+- Do NOT call tools that only re-derive the FEN/PGN/board state you were already given (parsing/board-state lookups) — trust the context above instead.
+- DO feel free to call engines and other heavy analysis tools (Stockfish, Leela/Maia, ChessDB, opening databases, etc.) when the user's question needs deeper analysis than what's already in context.`;
+
 export async function createChessAgineAgent(
   tokens?: AgineTokens,
-  isPaidTier?: boolean
+  isPaidTier?: boolean,
+  toolMode: ToolMode = "full"
 ) {
-  const tools = await buildTools(tokens, isPaidTier);
+  const tools = await buildTools(tokens, isPaidTier, toolMode);
 
-  const toolSearchProcessor = await buildToolSearchProcessor(tokens, isPaidTier);
+  const toolSearchProcessor = await buildToolSearchProcessor(tokens, isPaidTier, toolMode);
 
   return new Agent({
     id: "chessagine-agent",
     name: "ChessAgine",
-    instructions: ({ requestContext }) => buildInstructions(requestContext),
+    instructions: ({ requestContext }) =>
+      buildInstructions(requestContext) + (toolMode === "panel" ? PANEL_MODE_INSTRUCTIONS : ""),
     model: ({ requestContext }) => createAgineCloudModel(requestContext),
     tools,
     inputProcessors: [unicodeNormalizer, toolSearchProcessor],
@@ -245,12 +177,7 @@ export async function createChessAgineAgent(
   });
 }
 
-// Default agent (no auth). tools/inputProcessors use Mastra's lazy
-// DynamicArgument form (the same pattern `model` already uses above)
-// instead of a top-level `await`, since top-level await can't be
-// represented in the CommonJS output our Jest unit-test project
-// needs — Next.js's own ESM-aware bundler tolerated it, but `tsc`/
-// ts-jest compiling this file for Jest cannot.
+
 export const chessAgine = new Agent({
   id: "chessagine-agent",
   name: "ChessAgine",

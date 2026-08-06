@@ -536,9 +536,15 @@ export default function GamePage() {
       const node = findNode(prev.root, prev.cursor);
       const existing = node?.comment?.trim();
       const merged = existing ? `${existing}\n\n${text}` : text;
+      // The "current move" comment box (GameInfoTab) is a separate piece
+      // of state that's normally only refreshed by handleNavigate/goToMove
+      // when a move is clicked — without this it stays showing the old
+      // text until the user clicks away and back, making the annotation
+      // look like it didn't take even though the tree node updated fine.
+      setComment(merged);
       return setNodeComment(prev, prev.cursor, merged);
     });
-  }, []);
+  }, [setComment]);
 
   const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
   // True when the cursor is inside a variation (not on the main line).
