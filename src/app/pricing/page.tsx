@@ -20,7 +20,10 @@ export default function PricingPage() {
 
       <Box textAlign="center" mt={4}>
         <Typography variant="caption" color="text.secondary">
-          Free models are from random free OpenRouter models, paid tier supports model on AgineCloud with daily cap limit.
+          Free tier includes a curated free OpenRouter model chosen for reliable tool use, the
+          random openrouter/free router, and support for your own Anthropic/Gemini/OpenRouter
+          API key. Paid tier additionally unlocks AgineCloud premium models with a daily usage
+          cap.
         </Typography>
       </Box>
     </Container>

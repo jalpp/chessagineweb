@@ -214,49 +214,33 @@ const IntegrationSettings: React.FC<{ lichessOnly?: boolean }> = ({ lichessOnly 
 
       {!isSignedIn ? (
         <Alert severity="info" sx={{ mt: 1 }}>
-          <Typography variant="body2" fontWeight={600} gutterBottom>Sign in for API integrations & paid features</Typography>
+          <Typography variant="body2" fontWeight={600} gutterBottom>Sign in for API integrations & BYO-key models</Typography>
           <Typography variant="caption" color="text.secondary">
-            Create a free ChessAgine account to access paid API integrations, BYO-key models, and ChessboardMagic repertoire sync.
+            Create a free ChessAgine account to connect ChessboardMagic, bring your own API keys,
+            and (on the paid tier) unlock AgineCloud premium models.
           </Typography>
         </Alert>
       ) : (
       <React.Fragment>
       <Box display="flex" alignItems="center" gap={1} mb={1}>
         <Typography variant="overline" color="text.secondary">
-          Paid Features
+          BYO API Keys & Integrations
         </Typography>
-        {!isPaidTier && (
-          <Chip
-            size="small"
-            label="Upgrade"
-            color="warning"
-            icon={<StarIcon />}
-            component="a"
-            href="/pricing"
-            clickable
-            variant="outlined"
-            sx={{ fontSize: "0.6rem", height: 18 }}
-          />
-        )}
+        <Chip size="small" label="Free & Paid" color="success" variant="outlined" sx={{ fontSize: "0.6rem", height: 18 }} />
       </Box>
 
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Bring your own keys on any tier — free or paid. Paste your ChessboardMagic token or your
+        own Anthropic / Gemini / OpenRouter API key below to unlock the matching BYO-key models
+        with your own credits, no AgineCloud quota used.
+      </Typography>
+
       {!isPaidTier && (
-        <Alert
-          severity="warning"
-          icon={<StarIcon />}
-          sx={{ mb: 2 }}
-          action={
-            <Button color="warning" size="small" variant="outlined" href="/pricing">
-              Upgrade
-            </Button>
-          }
-        >
-          <Typography variant="body2" fontWeight={600}>
-            Unlock Paid Integrations & BYO-Key Models
-          </Typography>
+        <Alert severity="info" icon={<StarIcon />} sx={{ mb: 2 }}>
           <Typography variant="caption">
-            Upgrade to access ChessboardMagic repertoire integration, personal OpenRouter keys,
-            and BYO-key models (Claude, Gemini, GPT-5.4) using your own API credits.
+            BYO-key models work on the free tier too. Upgrading to paid additionally unlocks
+            AgineCloud premium models (Claude Sonnet, Gemini, Qwen, Llama, GPT-5.6) without
+            needing your own key.
           </Typography>
         </Alert>
       )}
@@ -265,8 +249,6 @@ const IntegrationSettings: React.FC<{ lichessOnly?: boolean }> = ({ lichessOnly 
         label="ChessboardMagic API Token"
         storageKey="chessboardmagic-token"
         placeholder="enter your token"
-        disabled={!isPaidTier}
-        disabledReason="Upgrade to paid tier to connect your ChessboardMagic account."
         description={
           <>
             Connect your{" "}
@@ -287,8 +269,6 @@ const IntegrationSettings: React.FC<{ lichessOnly?: boolean }> = ({ lichessOnly 
         label="OpenRouter API Key"
         storageKey="openrouter-token"
         placeholder="sk-or-..."
-        disabled={!isPaidTier}
-        disabledReason="Upgrade to paid tier to use your personal OpenRouter key."
         description={
           <>
             Provide your own{" "}
@@ -300,70 +280,66 @@ const IntegrationSettings: React.FC<{ lichessOnly?: boolean }> = ({ lichessOnly 
             >
               OpenRouter API key
             </Link>{" "}
-            to use <strong>GPT-5.4</strong> and continue using your chosen model after your daily
-            AgineCloud quota is hit. Required to select the <em>openai/gpt-5.4</em> model.
+            to use <strong>GPT-5.6 Sol</strong> and continue using your chosen model after your
+            daily AgineCloud quota is hit. Required to select the <em>openai/gpt-5.6-sol</em>{" "}
+            model.
           </>
         }
       />
 
-      {/* ── BYO Key models — paid tier only ── */}
-      {isPaidTier && (
-        <>
-          <Divider sx={{ my: 3 }} />
+      <Divider sx={{ my: 3 }} />
 
-          <Typography variant="overline" color="text.secondary" display="block" mb={1}>
-            BYO Key Models — Use Your Own API Credits
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            Use Claude, Gemini, and GPT-5.4 directly via your own API accounts — no AgineCloud
-            credits consumed. Keys are stored only in your browser.
-          </Typography>
+      <Typography variant="overline" color="text.secondary" display="block" mb={1}>
+        BYO Key Models — Use Your Own API Credits
+      </Typography>
+      <Typography variant="body2" color="text.secondary" mb={2}>
+        Use Claude, Gemini, and GPT-5.6 directly via your own API accounts — no AgineCloud
+        credits consumed. Keys are stored only in your browser.
+      </Typography>
 
-          <TokenField
-            label="Anthropic API Key"
-            storageKey="anthropic-token"
-            placeholder="your own claude key."
-            description={
-              <>
-                Your own{" "}
-                <Link
-                  href="https://console.anthropic.com/settings/keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="caption"
-                >
-                  Anthropic API key
-                </Link>{" "}
-                to use <strong>claude-opus-4-6</strong>, <strong>claude-sonnet-4-6</strong>, and{" "}
-                <strong>claude-haiku-4-5</strong> models directly via the Anthropic API. Requests
-                go straight to Anthropic, billed to your account.
-              </>
-            }
-          />
+      <TokenField
+        label="Anthropic API Key"
+        storageKey="anthropic-token"
+        placeholder="your own claude key."
+        description={
+          <>
+            Your own{" "}
+            <Link
+              href="https://console.anthropic.com/settings/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="caption"
+            >
+              Anthropic API key
+            </Link>{" "}
+            to use <strong>claude-opus-4-8</strong>, <strong>claude-sonnet-5</strong>, and{" "}
+            <strong>claude-haiku-4-5</strong> models directly via the Anthropic API. Requests
+            go straight to Anthropic, billed to your account.
+          </>
+        }
+      />
 
-          <TokenField
-            label="Google Gemini API Key"
-            storageKey="gemini-token"
-            placeholder="your own gemini key"
-            description={
-              <>
-                Your own{" "}
-                <Link
-                  href="https://aistudio.google.com/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="caption"
-                >
-                  Google AI Studio API key
-                </Link>{" "}
-                to use <strong>gemini-2.5-pro</strong>, <strong>gemini-2.0-flash</strong>, and
-                other Gemini models directly via the Google AI API. Requests go straight to
-                Google, billed to your account.
-              </>
-            }
-          />
-        </>
-      )}
+      <TokenField
+        label="Google Gemini API Key"
+        storageKey="gemini-token"
+        placeholder="your own gemini key"
+        description={
+          <>
+            Your own{" "}
+            <Link
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="caption"
+            >
+              Google AI Studio API key
+            </Link>{" "}
+            to use <strong>gemini-3.1-pro</strong>, <strong>gemini-3.6-flash</strong>, and
+            other Gemini models directly via the Google AI API. Requests go straight to
+            Google, billed to your account.
+          </>
+        }
+      />
       </React.Fragment>
       )}
     </Box>

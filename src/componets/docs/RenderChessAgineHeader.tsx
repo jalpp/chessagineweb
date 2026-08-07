@@ -18,6 +18,7 @@ import {
   Extension as ExtensionIcon,
   Lock as LockIcon,
 } from "@mui/icons-material";
+import { PREMIUM_MODELS, FREE_TIER_MODELS } from "@/libs/agine/modelConstants";
 
 export const renderHeader = () => (
   <>
@@ -46,13 +47,12 @@ export const renderHeader = () => (
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            All chess tools are free. Agine Chat on free tier allows access to small random selected 
-            AI models from openRouter, no setup required.
+            All chess tools are free. Agine Chat on free tier includes a curated free model
+            chosen for reliable tool use, the random openrouter/free router, and support for
+            your own Anthropic/Gemini/OpenRouter API key — no paid plan required.
           </Typography>
           <Box display="flex" flexWrap="wrap" gap={0.75}>
-            {[
-              "openrouter/free",
-            ].map((m) => (
+            {FREE_TIER_MODELS.map((m) => (
               <Chip
                 key={m}
                 label={m}
@@ -78,12 +78,7 @@ export const renderHeader = () => (
             context, and dedicated resources.
           </Typography>
           <Box display="flex" flexWrap="wrap" gap={0.75}>
-            {[
-              "google/gemini-3.1-pro-preview",
-              "anthropic/claude-sonnet-4.6",
-              "qwen/qwen3.5-9b",
-              "meta-llama/llama-3.1-8b-instruct",
-            ].map((m) => (
+            {PREMIUM_MODELS.map((m) => (
               <Chip
                 key={m}
                 label={m}

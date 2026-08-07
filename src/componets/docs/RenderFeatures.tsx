@@ -48,11 +48,11 @@ const FEATURES: FeatureDetail[] = [
       "PGN game review via chat",
       "access your opening repertoire via Lichess Study and ChessBoardMagic integration",
       "Free tier: access to random smaller models for quick analysis",
-      "Paid tier: 4 premium models + more tool calls + extended chess context",
+      "Paid tier: 6 premium models + more tool calls + extended chess context",
     ],
     highlights: [
       "No setup — start chatting instantly",
-      "Paid tier unlocks Gemini Pro, Claude Sonnet, Qwen & Llama",
+      "Paid tier unlocks Gemini Pro, Claude Sonnet, Qwen, Llama & GPT-5.6",
       "Paid tier unlocks external integrations like Chessboardmagic and using personal OpenRouter account"
     ],
   },

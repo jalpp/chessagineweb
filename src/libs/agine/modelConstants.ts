@@ -1,34 +1,29 @@
-/**
- * Model classification constants.
- * Centralized here to avoid circular imports between components.
- */
 
-/** Models that use the user's own Anthropic API key (direct API) */
+
 export const BYO_ANTHROPIC_MODELS = [
-  "claude-opus-4-6",
-  "claude-sonnet-4-6",
-  "claude-haiku-4-5",
+  "claude-opus-4-8",
+  "claude-sonnet-5",
+  "claude-haiku-4-5-20251001",
 ];
 
-/** Models that use the user's own Google Gemini API key (direct API) */
+
 export const BYO_GEMINI_MODELS = [
-  "gemini-3.1-pro-preview",  
-  "gemini-2.5-pro-preview-05-06",
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
+  "gemini-3.1-pro-preview",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash-lite",
 ];
 
-/** Models routed through OpenRouter using the user's own OpenRouter key */
+
 export const BYO_OPENROUTER_MODELS = [
   "google/gemini-3.1-pro-preview:user",
-  "anthropic/claude-sonnet-4.6:user",
+  "anthropic/claude-sonnet-5:user",
   "qwen/qwen3.5-9b:user",
   "nvidia/nemotron-3-super-120b-a12b:user",
-  "meta-llama/llama-3.1-8b-instruct:user",  
-  "openai/gpt-5.4:user",
+  "meta-llama/llama-4-scout:user",
+  "openai/gpt-5.6-sol:user",
 ];
 
-/** All BYO-key models combined */
+
 export const BYO_MODELS = [
   ...BYO_ANTHROPIC_MODELS,
   ...BYO_GEMINI_MODELS,
@@ -38,9 +33,15 @@ export const BYO_MODELS = [
 
 export const PREMIUM_MODELS = [
   "google/gemini-3.1-pro-preview",
-  "anthropic/claude-sonnet-4.6",
+  "anthropic/claude-sonnet-5",
   "qwen/qwen3.5-9b",
   "nvidia/nemotron-3-super-120b-a12b",
-  "meta-llama/llama-3.1-8b-instruct",
-  "openai/gpt-5.4",
+  "meta-llama/llama-4-scout",
+  "openai/gpt-5.6-sol",
 ];
+
+export const FREE_GIFT_MODEL = "qwen/qwen3-coder:free";
+
+export const FREE_ROUTER_MODEL = "openrouter/free";
+
+export const FREE_TIER_MODELS = [FREE_GIFT_MODEL, FREE_ROUTER_MODEL];

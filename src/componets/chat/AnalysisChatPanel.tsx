@@ -20,6 +20,7 @@ import {
   Button,
   Badge,
   LinearProgress,
+  Alert,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -46,6 +47,7 @@ import {
   AnalysisChatContextInput,
   AnalysisChatMode,
 } from "@/libs/agine/chatContext";
+import { AGINE_DISCLAIMER_TITLE, AGINE_DISCLAIMER_TEXT } from "@/libs/agine/disclaimer";
 
 export interface AnalysisChatPanelProps {
   mode: AnalysisChatMode;
@@ -171,6 +173,15 @@ function ChatThread({ onInsertAnnotation }: { onInsertAnnotation?: (text: string
               Ask about a move, the plan, or why the engine likes a line — Agine can see
               the current position, PGN, and engine lines already.
             </Typography>
+            <Alert
+              severity="warning"
+              sx={{ mx: 0.5, mb: 1, py: 0.25, "& .MuiAlert-message": { fontSize: "10px" } }}
+            >
+              <Typography sx={{ fontSize: "10px", fontWeight: 600 }}>
+                {AGINE_DISCLAIMER_TITLE}
+              </Typography>
+              <Typography sx={{ fontSize: "10px" }}>{AGINE_DISCLAIMER_TEXT}</Typography>
+            </Alert>
           </AuiIf>
           <ThreadPrimitive.Messages
             components={{
