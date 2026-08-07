@@ -47,9 +47,10 @@ export const renderHeader = () => (
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            All chess tools are free. Agine Chat on free tier includes a curated free model
-            chosen for reliable tool use, the random openrouter/free router, and support for
-            your own Anthropic/Gemini/OpenRouter API key — no paid plan required.
+            All chess tools are free. Agine Chat on free tier includes the gift model —
+            qwen/qwen3-coder-next, free with no daily cap — plus the random openrouter/free
+            router, and support for your own Anthropic/Gemini/OpenRouter API key — no paid plan
+            required.
           </Typography>
           <Box display="flex" flexWrap="wrap" gap={0.75}>
             {FREE_TIER_MODELS.map((m) => (

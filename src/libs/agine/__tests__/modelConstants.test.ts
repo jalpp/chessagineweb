@@ -4,26 +4,31 @@ import {
   BYO_OPENROUTER_MODELS,
   BYO_MODELS,
   PREMIUM_MODELS,
-  FREE_GIFT_MODEL,
   FREE_ROUTER_MODEL,
+  GIFT_MODEL,
   FREE_TIER_MODELS,
 } from "../modelConstants";
 
-describe("FREE_TIER_MODELS", () => {
-  it("includes the curated gift model and the random free router", () => {
-    expect(FREE_TIER_MODELS).toContain(FREE_GIFT_MODEL);
-    expect(FREE_TIER_MODELS).toContain(FREE_ROUTER_MODEL);
+describe("GIFT_MODEL", () => {
+  it("is qwen3-coder-next, given free to every tier with no daily cap", () => {
+    expect(GIFT_MODEL).toBe("qwen/qwen3-coder-next");
   });
 
-  it("picks a tool-calling-capable free model as the gift (qwen3-coder, not a random one)", () => {
-    expect(FREE_GIFT_MODEL).toBe("qwen/qwen3-coder:free");
+  it("is available on the free tier alongside the random router", () => {
+    expect(FREE_TIER_MODELS).toEqual([GIFT_MODEL, FREE_ROUTER_MODEL]);
   });
 
-  it("keeps the free-tier models out of the paid-only and BYO sets", () => {
-    for (const model of FREE_TIER_MODELS) {
-      expect(PREMIUM_MODELS).not.toContain(model);
-      expect(BYO_MODELS).not.toContain(model);
-    }
+  it("is not gated behind the paid tier or a BYO key", () => {
+    expect(PREMIUM_MODELS).not.toContain(GIFT_MODEL);
+    expect(BYO_MODELS).not.toContain(GIFT_MODEL);
+    expect(BYO_MODELS).not.toContain(`${GIFT_MODEL}:user`);
+  });
+
+  it("no longer occupies the old qwen3.5-9b premium/BYO slot", () => {
+    const all = [...BYO_MODELS, ...PREMIUM_MODELS, ...FREE_TIER_MODELS];
+    expect(all).not.toContain("qwen/qwen3.5-9b");
+    expect(all).not.toContain("qwen/qwen3.5-9b:user");
+    expect(all).not.toContain("qwen/qwen3-coder:free");
   });
 });
 
@@ -38,6 +43,8 @@ describe("2026 model refresh", () => {
       "gemini-2.5-pro-preview-05-06",
       "openai/gpt-5.4",
       "meta-llama/llama-3.1-8b-instruct",
+      "qwen/qwen3.5-9b",
+      "qwen/qwen3-coder:free",
     ];
     const all = [...BYO_MODELS, ...PREMIUM_MODELS, ...FREE_TIER_MODELS];
     for (const staleModel of stale) {

@@ -1,7 +1,6 @@
 export type AgineCloudModel =
-  | "qwen/qwen3-coder:free"
   | "openrouter/free"
-  | "qwen/qwen3.5-9b"
+  | "qwen/qwen3-coder-next"
   | "meta-llama/llama-4-scout"
   | "google/gemini-3.1-pro-preview"
   | "nvidia/nemotron-3-super-120b-a12b"

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useLocalStorage } from "usehooks-ts";
 import { useAuth } from "@clerk/nextjs";
+import { GIFT_MODEL } from "@/libs/agine/modelConstants";
 
 export interface PersistedSettings {
   selected_model: string;
@@ -70,7 +71,7 @@ export function usePersistedSettings() {
 
   // ── All keys now SAFE ─────────────────────────────────────────────────────
 
-  const [selectedModel,          setSelectedModel]          = useSafeLocalStorage("selected-model", "openrouter/free");
+  const [selectedModel,          setSelectedModel]          = useSafeLocalStorage("selected-model", GIFT_MODEL);
   const [boardFlipped,           setBoardFlipped]           = useSafeLocalStorage("board_ui_flipped", false);
   const [boardSize,              setBoardSize]              = useSafeLocalStorage("board_ui_size", 480);
   const [boardPieceType,         setBoardPieceType]         = useSafeLocalStorage("board_piece_type", "Cburnett");

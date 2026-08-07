@@ -20,8 +20,8 @@ export default function PricingPage() {
 
       <Box textAlign="center" mt={4}>
         <Typography variant="caption" color="text.secondary">
-          Free tier includes a curated free OpenRouter model chosen for reliable tool use, the
-          random openrouter/free router, and support for your own Anthropic/Gemini/OpenRouter
+          Free tier includes the gift model (qwen/qwen3-coder-next — free, no daily cap) and the
+          random openrouter/free router, plus support for your own Anthropic/Gemini/OpenRouter
           API key. Paid tier additionally unlocks AgineCloud premium models with a daily usage
           cap.
         </Typography>

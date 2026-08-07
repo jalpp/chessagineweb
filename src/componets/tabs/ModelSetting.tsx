@@ -29,7 +29,7 @@ import {
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
   BYO_MODELS,
-  FREE_GIFT_MODEL,
+  GIFT_MODEL,
 } from "@/libs/agine/modelConstants";
 import { useAuth } from "@clerk/nextjs";
 import IntegrationSettings from "./IntegrationSetting";
@@ -37,8 +37,7 @@ import { useSettings } from "@/context/SettingContext";
 
 export type AgineCloudModel =
   | "openrouter/free"
-  | "qwen/qwen3-coder:free"
-  | "qwen/qwen3.5-9b"
+  | "qwen/qwen3-coder-next"
   | "meta-llama/llama-4-scout"
   | "google/gemini-3.1-pro-preview"
   | "nvidia/nemotron-3-super-120b-a12b"
@@ -53,8 +52,9 @@ export type AgineCloudModel =
 
 export type ModelOnlySettings = Pick<ApiSettings, "model">;
 
-
-const FREE_MODEL = FREE_GIFT_MODEL;
+/** Default model for every signed-in user, free or paid tier: the free
+ *  "gift" model — on by default, no key needed, no usage cap. */
+const FREE_MODEL = GIFT_MODEL;
 
 function getByoKeyLabel(model: string): string | null {
   if (BYO_ANTHROPIC_MODELS.includes(model)) return "Anthropic Key";
@@ -180,11 +180,11 @@ const ModelSetting: React.FC = () => {
             Free Tier — Gift Model + Bring Your Own Key
           </Typography>
           <Typography variant="caption">
-            You have <strong>{FREE_GIFT_MODEL}</strong> free, on us — picked for reliable tool use
-            — plus the random <strong>openrouter/free</strong> router. You can also bring your own
-            Anthropic, Gemini, or OpenRouter key below to use those models directly. Upgrade to
-            paid tier to unlock AgineCloud premium models (Claude Sonnet, Gemini, Qwen, Llama)
-            without needing your own key.
+            You have <strong>{GIFT_MODEL}</strong> free, on us — a strong tool-calling coding
+            model, unlimited, no cap — plus the random <strong>openrouter/free</strong> router.
+            You can also bring your own Anthropic, Gemini, or OpenRouter key below to use those
+            models directly. Upgrade to paid tier to unlock AgineCloud premium models (Claude
+            Sonnet, Gemini, Nemotron, Llama, GPT-5.6) without needing your own key.
           </Typography>
         </Alert>
       )}
@@ -307,12 +307,14 @@ const ModelSetting: React.FC = () => {
           </FormControl>
 
           <Typography variant="caption" sx={{ mt: 1, display: "block", fontStyle: "italic" }}>
-            {isSelectedByo
+            {tempModel === GIFT_MODEL
+              ? "Free gift model — no cost, no daily cap, available on every tier."
+              : isSelectedByo
               ? selectedByoKeyConfigured
                 ? `Using your own ${selectedByoKeyLabel} — no AgineCloud credits used.`
                 : `Add your ${selectedByoKeyLabel} in API Integrations below to use this model.`
               : !isPaidTier
-              ? "Free tier: gift model + openrouter/free included. Upgrade to unlock AgineCloud premium models too."
+              ? "Free tier: openrouter/free included. Upgrade to unlock AgineCloud premium models."
               : "You have access to all AgineCloud and BYO-key models."}
           </Typography>
         </CardContent>

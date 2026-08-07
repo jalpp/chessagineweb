@@ -17,7 +17,6 @@ export const BYO_GEMINI_MODELS = [
 export const BYO_OPENROUTER_MODELS = [
   "google/gemini-3.1-pro-preview:user",
   "anthropic/claude-sonnet-5:user",
-  "qwen/qwen3.5-9b:user",
   "nvidia/nemotron-3-super-120b-a12b:user",
   "meta-llama/llama-4-scout:user",
   "openai/gpt-5.6-sol:user",
@@ -34,14 +33,16 @@ export const BYO_MODELS = [
 export const PREMIUM_MODELS = [
   "google/gemini-3.1-pro-preview",
   "anthropic/claude-sonnet-5",
-  "qwen/qwen3.5-9b",
   "nvidia/nemotron-3-super-120b-a12b",
   "meta-llama/llama-4-scout",
   "openai/gpt-5.6-sol",
 ];
 
-export const FREE_GIFT_MODEL = "qwen/qwen3-coder:free";
 
 export const FREE_ROUTER_MODEL = "openrouter/free";
 
-export const FREE_TIER_MODELS = [FREE_GIFT_MODEL, FREE_ROUTER_MODEL];
+
+export const GIFT_MODEL = "qwen/qwen3-coder-next";
+
+/** Models selectable by free-tier users without any key or upgrade. */
+export const FREE_TIER_MODELS = [GIFT_MODEL, FREE_ROUTER_MODEL];

@@ -16,6 +16,7 @@ import {
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
   BYO_MODELS,
+  GIFT_MODEL,
 } from "@/libs/agine/modelConstants";
 import { sanitizeTrailingAssistantMessage } from "@/libs/agine/sanitizeMessages";
 
@@ -155,8 +156,13 @@ export async function POST(req: Request) {
 
 
   const isByoModel = BYO_MODELS.includes(selectedModel);
+  // The gift model (qwen3-coder-next) is free for every signed-in user and
+  // never subject to the daily AgineCloud budget — skip both the ":free"
+  // suffixing (it has no free variant on OpenRouter) and the cap check
+  // below, same as a BYO model.
+  const isGiftModel = selectedModel === GIFT_MODEL;
 
-  if (!isByoModel) {
+  if (!isByoModel && !isGiftModel) {
     if (isPaidTier && userId) {
       const usage = await getDailyUsage(userId);
       dailyLimitHit = isDailyLimitHit(usage);
@@ -251,7 +257,7 @@ export async function POST(req: Request) {
     });
 
 
-    if (isPaidTier && userId) {
+    if (isPaidTier && userId && !isGiftModel) {
       const capturedUserId = userId;
       const capturedModel = resolvedModel;
       stream.usage
