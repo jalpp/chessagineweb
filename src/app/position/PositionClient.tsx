@@ -25,7 +25,7 @@ import { useNets } from "@/hooks/useNets";
 import { useSessionStorage } from "usehooks-ts";
 
 import {
-  VariationTree, makeTree, addMove, findNode, MoveNode,
+  VariationTree, makeTree, addMove, findNode, MoveNode, pathTo,
 } from "@/lib/variationTree";
 import { applyUciMove, buildMoveChain } from "@/lib/moveUtils";
 
@@ -134,6 +134,16 @@ export default function PositionPage() {
   const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
   const treeMaxPly = useMemo(() => mainLineDepth(tree.root), [tree]);
 
+  // SAN move sequence from the tree's root to the currently viewed
+  // position, so the chat panel can tell the model exactly which moves
+  // led here — instead of it only seeing a bare FEN and having to guess
+  // (and sometimes guessing wrong, deviating into a known opening line
+  // this position doesn't actually belong to).
+  const positionMoveHistorySan = useMemo(
+    () => pathTo(tree.root, tree.cursor).slice(1).map((n) => n.san),
+    [tree],
+  );
+
   
 
   // Play a move suggested by Stockfish, ChessDB, or a neural net (clicking
@@ -214,6 +224,7 @@ export default function PositionPage() {
         activeAnalysisTab={activeAnalysisTab}
         setActiveAnalysisTab={setActiveAnalysisTab}
         isGameReviewMode={false}
+        positionMoveHistorySan={positionMoveHistorySan}
         stockfishAnalysisResult={stockfishAnalysisResult}
         stockfishLoading={stockfishLoading}
         engineDepth={engineDepth}

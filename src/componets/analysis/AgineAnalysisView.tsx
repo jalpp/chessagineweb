@@ -93,6 +93,11 @@ interface BaseAnalysisViewProps {
   queueAllResult?: { total: number; queued: number; failed: number } | null;
   /** Appends a chat message's text onto the currently selected move's PGN comment. Game page only. */
   onInsertAnnotation?: (text: string) => void;
+  /** SAN move sequence from the start of the game/tree to the current
+   *  position — position page only (game page derives this from `moves`
+   *  + `currentMoveIndex` instead). Threaded into the chat panel so the
+   *  model knows exactly which moves led here instead of guessing. */
+  positionMoveHistorySan?: string[];
 
 }
 
@@ -196,7 +201,7 @@ function AgineAnalysisView({
   activeAnalysisTab, fen, setActiveAnalysisTab,
   autoAnalysis = true,
   onPlayMove, onAppendMoves, onQueueAllPositions, queueAllRunning, queueAllProgress, queueAllResult,
-  onInsertAnnotation,
+  onInsertAnnotation, positionMoveHistorySan,
 
 }: AgineAnalysisViewProps) {
 
@@ -255,6 +260,19 @@ function AgineAnalysisView({
 
   const openingName =
     openingData?.opening?.name ?? lichessOpeningData?.opening?.name;
+
+  // Prefer the Lichess master-games source (broader coverage) for the
+  // eco/game-count signal used to tell the model whether this position is
+  // actually a known/named opening or not.
+  const openingSourceForChat = lichessOpeningData ?? openingData;
+  const openingEcoForChat = openingSourceForChat?.opening?.eco;
+  const openingGameCountForChat = openingSourceForChat
+    ? openingSourceForChat.white + openingSourceForChat.draws + openingSourceForChat.black
+    : undefined;
+
+  const chessdbMovesForChat = chessdbdata
+    ?.slice(0, 8)
+    .map((m) => ({ san: m.san, score: m.score, winrate: m.winrate, note: m.note }));
 
   // ── Chat panel context ────────────────────────────────────────────────
   // Pre-formats whatever engine/game-review state is already in scope
@@ -495,13 +513,17 @@ function AgineAnalysisView({
             fen={fen}
             pgn={isGameReviewMode ? pgnText : undefined}
             gameInfo={isGameReviewMode ? gameInfo : undefined}
-            moveHistorySan={isGameReviewMode ? moves?.slice(0, currentMoveIndex) : undefined}
+            moveHistorySan={isGameReviewMode ? moves?.slice(0, currentMoveIndex) : positionMoveHistorySan}
             currentPly={isGameReviewMode ? currentMoveIndex : undefined}
             currentMoveSan={gameReviewCurrent?.sanNotation}
             currentMoveQuality={gameReviewCurrent?.quality}
             qualityCounts={gameReviewQualityCounts}
             stockfishLines={stockfishLinesForChat}
             lc0Lines={lc0LinesForChat}
+            chessdbMoves={chessdbMovesForChat}
+            openingName={openingName}
+            openingEco={openingEcoForChat}
+            openingGameCount={openingGameCountForChat}
             onInsertAnnotation={isGameReviewMode ? onInsertAnnotation : undefined}
           />
         </Section>

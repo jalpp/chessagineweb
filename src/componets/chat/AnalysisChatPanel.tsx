@@ -46,6 +46,7 @@ import { useAnalysisChatRuntime } from "@/hooks/useAnalysisChatRuntime";
 import {
   AnalysisChatContextInput,
   AnalysisChatMode,
+  AnalysisChatDbMove,
 } from "@/libs/agine/chatContext";
 import { AGINE_DISCLAIMER_TITLE, AGINE_DISCLAIMER_TEXT } from "@/libs/agine/disclaimer";
 
@@ -61,6 +62,10 @@ export interface AnalysisChatPanelProps {
   currentMoveQuality?: string;
   currentMoveSan?: string;
   qualityCounts?: Partial<Record<string, number>>;
+  chessdbMoves?: AnalysisChatDbMove[];
+  openingName?: string;
+  openingEco?: string;
+  openingGameCount?: number;
   onInsertAnnotation?: (text: string) => void;
 }
 
@@ -288,6 +293,10 @@ function AnalysisChatPanelInner({
   currentMoveQuality,
   currentMoveSan,
   qualityCounts,
+  chessdbMoves,
+  openingName,
+  openingEco,
+  openingGameCount,
   onInsertAnnotation,
 }: AnalysisChatPanelProps) {
   const { isSignedIn, has } = useAuth();
@@ -306,6 +315,10 @@ function AnalysisChatPanelInner({
       currentPly,
       stockfishLines,
       lc0Lines,
+      chessdbMoves,
+      openingName,
+      openingEco,
+      openingGameCount,
       gameReview:
         currentMoveSan || currentMoveQuality || qualityCounts
           ? { currentMoveSan, currentMoveQuality, qualityCounts }
@@ -314,6 +327,7 @@ function AnalysisChatPanelInner({
     [
       mode, fen, pgn, gameInfo, moveHistorySan, currentPly,
       stockfishLines, lc0Lines, currentMoveSan, currentMoveQuality, qualityCounts,
+      chessdbMoves, openingName, openingEco, openingGameCount,
     ],
   );
 
