@@ -10,7 +10,8 @@
     "clean": "rm -rf .next",
     "test": "jest",
     "test:unit": "jest --selectProjects unit",
-    "test:chat": "jest --selectProjects chat-integration"
+    "test:chat": "jest --selectProjects chat-integration",
+    "test:components": "jest --selectProjects components"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.28",

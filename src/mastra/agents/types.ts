@@ -1,10 +1,11 @@
 export type AgineCloudModel =
-  | "qwen/qwen3.6-plus:free"
-  | "qwen/qwen3.5-9b"
-  | "meta-llama/llama-3.1-8b-instruct"
+  | "openrouter/free"
+  | "qwen/qwen3-coder-next"
+  | "meta-llama/llama-4-scout"
   | "google/gemini-3.1-pro-preview"
   | "nvidia/nemotron-3-super-120b-a12b"
-  | "anthropic/claude-sonnet-4.6";
+  | "anthropic/claude-sonnet-5"
+  | "openai/gpt-5.6-sol";
 
 export const basicSystemPrompt = `
   You are ChessAgine, a chess buddy not a coach.

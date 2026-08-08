@@ -71,7 +71,10 @@ const ChessAgineDocumentation = () => {
 
             <Box textAlign="center" mt={3}>
               <Typography variant="caption" color="text.secondary">
-                Free models are from random free OpenRouter models, paid tier supports model on AgineCloud with daily cap limit.
+                Free tier includes the gift model (qwen/qwen3-coder-next — free, no daily cap)
+                and the random openrouter/free router, plus support for your own
+                Anthropic/Gemini/OpenRouter API key. Paid tier additionally unlocks AgineCloud
+                premium models with a daily usage cap.
               </Typography>
             </Box>
           </TabPanel>

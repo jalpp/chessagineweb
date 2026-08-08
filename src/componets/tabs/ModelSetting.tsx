@@ -29,30 +29,32 @@ import {
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
   BYO_MODELS,
+  GIFT_MODEL,
 } from "@/libs/agine/modelConstants";
 import { useAuth } from "@clerk/nextjs";
 import IntegrationSettings from "./IntegrationSetting";
-import { usePersistedSettings } from "@/hooks/usePersistedStorage";
 import { useSettings } from "@/context/SettingContext";
 
 export type AgineCloudModel =
   | "openrouter/free"
-  | "qwen/qwen3.5-9b"
-  | "meta-llama/llama-3.1-8b-instruct"
+  | "qwen/qwen3-coder-next"
+  | "meta-llama/llama-4-scout"
   | "google/gemini-3.1-pro-preview"
   | "nvidia/nemotron-3-super-120b-a12b"
-  | "anthropic/claude-sonnet-4.6"
-  | "claude-opus-4-6"
-  | "claude-sonnet-4-6"
+  | "anthropic/claude-sonnet-5"
+  | "claude-opus-4-8"
+  | "claude-sonnet-5"
   | "claude-haiku-4-5-20251001"
-  | "gemini-2.5-pro-preview-05-06"
-  | "gemini-2.0-flash"
-  | "gemini-2.0-flash-lite"
-  | "openai/gpt-5.4";
+  | "gemini-3.1-pro-preview"
+  | "gemini-3.6-flash"
+  | "gemini-3.5-flash-lite"
+  | "openai/gpt-5.6-sol";
 
 export type ModelOnlySettings = Pick<ApiSettings, "model">;
 
-const FREE_MODEL = "openrouter/free";
+/** Default model for every signed-in user, free or paid tier: the free
+ *  "gift" model — on by default, no key needed, no usage cap. */
+const FREE_MODEL = GIFT_MODEL;
 
 function getByoKeyLabel(model: string): string | null {
   if (BYO_ANTHROPIC_MODELS.includes(model)) return "Anthropic Key";
@@ -75,15 +77,15 @@ const ModelSetting: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [validationError, setValidationError] = useState("");
 
-  // If user is downgraded to free and had a non-free model saved, reset it
+
   useEffect(() => {
-    if (!isPaidTier && savedModel !== FREE_MODEL) {
+    if (!isPaidTier && PREMIUM_MODELS.includes(savedModel)) {
       setSavedModel(FREE_MODEL);
     }
   }, [isPaidTier, savedModel, setSavedModel]);
 
   useEffect(() => {
-    setTempModel(isPaidTier ? savedModel : FREE_MODEL);
+    setTempModel(!isPaidTier && PREMIUM_MODELS.includes(savedModel) ? FREE_MODEL : savedModel);
   }, [savedModel, isPaidTier]);
 
   useEffect(() => {
@@ -111,15 +113,8 @@ const ModelSetting: React.FC = () => {
     return false;
   };
 
-  /**
-   * Locking rules:
-   * - Free tier: every model except openrouter/free is locked
-   * - Paid tier: BYO models are only usable if the relevant key is configured
-   *              (they're selectable but saving is blocked without a key)
-   */
   const isModelLocked = (model: string): boolean => {
-    if (!isPaidTier) return model !== FREE_MODEL;
-    return false; // paid users can select any model; key validation happens on save
+    return PREMIUM_MODELS.includes(model) && !isPaidTier;
   };
 
   const handleSave = () => {
@@ -128,14 +123,16 @@ const ModelSetting: React.FC = () => {
       return;
     }
 
-    // Free tier hard-lock
-    if (!isPaidTier && tempModel !== FREE_MODEL) {
-      setValidationError("Free tier is limited to openrouter/free. Upgrade to access more models.");
+
+    if (PREMIUM_MODELS.includes(tempModel) && !isPaidTier) {
+      setValidationError(
+        "AgineCloud premium models require the paid tier. Upgrade at /pricing, or use a BYO-key model with your own API key."
+      );
       return;
     }
 
-    // Paid tier — BYO models need their key configured
-    if (isPaidTier && BYO_MODELS.includes(tempModel) && !isByoKeyConfigured(tempModel)) {
+ 
+    if (BYO_MODELS.includes(tempModel) && !isByoKeyConfigured(tempModel)) {
       setValidationError(
         `This model requires your own ${getByoKeyLabel(tempModel)}. Add it in the API Integrations section below.`
       );
@@ -148,7 +145,7 @@ const ModelSetting: React.FC = () => {
   };
 
   const handleReset = () => {
-    setTempModel(isPaidTier ? FREE_MODEL : FREE_MODEL);
+    setTempModel(FREE_MODEL);
     setValidationError("");
   };
 
@@ -170,7 +167,7 @@ const ModelSetting: React.FC = () => {
 
       {!isPaidTier && (
         <Alert
-          severity="warning"
+          severity="info"
           icon={<StarIcon />}
           sx={{ mb: 3 }}
           action={
@@ -180,12 +177,14 @@ const ModelSetting: React.FC = () => {
           }
         >
           <Typography variant="body2" fontWeight={600}>
-            Free Tier — openrouter/free Only
+            Free Tier — Gift Model + Bring Your Own Key
           </Typography>
           <Typography variant="caption">
-            You currently have access to <strong>openrouter/free</strong> only. Upgrade to paid
-            tier to unlock AgineCloud premium models (Claude Sonnet, Gemini, Qwen, Llama) and
-            BYO-key models (Claude direct, Gemini direct, GPT-5.4).
+            You have <strong>{GIFT_MODEL}</strong> free, on us — a strong tool-calling coding
+            model, unlimited, no cap — plus the random <strong>openrouter/free</strong> router.
+            You can also bring your own Anthropic, Gemini, or OpenRouter key below to use those
+            models directly. Upgrade to paid tier to unlock AgineCloud premium models (Claude
+            Sonnet, Gemini, Nemotron, Llama, GPT-5.6) without needing your own key.
           </Typography>
         </Alert>
       )}
@@ -216,11 +215,7 @@ const ModelSetting: React.FC = () => {
             <Select
               value={tempModel}
               label="AI Model"
-              onChange={(e) => {
-                // Free users cannot change away from the free model
-                if (!isPaidTier) return;
-                setTempModel(e.target.value);
-              }}
+              onChange={(e) => setTempModel(e.target.value)}
               MenuProps={{ PaperProps: { sx: { maxHeight: 400 } } }}
               renderValue={(value) => {
                 const isPremium = PREMIUM_MODELS.includes(value);
@@ -312,12 +307,14 @@ const ModelSetting: React.FC = () => {
           </FormControl>
 
           <Typography variant="caption" sx={{ mt: 1, display: "block", fontStyle: "italic" }}>
-            {!isPaidTier
-              ? "Free tier: only openrouter/free is available. Upgrade to unlock all models."
+            {tempModel === GIFT_MODEL
+              ? "Free gift model — no cost, no daily cap, available on every tier."
               : isSelectedByo
               ? selectedByoKeyConfigured
                 ? `Using your own ${selectedByoKeyLabel} — no AgineCloud credits used.`
                 : `Add your ${selectedByoKeyLabel} in API Integrations below to use this model.`
+              : !isPaidTier
+              ? "Free tier: openrouter/free included. Upgrade to unlock AgineCloud premium models."
               : "You have access to all AgineCloud and BYO-key models."}
           </Typography>
         </CardContent>

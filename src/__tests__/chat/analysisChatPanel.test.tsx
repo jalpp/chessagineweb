@@ -98,6 +98,15 @@ it("shows a sign-in gate and no composer when signed out", () => {
   expect(screen.queryByPlaceholderText(/ask agine about this/i)).not.toBeInTheDocument();
 });
 
+it("shows the same 'Agine can make mistakes' disclaimer as the standalone chat page on the empty thread", async () => {
+  render(<AnalysisChatPanel mode="position" fen={START_FEN} />);
+
+  expect(await screen.findByText(/⚠️ Disclaimer/i)).toBeInTheDocument();
+  expect(
+    screen.getByText(/chessagine is a chess buddy ai, not a formal coach or an authority/i),
+  ).toBeInTheDocument();
+});
+
 it("sends the board context (FEN + engine lines) alongside a typed message, and marks the request as panel mode", async () => {
   const user = userEvent.setup();
   const fetchMock = mockChatFetch(() => buildTextResponse("Central pawn tension, good square for the knight."));

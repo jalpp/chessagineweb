@@ -3,6 +3,7 @@ import {
   BYO_GEMINI_MODELS,
   BYO_OPENROUTER_MODELS,
   PREMIUM_MODELS,
+  FREE_TIER_MODELS,
 } from "../agine/modelConstants";
 
 export interface ProviderConfig {
@@ -74,6 +75,14 @@ export const LANGUAGES: LanguageOption[] = [
 ];
 
 export const PROVIDERS: Record<string, ProviderConfig> = {
+  agineCloudFree: {
+    name: "aginecloud (free)",
+    models: FREE_TIER_MODELS,
+    keyPrefix: "",
+    website: "https://openrouter.ai/qwen/qwen3-coder-next",
+    docsUrl: "https://www.chessagine.com/docs",
+    supportsRouting: false,
+  },
   agineCloud: {
     name: "aginecloud",
     models: PREMIUM_MODELS,
@@ -148,7 +157,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is AgineCloud and how do I use it?",
     answer:
-      "AgineCloud is ChessAgine's built-in cloud provider. Free accounts get access to free random openrouter open-source models instantly. Paid tier users unlock four additional premium models including Google Gemini Pro and Claude Sonnet, running on dedicated resources for faster, more reliable responses.",
+      "AgineCloud is ChessAgine's built-in cloud provider. Every signed-in account — free or paid — gets qwen/qwen3-coder-next for free, on us, with no daily cap, plus the random openrouter/free router, and can bring their own Anthropic, Gemini, or OpenRouter API key for BYO-key models. Paid tier users additionally unlock AgineCloud premium models — including Google Gemini Pro, Claude Sonnet, Nemotron, Llama, and GPT-5.6 — running on dedicated resources without needing your own key.",
     category: "technical",
   },
   {
@@ -212,7 +221,7 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     question: "What is included in the free plan vs. the paid tier?",
     answer:
-      "Free plan: all chess tools, Agine Chat, random open router free models, basic chess context window. Paid tier: everything in free, plus four premium models (google/gemini-3.1-pro-preview, anthropic/claude-sonnet-4.6, qwen/qwen3.5-9b, meta-llama/llama-3.1-8b-instruct), more tool calls per session, extended chess context window, dedicated resources, and priority response speed, and allowing agine to access your own chess knowledge cards for personalized context.",
+      "Free plan: all chess tools, Agine Chat, the free gift model (qwen/qwen3-coder-next, no daily cap) plus the random openrouter/free router, BYO-key support for your own Anthropic/Gemini/OpenRouter API key, and basic chess context window. Paid tier: everything in free, plus AgineCloud premium models (google/gemini-3.1-pro-preview, anthropic/claude-sonnet-5, nvidia/nemotron-3-super-120b-a12b, meta-llama/llama-4-scout, openai/gpt-5.6-sol) without needing your own key, more tool calls per session, extended chess context window, dedicated resources, and priority response speed, and allowing agine to access your own chess knowledge cards for personalized context.",
     category: "cost",
   },
   {

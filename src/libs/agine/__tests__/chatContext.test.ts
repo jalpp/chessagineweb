@@ -17,15 +17,36 @@ describe("buildAnalysisChatContext", () => {
     expect(ctx).toContain(START_FEN);
   });
 
-  it("omits game-only fields (moves, PGN, review) in position mode", () => {
+  it("threads move history in position mode too (not just game mode)", () => {
+    const ctx = buildAnalysisChatContext({
+      mode: "position",
+      fen: START_FEN,
+      moveHistorySan: ["e4", "e5", "Nf3"],
+    });
+    expect(ctx).toContain("Moves so far: e4 e5 Nf3");
+  });
+
+  it("omits PGN and game-info fields in position mode even when moves are threaded", () => {
     const ctx = buildAnalysisChatContext({
       mode: "position",
       fen: START_FEN,
       moveHistorySan: ["e4", "e5"],
       pgn: "1. e4 e5",
+      gameInfo: { White: "Alice" },
     });
-    expect(ctx).not.toContain("Moves so far");
     expect(ctx).not.toContain("PGN");
+    expect(ctx).not.toContain("Game info");
+  });
+
+  it("explicitly flags a position with no move history, instead of staying silent", () => {
+    const ctx = buildAnalysisChatContext({ mode: "position", fen: START_FEN });
+    expect(ctx).toContain("Moves so far: none provided");
+    expect(ctx.toLowerCase()).toContain("don't assume");
+  });
+
+  it("does not flag missing move history in game mode (moves are optional there)", () => {
+    const ctx = buildAnalysisChatContext({ mode: "game", fen: START_FEN });
+    expect(ctx).not.toContain("none provided");
   });
 
   it("includes move history, PGN, and game info in game mode", () => {
@@ -96,6 +117,57 @@ describe("buildAnalysisChatContext", () => {
     expect(ctx).toContain("Line 1: +0.32 - e4 e5 Nf3");
     expect(ctx).toContain("lc0 lines:");
     expect(ctx).toContain("Line 1: +0.28 - e4 e5 Nc3");
+  });
+
+  it("includes the opening name, ECO, and game count when the position is a known opening", () => {
+    const ctx = buildAnalysisChatContext({
+      mode: "position",
+      fen: START_FEN,
+      openingName: "Sicilian Defense",
+      openingEco: "B20",
+      openingGameCount: 125000,
+    });
+    expect(ctx).toContain("Opening: B20 — Sicilian Defense (125,000 games in database)");
+  });
+
+  it("explicitly flags an unrecognized/off-book position instead of letting the model guess", () => {
+    const ctx = buildAnalysisChatContext({
+      mode: "position",
+      fen: START_FEN,
+      openingName: "Unknown",
+      openingGameCount: 0,
+    });
+    expect(ctx).toContain("not found in the opening database");
+    expect(ctx.toLowerCase()).toContain("do not assume");
+  });
+
+  it("flags an off-book position even when only the game count (not the name) came back empty", () => {
+    const ctx = buildAnalysisChatContext({
+      mode: "position",
+      fen: START_FEN,
+      openingGameCount: 0,
+    });
+    expect(ctx).toContain("not found in the opening database");
+  });
+
+  it("omits the Opening section entirely when opening data was never queried", () => {
+    const ctx = buildAnalysisChatContext({ mode: "position", fen: START_FEN });
+    expect(ctx).not.toContain("Opening:");
+    expect(ctx).not.toContain("opening database");
+  });
+
+  it("includes ChessDB candidate moves with eval, winrate, and note", () => {
+    const ctx = buildAnalysisChatContext({
+      mode: "position",
+      fen: START_FEN,
+      chessdbMoves: [
+        { san: "e4", score: "+0.32", winrate: "55.10", note: "Good" },
+        { san: "d4", winrate: "50.00" },
+      ],
+    });
+    expect(ctx).toContain("ChessDB candidate moves:");
+    expect(ctx).toContain("- e4, eval +0.32, winrate 55.10%, Good");
+    expect(ctx).toContain("- d4, winrate 50.00%");
   });
 
   it("truncates output beyond MAX_BOARD_CONTEXT_CHARS", () => {

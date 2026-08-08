@@ -56,8 +56,11 @@ export async function incrementDailyUsage(
   }
 }
 
-export const DAILY_BUDGET_USD = 0.5; 
-export const DAILY_WARN_USD = 0.4;   
+export const DAILY_BUDGET_USD = 0.5;
+
+/** Warn once a paid user has burned through this fraction of their daily budget. */
+export const DAILY_WARN_PERCENT = 0.65;
+export const DAILY_WARN_USD = DAILY_BUDGET_USD * DAILY_WARN_PERCENT;
 
 export function isDailyLimitHit(usage: DailyUsage): boolean {
   return usage.costUSD >= DAILY_BUDGET_USD;

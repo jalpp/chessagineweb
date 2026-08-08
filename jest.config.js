@@ -37,5 +37,22 @@ module.exports = {
       // it doesn't need transforming.
       transformIgnorePatterns: ["node_modules/undici/"],
     },
+    {
+      displayName: "components",
+      preset: "ts-jest",
+      testEnvironment: "jsdom",
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/src/$1",
+        "\\.css$": "<rootDir>/src/__tests__/chat/styleMock.js",
+      },
+      testMatch: ["**/__tests__/components/**/*.test.tsx"],
+      setupFilesAfterEnv: ["<rootDir>/src/__tests__/components/jest.setup.ts"],
+      transform: {
+        "^.+\\.(t|j)sx?$": [
+          "ts-jest",
+          { tsconfig: "tsconfig.jest.json", isolatedModules: true },
+        ],
+      },
+    },
   ],
 };

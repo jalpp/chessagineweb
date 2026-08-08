@@ -8,6 +8,7 @@ import { ToolFallback } from "@/components/tool-fallback";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AGINE_DISCLAIMER_TITLE, AGINE_DISCLAIMER_TEXT } from "@/libs/agine/disclaimer";
 import {
   ActionBarMorePrimitive,
   ActionBarPrimitive,
@@ -96,8 +97,8 @@ const ThreadWelcome: FC = () => {
             brainstorm positions, review games, explore openings, have chess sessions.
           </p>
             <div className="aui-thread-welcome-message-disclaimer mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900 text-xs dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
-            <p className="font-medium">⚠️ Disclaimer</p>
-            <p className="mt-1">ChessAgine is a chess buddy AI, not a formal coach or an authority. It can make mistakes. Please check every message and please challenge and interact with ChessAgine as you would with a strong training partner or peer..</p>
+            <p className="font-medium">{AGINE_DISCLAIMER_TITLE}</p>
+            <p className="mt-1">{AGINE_DISCLAIMER_TEXT}</p>
             </div>
         </div>
       </div>

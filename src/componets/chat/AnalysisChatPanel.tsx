@@ -20,6 +20,7 @@ import {
   Button,
   Badge,
   LinearProgress,
+  Alert,
 } from "@mui/material";
 import {
   Settings as SettingsIcon,
@@ -45,7 +46,9 @@ import { useAnalysisChatRuntime } from "@/hooks/useAnalysisChatRuntime";
 import {
   AnalysisChatContextInput,
   AnalysisChatMode,
+  AnalysisChatDbMove,
 } from "@/libs/agine/chatContext";
+import { AGINE_DISCLAIMER_TITLE, AGINE_DISCLAIMER_TEXT } from "@/libs/agine/disclaimer";
 
 export interface AnalysisChatPanelProps {
   mode: AnalysisChatMode;
@@ -59,6 +62,10 @@ export interface AnalysisChatPanelProps {
   currentMoveQuality?: string;
   currentMoveSan?: string;
   qualityCounts?: Partial<Record<string, number>>;
+  chessdbMoves?: AnalysisChatDbMove[];
+  openingName?: string;
+  openingEco?: string;
+  openingGameCount?: number;
   onInsertAnnotation?: (text: string) => void;
 }
 
@@ -171,6 +178,15 @@ function ChatThread({ onInsertAnnotation }: { onInsertAnnotation?: (text: string
               Ask about a move, the plan, or why the engine likes a line — Agine can see
               the current position, PGN, and engine lines already.
             </Typography>
+            <Alert
+              severity="warning"
+              sx={{ mx: 0.5, mb: 1, py: 0.25, "& .MuiAlert-message": { fontSize: "10px" } }}
+            >
+              <Typography sx={{ fontSize: "10px", fontWeight: 600 }}>
+                {AGINE_DISCLAIMER_TITLE}
+              </Typography>
+              <Typography sx={{ fontSize: "10px" }}>{AGINE_DISCLAIMER_TEXT}</Typography>
+            </Alert>
           </AuiIf>
           <ThreadPrimitive.Messages
             components={{
@@ -277,6 +293,10 @@ function AnalysisChatPanelInner({
   currentMoveQuality,
   currentMoveSan,
   qualityCounts,
+  chessdbMoves,
+  openingName,
+  openingEco,
+  openingGameCount,
   onInsertAnnotation,
 }: AnalysisChatPanelProps) {
   const { isSignedIn, has } = useAuth();
@@ -295,6 +315,10 @@ function AnalysisChatPanelInner({
       currentPly,
       stockfishLines,
       lc0Lines,
+      chessdbMoves,
+      openingName,
+      openingEco,
+      openingGameCount,
       gameReview:
         currentMoveSan || currentMoveQuality || qualityCounts
           ? { currentMoveSan, currentMoveQuality, qualityCounts }
@@ -303,6 +327,7 @@ function AnalysisChatPanelInner({
     [
       mode, fen, pgn, gameInfo, moveHistorySan, currentPly,
       stockfishLines, lc0Lines, currentMoveSan, currentMoveQuality, qualityCounts,
+      chessdbMoves, openingName, openingEco, openingGameCount,
     ],
   );
 
