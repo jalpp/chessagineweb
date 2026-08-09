@@ -479,7 +479,7 @@ export default function HomeView() {
                 }}
               />
               <Avatar
-                src="/static/images/agineowl.png"
+                src="/static/images/aginelogov2.png"
                 sx={{
                   width: { xs: 68, md: 84 },
                   height: { xs: 68, md: 84 },

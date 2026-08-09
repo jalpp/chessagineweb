@@ -60,7 +60,7 @@ export default function ThemesGuideClient() {
       <Stack direction="row" alignItems="center" spacing={1.5} mb={1}>
         <Box
           component="img"
-          src="/static/images/agineowl.png"
+          src="/static/images/aginelogov2.png"
           alt="ChessAgine"
           sx={{ width: 48, height: 48 }}
         />

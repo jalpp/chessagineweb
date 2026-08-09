@@ -160,7 +160,7 @@ function DesktopSideNav({
           }}
         >
           <Avatar
-            src="/static/images/agineowl.png"
+            src="/static/images/aginelogov2.png"
             alt="ChessAgine"
             sx={{ width: 36, height: 36, bgcolor: "transparent" }}
           >
@@ -247,7 +247,7 @@ export default function SideNav() {
               onClick={() => router.push("/")}
               sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer", "&:hover": { opacity: 0.8 } }}
             >
-              <Avatar src="/static/images/agineowl.png" alt="ChessAgine" sx={{ width: 30, height: 30, bgcolor: "transparent" }}>♟</Avatar>
+              <Avatar src="/static/images/aginelogov2.png" alt="ChessAgine" sx={{ width: 30, height: 30, bgcolor: "transparent" }}>♟</Avatar>
               <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: "-0.01em", fontSize: "1rem" }}>
                 ChessAgine
               </Typography>
@@ -264,7 +264,7 @@ export default function SideNav() {
         <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <Box sx={{ width: 260, bgcolor: "background.paper", height: "100%", display: "flex", flexDirection: "column" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 2.5 }}>
-              <Avatar src="/static/images/agineowl.png" alt="ChessAgine" sx={{ width: 34, height: 34, bgcolor: "transparent" }}>♟</Avatar>
+              <Avatar src="/static/images/aginelogov2.png" alt="ChessAgine" sx={{ width: 34, height: 34, bgcolor: "transparent" }}>♟</Avatar>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>ChessAgine</Typography>
             </Box>
             <Divider sx={{ mb: 1 }} />

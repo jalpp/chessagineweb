@@ -174,7 +174,7 @@ export default function AgineAnalyzerClient() {
         >
           <Box
             component="img"
-            src="/static/images/agineowl.png"
+            src="/static/images/aginelogov2.png"
             alt="ChessAgine"
             sx={{ width: 52, height: 52 }}
           />
@@ -288,7 +288,7 @@ export default function AgineAnalyzerClient() {
       >
         <Box
           component="img"
-          src="/static/images/agineowl.png"
+          src="/static/images/aginelogov2.png"
           alt="ChessAgine"
           sx={{ width: 44, height: 44 }}
         />
