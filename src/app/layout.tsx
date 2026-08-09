@@ -40,6 +40,12 @@ export const metadata: Metadata = {
     canonical: BASE_URL,
   },
 
+  icons: {
+    icon: "/static/images/aginelogov2.png",
+    shortcut: "/static/images/aginelogov2.png",
+    apple: "/static/images/aginelogov2.png",
+  },
+
   openGraph: {
     title: "ChessAgine",
     description:
