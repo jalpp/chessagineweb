@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#520567",
     icons: [
       {
-        src: "/static/images/agineowl-og.png",
+        src: "/static/images/aginelogov2.png",
         sizes: "any",
         type: "image/png",
       },

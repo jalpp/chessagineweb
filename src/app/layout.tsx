@@ -40,6 +40,12 @@ export const metadata: Metadata = {
     canonical: BASE_URL,
   },
 
+  icons: {
+    icon: "/static/images/aginelogov2.png",
+    shortcut: "/static/images/aginelogov2.png",
+    apple: "/static/images/aginelogov2.png",
+  },
+
   openGraph: {
     title: "ChessAgine",
     description:
@@ -63,7 +69,7 @@ export const metadata: Metadata = {
     title: "ChessAgine",
     description:
       "Modern FOSS Chess analysis platform that has free game reviews, neural nets analysis and more",
-    images: ["/static/images/agineowl-og.png"],
+    images: ["/static/images/aginelogov2.png"],
   },
 
   keywords: [
