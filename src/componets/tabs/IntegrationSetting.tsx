@@ -266,6 +266,26 @@ const IntegrationSettings: React.FC<{ lichessOnly?: boolean }> = ({ lichessOnly 
       />
 
       <TokenField
+        label="ChessDojo API Token"
+        storageKey="chessdojo-token"
+        placeholder="enter your token"
+        description={
+          <>
+            Connect your{" "}
+            <Link
+              href="https://www.chessdojo.club/"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="caption"
+            >
+              ChessDojo
+            </Link>{" "}
+            account so Agine can access your dojo training program 
+          </>
+        }
+      />
+
+      <TokenField
         label="OpenRouter API Key"
         storageKey="openrouter-token"
         placeholder="sk-or-..."

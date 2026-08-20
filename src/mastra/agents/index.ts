@@ -81,19 +81,18 @@ function buildInstructions(requestContext: RequestContext): string {
     .replace("[LANG]", lang);
 }
 
-async function buildTools(tokens?: AgineTokens, isPaidTier?: boolean, toolMode: ToolMode = "full") {
+async function buildTools(tokens?: AgineTokens, toolMode: ToolMode = "full") {
  
   const mcpClient = getAgineMcpClient();
 
   const mcpTools = await mcpClient.listTools();
 
-  const filteredMcpTools = filterMcpTools(mcpTools, tokens, isPaidTier, toolMode);
+  const filteredMcpTools = filterMcpTools(mcpTools, tokens, toolMode);
 
  
   const wrappedTools = wrapToolsWithAuth(
     filteredMcpTools,
     tokens,
-    isPaidTier
   );
 
   return {
@@ -124,8 +123,8 @@ export function buildLocalBoardTools(toolMode: ToolMode = "full") {
   );
 }
 
-async function buildToolSearchProcessor(tokens?: AgineTokens, isPaidTier?: boolean, toolMode: ToolMode = "full") {
-  const tools = await buildTools(tokens, isPaidTier, toolMode);
+async function buildToolSearchProcessor(tokens?: AgineTokens, toolMode: ToolMode = "full") {
+  const tools = await buildTools(tokens, toolMode);
 
   const searchableTools = Object.fromEntries(
     Object.entries(tools).filter(([id]) => !PINNED_MCP_TOOL_IDS.has(id)),
@@ -158,12 +157,11 @@ You are running inside the compact Chat panel on the game review / position anal
 
 export async function createChessAgineAgent(
   tokens?: AgineTokens,
-  isPaidTier?: boolean,
   toolMode: ToolMode = "full"
 ) {
-  const tools = await buildTools(tokens, isPaidTier, toolMode);
+  const tools = await buildTools(tokens, toolMode);
 
-  const toolSearchProcessor = await buildToolSearchProcessor(tokens, isPaidTier, toolMode);
+  const toolSearchProcessor = await buildToolSearchProcessor(tokens, toolMode);
 
   return new Agent({
     id: "chessagine-agent",

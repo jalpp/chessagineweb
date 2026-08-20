@@ -5,6 +5,7 @@ let client: MCPClient | null = null;
 export interface AgineTokens {
   lichessToken?: string;
   chessboardmagicToken?: string;
+  dojoToken?: string;
 }
 
 export function getAgineMcpClient(): MCPClient {
@@ -15,7 +16,7 @@ export function getAgineMcpClient(): MCPClient {
       timeout: 120_000,
       servers: {
         chessagine: {
-          url: new URL("https://chessagine-mcp.vercel.app/mcp"),
+          url: new URL("http://localhost:3001/mcp"),
         },
       },
     });

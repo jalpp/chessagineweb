@@ -80,6 +80,12 @@ export async function POST(req: Request) {
       ? tokens.chessboardmagicToken.trim()
       : undefined;
 
+  const dojoToken =
+    typeof tokens?.dojoToken === "string" &&
+    tokens.dojoToken.trim()
+      ? tokens.dojoToken.trim()
+      : undefined;    
+
   const personalOpenRouterKey =
     typeof tokens?.openrouterToken === "string" &&
     tokens.openrouterToken.trim()
@@ -245,8 +251,7 @@ export async function POST(req: Request) {
   const sanitizedMessages = sanitizeTrailingAssistantMessage(augmentedMessages);
 
   const agent = await createChessAgineAgent(
-    { lichessToken, chessboardmagicToken },
-    isPaidTier,
+    { lichessToken, chessboardmagicToken, dojoToken },
     panelMode === true ? "panel" : "full"
   );
 
