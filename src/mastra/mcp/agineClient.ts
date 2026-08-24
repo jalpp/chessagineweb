@@ -5,6 +5,7 @@ let client: MCPClient | null = null;
 export interface AgineTokens {
   lichessToken?: string;
   chessboardmagicToken?: string;
+  dojoToken?: string;
 }
 
 export function getAgineMcpClient(): MCPClient {

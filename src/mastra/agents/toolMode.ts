@@ -3,6 +3,7 @@ export type ToolMode = "full" | "panel";
 export interface AgineTokens {
   lichessToken?: string;
   chessboardmagicToken?: string;
+  dojoToken?: string;
 }
 
 export const MCP_RENDER_TOOL_IDS = new Set([
@@ -48,7 +49,6 @@ export const PANEL_EXCLUDED_LOCAL_TOOL_IDS = new Set([
 export function wrapToolsWithAuth(
   tools: Record<string, any>,
   tokens?: AgineTokens,
-  isPaidTier?: boolean,
 ) {
   return Object.fromEntries(
     Object.entries(tools).map(([id, tool]) => {
@@ -69,12 +69,21 @@ export function wrapToolsWithAuth(
 
             if (
               id.includes("chessboardmagic") &&
-              isPaidTier &&
               tokens?.chessboardmagicToken
             ) {
               newArgs = {
                 ...newArgs,
                 token: tokens.chessboardmagicToken,
+              };
+            }
+
+            if (
+              id.includes("dojo") &&
+              tokens?.dojoToken
+            ) {
+              newArgs = {
+                ...newArgs,
+                token: tokens.dojoToken,
               };
             }
 
@@ -89,7 +98,6 @@ export function wrapToolsWithAuth(
 export function filterMcpTools(
   mcpTools: Record<string, any>,
   tokens?: AgineTokens,
-  isPaidTier?: boolean,
   toolMode: ToolMode = "full",
 ) {
   return Object.fromEntries(
@@ -106,7 +114,11 @@ export function filterMcpTools(
       }
 
       if (id.includes("chessboardmagic")) {
-        return !!(isPaidTier && tokens?.chessboardmagicToken);
+        return !!(tokens?.chessboardmagicToken);
+      }
+
+      if(id.includes("dojo")){
+        return !!(tokens?.dojoToken);
       }
 
       return true;

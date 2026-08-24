@@ -110,6 +110,7 @@ function ChatPageInner() {
  
   const [lichessToken] = useLocalStorage<string>("lichess-token", "");
   const [chessboardmagicToken] = useLocalStorage<string>("chessboardmagic-token", "");
+  const [dojoToken] = useLocalStorage<string>("chessdojo-token", "");
   const [openrouterToken] = useLocalStorage<string>("openrouter-token", "");
   const [anthropicToken] = useLocalStorage<string>("anthropic-token", "");
   const [geminiToken] = useLocalStorage<string>("gemini-token", "");
@@ -134,8 +135,9 @@ function ChatPageInner() {
  
         const tokens = {
           ...(lichessToken ? { lichessToken } : {}),
-          ...(isPaidTier && chessboardmagicToken ? { chessboardmagicToken } : {}),
-          ...(isPaidTier && openrouterToken ? { openrouterToken } : {}),
+          ...(chessboardmagicToken ? { chessboardmagicToken } : {}),
+          ...(dojoToken ? { dojoToken } : {}),
+          ...(openrouterToken ? { openrouterToken } : {}),
           ...(anthropicToken ? { anthropicToken } : {}),
           ...(geminiToken ? { geminiToken } : {}),
         };

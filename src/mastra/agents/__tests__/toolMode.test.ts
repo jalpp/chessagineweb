@@ -29,14 +29,14 @@ describe("filterMcpTools — full vs panel ToolMode", () => {
   ];
 
   it("in full mode, keeps board-state/parse tools (the standalone chat page has no pre-supplied context)", () => {
-    const result = filterMcpTools(fakeMcpTools(allIds), undefined, false, "full");
+    const result = filterMcpTools(fakeMcpTools(allIds), undefined, "full");
     expect(result).toHaveProperty("get-boardstate-for-fen");
     expect(result).toHaveProperty("parse-pgn-into-move-fens");
     expect(result).toHaveProperty("is-legal-move");
   });
 
   it("in panel mode, drops board-state/parse tools that only re-derive context already supplied", () => {
-    const result = filterMcpTools(fakeMcpTools(allIds), undefined, false, "panel");
+    const result = filterMcpTools(fakeMcpTools(allIds), undefined,  "panel");
     expect(result).not.toHaveProperty("get-boardstate-for-fen");
     expect(result).not.toHaveProperty("get-boardstate-for-move");
     expect(result).not.toHaveProperty("parse-pgn-into-move-fens");
@@ -46,21 +46,21 @@ describe("filterMcpTools — full vs panel ToolMode", () => {
   });
 
   it("in panel mode, still keeps engines and heavy analysis tools", () => {
-    const result = filterMcpTools(fakeMcpTools(allIds), undefined, false, "panel");
+    const result = filterMcpTools(fakeMcpTools(allIds), undefined, "panel");
     expect(result).toHaveProperty("get-stockfish-analysis");
     expect(result).toHaveProperty("get-leela-analysis");
     expect(result).toHaveProperty("get-chessdb-analysis");
   });
 
   it("in panel mode, still keeps internal tool-search infra tools", () => {
-    const result = filterMcpTools(fakeMcpTools(allIds), undefined, false, "panel");
+    const result = filterMcpTools(fakeMcpTools(allIds), undefined, "panel");
     expect(result).toHaveProperty("search_tools");
     expect(result).toHaveProperty("load_tools");
   });
 
   it("keeps the render-tool and lichess-auth exclusions in both modes", () => {
-    const full = filterMcpTools(fakeMcpTools(allIds), undefined, false, "full");
-    const panel = filterMcpTools(fakeMcpTools(allIds), undefined, false, "panel");
+    const full = filterMcpTools(fakeMcpTools(allIds), undefined, "full");
+    const panel = filterMcpTools(fakeMcpTools(allIds), undefined, "panel");
     for (const result of [full, panel]) {
       expect(result).not.toHaveProperty("render_chess_board");
       expect(result).not.toHaveProperty("render_pgn_viewer");
@@ -71,13 +71,13 @@ describe("filterMcpTools — full vs panel ToolMode", () => {
   });
 
   it("keeps lichess-auth-gated tools when a lichess token is supplied, in both modes", () => {
-    const result = filterMcpTools(fakeMcpTools(["fetch-lichess-studies"]), { lichessToken: "abc" }, false, "panel");
+    const result = filterMcpTools(fakeMcpTools(["fetch-lichess-studies"]), { lichessToken: "abc" },  "panel");
     expect(result).toHaveProperty("fetch-lichess-studies");
   });
 
   it("defaults to full mode when toolMode is omitted", () => {
-    const withDefault = filterMcpTools(fakeMcpTools(allIds), undefined, false);
-    const explicitFull = filterMcpTools(fakeMcpTools(allIds), undefined, false, "full");
+    const withDefault = filterMcpTools(fakeMcpTools(allIds), undefined);
+    const explicitFull = filterMcpTools(fakeMcpTools(allIds), undefined, "full");
     expect(Object.keys(withDefault).sort()).toEqual(Object.keys(explicitFull).sort());
   });
 });
@@ -111,7 +111,7 @@ describe("shouldIncludeLocalTool — full vs panel ToolMode", () => {
 describe("wrapToolsWithAuth", () => {
   it("injects the lichess token into auth-gated tool args", async () => {
     const tools = fakeMcpTools(["fetch-lichess-studies"]);
-    const wrapped = wrapToolsWithAuth(tools, { lichessToken: "abc123" }, false);
+    const wrapped = wrapToolsWithAuth(tools, { lichessToken: "abc123" });
     const spy = jest.spyOn(tools["fetch-lichess-studies"], "execute");
     await wrapped["fetch-lichess-studies"].execute({ username: "someone" }, {});
     expect(spy).toHaveBeenCalledWith({ username: "someone", token: "abc123" }, {});
@@ -119,7 +119,7 @@ describe("wrapToolsWithAuth", () => {
 
   it("leaves args untouched for tools with no matching auth rule", async () => {
     const tools = fakeMcpTools(["get-stockfish-analysis"]);
-    const wrapped = wrapToolsWithAuth(tools, { lichessToken: "abc123" }, false);
+    const wrapped = wrapToolsWithAuth(tools, { lichessToken: "abc123" });
     const spy = jest.spyOn(tools["get-stockfish-analysis"], "execute");
     await wrapped["get-stockfish-analysis"].execute({ fen: "startpos" }, {});
     expect(spy).toHaveBeenCalledWith({ fen: "startpos" }, {});
