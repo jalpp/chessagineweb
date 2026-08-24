@@ -16,7 +16,7 @@ export function getAgineMcpClient(): MCPClient {
       timeout: 120_000,
       servers: {
         chessagine: {
-          url: new URL("http://localhost:3001/mcp"),
+          url: new URL("https://chessagine-mcp.vercel.app/mcp"),
         },
       },
     });
