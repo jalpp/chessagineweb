@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Box, Typography, Chip, IconButton, Tooltip, Stack } from "@mui/material";
+import { Box, Chip, IconButton, Tooltip, Stack } from "@mui/material";
 import { Chess, Square } from "chess.js";
 import { PieceDropHandlerArgs, SquareHandlerArgs } from "react-chessboard";
 import { Lightbulb, Eye, RotateCcw, Star, SkipBack, SkipForward } from "lucide-react";
@@ -15,24 +15,6 @@ interface PuzzleFeedCardProps {
   onSolved: (success: boolean) => void;
 }
 
-function convertMovesToSAN(moves: string[], startingFEN: string): string[] {
-  const tempGame = new Chess(startingFEN);
-  const sanMoves: string[] = [];
-  moves.forEach((move) => {
-    try {
-      const moveObj = tempGame.move({
-        from: move.substring(0, 2),
-        to: move.substring(2, 4),
-        promotion: move.substring(4) || undefined,
-      });
-      if (moveObj) sanMoves.push(moveObj.san);
-    } catch {
-      // Ignore malformed solution moves — best-effort SAN list for the solution panel.
-    }
-  });
-  return sanMoves;
-}
-
 export default function PuzzleFeedCard({ puzzle, active, onSolved }: PuzzleFeedCardProps) {
   const [game, setGame] = useState(() => new Chess(puzzle.FEN));
   const [fen, setFen] = useState(puzzle.FEN);
@@ -41,12 +23,10 @@ export default function PuzzleFeedCard({ puzzle, active, onSolved }: PuzzleFeedC
   const [moveSquares, setMoveSquares] = useState<{ [square: string]: string }>({});
 
   const [solutionMoves] = useState(() => puzzle.moves.split(" "));
-  const [sanSolutionMoves] = useState(() => convertMovesToSAN(puzzle.moves.split(" "), puzzle.FEN));
   const [currentSolutionIndex, setCurrentSolutionIndex] = useState(0);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
   const [puzzleFailed, setPuzzleFailed] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
-  const [showHint, setShowHint] = useState(false);
 
   const [showingSolution, setShowingSolution] = useState(false);
   const [solutionViewIndex, setSolutionViewIndex] = useState(0);
@@ -192,10 +172,8 @@ export default function PuzzleFeedCard({ puzzle, active, onSolved }: PuzzleFeedC
       [move.substring(2, 4)]: "rgba(255, 215, 0, 0.6)",
     });
     setHintUsed(true);
-    setShowHint(true);
     setTimeout(() => {
       setMoveSquares({});
-      setShowHint(false);
     }, 3000);
   }, [solutionMoves, currentSolutionIndex, showingSolution]);
 
@@ -288,7 +266,6 @@ export default function PuzzleFeedCard({ puzzle, active, onSolved }: PuzzleFeedC
     setPuzzleComplete(false);
     setPuzzleFailed(false);
     setHintUsed(false);
-    setShowHint(false);
     setShowingSolution(false);
     setSolutionViewIndex(0);
     setSolutionGameState(null);
@@ -305,135 +282,126 @@ export default function PuzzleFeedCard({ puzzle, active, onSolved }: PuzzleFeedC
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        gap: 1,
       }}
     >
-      <Stack direction="row" spacing={1} sx={{ position: "absolute", top: 12, left: 12, zIndex: 1 }}>
-        <Chip icon={<Star size={16} />} label={`Rating ${puzzle.rating}`} size="small" color="primary" />
-        {puzzle.themes.slice(0, 2).map((t) => (
-          <Chip key={t} label={t} size="small" variant="outlined" />
-        ))}
-      </Stack>
-
+      {/* Centered, capped-width column so the layout is identical on mobile
+          and desktop — just larger on desktop instead of a different
+          treatment. The group (board + row) sizes to its own content and
+          is centered as a block, so the row always sits directly under
+          wherever the board actually ends instead of trailing behind
+          leftover flex space. */}
       <Box
         sx={{
-          flex: 1,
-          minHeight: 0,
           width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          maxWidth: 560,
+          mx: "auto",
         }}
       >
-        <AiChessboardPanel
-          key={puzzle.lichessId}
-          game={game}
-          fen={fen}
-          moveSquares={moveSquares}
-          setMoveSquares={setMoveSquares}
-          engine={engine}
-          puzzleMode={true}
-          onDropPuzzle={onDrop}
-          handleSquarePuzzleClick={handleSquareClick}
-          setFen={setFen}
-          setGame={setGame}
-          setStockfishAnalysisResult={setStockfishAnalysisResult}
-          analyzeWithStockfish={analyzeWithStockfish}
-          puzzleCustomSquareStyle={customSquareStyles}
-          llmLoading={llmLoading}
-          side={side}
-          stockfishLoading={stockfishLoading}
-          stockfishAnalysisResult={stockfishAnalysisResult}
-          openingLoading={openingLoading}
-        />
-      </Box>
+        {/* aspectRatio gives this box a real, immediately-known height
+            (derived from its width) instead of an auto/content-sized one.
+            AiChessboardPanel's own root sets height:"100%" internally to
+            size the board via ResizeObserver — without a definite height
+            here for that to resolve against, it collapses to auto and
+            shrinks every measurement cycle (converging on the floor size)
+            instead of landing on the actual Board Size setting. */}
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 560,
+            aspectRatio: "1",
+            mx: "auto",
+          }}
+        >
+          <AiChessboardPanel
+            key={puzzle.lichessId}
+            game={game}
+            fen={fen}
+            moveSquares={moveSquares}
+            setMoveSquares={setMoveSquares}
+            engine={engine}
+            puzzleMode={true}
+            onDropPuzzle={onDrop}
+            handleSquarePuzzleClick={handleSquareClick}
+            setFen={setFen}
+            setGame={setGame}
+            setStockfishAnalysisResult={setStockfishAnalysisResult}
+            analyzeWithStockfish={analyzeWithStockfish}
+            puzzleCustomSquareStyle={customSquareStyles}
+            llmLoading={llmLoading}
+            side={side}
+            stockfishLoading={stockfishLoading}
+            stockfishAnalysisResult={stockfishAnalysisResult}
+            openingLoading={openingLoading}
+          />
+        </Box>
 
-      <Typography variant="body2" color="text.secondary">
-        {showingSolution
-          ? `Solution ${solutionViewIndex}/${solutionMoves.length}`
-          : puzzleComplete
-            ? hintUsed
-              ? "Solved (hint used) — scroll for the next one"
-              : "Solved! Scroll for the next one"
-            : puzzleFailed
-              ? "Wrong move — view the solution or scroll on"
-              : `${side === "white" ? "White" : "Black"} to move`}
-      </Typography>
+        {/* Just the rating and the puzzle controls, directly below the
+            board — nothing else in the feed card. */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ width: "100%", px: 2, py: 1.5 }}
+        >
+          <Chip icon={<Star size={16} />} label={`Rating ${puzzle.rating}`} size="small" color="primary" />
 
-      {showingSolution && (
-        <Typography variant="caption" fontFamily="monospace" color="text.secondary">
-          {sanSolutionMoves.join(" ")}
-        </Typography>
-      )}
-
-      {showHint && (
-        <Typography variant="caption" color="warning.main" sx={{ position: "absolute", bottom: "14%" }}>
-          Hint: start from the highlighted square
-        </Typography>
-      )}
-
-      <Stack direction="column" spacing={1.5} sx={{ position: "absolute", right: 12, bottom: "18%" }}>
-        {showingSolution ? (
-          <>
-            <Tooltip title="Previous" placement="left">
-              <span>
-                <IconButton
-                  size="large"
-                  onClick={() => navigateSolution("prev")}
-                  disabled={solutionViewIndex === 0}
-                  sx={{ bgcolor: "action.hover" }}
-                >
-                  <SkipBack size={20} />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Next" placement="left">
-              <span>
-                <IconButton
-                  size="large"
-                  onClick={() => navigateSolution("next")}
-                  disabled={solutionViewIndex >= solutionMoves.length}
-                  sx={{ bgcolor: "action.hover" }}
-                >
-                  <SkipForward size={20} />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Exit solution" placement="left">
-              <IconButton size="large" onClick={exitSolutionView} sx={{ bgcolor: "warning.main", color: "warning.contrastText" }}>
-                <RotateCcw size={20} />
-              </IconButton>
-            </Tooltip>
-          </>
-        ) : (
-          <>
-            <Tooltip title="Hint" placement="left">
-              <span>
-                <IconButton
-                  size="large"
-                  onClick={showHintMove}
-                  disabled={puzzleComplete || hintUsed}
-                  sx={{ bgcolor: "action.hover" }}
-                >
-                  <Lightbulb size={22} />
-                </IconButton>
-              </span>
-            </Tooltip>
-            {puzzleFailed && (
-              <Tooltip title="Solution" placement="left">
-                <IconButton size="large" onClick={showSolution} sx={{ bgcolor: "action.hover" }}>
-                  <Eye size={22} />
-                </IconButton>
-              </Tooltip>
+          <Stack direction="row" spacing={0.5}>
+            {showingSolution ? (
+              <>
+                <Tooltip title="Previous">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={() => navigateSolution("prev")}
+                      disabled={solutionViewIndex === 0}
+                    >
+                      <SkipBack size={18} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Next">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={() => navigateSolution("next")}
+                      disabled={solutionViewIndex >= solutionMoves.length}
+                    >
+                      <SkipForward size={18} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Exit solution">
+                  <IconButton size="small" onClick={exitSolutionView} sx={{ color: "warning.main" }}>
+                    <RotateCcw size={18} />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Tooltip title="Hint">
+                  <span>
+                    <IconButton size="small" onClick={showHintMove} disabled={puzzleComplete || hintUsed}>
+                      <Lightbulb size={18} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                {puzzleFailed && (
+                  <Tooltip title="Solution">
+                    <IconButton size="small" onClick={showSolution}>
+                      <Eye size={18} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Tooltip title="Reset">
+                  <IconButton size="small" onClick={resetPuzzle}>
+                    <RotateCcw size={18} />
+                  </IconButton>
+                </Tooltip>
+              </>
             )}
-            <Tooltip title="Reset" placement="left">
-              <IconButton size="large" onClick={resetPuzzle} sx={{ bgcolor: "action.hover" }}>
-                <RotateCcw size={22} />
-              </IconButton>
-            </Tooltip>
-          </>
-        )}
-      </Stack>
+          </Stack>
+        </Stack>
+      </Box>
     </Box>
   );
 }
