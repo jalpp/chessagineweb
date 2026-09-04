@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useLocalStorage } from "usehooks-ts";
 import { useAuth } from "@clerk/nextjs";
 import { GIFT_MODEL } from "@/libs/agine/modelConstants";
+import { normalizeUserPuzzleRating } from "@/libs/puzzle/rating";
 
 export interface PersistedSettings {
   selected_model: string;
@@ -26,6 +27,7 @@ export interface PersistedSettings {
   chessdb_show_winrates: boolean;
   puzzle_level: number;
   user_puzzle_rating: number;
+  puzzle_view_mode: string;
   analysis_show_stockfish: boolean;
   analysis_show_chessdb: boolean;
   analysis_show_nets: boolean;
@@ -91,6 +93,8 @@ export function usePersistedSettings() {
   const [chessdbShowWinrates,    setChessdbShowWinrates]    = useSafeLocalStorage("chessdb_ui_show_winrate", true);
   const [puzzleLevel,            setPuzzleLevel]            = useSafeLocalStorage("puzzleLevel", 1500);
   const [userPuzzleRating,       setUserPuzzleRating]       = useSafeLocalStorage("agine_user_puzzle_rating", 1500);
+  const normalizedUserPuzzleRating = normalizeUserPuzzleRating(userPuzzleRating);
+  const [puzzleViewMode,         setPuzzleViewMode]         = useSafeLocalStorage("puzzle_ui_view_mode", "scroll");
   const [analysisShowStockfish,  setAnalysisShowStockfish]  = useSafeLocalStorage("analysis_ui_show_stockfish", true);
   const [analysisShowChessdb,    setAnalysisShowChessdb]    = useSafeLocalStorage("analysis_ui_show_chessdb", true);
   const [analysisShowNets,       setAnalysisShowNets]       = useSafeLocalStorage("analysis_ui_show_nets", true);
@@ -141,7 +145,8 @@ export function usePersistedSettings() {
         setChessdbShowScores(d.chessdb_show_scores);
         setChessdbShowWinrates(d.chessdb_show_winrates);
         setPuzzleLevel(d.puzzle_level);
-        setUserPuzzleRating(d.user_puzzle_rating);
+        setUserPuzzleRating(normalizeUserPuzzleRating(d.user_puzzle_rating));
+        setPuzzleViewMode(d.puzzle_view_mode);
         setAnalysisShowStockfish(d.analysis_show_stockfish);
         setAnalysisShowChessdb(d.analysis_show_chessdb);
         setAnalysisShowNets(d.analysis_show_nets);
@@ -178,7 +183,8 @@ export function usePersistedSettings() {
       if (patch.chessdb_show_scores         !== undefined) setChessdbShowScores(patch.chessdb_show_scores);
       if (patch.chessdb_show_winrates       !== undefined) setChessdbShowWinrates(patch.chessdb_show_winrates);
       if (patch.puzzle_level                !== undefined) setPuzzleLevel(patch.puzzle_level);
-      if (patch.user_puzzle_rating          !== undefined) setUserPuzzleRating(patch.user_puzzle_rating);
+      if (patch.user_puzzle_rating          !== undefined) setUserPuzzleRating(normalizeUserPuzzleRating(patch.user_puzzle_rating));
+      if (patch.puzzle_view_mode            !== undefined) setPuzzleViewMode(patch.puzzle_view_mode);
       if (patch.analysis_show_stockfish     !== undefined) setAnalysisShowStockfish(patch.analysis_show_stockfish);
       if (patch.analysis_show_chessdb       !== undefined) setAnalysisShowChessdb(patch.analysis_show_chessdb);
       if (patch.analysis_show_nets          !== undefined) setAnalysisShowNets(patch.analysis_show_nets);
@@ -211,7 +217,8 @@ export function usePersistedSettings() {
         chessdb_show_scores:          patch.chessdb_show_scores         ?? chessdbShowScores,
         chessdb_show_winrates:        patch.chessdb_show_winrates       ?? chessdbShowWinrates,
         puzzle_level:                 patch.puzzle_level                ?? puzzleLevel,
-        user_puzzle_rating:           patch.user_puzzle_rating          ?? userPuzzleRating,
+        user_puzzle_rating:           normalizeUserPuzzleRating(patch.user_puzzle_rating ?? userPuzzleRating),
+        puzzle_view_mode:             patch.puzzle_view_mode            ?? puzzleViewMode,
         analysis_show_stockfish:      patch.analysis_show_stockfish     ?? analysisShowStockfish,
         analysis_show_chessdb:        patch.analysis_show_chessdb       ?? analysisShowChessdb,
         analysis_show_nets:           patch.analysis_show_nets          ?? analysisShowNets,
@@ -230,7 +237,7 @@ export function usePersistedSettings() {
       isSignedIn, selectedModel, boardFlipped, boardSize, boardPieceType, boardShowCoords,
       boardTheme, boardAnimDuration, boardShowEvalBar, boardShowFen, boardShowHanging,
       boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme, pgnViewMode,
-      chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
+      chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating, puzzleViewMode,
       analysisShowStockfish, analysisShowChessdb, analysisShowNets,
       analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0,
       analysisShowChat, humanEvalBarRating,
@@ -241,7 +248,9 @@ export function usePersistedSettings() {
     selectedModel, boardFlipped, boardSize, boardPieceType, boardShowCoords,
     boardTheme, boardAnimDuration, boardShowEvalBar, boardShowFen, boardShowHanging,
     boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme,
-    pgnViewMode, chessdbShowScores, chessdbShowWinrates, puzzleLevel, userPuzzleRating,
+    pgnViewMode, chessdbShowScores, chessdbShowWinrates, puzzleLevel,
+    userPuzzleRating: normalizedUserPuzzleRating,
+    puzzleViewMode,
     analysisShowStockfish, analysisShowChessdb, analysisShowNets,
     analysisShowTheme, analysisShowHumanEval, analysisShowOpening, analysisShowLc0,
     analysisShowChat, humanEvalBarRating,

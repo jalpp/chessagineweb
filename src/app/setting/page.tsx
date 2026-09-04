@@ -384,6 +384,7 @@ export default function SettingsPage() {
     boardTheme, boardPieceType, boardSize, boardAnimDuration,
     boardShowCoords, boardFlipped, boardShowEvalBar, boardShowFen,
     boardShowHanging, boardShowSemiProtected,
+    puzzleViewMode,
   } = useSettings();
 
   return (
@@ -562,6 +563,23 @@ export default function SettingsPage() {
               <SettingRow label="Highlight Semi-Protected Pieces" description="Flag pieces defended only once but attacked">
                 <Switch checked={boardShowSemiProtected}
                   onChange={e => saveSettings({ board_ui_show_semiprotected: e.target.checked })} />
+              </SettingRow>
+            </Section>
+          </Paper>
+
+          {/* ── Puzzles ── */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+            <Section icon={<PuzzleIcon />} title="Puzzles">
+              <SettingRow
+                label="Classic Mode"
+                description="Solve puzzles one at a time on the Puzzles page instead of the default scrollable feed"
+              >
+                <Switch
+                  checked={puzzleViewMode === "classic"}
+                  onChange={e =>
+                    saveSettings({ puzzle_view_mode: e.target.checked ? "classic" : "scroll" })
+                  }
+                />
               </SettingRow>
             </Section>
           </Paper>

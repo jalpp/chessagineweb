@@ -24,12 +24,18 @@ export async function GET(req: NextRequest): Promise<NextResponse<PuzzleResponse
     const themes     = searchParams.get("themes");
     const ratingFrom = searchParams.get("ratingFrom");
     const ratingTo   = searchParams.get("ratingTo");
+    const parsedRatingFrom = ratingFrom === null ? NaN : Number(ratingFrom);
+    const parsedRatingTo = ratingTo === null ? NaN : Number(ratingTo);
+    const hasValidRatingRange = Number.isFinite(parsedRatingFrom) && Number.isFinite(parsedRatingTo);
 
     const params = new URLSearchParams();
     if (themes) params.append("themes", themes);
-    if (ratingFrom && ratingTo) {
-      params.append("ratingFrom", ratingFrom);
-      params.append("ratingTo", ratingTo);
+    if (hasValidRatingRange) {
+      params.append("ratingFrom", String(Math.round(parsedRatingFrom)));
+      params.append("ratingTo", String(Math.round(parsedRatingTo)));
+    }else{
+      params.append("ratingFrom", "1500");
+      params.append("ratingTo", "1600");
     }
 
     const qs  = params.toString();

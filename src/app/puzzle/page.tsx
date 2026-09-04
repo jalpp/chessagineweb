@@ -60,6 +60,9 @@ import {
   PUZZLE_THEMES,
   DIFFICULTY_THEMES,
 } from "@/libs/puzzle/helper";
+import { calculateNewUserRating } from "@/libs/puzzle/rating";
+import { useSettings } from "@/context/SettingContext";
+import PuzzleScrollView from "@/componets/puzzle/PuzzleScrollView";
 
 
 
@@ -67,6 +70,7 @@ export default function PuzzlePage() {
   usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { puzzleViewMode } = useSettings();
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
@@ -117,7 +121,7 @@ export default function PuzzlePage() {
   // rating
 
   const [userPuzzleRating, setUserPuzzleRating] = useLocalStorage<number>(
-    "agine_user_puzzle_rating",
+    "agine_user_puzzle_rating_1",
     1500,
   );
 
@@ -130,25 +134,11 @@ export default function PuzzlePage() {
     setSnackbarOpen(true);
   };
 
-  function calculateExpectedScore(puzzleRating: number): number {
-    const ratingDifference = puzzleRating - userPuzzleRating;
-
-    const denominator = 1 + Math.pow(10, ratingDifference / 400);
-
-    const expectedScore = 1 / denominator;
-
-    return expectedScore;
-  }
-
   const calculateUserRating = (puzzleRating: number, isCompleted: boolean) => {
     if (!puzzleReseted) {
-      const actualScore = isCompleted ? 1 : 0;
-      const Kfactor = userPuzzleRating === 1500 ? 40 : 100;
-      const expectedScore = calculateExpectedScore(puzzleRating);
-      const newRating = Math.round(
-        userPuzzleRating + Kfactor * (actualScore - expectedScore),
+      setUserPuzzleRating(
+        calculateNewUserRating(userPuzzleRating, puzzleRating, isCompleted),
       );
-      setUserPuzzleRating(newRating);
     }
   };
 
@@ -302,8 +292,11 @@ export default function PuzzlePage() {
   );
 
   useEffect(() => {
-    fetchPuzzle([], userPuzzleRating, userPuzzleRating + 500);
-  }, []);
+    if (puzzleViewMode === "classic") {
+      fetchPuzzle([], userPuzzleRating, userPuzzleRating + 500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleViewMode]);
 
   const {
     stockfishAnalysisResult,
@@ -610,6 +603,10 @@ export default function PuzzlePage() {
     setFen(puzzleData.FEN);
     setMoveSquares({});
   }, [puzzleData]);
+
+  if (puzzleViewMode !== "classic") {
+    return <PuzzleScrollView />;
+  }
 
   return (
     <>
