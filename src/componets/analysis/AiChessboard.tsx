@@ -211,11 +211,19 @@ export default function AiChessboardPanel({
   }, [moves]);
 
   useEffect(() => {
+    // In puzzleMode/playMode the parent fully owns game/fen (it sets the
+    // puzzle's or game's actual starting position and applies moves itself
+    // via onDropPuzzle/handlePlayerMove) — this history-navigation state is
+    // only for standalone game/position review. Resetting to the default
+    // starting position here would stomp the puzzle/play FEN the parent just
+    // set, especially now that puzzle boards remount per puzzle (see the
+    // per-puzzle `key` on the puzzle page).
+    if (puzzleMode || playMode) return;
     const start = new Chess(gameHistory[0]);
     setGame(start); setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
     setInternalMoveIndex(gameHistory.length - 1);
-  }, [gameHistory, setGame, setFen]);
+  }, [gameHistory, setGame, setFen, puzzleMode, playMode]);
 
   const safeGameMutate = useCallback((modify: (g: Chess) => void) => {
     if (!fen) return;
@@ -507,7 +515,8 @@ export default function AiChessboardPanel({
 
   // ── Responsive board size ──────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
-  const [boardPx, setBoardPx] = useState(Math.floor(boardSize / 8) * 8);
+  const safeBoardSize = Number.isFinite(boardSize) ? boardSize : 480;
+  const [boardPx, setBoardPx] = useState(Math.floor(safeBoardSize / 8) * 8);
   const evalBarsShown = showEvalBar && !puzzleMode && !playMode;
   // Two 20px bars (human eval + Stockfish) plus their gaps, reserved out of
   // the container width so the board shrinks to leave room for them instead
@@ -523,12 +532,12 @@ export default function AiChessboardPanel({
       // Round DOWN to nearest multiple of 8 so the 8×8 CSS grid columns divide
       // evenly into whole pixels — prevents sub-pixel rounding gaps (white lines)
       // that appear between rows/columns on Safari and high-DPI displays.
-      const raw = Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize));
+      const raw = Math.max(240, Math.min(safeBoardSize, available > 0 ? available : safeBoardSize));
       setBoardPx(Math.floor(raw / 8) * 8);
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [boardSize, gameInfo, evalBarOverheadPx]);
+  }, [safeBoardSize, gameInfo, evalBarOverheadPx]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
