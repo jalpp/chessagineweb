@@ -67,6 +67,15 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
   }) as T;
 }
 
+// ── Numeric setting guard (mirrors normalizeUserPuzzleRating) ───────────────
+// Defends against a stale/partial synced settings doc (e.g. a DB record from
+// before a field existed) producing `undefined`/non-numeric values that would
+// otherwise flow into NaN board pixel sizes downstream.
+export function normalizeBoardSize(value: unknown): number {
+  const size = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(size) ? size : 480;
+}
+
 export function usePersistedSettings() {
   const { isSignedIn } = useAuth();
   const synced = useRef(false);
@@ -76,6 +85,7 @@ export function usePersistedSettings() {
   const [selectedModel,          setSelectedModel]          = useSafeLocalStorage("selected-model", GIFT_MODEL);
   const [boardFlipped,           setBoardFlipped]           = useSafeLocalStorage("board_ui_flipped", false);
   const [boardSize,              setBoardSize]              = useSafeLocalStorage("board_ui_size", 480);
+  const normalizedBoardSize = normalizeBoardSize(boardSize);
   const [boardPieceType,         setBoardPieceType]         = useSafeLocalStorage("board_piece_type", "Cburnett");
   const [boardShowCoords,        setBoardShowCoords]        = useSafeLocalStorage("board_show_coordinates", true);
   const [boardTheme,             setBoardTheme]             = useSafeLocalStorage("board_theme", "blue");
@@ -128,7 +138,7 @@ export function usePersistedSettings() {
 
         setSelectedModel(d.selected_model);
         setBoardFlipped(d.board_ui_flipped);
-        setBoardSize(d.board_ui_size);
+        setBoardSize(normalizeBoardSize(d.board_ui_size));
         setBoardPieceType(d.board_piece_type);
         setBoardShowCoords(d.board_show_coordinates);
         setBoardTheme(d.board_theme);
@@ -166,7 +176,7 @@ export function usePersistedSettings() {
     (patch: Partial<PersistedSettings>) => {
       if (patch.selected_model              !== undefined) setSelectedModel(patch.selected_model);
       if (patch.board_ui_flipped            !== undefined) setBoardFlipped(patch.board_ui_flipped);
-      if (patch.board_ui_size               !== undefined) setBoardSize(patch.board_ui_size);
+      if (patch.board_ui_size               !== undefined) setBoardSize(normalizeBoardSize(patch.board_ui_size));
       if (patch.board_piece_type            !== undefined) setBoardPieceType(patch.board_piece_type);
       if (patch.board_show_coordinates      !== undefined) setBoardShowCoords(patch.board_show_coordinates);
       if (patch.board_theme                 !== undefined) setBoardTheme(patch.board_theme);
@@ -200,7 +210,7 @@ export function usePersistedSettings() {
       const full: PersistedSettings = {
         selected_model:               patch.selected_model              ?? selectedModel,
         board_ui_flipped:             patch.board_ui_flipped            ?? boardFlipped,
-        board_ui_size:                patch.board_ui_size               ?? boardSize,
+        board_ui_size:                normalizeBoardSize(patch.board_ui_size            ?? boardSize),
         board_piece_type:             patch.board_piece_type            ?? boardPieceType,
         board_show_coordinates:       patch.board_show_coordinates      ?? boardShowCoords,
         board_theme:                  patch.board_theme                 ?? boardTheme,
@@ -245,7 +255,8 @@ export function usePersistedSettings() {
   );
 
   return {
-    selectedModel, boardFlipped, boardSize, boardPieceType, boardShowCoords,
+    selectedModel, boardFlipped, boardPieceType, boardShowCoords,
+    boardSize: normalizedBoardSize,
     boardTheme, boardAnimDuration, boardShowEvalBar, boardShowFen, boardShowHanging,
     boardShowSemiProtected, engineDepth, engineLines, enginePicked, appTheme,
     pgnViewMode, chessdbShowScores, chessdbShowWinrates, puzzleLevel,

@@ -507,7 +507,8 @@ export default function AiChessboardPanel({
 
   // ── Responsive board size ──────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
-  const [boardPx, setBoardPx] = useState(Math.floor(boardSize / 8) * 8);
+  const safeBoardSize = Number.isFinite(boardSize) ? boardSize : 480;
+  const [boardPx, setBoardPx] = useState(Math.floor(safeBoardSize / 8) * 8);
   const evalBarsShown = showEvalBar && !puzzleMode && !playMode;
   // Two 20px bars (human eval + Stockfish) plus their gaps, reserved out of
   // the container width so the board shrinks to leave room for them instead
@@ -523,12 +524,12 @@ export default function AiChessboardPanel({
       // Round DOWN to nearest multiple of 8 so the 8×8 CSS grid columns divide
       // evenly into whole pixels — prevents sub-pixel rounding gaps (white lines)
       // that appear between rows/columns on Safari and high-DPI displays.
-      const raw = Math.max(240, Math.min(boardSize, available > 0 ? available : boardSize));
+      const raw = Math.max(240, Math.min(safeBoardSize, available > 0 ? available : safeBoardSize));
       setBoardPx(Math.floor(raw / 8) * 8);
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [boardSize, gameInfo, evalBarOverheadPx]);
+  }, [safeBoardSize, gameInfo, evalBarOverheadPx]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (

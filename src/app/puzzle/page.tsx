@@ -70,7 +70,7 @@ export default function PuzzlePage() {
   usePageReady();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const { puzzleViewMode } = useSettings();
+  const { puzzleViewMode, userPuzzleRating, saveSettings } = useSettings();
 
   const [puzzleData, setPuzzleData] = useState<PuzzleData | null>(null);
   const [puzzleQuery, setPuzzleQuery] = useState<PuzzleQuery | null>(null);
@@ -118,12 +118,7 @@ export default function PuzzlePage() {
     null,
   );
 
-  // rating
-
-  const [userPuzzleRating, setUserPuzzleRating] = useLocalStorage<number>(
-    "agine_user_puzzle_rating_1",
-    1500,
-  );
+  // rating (shared with Settings/scroll feed via the normalized SettingsContext value)
 
   const showSnackbar = (
     message: string,
@@ -136,9 +131,9 @@ export default function PuzzlePage() {
 
   const calculateUserRating = (puzzleRating: number, isCompleted: boolean) => {
     if (!puzzleReseted) {
-      setUserPuzzleRating(
-        calculateNewUserRating(userPuzzleRating, puzzleRating, isCompleted),
-      );
+      saveSettings({
+        user_puzzle_rating: calculateNewUserRating(userPuzzleRating, puzzleRating, isCompleted),
+      });
     }
   };
 
@@ -664,6 +659,7 @@ export default function PuzzlePage() {
             {/* Chessboard - Mobile */}
             <Box sx={{ width: "100%" }}>
               <AiChessboardPanel
+                key={puzzleData?.lichessId}
                 game={game}
                 fen={fen}
                 moveSquares={moveSquares}
@@ -1025,6 +1021,7 @@ export default function PuzzlePage() {
             {/* CENTER: Chessboard */}
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", borderRight: 1, borderColor: "divider" }}>
               <AiChessboardPanel
+                key={puzzleData?.lichessId}
                 game={game}
                 fen={fen}
                 moveSquares={moveSquares}
