@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, CircularProgress, Alert, Button, useMediaQuery, useTheme } from "@mui/material";
+import { Box, CircularProgress, Alert, Button } from "@mui/material";
 import type { PuzzleData } from "@/libs/puzzle/helper";
 import { FEED_BATCH_SIZE, shouldPrefetchMore, dedupePuzzlesById } from "@/libs/puzzle/feedQueue";
 import { calculateNewUserRating, normalizeUserPuzzleRating } from "@/libs/puzzle/rating";
@@ -32,9 +32,6 @@ async function fetchPuzzleBatch(
 }
 
 export default function PuzzleScrollView() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
   const { userPuzzleRating, saveSettings } = useSettings();
   const safeUserPuzzleRating = normalizeUserPuzzleRating(userPuzzleRating);
 
@@ -48,17 +45,6 @@ export default function PuzzleScrollView() {
   const fetchingMoreRef = useRef(false);
   const puzzlesRef = useRef<PuzzleData[]>([]);
   puzzlesRef.current = puzzles;
-
-  const [mobileBoardSizePx, setMobileBoardSizePx] = useState(360);
-  useEffect(() => {
-    if (!isMobile) return;
-    const updateSize = () =>
-      setMobileBoardSizePx(Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.82));
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, [isMobile]);
-  const boardSizePx = isMobile ? mobileBoardSizePx : 480;
 
   const loadInitialBatch = useCallback(async () => {
     setLoadingInitial(true);
@@ -201,7 +187,6 @@ export default function PuzzleScrollView() {
           <PuzzleFeedCard
             puzzle={puzzle}
             active={index === activeIndex}
-            boardSizePx={boardSizePx}
             onSolved={(success) => handleSolved(index, success)}
           />
         </Box>

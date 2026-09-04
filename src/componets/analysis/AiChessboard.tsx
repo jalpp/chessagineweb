@@ -211,11 +211,19 @@ export default function AiChessboardPanel({
   }, [moves]);
 
   useEffect(() => {
+    // In puzzleMode/playMode the parent fully owns game/fen (it sets the
+    // puzzle's or game's actual starting position and applies moves itself
+    // via onDropPuzzle/handlePlayerMove) — this history-navigation state is
+    // only for standalone game/position review. Resetting to the default
+    // starting position here would stomp the puzzle/play FEN the parent just
+    // set, especially now that puzzle boards remount per puzzle (see the
+    // per-puzzle `key` on the puzzle page).
+    if (puzzleMode || playMode) return;
     const start = new Chess(gameHistory[0]);
     setGame(start); setFen(gameHistory[0]);
     setMoveHistory(gameHistory);
     setInternalMoveIndex(gameHistory.length - 1);
-  }, [gameHistory, setGame, setFen]);
+  }, [gameHistory, setGame, setFen, puzzleMode, playMode]);
 
   const safeGameMutate = useCallback((modify: (g: Chess) => void) => {
     if (!fen) return;

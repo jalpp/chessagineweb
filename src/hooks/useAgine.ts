@@ -27,7 +27,7 @@ import {
 } from "@/libs/cache/stockfishCache";
 import { useSettings } from "@/context/SettingContext";
 
-export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true, enabledModels?: ModelType[], analysisMode: "full" | "play" = "full") {
+export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true, enabledModels?: ModelType[], analysisMode: "full" | "play" = "full", engineEnabled: boolean = true) {
   const [state, setState] = useState<AgineState>({
     stockfishAnalysisResult: null,
     reverseStockfishAnalysisResult: null,
@@ -48,7 +48,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
 
   const { evaluations, sanEvaluations, isLoading: isNetLoading, evaluationsFen } = useNets({ fen, supported: analysisType !== "puzzle", gameReviewMode: !autoAnalysis, enabledModels });
 
-  const engine = useEngine(true, enginePicked);
+  const engine = useEngine(engineEnabled, enginePicked);
   const [stockfishFen, setStockfishFen] = useState<string | null>(null);
   const [stockfishDone, setStockfishDone] = useState(false);
 
