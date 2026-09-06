@@ -314,6 +314,8 @@ export default function PuzzleFeedCard({ puzzle, active, onSolved }: PuzzleFeedC
         >
           <AiChessboardPanel
             key={puzzle.lichessId}
+            boardId={`puzzle-feed-${puzzle.lichessId}`}
+            interactive={active}
             game={game}
             fen={fen}
             moveSquares={moveSquares}

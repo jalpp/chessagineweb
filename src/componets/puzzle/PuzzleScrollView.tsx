@@ -170,7 +170,13 @@ export default function PuzzleScrollView() {
         height: "100dvh",
         width: "100%",
         overflowY: "auto",
-        scrollSnapType: "y mandatory",
+        overscrollBehavior: "contain",
+        // "proximity" (rather than "mandatory") lets a touch gesture aimed
+        // at a piece resolve as a drag/tap on the board first, snapping
+        // only once the gesture is clearly a scroll — "mandatory" is more
+        // eager to claim any vertical touch movement as a page turn, which
+        // made piece drags feel unreliable on mobile.
+        scrollSnapType: "y proximity",
         "&::-webkit-scrollbar": { display: "none" },
         scrollbarWidth: "none",
       }}

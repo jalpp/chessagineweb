@@ -82,6 +82,22 @@ interface AiChessboardPanelProps {
   treePly?: number;
   /** Total plies in the current line — used for nav disabled states */
   treeMaxPly?: number;
+  /** DOM id passed to react-chessboard, used internally for square/piece
+   * element lookups (e.g. its own drag-animation code queries
+   * `#{id}-square-{square}`). Defaults to a fixed id, which is fine for
+   * pages that only ever mount one board — but any screen that mounts
+   * several boards at once (the puzzle scroll feed) MUST give each
+   * instance a unique id, or these lookups return whichever instance
+   * happens to be first in the DOM regardless of which board the user is
+   * actually interacting with (this was the cause of the scroll feed's
+   * "wrong board animates" / stuck-legal-move-highlight bugs on mobile). */
+  boardId?: string;
+  /** Whether this board responds to drags/clicks at all. Defaults to true.
+   * Set to false for boards that are mounted but not the one the user is
+   * currently looking at (e.g. off-screen cards in the puzzle scroll feed)
+   * so touch gestures aren't split across several simultaneously-live
+   * boards on the same screen. */
+  interactive?: boolean;
 }
 
 export default function AiChessboardPanel({
@@ -93,6 +109,7 @@ export default function AiChessboardPanel({
   stockfishLoading, maiaLoading,
   onTreePrevious, onTreeNext, onTreeStart, onTreeEnd,
   hideBuiltInMoveList = false, treePly, treeMaxPly,
+  boardId = "ai-chessboard", interactive = true,
 }: AiChessboardPanelProps) {
 
   const {
@@ -572,8 +589,9 @@ export default function AiChessboardPanel({
         <Chessboard
           options={{
             position: fen,
-            onPieceDrop: puzzleMode ? onDropPuzzle : handlePlayerMove,
-            onSquareClick: puzzleMode ? handleSquarePuzzleClick : handleSquareClick,
+            onPieceDrop: !interactive ? () => false : puzzleMode ? onDropPuzzle : handlePlayerMove,
+            onSquareClick: !interactive ? undefined : puzzleMode ? handleSquarePuzzleClick : handleSquareClick,
+            allowDragging: interactive,
             allowDragOffBoard: false,
             animationDurationInMs: animationDuration,
             showNotation: showCoordinates,
@@ -584,7 +602,7 @@ export default function AiChessboardPanel({
             boardOrientation: getBoardOrientation(),
             pieces: getCustomPieces(pieceType),
             boardStyle: { width: boardPx, height: boardPx, ...get3DBoardStyle(pieceType) },
-            id: "ai-chessboard",
+            id: boardId,
           }}
         />
         {evalBarsShown && isMobile && (
