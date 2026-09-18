@@ -26,6 +26,8 @@ import {
   cachedStockfish,
 } from "@/libs/cache/stockfishCache";
 import { useSettings } from "@/context/SettingContext";
+import { useLocalStorage } from "usehooks-ts";
+import { LICHESS_TOKEN_KEY } from "@/lib/lichessOAuth";
 
 export default function useAgine(fen: string, analysisType: 'position' | 'game' | "unsupported" | "puzzle", autoAnalysis: boolean = true, enabledModels?: ModelType[], analysisMode: "full" | "play" = "full", engineEnabled: boolean = true) {
   const [state, setState] = useState<AgineState>({
@@ -42,6 +44,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
   });
 
   const { saveSettings, engineDepth, engineLines, enginePicked: enginePickedRaw } = useSettings();
+  const [lichessToken] = useLocalStorage<string>(LICHESS_TOKEN_KEY, "");
   const setEngineDepth = (v: number) => saveSettings({ engine_depth: v });
   const setEngineLines = (v: number) => saveSettings({ engine_lines: v });
   const enginePicked = enginePickedRaw as EngineName ;
@@ -179,8 +182,8 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
     const currentFen = currentFenRef.current;
     updateState({ openingLoading: true });
     try {
-      const data = await getOpeningStats(currentFen, analysisType);
-      if (currentFenRef.current === currentFen && data !== null) {
+      const data = await getOpeningStats(currentFen, analysisType, lichessToken);
+      if (currentFenRef.current === currentFen) {
         updateState({ openingData: data, openingLoading: false });
       }
     } catch {
@@ -188,15 +191,15 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
         updateState({ openingData: null, openingLoading: false });
       }
     }
-  }, [updateState, analysisType]);
+  }, [updateState, analysisType, lichessToken]);
 
   const fetchLichessOpeningData = useCallback(async (): Promise<void> => {
     if(analysisType === "puzzle") return;
     const currentFen = currentFenRef.current;
     updateState({ lichessOpeningLoading: true });
     try {
-      const data = await getLichessOpeningStats(currentFen, analysisType);
-      if (currentFenRef.current === currentFen && data !== null) {
+      const data = await getLichessOpeningStats(currentFen, analysisType, lichessToken);
+      if (currentFenRef.current === currentFen) {
         updateState({ lichessOpeningData: data, lichessOpeningLoading: false });
       }
     } catch {
@@ -204,7 +207,7 @@ export default function useAgine(fen: string, analysisType: 'position' | 'game' 
         updateState({ lichessOpeningData: null, lichessOpeningLoading: false });
       }
     }
-  }, [updateState, analysisType]);
+  }, [updateState, analysisType, lichessToken]);
 
   // ==================== EFFECTS ====================
 
@@ -236,7 +239,7 @@ useEffect(() => {
     }
   }, ANALYSIS_DELAY);
   return () => clearTimeout(timeoutId);
-}, [fen, analysisType, analysisMode]);
+}, [fen, analysisType, analysisMode, lichessToken]);
 
   return {
     // Stockfish

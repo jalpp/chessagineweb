@@ -22,6 +22,9 @@ import {
 import { Settings as SettingsIcon, TrendingUp } from "@mui/icons-material";
 import { MasterGames, Moves } from "../../libs/openingdatabase/helper";
 import { RESULT_BAR_COLORS } from "../../libs/openingdatabase/resultBarColors";
+import { useLocalStorage } from "usehooks-ts";
+import { LICHESS_TOKEN_KEY } from "@/lib/lichessOAuth";
+import LichessConnectButton from "../lichess/LichessConnectButton";
 
 type ExplorerType = 'master' | 'lichess';
 
@@ -43,6 +46,7 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [lichessToken] = useLocalStorage<string>(LICHESS_TOKEN_KEY, "");
  
   
   const [explorerType, setExplorerType] = useState<ExplorerType>('master');
@@ -208,17 +212,25 @@ export const OpeningExplorer: React.FC<OpeningExplorerProps> = ({
           </Stack>
         </Paper>
 
-        {/* Loading State */}
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <Stack alignItems="center" spacing={2}>
-            <CircularProgress 
-              size={40} 
-              sx={{ color: "#9c27b0" }} 
-            />
-            <Typography variant="body2" >
-              Loading {explorerType} database...
-            </Typography>
-          </Stack>
+          {lichessToken ? (
+            <Stack alignItems="center" spacing={2}>
+              <CircularProgress
+                size={40}
+                sx={{ color: "#9c27b0" }}
+              />
+              <Typography variant="body2" >
+                Loading {explorerType} database...
+              </Typography>
+            </Stack>
+          ) : (
+            <Stack alignItems="center" spacing={2}>
+              <Typography variant="body2" sx={{ textAlign: "center" }}>
+                Connect your Lichess account to load the masters and Lichess opening explorer.
+              </Typography>
+              <LichessConnectButton />
+            </Stack>
+          )}
         </Box>
 
         

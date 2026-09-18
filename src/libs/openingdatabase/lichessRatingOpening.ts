@@ -1,7 +1,6 @@
 import { SanMaiaEvaluation } from "../nets/types";
-import { lichessRatingCache } from "@/libs/cache/posiraMemCache";
+import { fetchExplorerData } from "./helper";
 
-// Posira rating brackets that map from Maia model ratings
 export interface LichessMove {
   uci: string;
   san: string;
@@ -19,10 +18,10 @@ export interface LichessData {
   opening?: { eco: string; name: string };
 }
 
-// ── Map Maia rating → nearest Posira rating bracket ───────────────────────
+// Lichess explorer rating buckets closest to a Maia model rating
 
 export const getRatingGroups = (maiaRating: number): number[] => {
-  if (maiaRating <= 900)  return [800, 1000];
+  if (maiaRating <= 900)  return [0, 1000];
   if (maiaRating <= 1100) return [1000, 1200];
   if (maiaRating <= 1300) return [1200, 1400];
   if (maiaRating <= 1500) return [1400, 1600];
@@ -33,122 +32,29 @@ export const getRatingGroups = (maiaRating: number): number[] => {
   return [2500];
 };
 
-// ── Posira explorer response types ────────────────────────────────────────
-
-interface PosiraMove {
-  san: string;
-  uci: string;
-  games: number;
-  white_wins: number;
-  draws: number;
-  black_wins: number;
-}
-
-interface PosiraExplorerResponse {
-  fen: string;
-  total_games: number;
-  opening?: { eco: string; name: string };
-  moves: PosiraMove[];
-}
-
-// ── Fetcher with in-memory cache ──────────────────────────────────────────
-//
-// Cache key: `${fen}|ratings=${ratingBrackets}`
-//
-// Like explorerCache, we store the Promise — not the resolved value.
-// This means:
-//   - Nine concurrent calls in useNets for the same FEN each see
-//     their own key (different rating brackets), but if the user
-//     navigates back to a position the result is already resolved.
-//   - AbortSignal is intentionally NOT passed to the cached fetch
-//     because aborting one caller's request would cancel the shared
-//     promise and break other callers. Instead, callers that are
-//     aborted simply ignore the resolved value.
-
-export const fetchLichessData = (
+export const fetchLichessData = async (
   fen: string,
   rating: number,
-  signal?: AbortSignal,
-  retryCount = 0,
-  maxRetries = 3,
+  token: string,
 ): Promise<LichessData | null> => {
-  const ratings = getRatingGroups(rating);
-  const cacheKey = `${fen}|ratings=${ratings.join(",")}`;
-
-  // Cache hit — return immediately (caller ignores if aborted)
-  const cached = lichessRatingCache.get(cacheKey);
-  if (cached) return cached as Promise<LichessData | null>;
-
-  const params = new URLSearchParams({
-    endpoint: "explorer",
-    fen,
-    ratings: ratings.join(","),
+  const data = await fetchExplorerData(fen, "position", token, "lichess", {
+    moves: 12,
+    topGames: 0,
+    recentGames: 0,
     speeds: "rapid,classical",
-    top_n: "12",
+    ratings: getRatingGroups(rating).join(","),
   });
-
-  // Store the promise before awaiting to prevent duplicate in-flight requests
-  const promise = (async (): Promise<LichessData | null> => {
-    try {
-      // Use a fresh fetch without the caller's AbortSignal so the shared
-      // promise isn't cancelled when one consumer aborts.
-      const response = await fetch(`/api/posira?${params.toString()}`);
-
-      if (response.status === 429) {
-        if (retryCount >= maxRetries) {
-          console.warn(`Posira rate limit after ${maxRetries} retries for rating ${rating}`);
-          // Evict so next call retries properly
-          lichessRatingCache.set(cacheKey, Promise.resolve(null));
-          return null;
-        }
-        const delay = Math.pow(2, retryCount) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        // Retry: evict this promise so the recursive call re-enters properly
-        lichessRatingCache.set(cacheKey, Promise.resolve(null));
-        return fetchLichessData(fen, rating, undefined, retryCount + 1, maxRetries);
-      }
-
-      if (!response.ok) {
-        // Posira unavailable — evict cache so next call retries, return null silently
-        lichessRatingCache.set(cacheKey, Promise.resolve(null));
-        return null;
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        lichessRatingCache.set(cacheKey, Promise.resolve(null));
-        return null;
-      }
-
-      const data = result.data as PosiraExplorerResponse;
-
-      return {
-        white:   data.moves.reduce((s, m) => s + m.white_wins, 0),
-        draws:   data.moves.reduce((s, m) => s + m.draws, 0),
-        black:   data.moves.reduce((s, m) => s + m.black_wins, 0),
-        opening: data.opening,
-        moves: data.moves.map(m => ({
-          uci: m.uci,
-          san: m.san,
-          averageRating: 0,
-          white: m.white_wins,
-          draws: m.draws,
-          black: m.black_wins,
-        })),
-      };
-    } catch (err) {
-      // On error, evict cache entry so next call retries
-      lichessRatingCache.set(cacheKey, Promise.resolve(null));
-      console.error("Posira fetch error:", err);
-      return null;
-    }
-  })();
-
-  lichessRatingCache.set(cacheKey, promise);
-  return promise;
+  if (!data) return null;
+  return {
+    white: data.white,
+    draws: data.draws,
+    black: data.black,
+    opening: data.opening,
+    moves: data.moves.map(({ uci, san, averageRating, white, draws, black }) => ({
+      uci, san, averageRating, white, draws, black,
+    })),
+  };
 };
-
-// ── Converters ────────────────────────────────────────────────────────────
 
 export const lichessToSanEvaluation = (data: LichessData): SanMaiaEvaluation => {
   const totalGames = data.white + data.draws + data.black;

@@ -1,5 +1,4 @@
 import type { MasterGames } from "@/libs/openingdatabase/helper";
-import type { LichessData } from "@/libs/openingdatabase/lichessRatingOpening";
 
 const MAX_ENTRIES = 2000;
 
@@ -18,6 +17,10 @@ function makeMemCache<V>() {
       map.set(key, value);
     },
 
+    delete(key: string): void {
+      map.delete(key);
+    },
+
     has(key: string): boolean {
       return map.has(key);
     },
@@ -33,4 +36,3 @@ function makeMemCache<V>() {
 }
 
 export const explorerCache = makeMemCache<Promise<MasterGames | null>>();
-export const lichessRatingCache = makeMemCache<Promise<LichessData | null>>();
