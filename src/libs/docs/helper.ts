@@ -177,7 +177,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     question:
       "What external services and integrations does ChessAgine connect to?",
     answer:
-      "ChessAgine integrates with several chess services: Stockfish and Maia engines for position analysis and evaluation, Lichess for game import and opening databases (enhanced with your API token), Posira for additional chess data, and ChessBoardMagic for board visualization. You can also connect your Lichess studies with an API token to give ChessAgine context about your personal chess knowledge and study history.",
+      "ChessAgine integrates with several chess services: Stockfish and Maia engines for position analysis and evaluation, Lichess for game import and the masters/Lichess opening explorer (sign in with your Lichess account to enable it), and ChessBoardMagic for board visualization. You can also connect your Lichess studies with an API token to give ChessAgine context about your personal chess knowledge and study history.",
     category: "technical",
   },
   {

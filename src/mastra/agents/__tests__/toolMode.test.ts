@@ -117,6 +117,19 @@ describe("wrapToolsWithAuth", () => {
     expect(spy).toHaveBeenCalledWith({ username: "someone", token: "abc123" }, {});
   });
 
+  it("injects the lichess token into explorer tool args", async () => {
+    const tools = fakeMcpTools(["get-lichess-master-games"]);
+    const wrapped = wrapToolsWithAuth(tools, { lichessToken: "abc123" });
+    const spy = jest.spyOn(tools["get-lichess-master-games"], "execute");
+    await wrapped["get-lichess-master-games"].execute({ fen: "startpos" }, {});
+    expect(spy).toHaveBeenCalledWith({ fen: "startpos", token: "abc123" }, {});
+  });
+
+  it("keeps explorer tools available without a lichess token", () => {
+    const result = filterMcpTools(fakeMcpTools(["get-lichess-master-games"]), {}, "panel");
+    expect(Object.keys(result)).toEqual(["get-lichess-master-games"]);
+  });
+
   it("leaves args untouched for tools with no matching auth rule", async () => {
     const tools = fakeMcpTools(["get-stockfish-analysis"]);
     const wrapped = wrapToolsWithAuth(tools, { lichessToken: "abc123" });

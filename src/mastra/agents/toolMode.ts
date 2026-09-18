@@ -16,6 +16,11 @@ export const LICHESS_AUTH_TOOL_IDS = new Set([
   "fetch-lichess-study-pgn",
 ]);
 
+export const LICHESS_OPTIONAL_AUTH_TOOL_IDS = new Set([
+  "get-lichess-master-games",
+  "get-lichess-games",
+]);
+
 export const IGNORE_TOOL_IDS = new Set([
   "get-lichess-username",
   "fetch_chess_puzzle",
@@ -60,7 +65,10 @@ export function wrapToolsWithAuth(
           async execute(args: any, context: any) {
             let newArgs = { ...args };
 
-            if (LICHESS_AUTH_TOOL_IDS.has(id) && tokens?.lichessToken) {
+            if (
+              (LICHESS_AUTH_TOOL_IDS.has(id) || LICHESS_OPTIONAL_AUTH_TOOL_IDS.has(id)) &&
+              tokens?.lichessToken
+            ) {
               newArgs = {
                 ...newArgs,
                 token: tokens.lichessToken,
