@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { resolveModelConfig } from "@mastra/core/llm";
 import { RequestContext } from "@mastra/core/request-context";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -28,7 +29,11 @@ import { basicSystemPrompt } from "./types";
 export type { ToolMode } from "./toolMode";
 export { filterMcpTools, wrapToolsWithAuth } from "./toolMode";
 
-export function createAgineCloudModel(requestContext: RequestContext) {
+async function resolveMastraModel(model: unknown, requestContext: RequestContext) {
+  return resolveModelConfig(model as any, requestContext) as any;
+}
+
+export async function createAgineCloudModel(requestContext: RequestContext) {
   const raw = (requestContext.get("model") as string) ?? "";
   const modelName = raw.replace(/^\"|\"$/g, "");
 
@@ -42,18 +47,18 @@ export function createAgineCloudModel(requestContext: RequestContext) {
 
   if (BYO_ANTHROPIC_MODELS.includes(resolvedName) && personalAnthropicKey) {
     const anthropic = createAnthropic({ apiKey: personalAnthropicKey });
-    return anthropic(resolvedName);
+    return resolveMastraModel(anthropic(resolvedName), requestContext);
   }
 
   if (BYO_GEMINI_MODELS.includes(resolvedName) && personalGeminiKey) {
     const google = createGoogleGenerativeAI({ apiKey: personalGeminiKey });
-    return google(resolvedName);
+    return resolveMastraModel(google(resolvedName), requestContext);
   }
 
   if (BYO_OPENROUTER_MODELS.includes(resolvedName) && personalOpenRouterKey) {
-    const fixedName = resolvedName.replace(":user","");
+    const fixedName = resolvedName.replace(":user", "");
     const openRouterByo = createOpenRouter({ apiKey: personalOpenRouterKey });
-    return openRouterByo(fixedName);
+    return resolveMastraModel(openRouterByo(fixedName), requestContext);
   }
 
   const presetSlug = "@preset/chessagine";
@@ -65,14 +70,14 @@ export function createAgineCloudModel(requestContext: RequestContext) {
   const openRouter = createOpenRouter({ apiKey });
 
   if (!modelName) {
-    return openRouter(`openrouter/auto${presetSlug}`);
+    return resolveMastraModel(openRouter(`openrouter/auto${presetSlug}`), requestContext);
   }
 
   const routerModel = (personalOpenRouterKey && dailyLimitHit)
     ? resolvedName
     : resolvedName + presetSlug;
 
-  return openRouter(routerModel);
+  return resolveMastraModel(openRouter(routerModel), requestContext);
 }
 
 function buildInstructions(requestContext: RequestContext): string {
