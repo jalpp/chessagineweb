@@ -49,6 +49,7 @@ const ENGINE_DISPLAY_NAMES = {
   [EngineName.Stockfish17]: "Stockfish 17 Lite NNUE",
   [EngineName.Stockfish17Point]: "Stockfish 17.1 Lite NNUE",
   [EngineName.Stockfish18]: "Stockfish 18 Lite NNUE",
+  [EngineName.Stockfish19]: "Stockfish 19 Lite NNUE",
   [EngineName.Stockfish16]: "Stockfish 16 Lite NNUE",
   [EngineName.Stockfish11]: "Stockfish 11 HCE",
 };
@@ -58,6 +59,7 @@ const ENGINE_DESCRIPTIONS = {
   [EngineName.Stockfish17]: "Latest 17 version with NNUE evaluation",
   [EngineName.Stockfish17Point]: "Latest 17.1 version with NNUE evaluation",
   [EngineName.Stockfish18]: "Latest 18 version with NNUE evaluation",
+  [EngineName.Stockfish19]: "Latest 19 version with NNUE evaluation",
   [EngineName.Stockfish16]: "16.1 NNUE stable version, well-tested",
   [EngineName.Stockfish11]: "Older version, faster on weaker hardware",
 };

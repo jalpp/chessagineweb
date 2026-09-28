@@ -18,7 +18,7 @@ import { Chess } from "chess.js";
 import AiChessboardPanel from "@/componets/analysis/AiChessboard";
 import AgineAnalysisView from "@/componets/analysis/AgineAnalysisView";
 import AnnotatedMoveList from "@/componets/tabs/AnonatedMoveList";
-import { FenSelector } from "@/componets/game/FenSelector";
+
 
 import useAgine from "@/hooks/useAgine";
 import { useNets } from "@/hooks/useNets";
@@ -29,7 +29,6 @@ import {
 } from "@/lib/variationTree";
 import { applyUciMove, buildMoveChain } from "@/lib/moveUtils";
 
-// ── helpers ────────────────────────────────────────────────────────────────
 
 function getSAN(prevFen: string, nextFen: string): { san: string; uci: string } | null {
   try {
@@ -51,7 +50,7 @@ function mainLineDepth(root: MoveNode): number {
 
 type LeftTab = "analysis" | "position";
 
-// ── page ───────────────────────────────────────────────────────────────────
+
 
 export default function PositionPage() {
   usePageReady();
@@ -134,11 +133,6 @@ export default function PositionPage() {
   const treePly = useMemo(() => findNode(tree.root, tree.cursor)?.ply ?? 0, [tree]);
   const treeMaxPly = useMemo(() => mainLineDepth(tree.root), [tree]);
 
-  // SAN move sequence from the tree's root to the currently viewed
-  // position, so the chat panel can tell the model exactly which moves
-  // led here — instead of it only seeing a bare FEN and having to guess
-  // (and sometimes guessing wrong, deviating into a known opening line
-  // this position doesn't actually belong to).
   const positionMoveHistorySan = useMemo(
     () => pathTo(tree.root, tree.cursor).slice(1).map((n) => n.san),
     [tree],
@@ -146,8 +140,7 @@ export default function PositionPage() {
 
   
 
-  // Play a move suggested by Stockfish, ChessDB, or a neural net (clicking
-  // one of those rows applies its move to the board, same as a drag/drop).
+  
   const handlePlayMove = useCallback((uci: string) => {
     const newFen = applyUciMove(fen, uci);
     if (!newFen) return;
@@ -155,10 +148,7 @@ export default function PositionPage() {
     setFen(newFen);
   }, [fen]);
 
-  // Append a whole move sequence (e.g. clicking the 3rd move of a
-  // Stockfish/ChessDB PV) onto the board as a chain of tree nodes from the
-  // current position, in one step — used instead of the fen-watching effect
-  // above since that only handles a single move at a time.
+  
   const handlePlayMoveSequence = useCallback((uciMoves: string[]) => {
     const chain = buildMoveChain(fen, uciMoves);
     if (chain.length === 0) return;

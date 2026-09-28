@@ -10,6 +10,7 @@ import {
 
 const ENGINE_PATHS: Record<EngineName, string> = {
     [EngineName.Stockfish18]: '/static/engine/stockfish-18/stockfish-18-lite-single.js#/static/engine/stockfish-18/stockfish-18-lite-single.wasm',
+    [EngineName.Stockfish19]: '/static/engine/stockfish-19/stockfish-19-lite-single.js#/static/engine/stockfish-19/stockfish-19-lite-single.wasm',
     [EngineName.Stockfish17Point]: '/static/engine/stockfish-17/stockfish-17.1-lite-single-03e3232.js#/static/engine/stockfish-17/stockfish-17.1-lite-single-03e3232.wasm',
     [EngineName.Stockfish17]: '/static/engine/stockfish-17/stockfish-17-lite.js#/static/engine/stockfish-17/stockfish-17-lite.wasm',
     [EngineName.Stockfish16]: '/static/engine/stockfish-16.1-lite.js#/static/engine/stockfish-16.1-lite.wasm',
