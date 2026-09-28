@@ -22,7 +22,7 @@ import { MoveAnalysis } from "@/libs/agine/helper";
 import { getMoveClassificationStyle } from "../tabs/GameReviewTab";
 import { Board } from "../../libs/tacticalboard/board";
 import {
-  BOARD_THEMES, DEFAULT_BOARD_PANEL_DIMENSIONS,
+  BOARD_THEMES,
   getCurrentThemeColors, is3DSet, PIECE_STYLE_TYPES,
 } from "@/libs/setting/helper";
 import PlayerInfoBar from "../tabs/PlayerInfoTab";
@@ -66,37 +66,15 @@ interface AiChessboardPanelProps {
   engineThinking?: boolean;
   evaluations?: MaiaEngineAnalysis;
   sanEvaluations?: { bigLeela?: SanMaiaEvaluation | null; elitemaia?: SanMaiaEvaluation | null; maia3?: { [key: string]: SanMaiaEvaluation } | null };
-  /** True while Maia/neural nets are loading for this position */
   maiaLoading?: boolean;
-  /** Called by nav buttons to walk to the previous node in the variation tree */
   onTreePrevious?: () => void;
-  /** Called by nav buttons to walk to the next node in the variation tree */
   onTreeNext?: () => void;
-  /** Walk to the very first position in the tree */
   onTreeStart?: () => void;
-  /** Walk to the last position on the current line */
   onTreeEnd?: () => void;
-  /** When true, nav buttons use onTree* callbacks (variation-aware navigation) */
   hideBuiltInMoveList?: boolean;
-  /** Current ply depth — used for the move counter display */
   treePly?: number;
-  /** Total plies in the current line — used for nav disabled states */
   treeMaxPly?: number;
-  /** DOM id passed to react-chessboard, used internally for square/piece
-   * element lookups (e.g. its own drag-animation code queries
-   * `#{id}-square-{square}`). Defaults to a fixed id, which is fine for
-   * pages that only ever mount one board — but any screen that mounts
-   * several boards at once (the puzzle scroll feed) MUST give each
-   * instance a unique id, or these lookups return whichever instance
-   * happens to be first in the DOM regardless of which board the user is
-   * actually interacting with (this was the cause of the scroll feed's
-   * "wrong board animates" / stuck-legal-move-highlight bugs on mobile). */
   boardId?: string;
-  /** Whether this board responds to drags/clicks at all. Defaults to true.
-   * Set to false for boards that are mounted but not the one the user is
-   * currently looking at (e.g. off-screen cards in the puzzle scroll feed)
-   * so touch gestures aren't split across several simultaneously-live
-   * boards on the same screen. */
   interactive?: boolean;
 }
 
@@ -638,10 +616,19 @@ export default function AiChessboardPanel({
         </Stack>
       )}
 
-      {/* FEN display */}
+      
       {showFen && !puzzleMode && !playMode && (
         <Paper sx={{ p: 1, borderRadius: 1.5, mt: 1, width: "100%", maxWidth: boardPx + 40 }}>
-          <Typography sx={{ fontFamily: "monospace", fontSize: "9px", wordBreak: "break-all", color: "text.disabled" }}>{fen}</Typography>
+          {(
+              <Stack spacing={1}>
+                <TextField label="Load FEN" variant="outlined" value={customFen}
+                  onChange={e => setCustomFen(e.target.value)} size="small" fullWidth
+                  placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" />
+                <Button variant="contained" onClick={loadCustomFen} startIcon={<Upload />} disabled={!customFen.trim()} fullWidth>
+                  Load Position
+                </Button>
+              </Stack>
+            )}
         </Paper>
       )}
 
