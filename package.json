@@ -27,7 +27,7 @@
     "@jalpp/stockfishts": "^1.1.0",
     "@mastra/ai-sdk": "^1.10.5",
     "@mastra/core": "^1.71.0",
-    "@mastra/mcp": "^1.18.0",
+    "@mastra/mcp": "^2.3.0",
     "@mliebelt/pgn-viewer": "^1.6.11",
     "@mui/icons-material": "^7.3.11",
     "@mui/material": "^7.3.11",
